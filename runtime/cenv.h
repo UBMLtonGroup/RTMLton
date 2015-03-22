@@ -22,6 +22,8 @@
 #endif
 #define _FILE_OFFSET_BITS 64
 
+#define DISABLED_GC
+
 #ifndef ASSERT
 #define ASSERT 0
 #define NDEBUG

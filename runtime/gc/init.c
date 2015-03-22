@@ -330,6 +330,9 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->sysvals.physMem = GC_physMem ();
   s->weaks = NULL;
   s->saveWorldStatus = true;
+#ifdef DISABLED_GC
+  s->gc_disabled = false;
+#endif
 
   initIntInf (s);
   initSignalStack (s);

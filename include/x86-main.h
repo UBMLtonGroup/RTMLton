@@ -71,13 +71,13 @@ static void MLton_callFromC () {                                        \
         return;                                                         \
 }
 
-#define MLtonMain(al, mg, mfs, mmc, pk, ps, ml)                         \
+#define MLtonMain(al, mg, mfs, mmc, pk, ps, ml, gc)                     \
 MLtonCallFromC                                                          \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         pointer jump;                                                   \
         extern pointer ml;                                              \
                                                                         \
-        Initialize (al, mg, mfs, mmc, pk, ps);                          \
+        Initialize (al, mg, mfs, mmc, pk, ps, gc);                      \
         if (gcState.amOriginal) {                                       \
                 real_Init();                                            \
                 jump = (pointer)&ml;                                    \
@@ -88,13 +88,13 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         return 1;                                                       \
 }
 
-#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, ml)                      \
+#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, ml, gc)                  \
 MLtonCallFromC                                                          \
 PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
         pointer jump;                                                   \
         extern pointer ml;                                              \
                                                                         \
-        Initialize (al, mg, mfs, mmc, pk, ps);                          \
+        Initialize (al, mg, mfs, mmc, pk, ps, gc);                      \
         if (gcState.amOriginal) {                                       \
                 real_Init();                                            \
                 jump = (pointer)&ml;                                    \

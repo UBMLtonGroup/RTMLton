@@ -50,11 +50,11 @@ static void MLton_callFromC () {                                        \
                 fprintf (stderr, "MLton_callFromC done\n");             \
 }
 
-#define MLtonMain(al, mg, mfs, mmc, pk, ps, mc, ml)                     \
+#define MLtonMain(al, mg, mfs, mmc, pk, ps, mc, ml, gc)                 \
 MLtonCallFromC                                                          \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         struct cont cont;                                               \
-        Initialize (al, mg, mfs, mmc, pk, ps);                          \
+        Initialize (al, mg, mfs, mmc, pk, ps, gc);                      \
         if (gcState.amOriginal) {                                       \
                 real_Init();                                            \
                 PrepFarJump(mc, ml);                                    \
@@ -77,11 +77,11 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         return 1;                                                       \
 }
 
-#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, mc, ml)                  \
+#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, mc, ml, gc)              \
 MLtonCallFromC                                                          \
 PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
         struct cont cont;                                               \
-        Initialize (al, mg, mfs, mmc, pk, ps);                          \
+        Initialize (al, mg, mfs, mmc, pk, ps, gc);                      \
         if (gcState.amOriginal) {                                       \
                 real_Init();                                            \
                 PrepFarJump(mc, ml);                                    \
