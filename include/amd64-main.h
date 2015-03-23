@@ -62,7 +62,7 @@ static void MLton_callFromC () {                                        \
         return;                                                         \
 }
 
-#define MLtonMain(al, mg, mfs, mmc, pk, ps, ml, gc)                     \
+#define MLtonMain(al, mg, mfs, mmc, pk, ps, gc, ml)                     \
 MLtonCallFromC                                                          \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         pointer jump;                                                   \
@@ -79,7 +79,7 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         return 1;                                                       \
 }
 
-#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, ml, gc)                  \
+#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, gc, ml)                  \
 MLtonCallFromC                                                          \
 PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
         pointer jump;                                                   \
