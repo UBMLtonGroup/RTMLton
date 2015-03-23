@@ -63,7 +63,6 @@ val llvm_llcOpts: {opt: string, pred: OptPred.t} list ref = ref []
 val llvm_opt: string ref = ref "opt"
 val llvm_optOpts: {opt: string, pred: OptPred.t} list ref = ref []
 
-val disableGC: bool ref = ref false
 val buildConstants: bool ref = ref false
 val debugRuntime: bool ref = ref false
 datatype debugFormat = Dwarf | DwarfPlus | Dwarf2 | Stabs | StabsPlus
@@ -383,9 +382,6 @@ fun makeOptions {usage} =
             reportAnnotation (s, flag,
                               Control.Elaborate.processEnabled (s, false))))
        end,
-       (Expert, "disable-gc", " {false|true}",
-        "disable the GC",
-        boolRef disableGC),
        (Expert, "drop-pass", " <pass>", "omit optimization pass",
         SpaceString
         (fn s => (case Regexp.fromString s of
@@ -433,6 +429,13 @@ fun makeOptions {usage} =
                        | "first" => First
                        | "every" => Every
                        | _ => usage (concat ["invalid -gc-check flag: ", s])))),
+       (Expert, "gc-module", " {none|default}", "select GC module",
+        SpaceString (fn s =>
+                     gcModule :=
+                     (case s of
+                         "none" => GCModuleNone
+                       | "default" => GCModuleDefault
+                       | _ => usage (concat ["invalid -gc-module flag: ", s])))),
        (Normal, "ieee-fp", " {false|true}", "use strict IEEE floating-point",
         boolRef Native.IEEEFP),
        (Expert, "indentation", " <n>", "indentation level in ILs",

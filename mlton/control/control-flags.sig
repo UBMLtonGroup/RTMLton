@@ -172,6 +172,11 @@ signature CONTROL_FLAGS =
        | First
        | Every
       val gcCheck: gcCheck ref
+      
+      datatype gcModule =
+         GCModuleNone
+       | GCModuleDefault
+      val gcModule: gcModule ref
 
       (* Indentation used in laying out ILs. *)
       val indentation: int ref
