@@ -101,6 +101,9 @@ void performGC (GC_state s,
   struct rusage ru_start;
   size_t totalBytesRequested;
 
+  if (s->gc_module != GC_DEFAULT)
+	  return
+
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
   if (DEBUG or s->controls.messages) {
