@@ -1,4 +1,4 @@
-(* Copyright (C) 2009-2010 Matthew Fluet.
+(* Copyright (C) 2009-2010,2014 Matthew Fluet.
  * Copyright (C) 2004-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
@@ -106,6 +106,8 @@ structure Type =
       val csize: unit -> t = word o WordSize.csize
 
       val cint: unit -> t = word o WordSize.cint
+
+      val compareRes = word WordSize.compareRes
 
       val objptrHeader: unit -> t = word o WordSize.objptrHeader
 
@@ -844,19 +846,19 @@ structure BuiltInCFunction =
       local
          fun make b = fn () =>
             T {args = Vector.new3 (Type.gcState (), Type.csize (), Type.bool),
-                   bytesNeeded = NONE,
                    convention = Cdecl,
-                   ensuresBytesFree = true,
-                   mayGC = true,
-                   maySwitchThreads = b,
-                   modifiesFrontier = true,
+                   kind = Kind.Runtime {bytesNeeded = NONE,
+                                        ensuresBytesFree = true,
+                                        mayGC = true,
+                                        maySwitchThreads = b,
+                                        modifiesFrontier = true,
+                                        readsStackTop = true,
+                                        writesStackTop = true},
                    prototype = (Vector.new3 (CType.cpointer, CType.csize (), CType.bool),
                                 NONE),
-                   readsStackTop = true,
                    return = Type.unit,
                    symbolScope = SymbolScope.Private,
-                   target = Direct "GC_collect",
-                   writesStackTop = true}
+                   target = Direct "GC_collect"}
          val t = make true
          val f = make false
       in

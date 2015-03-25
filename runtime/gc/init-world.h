@@ -1,4 +1,5 @@
-/* Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
+/* Copyright (C) 2014 Matthew Fluet.
+ * Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
@@ -26,19 +27,17 @@ struct GC_intInfInit {
 
 /* GC_init allocates a collection of arrays/vectors in the heap. */
 struct GC_vectorInit {
-  pointer bytes;
-  size_t bytesPerElement;
+  size_t elementSize;
   uint32_t globalIndex;
-  GC_arrayLength numElements;
+  GC_arrayLength length;
+  pointer words;
 };
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
-static inline size_t sizeofIntInfFromString (GC_state s, const char *str);
 static inline size_t sizeofInitialBytesLive (GC_state s);
-static void initIntInfs (GC_state s);
 static void initVectors (GC_state s);
 static void initWorld (GC_state s);
 

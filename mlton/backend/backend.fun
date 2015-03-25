@@ -1,4 +1,4 @@
-(* Copyright (C) 2009,2013 Matthew Fluet.
+(* Copyright (C) 2009,2013-2014 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -424,11 +424,6 @@ let
                (all, get)
             end
       in
-         val (allIntInfs, globalIntInf) =
-            make (IntInf.equals,
-                  fn i => (IntInf.toString i,
-                           Type.intInf (),
-                           i))
          val (allReals, globalReal) =
             make (RealX.equals,
                   fn r => (RealX.toString r,
@@ -458,10 +453,8 @@ let
             datatype z = datatype Const.t
          in
             case c of
-               IntInf i =>
-                  (case Const.SmallIntInf.toWord i of
-                      NONE => globalIntInf i
-                    | SOME w => M.Operand.Cast (M.Operand.Word w, Type.intInf ()))
+               IntInf _ =>
+                  Error.bug "Backend.constOperand: IntInf"
              | Null => M.Operand.Null
              | Real r => globalReal r
              | Word w => M.Operand.Word w
@@ -503,11 +496,17 @@ let
          in
             case oper of
                ArrayOffset {base, index, offset, scale, ty} =>
-                  M.Operand.ArrayOffset {base = translateOperand base,
-                                         index = translateOperand index,
-                                         offset = offset,
-                                         scale = scale,
-                                         ty = ty}
+                  let
+                     val base = translateOperand base
+                  in
+                     if M.Operand.isLocation base
+                        then M.Operand.ArrayOffset {base = base,
+                                                    index = translateOperand index,
+                                                    offset = offset,
+                                                    scale = scale,
+                                                    ty = ty}
+                     else bogusOp ty
+                  end
              | Cast (z, t) => M.Operand.Cast (translateOperand z, t)
              | Const c => constOperand c
              | EnsuresBytesFree =>
@@ -1148,7 +1147,6 @@ in
        frameLayouts = frameLayouts,
        frameOffsets = frameOffsets,
        handlesSignals = handlesSignals,
-       intInfs = allIntInfs (), 
        main = main,
        maxFrameSize = maxFrameSize,
        objectTypes = objectTypes,

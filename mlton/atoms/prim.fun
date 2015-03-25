@@ -1,4 +1,4 @@
-(* Copyright (C) 2009-2010 Matthew Fluet.
+(* Copyright (C) 2009-2010,2014 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -67,7 +67,6 @@ datatype 'a t =
  | IntInf_andb (* ssa to rssa *)
  | IntInf_arshift (* ssa to rssa *)
  | IntInf_compare (* ssa to rssa *)
- | IntInf_equal (* ssa to rssa *)
  | IntInf_gcd (* ssa to rssa *)
  | IntInf_lshift (* ssa to rssa *)
  | IntInf_mul (* ssa to rssa *)
@@ -251,7 +250,6 @@ fun toString (n: 'a t): string =
        | IntInf_andb => "IntInf_andb"
        | IntInf_arshift => "IntInf_arshift"
        | IntInf_compare => "IntInf_compare"
-       | IntInf_equal => "IntInf_equal"
        | IntInf_gcd => "IntInf_gcd"
        | IntInf_lshift => "IntInf_lshift"
        | IntInf_mul => "IntInf_mul"
@@ -392,7 +390,6 @@ val equals: 'a t * 'a t -> bool =
     | (IntInf_andb, IntInf_andb) => true
     | (IntInf_arshift, IntInf_arshift) => true
     | (IntInf_compare, IntInf_compare) => true
-    | (IntInf_equal, IntInf_equal) => true
     | (IntInf_gcd, IntInf_gcd) => true
     | (IntInf_lshift, IntInf_lshift) => true
     | (IntInf_mul, IntInf_mul) => true
@@ -556,7 +553,6 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | IntInf_andb => IntInf_andb
     | IntInf_arshift => IntInf_arshift
     | IntInf_compare => IntInf_compare
-    | IntInf_equal => IntInf_equal
     | IntInf_gcd => IntInf_gcd
     | IntInf_lshift => IntInf_lshift
     | IntInf_mul => IntInf_mul
@@ -715,7 +711,6 @@ val equal = MLton_equal
 val ffi = FFI
 val ffiSymbol = FFI_Symbol
 val hash = MLton_hash
-val intInfEqual = IntInf_equal
 val intInfToVector = IntInf_toVector
 val intInfToWord = IntInf_toWord
 val intInfNeg = IntInf_neg
@@ -744,8 +739,7 @@ val wordSub = Word_sub
 val wordXorb = Word_xorb
 
 val isCommutative =
-   fn IntInf_equal => true
-    | MLton_eq => true
+   fn MLton_eq => true
     | MLton_equal => true
     | Real_add _ => true
     | Real_mul _ => true
@@ -798,14 +792,16 @@ val kind: 'a t -> Kind.t =
        | Exn_extra => Functional
        | Exn_name => Functional
        | Exn_setExtendExtra => SideEffect
-       | FFI _ => Kind.SideEffect
+       | FFI (CFunction.T {kind, ...}) => (case kind of
+                                              CFunction.Kind.Impure => SideEffect
+                                            | CFunction.Kind.Pure => Functional
+                                            | CFunction.Kind.Runtime _ => SideEffect)
        | FFI_Symbol _ => Functional
        | GC_collect => SideEffect
        | IntInf_add => Functional
        | IntInf_andb => Functional
        | IntInf_arshift => Functional
        | IntInf_compare => Functional
-       | IntInf_equal => Functional
        | IntInf_gcd => Functional
        | IntInf_lshift => Functional
        | IntInf_mul => Functional
@@ -1005,7 +1001,6 @@ in
        IntInf_andb,
        IntInf_arshift,
        IntInf_compare,
-       IntInf_equal,
        IntInf_gcd,
        IntInf_lshift,
        IntInf_mul,
@@ -1263,7 +1258,6 @@ fun 'a checkApp (prim: 'a t,
        | IntInf_arshift => intInfShift ()
        | IntInf_compare =>
             noTargs (fn () => (twoArgs (intInf, intInf), compareRes))
-       | IntInf_equal => noTargs (fn () => (twoArgs (intInf, intInf), bool))
        | IntInf_gcd => intInfBinary ()
        | IntInf_lshift => intInfShift ()
        | IntInf_mul => intInfBinary ()
@@ -1438,7 +1432,7 @@ val extractTargs =
    fn z =>
    Trace.trace ("Prim.extractTargs", layout o #1, Layout.ignore) extractTargs z
 
-structure SmallIntInf = Const.SmallIntInf
+structure IntInfRep = Const.IntInfRep
 
 structure ApplyArg =
    struct
@@ -1550,6 +1544,8 @@ fun ('a, 'b) apply (p: 'a t,
       fun word (w: WordX.t): ('a, 'b) ApplyResult.t =
          ApplyResult.Const (Const.word w)
       val wordOpt = fn NONE => ApplyResult.Unknown | SOME w => word w
+      fun wordVector (v: WordXVector.t): ('a, 'b) ApplyResult.t =
+         ApplyResult.Const (Const.wordVector v)
       fun iio (f, c1, c2) = intInf (f (c1, c2))
       fun wordS (f: WordX.t * WordX.t * {signed: bool} -> WordX.t,
                  (_: WordSize.t, sg),
@@ -1653,11 +1649,14 @@ fun ('a, 'b) apply (p: 'a t,
                 in
                    word (WordX.fromIntInf (i, WordSize.compareRes))
                 end
-           | (IntInf_equal, [IntInf i1, IntInf i2]) => bool (i1 = i2)
            | (IntInf_toWord, [IntInf i]) =>
-                (case SmallIntInf.toWord i of
-                    NONE => ApplyResult.Unknown
-                  | SOME w => word w)
+                (case IntInfRep.fromIntInf i of
+                    IntInfRep.Big _ => ApplyResult.Unknown
+                  | IntInfRep.Small w => word w)
+           | (IntInf_toVector, [IntInf i]) =>
+                (case IntInfRep.fromIntInf i of
+                    IntInfRep.Big v => wordVector v
+                  | IntInfRep.Small _ => ApplyResult.Unknown)
            | (_, [IntInf i1, IntInf i2, _]) => intInfBinary (i1, i2)
            | (_, [IntInf i1, Word w2, _]) => intInfShiftOrToString (i1, w2)
            | (_, [IntInf i1, _]) => intInfUnary (i1)
@@ -1724,11 +1723,18 @@ fun ('a, 'b) apply (p: 'a t,
                 wordS (WordX.rshift, s, w1, w2)
            | (Word_sub _, [Word w1, Word w2]) => word (WordX.sub (w1, w2))
            | (Word_subCheck s, [Word w1, Word w2]) => wcheck (op -, s, w1, w2)
-           | (Word_toIntInf, [Word w]) => intInf (SmallIntInf.fromWord w)
+           | (Word_toIntInf, [Word w]) =>
+                (case IntInfRep.smallToIntInf w of
+                    NONE => ApplyResult.Unknown
+                  | SOME i => intInf i)
            | (Word_extdToWord (_, s, {signed}), [Word w]) =>
                 word (if signed then WordX.resizeX (w, s)
                       else WordX.resize (w, s))
            | (Word_xorb _, [Word w1, Word w2]) => word (WordX.xorb (w1, w2))
+           | (WordVector_toIntInf, [WordVector v]) =>
+                (case IntInfRep.bigToIntInf v of
+                    NONE => ApplyResult.Unknown
+                  | SOME i => intInf i)
            | _ => ApplyResult.Unknown)
              handle Chr => ApplyResult.Unknown
                   | Div => ApplyResult.Unknown
@@ -2026,7 +2032,6 @@ fun ('a, 'b) apply (p: 'a t,
                               | CPointer_lt => f
                               | IntInf_compare =>
                                    word (WordX.zero WordSize.compareRes)
-                              | IntInf_equal => t
                               | MLton_eq => t
                               | MLton_equal => t
                               | Real_lt _ => f
