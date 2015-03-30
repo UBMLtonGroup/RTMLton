@@ -977,13 +977,13 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                          baseTy = varType (Base.object base),
                                          offset = offset,
                                          value = varOp value}
-                                     val ss =
+(*                                     val ss =
                                         if !Control.markCards
                                            andalso Type.isObjptr t
                                            then
                                               updateCard (Base.object baseOp)
                                               @ ss
-                                        else ss
+                                        else ss*)
                                   in
                                      adds ss
                                   end)
