@@ -13,8 +13,7 @@ tuples in SSA but becomes an overloaded term in SSA2 and below.
 ## Object Write
 2 types of MLton native object writes:
 
-- Normal objects (immutable) are converted to a "Inject" operation in
-  SSA2, which is mapped to "Move" in RSSA and below.
+- Normal object calls are carried through allocation calls (immutable and one-time binding)
 - Arrays and refs are converted to "Update" operation in SSA2.
 
 # Potential Implementation Strategy
