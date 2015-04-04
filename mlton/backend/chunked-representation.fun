@@ -40,6 +40,23 @@ datatype z = datatype Operand.t
 datatype z = datatype Statement.t
 datatype z = datatype Transfer.t
 
-
+fun compute(program as Ssa.Program.T {datatypes, ...}) =
+  let
+      fun diagnostic () = ()
+      fun object {args, con, dst, objectTy, oper} = []
+      val objectTypes = Vector.fromList []
+      fun select {base, baseTy, dst, offset} = []
+      fun toRtype (t: S.Type.t): Type.t option = NONE
+      fun update {base, baseTy, offset, value} = []
+  in
+      { diagnostic = diagnostic
+      , genCase = genCase
+      , object = object
+      , objectTypes = objectTypes
+      , select = select
+      , toRtype = toRtype
+      , update = update
+      }
+  end
 
 end
