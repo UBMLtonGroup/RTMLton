@@ -40,6 +40,7 @@ machine.sig
 machine.fun
 representation.sig
 packed-representation.fun
+chunked-representation.fun
 ssa-to-rssa.sig
 ssa-to-rssa.fun
 rssa-transform.sig

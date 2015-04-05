@@ -86,7 +86,7 @@ structure Operand =
 
       fun layout (z: t): Layout.t =
          let
-            open Layout 
+            open Layout
          in
             case z of
                ArrayOffset {base, index, offset, scale, ty} =>
@@ -182,6 +182,9 @@ structure Statement =
        | Object of {dst: Var.t * Type.t,
                     header: word,
                     size: Bytes.t}
+       | ChunkedObject of { dst: Var.t * Type.t
+                          , header: word
+                          , size: Bytes.t }
        | PrimApp of {args: Operand.t vector,
                      dst: (Var.t * Type.t) option,
                      prim: Type.t Prim.t}
@@ -201,6 +204,7 @@ structure Statement =
                Bind {dst = (x, t), src, ...} => def (x, t, useOperand (src, a))
              | Move {dst, src} => useOperand (src, useOperand (dst, a))
              | Object {dst = (dst, ty), ...} => def (dst, ty, a)
+             | ChunkedObject {dst = (dst, ty), ...} => def (dst, ty, a)
              | PrimApp {dst, args, ...} =>
                   Vector.fold (args,
                                Option.fold (dst, a, fn ((x, t), a) =>
@@ -241,6 +245,7 @@ structure Statement =
                         src = oper src}
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
              | Object _ => s
+             | ChunkedObject _  => s
              | PrimApp {args, dst, prim} =>
                   PrimApp {args = Vector.map (args, oper),
                            dst = dst,
@@ -263,6 +268,12 @@ structure Statement =
                   mayAlign [Operand.layout dst,
                             seq [str "= ", Operand.layout src]]
              | Object {dst = (dst, ty), header, size} =>
+                  mayAlign
+                  [seq [Var.layout dst, constrain ty],
+                   seq [str "= Object ",
+                        record [("header", seq [str "0x", Word.layout header]),
+                                ("size", Bytes.layout size)]]]
+             | ChunkedObject {dst = (dst, ty), header, size} =>
                   mayAlign
                   [seq [Var.layout dst, constrain ty],
                    seq [str "= Object ",
@@ -300,7 +311,7 @@ structure Statement =
 
             val (src, srcTy, ssSrc, dstTy, finishDst) =
                case (Type.deReal srcTy, Type.deReal dstTy) of
-                  (NONE, NONE) => 
+                  (NONE, NONE) =>
                      (src, srcTy, [], dstTy, fn dst => (dst, []))
                 | (SOME rs, NONE) =>
                      let
@@ -345,9 +356,9 @@ structure Statement =
                        (Operand.Var {ty = tmpTy, var = tmp},
                         [PrimApp {args = Vector.new1 src,
                                   dst = SOME (tmp, tmpTy),
-                                  prim = (Prim.wordExtdToWord 
-                                          (WordSize.fromBits srcW, 
-                                           WordSize.fromBits dstW, 
+                                  prim = (Prim.wordExtdToWord
+                                          (WordSize.fromBits srcW,
+                                           WordSize.fromBits dstW,
                                            {signed = false}))}])
                     end
 
@@ -742,7 +753,7 @@ structure Function =
                    val _ =
                       Transfer.foreachLabel
                       (transfer, fn to =>
-                       (ignore o Graph.addEdge) 
+                       (ignore o Graph.addEdge)
                        (g, {from = from, to = labelNode to}))
                 in
                    ()
@@ -955,7 +966,7 @@ structure Program =
                         val _ = Array.update (visited, i, true)
                         val f = Vector.sub (functions, i)
                         val v' = v f
-                        val _ = Function.dfs 
+                        val _ = Function.dfs
                                 (f, fn Block.T {transfer, ...} =>
                                  (Transfer.foreachFunc (transfer, visit)
                                   ; fn () => ()))
@@ -1046,7 +1057,7 @@ structure Program =
                                  NONE => keep ()
                                | SOME src =>
                                     let
-                                       val src = 
+                                       val src =
                                           if Type.equals (Operand.ty src, dstTy)
                                              then src
                                           else Cast (src, dstTy)
@@ -1147,7 +1158,7 @@ structure Program =
 
       fun shrink (T {functions, handlesSignals, main, objectTypes}) =
          let
-            val p = 
+            val p =
                T {functions = List.revMap (functions, Function.shrink),
                   handlesSignals = handlesSignals,
                   main = Function.shrink main,
@@ -1213,7 +1224,7 @@ structure Program =
                let
                   val {name, start, blocks, ...} = Function.dest f
                   val {get = labelInfo: Label.t -> HandlerInfo.t,
-                       rem = remLabelInfo, 
+                       rem = remLabelInfo,
                        set = setLabelInfo} =
                      Property.getSetOnce
                      (Label.plist, Property.initRaise ("info", Label.layout))
@@ -1357,7 +1368,7 @@ structure Program =
                      (fn display =>
                       let
                          open Layout
-                         val _ = 
+                         val _ =
                             display (seq [str "checkHandlers ",
                                           Func.layout name])
                          val _ =
@@ -1559,6 +1570,7 @@ structure Program =
                          ; checkOperand src
                          ; (Type.isSubtype (Operand.ty src, Operand.ty dst)
                             andalso Operand.isLocation dst))
+                   | ChunkedObject _  => true
                    | Object {dst = (_, ty), header, size} =>
                         let
                            val tycon =
@@ -1598,7 +1610,7 @@ structure Program =
                           | _ => false)
                    | SetSlotExnStack => true
                end
-            val statementOk = 
+            val statementOk =
                Trace.trace ("Rssa.statementOk",
                             Statement.layout,
                             Bool.layout)
@@ -1626,7 +1638,7 @@ structure Program =
                              returns: Type.t vector option): bool =
                case returns of
                   NONE => true
-                | SOME ts => 
+                | SOME ts =>
                      Vector.equals (formals, ts, fn ((_, t), t') =>
                                     Type.isSubtype (t', t))
             fun callIsOk {args, func, raises, return, returns} =
@@ -1790,7 +1802,7 @@ structure Program =
                                            val expects =
                                               #2 (Vector.sub (args, 0))
                                         in
-                                           Type.isSubtype (return, expects) 
+                                           Type.isSubtype (return, expects)
                                            andalso
                                            CType.equals (Type.toCType return,
                                                          Type.toCType expects)
@@ -1816,7 +1828,7 @@ structure Program =
                                   Bool.layout)
                                  blockOk
 
-                  val _ = 
+                  val _ =
                      Vector.foreach
                      (blocks, fn b =>
                       check' (b, "block", blockOk, Block.layout))
