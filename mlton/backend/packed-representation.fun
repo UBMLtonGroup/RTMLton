@@ -968,16 +968,17 @@ structure ObjptrRep =
                 in
                    Component.tuple (component,
                                     {dst = (tmpVar, tmpTy), src = src})
-                   @ (Move {dst = Offset {base = object,
-                                          offset = offset,
-                                          ty = tmpTy},
-                            src = Var {ty = tmpTy, var = tmpVar}}
+                   @ (ChunkMove { dst = ChunkedOffset { base = object
+                                                      , offset = offset
+                                                      , ty = tmpTy }
+                                , src = Var {ty = tmpTy, var = tmpVar} }
                       :: ac)
                 end)
          in
-            Object {dst = (dst, ty),
-                    header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon),
-                    size = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ())}
+            ChunkedObject {
+                dst = (dst, ty)
+              , header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon)
+              , size = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ()) }
             :: stores
          end
 

@@ -1034,11 +1034,11 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                            (case toRtype ty of
                                NONE => none ()
                              | SOME dstTy =>
-                                  adds (object {args = args,
-                                                con = con,
-                                                dst = (valOf var, dstTy),
-                                                objectTy = ty,
-                                                oper = varOp}))
+                               adds (object {args = args,
+                                             con = con,
+                                             dst = (valOf var, dstTy),
+                                             objectTy = ty,
+                                             oper = varOp}))
                       | S.Exp.PrimApp {args, prim} =>
                            let
                               val prim = translatePrim prim

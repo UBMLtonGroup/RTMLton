@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-signature PRIM_STRUCTS = 
+signature PRIM_STRUCTS =
    sig
       structure CFunction: C_FUNCTION
       structure CType: C_TYPE
@@ -19,7 +19,7 @@ signature PRIM_STRUCTS =
       sharing WordSize = Const.WordX.WordSize
    end
 
-signature PRIM = 
+signature PRIM =
    sig
       include PRIM_STRUCTS
 
@@ -32,7 +32,10 @@ signature PRIM =
              | Array_sub (* ssa to ssa2 *)
              | Array_toVector (* backend *)
              | Array_update (* ssa to ssa2 *)
-             | CPointer_add (* codegen *)
+             | UM_CPointer_offset (* not optimized *)
+             | UM_Payload_alloc (* not optimized *)
+             | UM_Header_alloc (* not optimized *)
+             | CPointer_add (* not optimized *)
              | CPointer_diff (* codegen *)
              | CPointer_equal (* codegen *)
              | CPointer_fromWord (* codegen *)
@@ -235,12 +238,15 @@ signature PRIM =
                                       vector: 'a -> 'a,
                                       weak: 'a -> 'a,
                                       word: WordSize.t -> 'a}} -> bool
+      val umPayloadAlloc: 'a t
+      val umHeaderAlloc: 'a t
+      val umcPointerOffset: 'a t
       val cpointerAdd: 'a t
       val cpointerDiff: 'a t
       val cpointerEqual: 'a t
-      val cpointerGet: CType.t -> 'a t 
+      val cpointerGet: CType.t -> 'a t
       val cpointerLt: 'a t
-      val cpointerSet: CType.t -> 'a t 
+      val cpointerSet: CType.t -> 'a t
       val cpointerSub: 'a t
       val cpointerToWord: 'a t
       val deref: 'a t
@@ -255,8 +261,8 @@ signature PRIM =
                                           deVector: 'b -> 'b,
                                           deWeak: 'b -> 'b}} -> 'b vector
       val ffi: 'a CFunction.t -> 'a t
-      val ffiSymbol: {name: string, 
-                      cty: CType.t option, 
+      val ffiSymbol: {name: string,
+                      cty: CType.t option,
                       symbolScope: CFunction.SymbolScope.t } -> 'a t
       val fromString: string -> 'a t option
       val hash: 'a t (* polymorphic hash *)

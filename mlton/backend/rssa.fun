@@ -49,6 +49,9 @@ structure Operand =
        | Offset of {base: t,
                     offset: Bytes.t,
                     ty: Type.t}
+       | ChunkedOffset of { base: t
+                          , offset: Bytes.t
+                          , ty: Type.t }
        | ObjptrTycon of ObjptrTycon.t
        | Runtime of GCField.t
        | Var of {var: Var.t,
@@ -80,6 +83,7 @@ structure Operand =
           | EnsuresBytesFree => Type.csize ()
           | GCState => Type.gcState ()
           | Offset {ty, ...} => ty
+          | ChunkedOffset {ty, ...} => ty
           | ObjptrTycon _ => Type.objptrHeader ()
           | Runtime z => Type.ofGCField z
           | Var {ty, ...} => ty
@@ -100,6 +104,11 @@ structure Operand =
              | GCState => str "<GCState>"
              | Offset {base, offset, ty} =>
                   seq [str (concat ["O", Type.name ty, " "]),
+                       tuple [layout base, Bytes.layout offset],
+                       constrain ty]
+             | ChunkedOffset {base, offset, ty} =>
+                  seq [str "<chunkedOff> ",
+                       str (concat ["O", Type.name ty, " "]),
                        tuple [layout base, Bytes.layout offset],
                        constrain ty]
              | ObjptrTycon opt => ObjptrTycon.layout opt
@@ -179,6 +188,9 @@ structure Statement =
                   src: Operand.t}
        | Move of {dst: Operand.t,
                   src: Operand.t}
+       | ChunkMove of { dst: Operand.t
+                      , src: Operand.t
+                      }
        | Object of {dst: Var.t * Type.t,
                     header: word,
                     size: Bytes.t}
@@ -1544,6 +1556,7 @@ structure Program =
                                              offset = offset,
                                              tyconTy = tyconTy,
                                              result = ty}
+                       | ChunkedOffset {base, offset, ty} => true
                        | ObjptrTycon _ => true
                        | Runtime _ => true
                        | Var {ty, var} => Type.isSubtype (varType var, ty)

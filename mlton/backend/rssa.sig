@@ -56,6 +56,9 @@ signature RSSA =
              | Offset of {base: t,
                           offset: Bytes.t,
                           ty: Type.t}
+             | ChunkedOffset of { base: t
+                                , offset: Bytes.t
+                                , ty: Type.t }
              | ObjptrTycon of ObjptrTycon.t
              | Runtime of Runtime.GCField.t
              | Var of {ty: Type.t,
@@ -80,6 +83,8 @@ signature RSSA =
                         src: Operand.t}
              | Move of {dst: Operand.t,
                         src: Operand.t}
+             | ChunkMove of {dst: Operand.t,
+                             src: Operand.t}
              | Object of {dst: Var.t * Type.t,
                           header: word,
                           size: Bytes.t (* including header *)}
