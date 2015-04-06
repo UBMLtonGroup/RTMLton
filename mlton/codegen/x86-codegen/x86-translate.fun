@@ -98,14 +98,14 @@ struct
                            x86.Operand.deImmediate index,
                            x86.Operand.deMemloc index) of
                         (SOME base, SOME index, _) =>
-                           x86.MemLoc.simple 
+                           x86.MemLoc.simple
                            {base = base,
                             index = index,
                             scale = scale,
                             size = x86.Size.BYTE,
                             class = x86MLton.Classes.Heap}
                       | (SOME base, _, SOME index) =>
-                           x86.MemLoc.complex 
+                           x86.MemLoc.complex
                            {base = base,
                             index = index,
                             scale = scale,
@@ -145,7 +145,7 @@ struct
                   val origin =
                      case x86.Operand.deMemloc base of
                         SOME base =>
-                           x86.MemLoc.simple 
+                           x86.MemLoc.simple
                            {base = base,
                             index = x86.Immediate.zero,
                             scale = x86.Scale.One,
@@ -154,7 +154,7 @@ struct
                       | _ => Error.bug (concat
                                         ["x86Translate.Operand.toX86Operand: ",
                                          "strange Contents: base: ",
-                                         x86.Operand.toString base])    
+                                         x86.Operand.toString base])
                   val sizes = x86.Size.fromCType ty
                in
                   (#1 o Vector.mapAndFold)
@@ -165,19 +165,20 @@ struct
                       scale = x86.Scale.One,
                       size = size}, size), offset + x86.Size.toBytes size))
                end
-          | Frontier => 
-               let 
+          | Frontier =>
+               let
                   val frontier = x86MLton.gcState_frontierContentsOperand ()
                in
                   Vector.new1 (frontier, valOf (x86.Operand.size frontier))
                end
-          | GCState => 
+          | UMFrontier => Error.bug "UMFrontier not implemented in x86"
+          | GCState =>
                Vector.new1 (x86.Operand.immediate_label x86MLton.gcState_label,
                             x86MLton.pointerSize)
           | Global g => Global.toX86Operand g
-          | Label l => 
+          | Label l =>
                Vector.new1 (x86.Operand.immediate_label l, x86MLton.pointerSize)
-          | Null => 
+          | Null =>
                Vector.new1 (x86.Operand.immediate_zero, x86MLton.wordSize)
           | Offset {base = GCState, offset, ty} =>
                let
@@ -198,7 +199,7 @@ struct
                  val origin =
                    case x86.Operand.deMemloc base of
                      SOME base =>
-                       x86.MemLoc.simple 
+                       x86.MemLoc.simple
                        {base = base,
                         index = x86.Immediate.int offset,
                         scale = x86.Scale.One,
@@ -245,8 +246,8 @@ struct
                   val offset = Bytes.toInt offset
                   val ty = Type.toCType ty
                   val origin =
-                     x86.MemLoc.simple 
-                     {base = x86MLton.gcState_stackTopContents (), 
+                     x86.MemLoc.simple
+                     {base = x86MLton.gcState_stackTopContents (),
                       index = x86.Immediate.int offset,
                       scale = x86.Scale.One,
                       size = x86.Size.BYTE,
@@ -261,8 +262,8 @@ struct
                       scale = x86.Scale.One,
                       size = size}, size), offset + x86.Size.toBytes size))
                end
-          | StackTop => 
-               let 
+          | StackTop =>
+               let
                   val stackTop = x86MLton.gcState_stackTopContentsOperand ()
                in
                   Vector.new1 (stackTop, valOf (x86.Operand.size stackTop))
@@ -279,7 +280,7 @@ struct
                    | W64 =>
                         let
                            val lo = WordX.resize (w, WordSize.word32)
-                           val w = WordX.rshift (w, 
+                           val w = WordX.rshift (w,
                                                  WordX.fromIntInf (32, WordSize.word64),
                                                  {signed = true})
                            val hi = WordX.resize (w, WordSize.word32)
@@ -297,7 +298,7 @@ struct
     struct
       structure Kind = Machine.Kind
 
-      fun toX86Blocks {label, kind, 
+      fun toX86Blocks {label, kind,
                        transInfo as {frameInfoToX86, live, liveInfo,
                                      ...}: transInfo}
         = (
@@ -355,7 +356,7 @@ struct
                  end
               | Kind.Handler {frameInfo, ...}
               => let
-                 in 
+                 in
                    AppendList.single
                    (x86.Block.mkBlock'
                     {entry = SOME (x86.Entry.handler
@@ -419,15 +420,15 @@ struct
 
                    val dsts = Operand.toX86Operand dst
                    val srcs = Operand.toX86Operand src
-                   (* Operand.toX86Operand returns multi-word 
+                   (* Operand.toX86Operand returns multi-word
                     * operands in and they will be moved in order,
-                    * so it suffices to check for aliasing between 
+                    * so it suffices to check for aliasing between
                     * the first dst and second src.
                     *)
                    val (dsts,srcs) =
                       if Vector.length srcs > 1
                          andalso x86.Operand.mayAlias
-                                 (#1 (Vector.sub (dsts, 0)), 
+                                 (#1 (Vector.sub (dsts, 0)),
                                   #1 (Vector.sub (srcs, 1)))
                          then (Vector.rev dsts, Vector.rev srcs)
                          else (dsts,srcs)
@@ -442,7 +443,7 @@ struct
                         (dsts,srcs,fn ((dst,_),(src,srcsize)) =>
                          (* dst = src *)
                          case x86.Size.class srcsize
-                            of x86.Size.INT => x86.Assembly.instruction_mov 
+                            of x86.Size.INT => x86.Assembly.instruction_mov
                                                {dst = dst,
                                                 src = src,
                                                 size = srcsize}
@@ -453,13 +454,13 @@ struct
                           | _ => Error.bug "x86Translate.Statement.toX86Blocks: Move"),
                       transfer = NONE}),
                     comment_end]
-                 end 
+                 end
               | PrimApp {dst, prim, args}
               => let
                    val (comment_begin, comment_end) = comments statement
                    val args = (Vector.concatV o Vector.map)
                               (args, Operand.toX86Operand)
-                   val dsts = 
+                   val dsts =
                       case dst of
                          NONE => Vector.new0 ()
                        | SOME dst => Operand.toX86Operand dst
@@ -507,7 +508,7 @@ struct
                      *)
                     x86.Block.mkBlock'
                     {entry = NONE,
-                     statements 
+                     statements
                      = [x86.Assembly.instruction_test
                         {src1 = test,
                          src2 = test,
@@ -536,7 +537,7 @@ struct
                      *)
                     x86.Block.mkBlock'
                     {entry = NONE,
-                     statements 
+                     statements
                      = [x86.Assembly.instruction_cmp
                         {src1 = test,
                          src2 = x86.Operand.immediate k,
@@ -569,7 +570,7 @@ struct
               => Error.bug "x86Translate.Transfer.doSwitchWord"
               | ([(_,l)],       NONE) => goto l
               | ([],            SOME l) => goto l
-              | ([(w1,l1),(w2,l2)], NONE) => 
+              | ([(w1,l1),(w2,l2)], NONE) =>
                 if WordX.isZero w1 andalso WordX.isOne w2
                    then iff(test,l2,l1)
                 else if WordX.isZero w2 andalso WordX.isOne w1
@@ -577,9 +578,9 @@ struct
                 else cmp(test,x86.Immediate.word w1,l1,l2)
               | ([(k',l')],      SOME l)
               => cmp(test,x86.Immediate.word k',l',l)
-              | ((_,l)::cases,  NONE) 
+              | ((_,l)::cases,  NONE)
               => switch(test, x86.Transfer.Cases.word cases, l)
-              | (cases,         SOME l) 
+              | (cases,         SOME l)
               => switch(test, x86.Transfer.Cases.word cases, l))
 
       fun comments transfer
@@ -620,7 +621,7 @@ struct
                               (args, Operand.toX86Operand)
                  in
                    AppendList.append
-                   (comments transfer,  
+                   (comments transfer,
                     x86MLton.ccall {args = args,
                                     frameInfo = (Option.map
                                                  (frameInfo, frameInfoToX86)),
@@ -635,9 +636,9 @@ struct
                   (x86.Block.mkBlock'
                    {entry = NONE,
                     statements = [],
-                    transfer 
-                    = SOME (x86.Transfer.return 
-                            {live 
+                    transfer
+                    = SOME (x86.Transfer.return
+                            {live
                              = Vector.fold
                                ((case returns of
                                     NONE => Error.bug "x86Translate.Transfer.toX86Blocsk: Return"
@@ -657,9 +658,9 @@ struct
                   (x86.Block.mkBlock'
                    {entry = NONE,
                     statements = [],
-                    transfer 
-                    = SOME (x86.Transfer.raisee 
-                            {live 
+                    transfer
+                    = SOME (x86.Transfer.raisee
+                            {live
                              = x86.MemLocSet.add
                                (x86.MemLocSet.add
                                 (x86.MemLocSet.empty,
@@ -714,11 +715,11 @@ struct
     struct
       open Machine.Block
 
-      fun toX86Blocks {block = T {label, 
-                                  live, 
-                                  kind, 
+      fun toX86Blocks {block = T {label,
+                                  live,
+                                  kind,
                                   returns,
-                                  statements, 
+                                  statements,
                                   transfer,
                                   ...},
                        transInfo as {...} : transInfo}
@@ -731,7 +732,7 @@ struct
                                      transInfo = transInfo},
                   x86.Block.mkBlock'
                   {entry = NONE,
-                   statements 
+                   statements
                    = if !Control.Native.commented > 0
                        then let
                               val comment =
@@ -754,7 +755,7 @@ struct
                                 transInfo = transInfo}),
                               fn (statement,l)
                                => AppendList.append
-                                  (Statement.toX86Blocks 
+                                  (Statement.toX86Blocks
                                    {statement = statement,
                                     transInfo = transInfo}, l)))
 
@@ -770,32 +771,32 @@ struct
     struct
       open Machine.Chunk
 
-      fun toX86Chunk {chunk = T {blocks, ...}, 
+      fun toX86Chunk {chunk = T {blocks, ...},
                       frameInfoToX86,
                       liveInfo}
         = let
             val data = ref []
             val addData = fn l => List.push (data, l)
             val {get = live : Label.t -> x86.Operand.t list,
-                 set = setLive, 
+                 set = setLive,
                  rem = remLive, ...}
               = Property.getSetOnce
                 (Label.plist, Property.initRaise ("live", Label.layout))
             val _ = Vector.foreach
                     (blocks, fn Block.T {label, live, ...} =>
                      setLive (label,
-                              (Vector.toList o #1 o Vector.unzip o 
+                              (Vector.toList o #1 o Vector.unzip o
                                Vector.concatV o Vector.map)
                               (live, Operand.toX86Operand o Live.toOperand)))
             val transInfo = {addData = addData,
                              frameInfoToX86 = frameInfoToX86,
                              live = live,
                              liveInfo = liveInfo}
-            val x86Blocks 
+            val x86Blocks
               = List.concat (Vector.toListMap
-                             (blocks, 
+                             (blocks,
                                 fn block
-                                 => Block.toX86Blocks 
+                                 => Block.toX86Blocks
                                     {block = block,
                                      transInfo = transInfo}))
             val _ = Vector.foreach (blocks, fn Block.T {label, ...} =>

@@ -215,6 +215,7 @@ structure Statement =
             case s of
                Bind {dst = (x, t), src, ...} => def (x, t, useOperand (src, a))
              | Move {dst, src} => useOperand (src, useOperand (dst, a))
+             | ChunkMove {dst, src} => useOperand (src, useOperand (dst, a))
              | Object {dst = (dst, ty), ...} => def (dst, ty, a)
              | ChunkedObject {dst = (dst, ty), ...} => def (dst, ty, a)
              | PrimApp {dst, args, ...} =>
@@ -256,6 +257,7 @@ structure Statement =
                         isMutable = isMutable,
                         src = oper src}
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
+             | ChunkMove {dst, src} => ChunkMove {dst = oper dst, src = oper src }
              | Object _ => s
              | ChunkedObject _  => s
              | PrimApp {args, dst, prim} =>
@@ -279,6 +281,11 @@ structure Statement =
              | Move {dst, src} =>
                   mayAlign [Operand.layout dst,
                             seq [str "= ", Operand.layout src]]
+             | ChunkMove {dst, src} =>
+                  mayAlign [Operand.layout dst,
+                            seq [ str "<ChunkMove> "
+                                , str "= "
+                                , Operand.layout src ]]
              | Object {dst = (dst, ty), header, size} =>
                   mayAlign
                   [seq [Var.layout dst, constrain ty],
@@ -288,7 +295,7 @@ structure Statement =
              | ChunkedObject {dst = (dst, ty), header, size} =>
                   mayAlign
                   [seq [Var.layout dst, constrain ty],
-                   seq [str "= Object ",
+                   seq [str "= ChunkedObject ",
                         record [("header", seq [str "0x", Word.layout header]),
                                 ("size", Bytes.layout size)]]]
              | PrimApp {dst, prim, args, ...} =>
@@ -1579,6 +1586,12 @@ structure Program =
                         (checkOperand src
                          ; Type.isSubtype (Operand.ty src, dstTy))
                    | Move {dst, src} =>
+                        (checkOperand dst
+                         ; checkOperand src
+                         ; (Type.isSubtype (Operand.ty src, Operand.ty dst)
+                            andalso Operand.isLocation dst))
+                   (* Ensure type safety in my rssa statements *)
+                   | ChunkMove {dst, src} =>
                         (checkOperand dst
                          ; checkOperand src
                          ; (Type.isSubtype (Operand.ty src, Operand.ty dst)

@@ -98,14 +98,14 @@ struct
                            amd64.Operand.deImmediate index,
                            amd64.Operand.deMemloc index) of
                         (SOME base, SOME index, _) =>
-                           amd64.MemLoc.simple 
+                           amd64.MemLoc.simple
                            {base = base,
                             index = index,
                             scale = scale,
                             size = amd64.Size.BYTE,
                             class = amd64MLton.Classes.Heap}
                       | (SOME base, _, SOME index) =>
-                           amd64.MemLoc.complex 
+                           amd64.MemLoc.complex
                            {base = base,
                             index = index,
                             scale = scale,
@@ -145,7 +145,7 @@ struct
                   val origin =
                      case amd64.Operand.deMemloc base of
                         SOME base =>
-                           amd64.MemLoc.simple 
+                           amd64.MemLoc.simple
                            {base = base,
                             index = amd64.Immediate.zero,
                             scale = amd64.Scale.One,
@@ -154,7 +154,7 @@ struct
                       | _ => Error.bug (concat
                                         ["amd64Translate.Operand.toAMD64Operand: ",
                                          "strange Contents: base: ",
-                                         amd64.Operand.toString base])    
+                                         amd64.Operand.toString base])
                   val sizes = amd64.Size.fromCType ty
                in
                   (#1 o Vector.mapAndFold)
@@ -165,19 +165,20 @@ struct
                       scale = amd64.Scale.One,
                       size = size}, size), offset + amd64.Size.toBytes size))
                end
-          | Frontier => 
-               let 
+          | UMFrontier => Error.bug "UMFrontier not implemented"
+          | Frontier =>
+               let
                   val frontier = amd64MLton.gcState_frontierContentsOperand ()
                in
                   Vector.new1 (frontier, valOf (amd64.Operand.size frontier))
                end
-          | GCState => 
+          | GCState =>
                Vector.new1 (amd64.Operand.label amd64MLton.gcState_label,
                             amd64MLton.pointerSize)
           | Global g => Global.toAMD64Operand g
-          | Label l => 
+          | Label l =>
                Vector.new1 (amd64.Operand.immediate_label l, amd64MLton.pointerSize)
-          | Null => 
+          | Null =>
                Vector.new1 (amd64.Operand.immediate_zero, amd64MLton.wordSize)
           | Offset {base = GCState, offset, ty} =>
                let
@@ -198,7 +199,7 @@ struct
                  val origin =
                    case amd64.Operand.deMemloc base of
                      SOME base =>
-                       amd64.MemLoc.simple 
+                       amd64.MemLoc.simple
                        {base = base,
                         index = amd64.Immediate.int offset,
                         scale = amd64.Scale.One,
@@ -245,8 +246,8 @@ struct
                   val offset = Bytes.toInt offset
                   val ty = Type.toCType ty
                   val origin =
-                     amd64.MemLoc.simple 
-                     {base = amd64MLton.gcState_stackTopContents (), 
+                     amd64.MemLoc.simple
+                     {base = amd64MLton.gcState_stackTopContents (),
                       index = amd64.Immediate.int offset,
                       scale = amd64.Scale.One,
                       size = amd64.Size.BYTE,
@@ -261,8 +262,8 @@ struct
                       scale = amd64.Scale.One,
                       size = size}, size), offset + amd64.Size.toBytes size))
                end
-          | StackTop => 
-               let 
+          | StackTop =>
+               let
                   val stackTop = amd64MLton.gcState_stackTopContentsOperand ()
                in
                   Vector.new1 (stackTop, valOf (amd64.Operand.size stackTop))
@@ -286,7 +287,7 @@ struct
     struct
       structure Kind = Machine.Kind
 
-      fun toAMD64Blocks {label, kind, 
+      fun toAMD64Blocks {label, kind,
                        transInfo as {frameInfoToAMD64, live, liveInfo,
                                      ...}: transInfo}
         = (
@@ -344,7 +345,7 @@ struct
                  end
               | Kind.Handler {frameInfo, ...}
               => let
-                 in 
+                 in
                    AppendList.single
                    (amd64.Block.mkBlock'
                     {entry = SOME (amd64.Entry.handler
@@ -408,15 +409,15 @@ struct
 
                    val dsts = Operand.toAMD64Operand dst
                    val srcs = Operand.toAMD64Operand src
-                   (* Operand.toAMD64Operand returns multi-word 
+                   (* Operand.toAMD64Operand returns multi-word
                     * operands in and they will be moved in order,
-                    * so it suffices to check for aliasing between 
+                    * so it suffices to check for aliasing between
                     * the first dst and second src.
                     *)
                    val (dsts,srcs) =
                       if Vector.length srcs > 1
                          andalso amd64.Operand.mayAlias
-                                 (#1 (Vector.sub (dsts, 0)), 
+                                 (#1 (Vector.sub (dsts, 0)),
                                   #1 (Vector.sub (srcs, 1)))
                          then (Vector.rev dsts, Vector.rev srcs)
                          else (dsts,srcs)
@@ -431,7 +432,7 @@ struct
                         (dsts,srcs,fn ((dst,_),(src,srcsize)) =>
                          (* dst = src *)
                          case amd64.Size.class srcsize
-                            of amd64.Size.INT => amd64.Assembly.instruction_mov 
+                            of amd64.Size.INT => amd64.Assembly.instruction_mov
                                                  {dst = dst,
                                                   src = src,
                                                   size = srcsize}
@@ -441,13 +442,13 @@ struct
                                                size = srcsize}),
                       transfer = NONE}),
                     comment_end]
-                 end 
+                 end
               | PrimApp {dst, prim, args}
               => let
                    val (comment_begin, comment_end) = comments statement
                    val args = (Vector.concatV o Vector.map)
                               (args, Operand.toAMD64Operand)
-                   val dsts = 
+                   val dsts =
                       case dst of
                          NONE => Vector.new0 ()
                        | SOME dst => Operand.toAMD64Operand dst
@@ -495,7 +496,7 @@ struct
                      *)
                     amd64.Block.mkBlock'
                     {entry = NONE,
-                     statements 
+                     statements
                      = [amd64.Assembly.instruction_test
                         {src1 = test,
                          src2 = test,
@@ -524,7 +525,7 @@ struct
                      *)
                     amd64.Block.mkBlock'
                     {entry = NONE,
-                     statements 
+                     statements
                      = [amd64.Assembly.instruction_cmp
                         {src1 = test,
                          src2 = amd64.Operand.immediate k,
@@ -557,7 +558,7 @@ struct
               => Error.bug "amd64Translate.Transfer.doSwitchWord"
               | ([(_,l)],       NONE) => goto l
               | ([],            SOME l) => goto l
-              | ([(w1,l1),(w2,l2)], NONE) => 
+              | ([(w1,l1),(w2,l2)], NONE) =>
                 if WordX.isZero w1 andalso WordX.isOne w2
                    then iff(test,l2,l1)
                 else if WordX.isZero w2 andalso WordX.isOne w1
@@ -565,9 +566,9 @@ struct
                 else cmp(test,amd64.Immediate.word w1,l1,l2)
               | ([(k',l')],      SOME l)
               => cmp(test,amd64.Immediate.word k',l',l)
-              | ((_,l)::cases,  NONE) 
+              | ((_,l)::cases,  NONE)
               => switch(test, amd64.Transfer.Cases.word cases, l)
-              | (cases,         SOME l) 
+              | (cases,         SOME l)
               => switch(test, amd64.Transfer.Cases.word cases, l))
 
       fun comments transfer
@@ -608,7 +609,7 @@ struct
                               (args, Operand.toAMD64Operand)
                  in
                    AppendList.append
-                   (comments transfer,  
+                   (comments transfer,
                     amd64MLton.ccall {args = args,
                                     frameInfo = (Option.map
                                                  (frameInfo, frameInfoToAMD64)),
@@ -623,9 +624,9 @@ struct
                   (amd64.Block.mkBlock'
                    {entry = NONE,
                     statements = [],
-                    transfer 
-                    = SOME (amd64.Transfer.return 
-                            {live 
+                    transfer
+                    = SOME (amd64.Transfer.return
+                            {live
                              = Vector.fold
                                ((case returns of
                                     NONE => Error.bug "amd64Translate.Transfer.toAMD64Blocsk: Return"
@@ -645,9 +646,9 @@ struct
                   (amd64.Block.mkBlock'
                    {entry = NONE,
                     statements = [],
-                    transfer 
-                    = SOME (amd64.Transfer.raisee 
-                            {live 
+                    transfer
+                    = SOME (amd64.Transfer.raisee
+                            {live
                              = amd64.MemLocSet.add
                                (amd64.MemLocSet.add
                                 (amd64.MemLocSet.empty,
@@ -702,11 +703,11 @@ struct
     struct
       open Machine.Block
 
-      fun toAMD64Blocks {block = T {label, 
-                                  live, 
-                                  kind, 
+      fun toAMD64Blocks {block = T {label,
+                                  live,
+                                  kind,
                                   returns,
-                                  statements, 
+                                  statements,
                                   transfer,
                                   ...},
                        transInfo as {...} : transInfo}
@@ -719,7 +720,7 @@ struct
                                      transInfo = transInfo},
                   amd64.Block.mkBlock'
                   {entry = NONE,
-                   statements 
+                   statements
                    = if !Control.Native.commented > 0
                        then let
                               val comment =
@@ -742,7 +743,7 @@ struct
                                 transInfo = transInfo}),
                               fn (statement,l)
                                => AppendList.append
-                                  (Statement.toAMD64Blocks 
+                                  (Statement.toAMD64Blocks
                                    {statement = statement,
                                     transInfo = transInfo}, l)))
 
@@ -758,32 +759,32 @@ struct
     struct
       open Machine.Chunk
 
-      fun toAMD64Chunk {chunk = T {blocks, ...}, 
+      fun toAMD64Chunk {chunk = T {blocks, ...},
                       frameInfoToAMD64,
                       liveInfo}
         = let
             val data = ref []
             val addData = fn l => List.push (data, l)
             val {get = live : Label.t -> amd64.Operand.t list,
-                 set = setLive, 
+                 set = setLive,
                  rem = remLive, ...}
               = Property.getSetOnce
                 (Label.plist, Property.initRaise ("live", Label.layout))
             val _ = Vector.foreach
                     (blocks, fn Block.T {label, live, ...} =>
                      setLive (label,
-                              (Vector.toList o #1 o Vector.unzip o 
+                              (Vector.toList o #1 o Vector.unzip o
                                Vector.concatV o Vector.map)
                               (live, Operand.toAMD64Operand o Live.toOperand)))
             val transInfo = {addData = addData,
                              frameInfoToAMD64 = frameInfoToAMD64,
                              live = live,
                              liveInfo = liveInfo}
-            val amd64Blocks 
+            val amd64Blocks
               = List.concat (Vector.toListMap
-                             (blocks, 
+                             (blocks,
                                 fn block
-                                 => Block.toAMD64Blocks 
+                                 => Block.toAMD64Blocks
                                     {block = block,
                                      transInfo = transInfo}))
             val _ = Vector.foreach (blocks, fn Block.T {label, ...} =>
