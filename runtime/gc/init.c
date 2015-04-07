@@ -395,5 +395,6 @@ int GC_init (GC_state s, int argc, char **argv) {
     assert (invariantForMutator (s, TRUE, TRUE));
   }
   s->amInGC = FALSE;
+
   return res;
 }
