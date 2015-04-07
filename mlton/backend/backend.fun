@@ -573,6 +573,10 @@ let
                M.Statement.chunkedObject { dst = varOperand (#1 dst)
                                          , header = header
                                          , size = size }
+             | ChunkAddr {dst, src} =>
+               M.Statement.chunkAddr { dst = translateOperand dst
+                                     , src = translateOperand src
+                                     }
              | Object {dst, header, size} =>
                   M.Statement.object {dst = varOperand (#1 dst),
                                       header = header,

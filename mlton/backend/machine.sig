@@ -141,6 +141,7 @@ signature MACHINE =
             (* Error if dsts and srcs aren't of same length. *)
             val moves: {dsts: Operand.t vector,
                         srcs: Operand.t vector} -> t vector
+            val chunkAddr: {dst: Operand.t, src: Operand.t} -> t vector
             val chunkedObject: {dst: Operand.t, header: word, size: Bytes.t} -> t vector
             val object: {dst: Operand.t, header: word, size: Bytes.t} -> t vector
          end

@@ -371,6 +371,25 @@ structure Statement =
             then Noop
          else Move arg
 
+      fun chunkAddr {dst, src} =
+        case src of
+            Operand.Offset {base, offset, ty} =>
+            let
+                datatype z = datatype Operand.t
+                fun bytes (b: Bytes.t): Operand.t =
+                  Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize()))
+                val temp = Register (Register.new (Type.cpointer (), NONE))
+            in
+                Vector.new2
+                ( PrimApp { args = Vector.new3 ( base
+                                               , bytes offset
+                                               , bytes (Type.bytes ty))
+                          , dst = SOME temp
+                          , prim = Prim.umcPointerOffset }
+                , Move { dst = dst, src = temp } )
+            end
+          | _ => Error.bug "Machine.Statement.chunkAddr: Unable to translate offset"
+
       fun chunkMove(arg as {dst, src}) =
         case dst of
             Operand.Offset {base, offset, ty} =>
@@ -425,6 +444,8 @@ structure Statement =
                       dst = SOME Frontier,
                       prim = Prim.cpointerAdd})
          end
+
+
 
       fun chunkedObject {dst, header, size} =
          let
