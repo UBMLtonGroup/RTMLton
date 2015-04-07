@@ -61,7 +61,7 @@ structure Register =
       fun index (r as T {index, ...}) =
          case !index of
             NONE =>
-               Error.bug (concat ["Machine.Register: register ", 
+               Error.bug (concat ["Machine.Register: register ",
                                   toString r, " missing index"])
           | SOME i => i
 
@@ -69,7 +69,7 @@ structure Register =
          case !index of
             NONE => index := SOME i
           | SOME _ =>
-               Error.bug (concat ["Machine.Register: register ", 
+               Error.bug (concat ["Machine.Register: register ",
                                   toString r, " index already set"])
 
       fun new (ty, i) = T {index = ref i,
@@ -182,7 +182,7 @@ structure StackOffset =
 
       val interfere: t * t -> bool =
          fn (T {offset = b, ty = ty}, T {offset = b', ty = ty'}) =>
-         let 
+         let
             val max = Bytes.+ (b, Type.bytes ty)
             val max' = Bytes.+ (b', Type.bytes ty')
          in
@@ -206,6 +206,7 @@ structure Operand =
        | Contents of {oper: t,
                       ty: Type.t}
        | Frontier
+       | UMFrontier
        | GCState
        | Global of Global.t
        | Label of Label.t
@@ -213,6 +214,9 @@ structure Operand =
        | Offset of {base: t,
                     offset: Bytes.t,
                     ty: Type.t}
+       | ChunkedOffset of {base: t,
+                           offset: Bytes.t,
+                           ty: Type.t}
        | Register of Register.t
        | Real of RealX.t
        | StackOffset of StackOffset.t
@@ -224,11 +228,13 @@ structure Operand =
         | Cast (_, ty) => ty
         | Contents {ty, ...} => ty
         | Frontier => Type.cpointer ()
+        | UMFrontier => Type.cpointer ()
         | GCState => Type.gcState ()
         | Global g => Global.ty g
         | Label l => Type.label l
         | Null => Type.cpointer ()
         | Offset {ty, ...} => ty
+        | ChunkedOffset {ty, ...} => ty
         | Real r => Type.real (RealX.size r)
         | Register r => Register.ty r
         | StackOffset s => StackOffset.ty s
@@ -237,7 +243,7 @@ structure Operand =
 
     fun layout (z: t): Layout.t =
          let
-            open Layout 
+            open Layout
             fun constrain (ty: Type.t): Layout.t =
                if !Control.showTypes
                   then seq [str ": ", Type.layout ty]
@@ -255,12 +261,17 @@ structure Operand =
                   seq [str (concat ["C", Type.name ty, " "]),
                        paren (layout oper)]
              | Frontier => str "<Frontier>"
+             | UMFrontier => str "<UMFrontier>"
              | GCState => str "<GCState>"
              | Global g => Global.layout g
              | Label l => Label.layout l
              | Null => str "NULL"
              | Offset {base, offset, ty} =>
                   seq [str (concat ["O", Type.name ty, " "]),
+                       tuple [layout base, Bytes.layout offset],
+                       constrain ty]
+             | ChunkedOffset {base, offset, ty} =>
+                  seq [str (concat ["CO", Type.name ty, " "]),
                        tuple [layout base, Bytes.layout offset],
                        constrain ty]
              | Real r => RealX.layout r
@@ -275,7 +286,7 @@ structure Operand =
     val rec equals =
          fn (ArrayOffset {base = b, index = i, ...},
              ArrayOffset {base = b', index = i', ...}) =>
-                equals (b, b') andalso equals (i, i') 
+                equals (b, b') andalso equals (i, i')
            | (Cast (z, t), Cast (z', t')) =>
                 Type.equals (t, t') andalso equals (z, z')
            | (Contents {oper = z, ...}, Contents {oper = z', ...}) =>
@@ -285,6 +296,9 @@ structure Operand =
            | (Label l, Label l') => Label.equals (l, l')
            | (Offset {base = b, offset = i, ...},
               Offset {base = b', offset = i', ...}) =>
+                equals (b, b') andalso Bytes.equals (i, i')
+           | (ChunkedOffset {base = b, offset = i, ...},
+              ChunkedOffset {base = b', offset = i', ...}) =>
                 equals (b, b') andalso Bytes.equals (i, i')
            | (Real r, Real r') => RealX.equals (r, r')
            | (Register r, Register r') => Register.equals (r, r')
@@ -301,11 +315,12 @@ structure Operand =
             case (read, write) of
                (Cast (z, _), _) => interfere (write, z)
              | (_, Cast (z, _)) => interfere (z, read)
-             | (ArrayOffset {base, index, ...}, _) => 
+             | (ArrayOffset {base, index, ...}, _) =>
                   inter base orelse inter index
              | (Contents {oper, ...}, _) => inter oper
              | (Global g, Global g') => Global.equals (g, g')
              | (Offset {base, ...}, _) => inter base
+             | (ChunkedOffset {base, ...}, _) => inter base
              | (Register r, Register r') => Register.equals (r, r')
              | (StackOffset so, StackOffset so') =>
                   StackOffset.interfere (so, so')
@@ -319,6 +334,7 @@ structure Operand =
           | GCState => true
           | Global _ => true
           | Offset _ => true
+          | ChunkedOffset _ => true
           | Register _ => true
           | StackOffset _ => true
           | _ => false
@@ -368,6 +384,44 @@ structure Statement =
             then Noop
          else Move arg
 
+      fun chunkAddr {dst, src} =
+        case src of
+            Operand.Offset {base, offset, ty} =>
+            let
+                datatype z = datatype Operand.t
+                fun bytes (b: Bytes.t): Operand.t =
+                  Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize()))
+                val temp = Register (Register.new (Type.cpointer (), NONE))
+            in
+                Vector.new2
+                ( PrimApp { args = Vector.new3 ( base
+                                               , bytes offset
+                                               , bytes (Type.bytes ty))
+                          , dst = SOME temp
+                          , prim = Prim.umcPointerOffset }
+                , Move { dst = dst, src = temp } )
+            end
+          | _ => Error.bug "Machine.Statement.chunkAddr: Unable to translate offset"
+
+      fun chunkMove(arg as {dst, src}) =
+        case dst of
+            Operand.Offset {base, offset, ty} =>
+            let
+                datatype z = datatype Operand.t
+                fun bytes (b: Bytes.t): Operand.t =
+                  Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize()))
+                val temp = Register (Register.new (Type.cpointer (), NONE))
+            in
+                Vector.new2
+                ( PrimApp { args = Vector.new3 ( base
+                                               , bytes offset
+                                               , bytes (Type.bytes ty))
+                          , dst = SOME temp
+                          , prim = Prim.umcPointerOffset }
+                , Move { dst = Contents { oper = temp, ty = Operand.ty dst }, src = src } )
+            end
+          | _ => Error.bug "Machine.Statement.chunkMove: Unable to translate offset"
+
       val move =
          Trace.trace ("Machine.Statement.move",
                       fn {dst, src} =>
@@ -402,6 +456,31 @@ structure Statement =
              PrimApp {args = Vector.new2 (Frontier, bytes size),
                       dst = SOME Frontier,
                       prim = Prim.cpointerAdd})
+         end
+
+
+
+      fun chunkedObject {dst, header, size} =
+         let
+            datatype z = datatype Operand.t
+            fun bytes (b: Bytes.t): Operand.t =
+               Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize ()))
+            val temp = Register (Register.new (Type.cpointer (), NONE))
+         in
+            Vector.new4
+            (Move {dst = Contents {oper = UMFrontier,
+                                   ty = Type.objptrHeader ()},
+                   src = Word (WordX.fromIntInf (Word.toIntInf header,
+                                                 WordSize.objptrHeader ()))},
+             PrimApp {args = Vector.new2 (UMFrontier,
+                                          bytes (Runtime.headerSize ())),
+                      dst = SOME temp,
+                      prim = Prim.umHeaderAlloc},
+             (* CHECK; if objptr <> cpointer, need non-trivial coercion here. *)
+             Move {dst = dst, src = Cast (temp, Operand.ty dst)},
+             PrimApp {args = Vector.new2 (UMFrontier, bytes size),
+                      dst = SOME UMFrontier,
+                      prim = Prim.umPayloadAlloc})
          end
 
       fun foldOperands (s, ac, f) =
@@ -521,11 +600,11 @@ structure Transfer =
                         ("frameInfo", Option.layout FrameInfo.layout frameInfo),
                         ("func", CFunction.layout (func, Type.layout)),
                         ("return", Option.layout Label.layout return)]]
-             | Call {label, live, return} => 
-                  seq [str "Call ", 
+             | Call {label, live, return} =>
+                  seq [str "Call ",
                        record [("label", Label.layout label),
                                ("live", Vector.layout Live.layout live),
-                               ("return", Option.layout 
+                               ("return", Option.layout
                                 (fn {return, handler, size} =>
                                  record [("return", Label.layout return),
                                          ("handler",
@@ -621,7 +700,7 @@ structure Block =
          let
             open Layout
          in
-            align [seq [Label.layout label, 
+            align [seq [Label.layout label,
                         str ": ",
                         record [("kind", Kind.layout kind),
                                 ("live", Vector.layout Live.layout live),
@@ -744,7 +823,7 @@ structure ProfileInfo =
           let
              val {get: ProfileLabel.t -> int, set, ...} =
                 Property.getSet
-                (ProfileLabel.plist, 
+                (ProfileLabel.plist,
                  Property.initRaise ("ProfileInfo.extend", ProfileLabel.layout))
              val _ =
                 Vector.foreach
@@ -869,8 +948,8 @@ structure Program =
                end
 
             val doesDefine =
-               Trace.trace2 
-               ("Machine.Program.Alloc.doesDefine", 
+               Trace.trace2
+               ("Machine.Program.Alloc.doesDefine",
                 layout, Live.layout, Bool.layout)
                doesDefine
          end
@@ -903,14 +982,14 @@ structure Program =
                   NONE =>
                      if !Control.profile = Control.ProfileNone
                         then fn _ => false
-                     else Error.bug 
+                     else Error.bug
                           "Machine.Program.typeCheck.profileLabelIsOk: profileInfo = NONE"
                 | SOME (ProfileInfo.T {frameSources,
                                        labels = profileLabels, ...}) =>
                      if !Control.profile = Control.ProfileNone
                         orelse (Vector.length frameSources
                                 <> Vector.length frameLayouts)
-                        then Error.bug 
+                        then Error.bug
                              "Machine.Program.typeCheck.profileLabelIsOk: profileInfo = SOME"
                      else
                         let
@@ -926,7 +1005,7 @@ structure Program =
                                in
                                   if 0 = !r
                                      then r := 1
-                                  else Error.bug 
+                                  else Error.bug
                                        "Machine.Program.typeCheck.profileLabelIsOk: duplicate profile label"
                                end)
                         in
@@ -934,7 +1013,7 @@ structure Program =
                            let
                               val r = profileLabelCount l
                            in
-                              if 1 = !r 
+                              if 1 = !r
                                  then (r := 2; true)
                               else false
                            end
@@ -1038,6 +1117,7 @@ structure Program =
                            (checkOperand (oper, alloc)
                             ; Type.isCPointer (Operand.ty oper))
                       | Frontier => true
+                      | UMFrontier => true
                       | GCState => true
                       | Global _ =>
                            (* We don't check that globals are defined because
@@ -1045,18 +1125,20 @@ structure Program =
                             * be nice to fix this.
                             *)
                            true
-                      | Label l => 
+                      | Label l =>
                            (let val _ = labelBlock l
                             in true
                             end handle _ => false)
                       | Null => true
+                      (* Very weak type checking for chunked offset *)
+                      | ChunkedOffset _ => true
                       | Offset {base, offset, ty} =>
                            (checkOperand (base, alloc)
                             ; (Operand.isLocation base
                                andalso
                                (case base of
                                   Operand.GCState => true
-                                | _ => 
+                                | _ =>
                                      Type.offsetIsOk {base = Operand.ty base,
                                                       offset = offset,
                                                       tyconTy = tyconTy,
@@ -1404,14 +1486,14 @@ structure Program =
                            case return of
                               NONE => true
                             | SOME l =>
-                                 let 
+                                 let
                                     val Block.T {live, ...} = labelBlock l
                                  in
                                     liveIsOk (live, alloc)
                                     andalso
                                     case labelKind l of
                                        Kind.CReturn
-                                       {frameInfo = fi', func = f, ...} => 
+                                       {frameInfo = fi', func = f, ...} =>
                                           CFunction.equals (func, f)
                                           andalso (Option.equals
                                                    (fi, fi', FrameInfo.equals))

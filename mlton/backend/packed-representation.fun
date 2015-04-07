@@ -561,9 +561,9 @@ structure Base =
                      ty: Type.t}: Operand.t * Statement.t list =
          case base of
             Object base =>
-               (Offset {base = base,
-                        offset = offset,
-                        ty = ty},
+               (ChunkedOffset { base = base
+                              , offset = offset
+                              , ty = ty },
                 [])
           | VectorSub {index, vector} =>
                let
@@ -665,10 +665,14 @@ structure Select =
                None => []
              | Direct _ => move (Base.object base, [])
              | Indirect {offset, ty} =>
-                  move (Base.toOperand {base = base,
-                                        eltWidth = eltWidth,
-                                        offset = offset,
-                                        ty = ty})
+               let
+                   val oper = Base.toOperand {base = base,
+                                              eltWidth = eltWidth,
+                                              offset = offset,
+                                              ty = ty}
+               in
+                   move (oper)
+               end
              | IndirectUnpack {offset, rest, ty} =>
                   let
                      val tmpVar = Var.newNoname ()
@@ -679,10 +683,11 @@ structure Select =
                                         offset = offset,
                                         ty = ty}
                   in
-                     ss @ (Bind {dst = (tmpVar, ty),
-                                 isMutable = false,
-                                 src = src}
-                           :: Unpack.select (rest, {dst = dst, src = tmpOp}))
+                      ss @ (Bind {dst = (tmpVar, ty),
+                                  isMutable = false,
+                                  src = src}
+                            :: Unpack.select (rest, {dst = dst, src = tmpOp}))
+
                   end
              | Unpack u =>
                   Unpack.select (u, {dst = dst, src = Base.object base})
@@ -968,16 +973,17 @@ structure ObjptrRep =
                 in
                    Component.tuple (component,
                                     {dst = (tmpVar, tmpTy), src = src})
-                   @ (Move {dst = Offset {base = object,
-                                          offset = offset,
-                                          ty = tmpTy},
-                            src = Var {ty = tmpTy, var = tmpVar}}
+                   @ (ChunkMove { dst = Offset { base = object
+                                               , offset = offset
+                                               , ty = tmpTy }
+                                , src = Var {ty = tmpTy, var = tmpVar} }
                       :: ac)
                 end)
          in
-            Object {dst = (dst, ty),
-                    header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon),
-                    size = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ())}
+            ChunkedObject {
+                dst = (dst, ty)
+              , header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon)
+              , size = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ()) }
             :: stores
          end
 
@@ -1569,9 +1575,9 @@ structure Objptrs =
                                      WordX.le (w, w', {signed = false}))
             val shift = Operand.word (WordX.one WordSize.shiftArg)
             val (s, tag) =
-               Statement.rshift (Offset {base = test,
-                                         offset = Runtime.headerOffset (),
-                                         ty = Type.objptrHeader ()},
+               Statement.rshift (Offset { base = test
+                                        , offset = Runtime.headerOffset ()
+                                        , ty = Type.objptrHeader ()},
                                  shift)
          in
             ([s], Switch (Switch.T {cases = cases,

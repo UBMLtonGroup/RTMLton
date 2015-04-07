@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-signature RSSA_STRUCTS = 
+signature RSSA_STRUCTS =
    sig
       include ATOMS
 
@@ -28,7 +28,7 @@ signature RSSA_STRUCTS =
       sharing Scale = Type.Scale
    end
 
-signature RSSA = 
+signature RSSA =
    sig
       include RSSA_STRUCTS
 
@@ -56,6 +56,9 @@ signature RSSA =
              | Offset of {base: t,
                           offset: Bytes.t,
                           ty: Type.t}
+             | ChunkedOffset of { base: t
+                                , offset: Bytes.t
+                                , ty: Type.t }
              | ObjptrTycon of ObjptrTycon.t
              | Runtime of Runtime.GCField.t
              | Var of {ty: Type.t,
@@ -80,12 +83,20 @@ signature RSSA =
                         src: Operand.t}
              | Move of {dst: Operand.t,
                         src: Operand.t}
+             | ChunkMove of {dst: Operand.t,
+                             src: Operand.t}
+             | ChunkAddr of { dst: Operand.t
+                            , src: Operand.t
+                            }
              | Object of {dst: Var.t * Type.t,
                           header: word,
                           size: Bytes.t (* including header *)}
              | PrimApp of {args: Operand.t vector,
                            dst: (Var.t * Type.t) option,
                            prim: Type.t Prim.t}
+             | ChunkedObject of { dst: Var.t * Type.t
+                                , header: word
+                                , size: Bytes.t }
              | Profile of ProfileExp.t
              | ProfileLabel of ProfileLabel.t
              | SetExnStackLocal
@@ -132,7 +143,7 @@ signature RSSA =
                         return: Return.t}
              | Goto of {args: Operand.t vector,
                         dst: Label.t}
-             (* Raise implicitly raises to the caller.  
+             (* Raise implicitly raises to the caller.
               * I.E. the local handler stack must be empty.
               *)
              | Raise of Operand.t vector

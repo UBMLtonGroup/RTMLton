@@ -7,12 +7,12 @@
  * See the file MLton-LICENSE for details.
  *)
 
-signature MACHINE_STRUCTS = 
+signature MACHINE_STRUCTS =
    sig
       include ATOMS
    end
 
-signature MACHINE = 
+signature MACHINE =
    sig
       include MACHINE_STRUCTS
 
@@ -80,6 +80,7 @@ signature MACHINE =
              | Cast of t * Type.t
              | Contents of {oper: t,
                             ty: Type.t}
+             | UMFrontier
              | Frontier
              | GCState
              | Global of Global.t
@@ -88,6 +89,9 @@ signature MACHINE =
              | Offset of {base: t,
                           offset: Bytes.t,
                           ty: Type.t}
+             | ChunkedOffset of {base: t,
+                                 offset: Bytes.t,
+                                 ty: Type.t}
              | Real of RealX.t
              | Register of Register.t
              | StackOffset of StackOffset.t
@@ -136,9 +140,12 @@ signature MACHINE =
             val foldOperands: t * 'a * (Operand.t * 'a -> 'a) -> 'a
             val layout: t -> Layout.t
             val move: {dst: Operand.t, src: Operand.t} -> t
+            val chunkMove: {dst: Operand.t, src: Operand.t} -> t vector
             (* Error if dsts and srcs aren't of same length. *)
             val moves: {dsts: Operand.t vector,
                         srcs: Operand.t vector} -> t vector
+            val chunkAddr: {dst: Operand.t, src: Operand.t} -> t vector
+            val chunkedObject: {dst: Operand.t, header: word, size: Bytes.t} -> t vector
             val object: {dst: Operand.t, header: word, size: Bytes.t} -> t vector
          end
 

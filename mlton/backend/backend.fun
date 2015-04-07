@@ -46,7 +46,7 @@ in
    structure Prim = Prim
    structure Type = Type
    structure Var = Var
-end 
+end
 
 structure AllocateRegisters = AllocateRegisters (structure Machine = Machine
                                                  structure Rssa = Rssa)
@@ -154,7 +154,7 @@ fun toMachine (program: Ssa.Program.t, codegen) =
                                 thunk = fn () => doit program,
                                 typeCheck = R.Program.typeCheck}
       val program = pass ("toRssa", SsaToRssa.convert, (program, codegen))
-      fun rssaSimplify p = 
+      fun rssaSimplify p =
          let
             open Rssa
             fun pass' ({name, doit}, sel, p) =
@@ -162,7 +162,7 @@ fun toMachine (program: Ssa.Program.t, codegen) =
                   val _ =
                      let open Control
                      in maybeSaveToFile
-                        ({name = name, 
+                        ({name = name,
                           suffix = "pre.rssa"},
                          Control.No, p, Control.Layouts Program.layouts)
                      end
@@ -179,7 +179,7 @@ fun toMachine (program: Ssa.Program.t, codegen) =
                       typeCheck = Program.typeCheck o sel}
                in
                   p
-               end 
+               end
             fun pass ({name, doit}, p) =
                pass' ({name = name, doit = doit}, fn p => p, p)
             fun maybePass ({name, doit}, p) =
@@ -187,22 +187,22 @@ fun toMachine (program: Ssa.Program.t, codegen) =
                                Regexp.Compiled.matchesAll (re, name))
                   then p
                else pass ({name = name, doit = doit}, p)
-            val p = maybePass ({name = "rssaShrink1", 
+            val p = maybePass ({name = "rssaShrink1",
                                 doit = Program.shrink}, p)
-            val p = pass ({name = "insertLimitChecks", 
+            val p = pass ({name = "insertLimitChecks",
                            doit = LimitCheck.transform}, p)
-            val p = pass ({name = "insertSignalChecks", 
+            val p = pass ({name = "insertSignalChecks",
                            doit = SignalCheck.transform}, p)
-            val p = pass ({name = "implementHandlers", 
+            val p = pass ({name = "implementHandlers",
                            doit = ImplementHandlers.transform}, p)
-            val p = maybePass ({name = "rssaShrink2", 
+            val p = maybePass ({name = "rssaShrink2",
                                 doit = Program.shrink}, p)
             val () = Program.checkHandlers p
             val (p, makeProfileInfo) =
                pass' ({name = "implementProfiling",
                        doit = ImplementProfiling.doit},
                       fn (p,_) => p, p)
-            val p = maybePass ({name = "rssaOrderFunctions", 
+            val p = maybePass ({name = "rssaOrderFunctions",
                                 doit = Program.orderFunctions}, p)
          in
             (p, makeProfileInfo)
@@ -258,7 +258,7 @@ let
       val _ =
          Vector.foreach
          (Chunkify.chunkify program, fn {funcs, labels} =>
-          let 
+          let
              val c = newChunk ()
              val _ = Vector.foreach (funcs, fn f => setFuncChunk (f, c))
              val _ = Vector.foreach (labels, fn l => setLabelChunk (l, c))
@@ -346,7 +346,7 @@ let
             end
       end
       val {get = frameInfo: Label.t -> M.FrameInfo.t option,
-           set = setFrameInfo, ...} = 
+           set = setFrameInfo, ...} =
          Property.getSetOnce (Label.plist,
                               Property.initConst NONE)
       val setFrameInfo =
@@ -483,7 +483,7 @@ let
          case field of
             GCField.Frontier => M.Operand.Frontier
           | GCField.StackTop => M.Operand.StackTop
-          | _ => 
+          | _ =>
                M.Operand.Offset {base = M.Operand.GCState,
                                  offset = GCField.offset field,
                                  ty = Type.ofGCField field}
@@ -522,6 +522,16 @@ let
                                                ty = ty}
                      else bogusOp ty
                   end
+             | ChunkedOffset {base, offset, ty} =>
+                  let
+                     val base = translateOperand base
+                  in
+                     if M.Operand.isLocation base
+                        then M.Operand.ChunkedOffset {base = base,
+                                                      offset = offset,
+                                                      ty = ty}
+                     else bogusOp ty
+                  end
              | ObjptrTycon opt =>
                   M.Operand.Word
                   (WordX.fromIntInf
@@ -551,10 +561,22 @@ let
                            (M.Statement.move {dst = varOperand var,
                                               src = translateOperand src}))
                   else Vector.new0 ()
+             | ChunkMove {dst, src} =>
+                   M.Statement.chunkMove { dst = translateOperand dst
+                                         , src = translateOperand src
+                                         }
              | Move {dst, src} =>
                   Vector.new1
                   (M.Statement.move {dst = translateOperand dst,
                                      src = translateOperand src})
+             | ChunkedObject {dst, header, size} =>
+               M.Statement.chunkedObject { dst = varOperand (#1 dst)
+                                         , header = header
+                                         , size = size }
+             | ChunkAddr {dst, src} =>
+               M.Statement.chunkAddr { dst = translateOperand dst
+                                     , src = translateOperand src
+                                     }
              | Object {dst, header, size} =>
                   M.Statement.object {dst = varOperand (#1 dst),
                                       header = header,
@@ -565,7 +587,7 @@ let
                   in
                      case Prim.name prim of
                         MLton_touch => Vector.new0 ()
-                      | _ => 
+                      | _ =>
                            Vector.new1
                            (M.Statement.PrimApp
                             {args = translateOperands args,
@@ -856,7 +878,7 @@ let
                                            | Handle h => SOME h
                                     in
                                        (liveNoFormals,
-                                        size, 
+                                        size,
                                         SOME {return = cont,
                                               handler = handler,
                                               size = size})
@@ -934,7 +956,7 @@ let
                                     Vector.map (returns, Live.StackOffset))
                              in
                                 Chunk.newBlock
-                                (chunk, 
+                                (chunk,
                                  {label = funcToLabel name,
                                   kind = M.Kind.Func,
                                   live = operandsLive live,
@@ -950,7 +972,7 @@ let
                      Vector.concatV
                      (Vector.map (statements, fn s =>
                                   genStatement (s, handlerLinkOffset)))
-                  val (preTransfer, transfer) = genTransfer (transfer, chunk)   
+                  val (preTransfer, transfer) = genTransfer (transfer, chunk)
                   val (kind, live, pre) =
                      case kind of
                         R.Kind.Cont _ =>
@@ -1142,7 +1164,7 @@ let
       val maxFrameSize = Bytes.alignWord32 maxFrameSize
       val profileInfo = makeProfileInfo {frames = frameLabels}
 in
-      Machine.Program.T 
+      Machine.Program.T
       {chunks = chunks,
        frameLayouts = frameLayouts,
        frameOffsets = frameOffsets,

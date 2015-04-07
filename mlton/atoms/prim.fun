@@ -11,7 +11,7 @@
  * If you add new polymorphic primitives, you must modify extractTargs.
  *)
 
-functor Prim (S: PRIM_STRUCTS): PRIM = 
+functor Prim (S: PRIM_STRUCTS): PRIM =
 struct
 
 open S
@@ -40,6 +40,9 @@ datatype 'a t =
  | Array_sub (* backend *)
  | Array_toVector (* backend *)
  | Array_update (* backend *)
+ | UM_CPointer_offset (* not optimized away *)
+ | UM_Payload_alloc (* not optimized away *)
+ | UM_Header_alloc (* not optimized away *)
  | CPointer_add (* codegen *)
  | CPointer_diff (* codegen *)
  | CPointer_equal (* codegen *)
@@ -59,8 +62,8 @@ datatype 'a t =
  | Exn_name (* implement exceptions *)
  | Exn_setExtendExtra (* implement exceptions *)
  | FFI of 'a CFunction.t (* ssa to rssa *)
- | FFI_Symbol of {name: string, 
-                  cty: CType.t option, 
+ | FFI_Symbol of {name: string,
+                  cty: CType.t option,
                   symbolScope: CFunction.SymbolScope.t } (* codegen *)
  | GC_collect (* ssa to rssa *)
  | IntInf_add (* ssa to rssa *)
@@ -225,6 +228,9 @@ fun toString (n: 'a t): string =
        | Array_sub => "Array_sub"
        | Array_toVector => "Array_toVector"
        | Array_update => "Array_update"
+       | UM_CPointer_offset => "UM_CPointer_offset"
+       | UM_Payload_alloc => "UM_Payload_alloc"
+       | UM_Header_alloc => "UM_Header_alloc"
        | CPointer_add => "CPointer_add"
        | CPointer_diff => "CPointer_diff"
        | CPointer_equal => "CPointer_equal"
@@ -365,6 +371,9 @@ val equals: 'a t * 'a t -> bool =
     | (Array_sub, Array_sub) => true
     | (Array_toVector, Array_toVector) => true
     | (Array_update, Array_update) => true
+    | (UM_CPointer_offset, UM_CPointer_offset) => true
+    | (UM_Payload_alloc, UM_Payload_alloc) => true
+    | (UM_Header_alloc, UM_Header_alloc) => true
     | (CPointer_add, CPointer_add) => true
     | (CPointer_diff, CPointer_diff) => true
     | (CPointer_equal, CPointer_equal) => true
@@ -527,6 +536,9 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Array_sub => Array_sub
     | Array_toVector => Array_toVector
     | Array_update => Array_update
+    | UM_CPointer_offset => UM_CPointer_offset
+    | UM_Payload_alloc  => UM_Payload_alloc
+    | UM_Header_alloc => UM_Header_alloc
     | CPointer_add => CPointer_add
     | CPointer_diff => CPointer_diff
     | CPointer_equal => CPointer_equal
@@ -546,7 +558,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Exn_name => Exn_name
     | Exn_setExtendExtra => Exn_setExtendExtra
     | FFI func => FFI (CFunction.map (func, f))
-    | FFI_Symbol {name, cty, symbolScope} => 
+    | FFI_Symbol {name, cty, symbolScope} =>
         FFI_Symbol {name = name, cty = cty, symbolScope = symbolScope}
     | GC_collect => GC_collect
     | IntInf_add => IntInf_add
@@ -665,10 +677,13 @@ val arrayLength = Array_length
 val assign = Ref_assign
 val bogus = MLton_bogus
 val bug = MLton_bug
+val umPayloadAlloc = UM_Payload_alloc
+val umHeaderAlloc = UM_Header_alloc
+val umcPointerOffset = UM_CPointer_offset
 val cpointerAdd = CPointer_add
 val cpointerDiff = CPointer_diff
 val cpointerEqual = CPointer_equal
-fun cpointerGet ctype = 
+fun cpointerGet ctype =
    let datatype z = datatype CType.t
    in
       case ctype of
@@ -686,7 +701,7 @@ fun cpointerGet ctype =
        | Word64 => CPointer_getWord (WordSize.fromBits (Bits.fromInt 64))
    end
 val cpointerLt = CPointer_lt
-fun cpointerSet ctype = 
+fun cpointerSet ctype =
    let datatype z = datatype CType.t
    in
       case ctype of
@@ -774,6 +789,9 @@ val kind: 'a t -> Kind.t =
        | Array_sub => DependsOnState
        | Array_toVector => DependsOnState
        | Array_update => SideEffect
+       | UM_CPointer_offset => Functional
+       | UM_Payload_alloc => Functional
+       | UM_Header_alloc  => Functional
        | CPointer_add => Functional
        | CPointer_diff => Functional
        | CPointer_equal => Functional
@@ -982,6 +1000,9 @@ in
        Array_sub,
        Array_toVector,
        Array_update,
+       UM_CPointer_offset,
+       UM_Payload_alloc,
+       UM_Header_alloc,
        CPointer_add,
        CPointer_diff,
        CPointer_equal,
@@ -1059,7 +1080,7 @@ in
            fun coerces (name, sizes, sizes', ac) =
               List.fold
               (sizes, ac, fn (s, ac) =>
-               List.fold 
+               List.fold
                (sizes', ac, fn (s', ac) =>
                 name (s, s') :: ac))
            fun coercesS (name, sizes, sizes', ac) =
@@ -1070,7 +1091,7 @@ in
            fun casts (name, sizes, ac) =
               List.fold (sizes, ac, fn (s, ac) => name s :: ac)
         in
-           casts (fn rs => Real_castToWord (rs, WordSize.fromBits (RealSize.bits rs)), real, 
+           casts (fn rs => Real_castToWord (rs, WordSize.fromBits (RealSize.bits rs)), real,
            coerces (Real_rndToReal, real, real,
            coercesS (Real_rndToWord, real, word,
            casts (fn rs => Word_castToReal (WordSize.fromBits (RealSize.bits rs), rs), real,
@@ -1217,6 +1238,12 @@ fun 'a checkApp (prim: 'a t,
        | Array_toVector => oneTarg (fn t => (oneArg (array t), vector t))
        | Array_update =>
             oneTarg (fn t => (threeArgs (array t, seqIndex, t), unit))
+       | UM_Header_alloc =>
+            noTargs (fn () => (twoArgs (cpointer, cptrdiff), cpointer))
+       | UM_Payload_alloc =>
+            noTargs (fn () => (twoArgs (cpointer, cptrdiff), cpointer))
+       | UM_CPointer_offset =>
+            noTargs (fn () => (threeArgs (cpointer, cptrdiff, cptrdiff), cpointer))
        | CPointer_add =>
             noTargs (fn () => (twoArgs (cpointer, cptrdiff), cpointer))
        | CPointer_diff =>
@@ -1525,7 +1552,7 @@ fun ('a, 'b) apply (p: 'a t,
             orelse IntInf.> (ii, maxIntInf)
       end
       val intInfTooBig =
-         Trace.trace 
+         Trace.trace
          ("Prim.intInfTooBig", IntInf.layout, Bool.layout)
          intInfTooBig
       fun intInf (ii:  IntInf.t): ('a, 'b) ApplyResult.t =
@@ -1581,7 +1608,7 @@ fun ('a, 'b) apply (p: 'a t,
       fun intInfBinary (i1, i2) =
          if intInfTooBig i1 orelse intInfTooBig i2
             then ApplyResult.Unknown
-         else 
+         else
             case p of
                IntInf_add => iio (IntInf.+, i1, i2)
              | IntInf_andb => iio (IntInf.andb, i1, i2)
@@ -1596,7 +1623,7 @@ fun ('a, 'b) apply (p: 'a t,
       fun intInfUnary (i1) =
          if intInfTooBig i1
             then ApplyResult.Unknown
-         else 
+         else
             case p of
                IntInf_neg => intInf (IntInf.~ i1)
              | IntInf_notb => intInf (IntInf.notb i1)
@@ -1604,7 +1631,7 @@ fun ('a, 'b) apply (p: 'a t,
       fun intInfShiftOrToString (i1, w2) =
          if intInfTooBig i1
             then ApplyResult.Unknown
-         else 
+         else
             case p of
                IntInf_arshift =>
                   intInf (IntInf.~>> (i1, Word.fromIntInf (WordX.toIntInf w2)))
@@ -1622,7 +1649,7 @@ fun ('a, 'b) apply (p: 'a t,
                      val base =
                         case WordX.toInt w2 of
                            2 => StringCvt.BIN
-                         | 8 => StringCvt.OCT 
+                         | 8 => StringCvt.OCT
                          | 10 => StringCvt.DEC
                          | 16 => StringCvt.HEX
                          | _ => Error.bug "Prim.apply: strange base for IntInf_toString"
@@ -1901,7 +1928,7 @@ fun ('a, 'b) apply (p: 'a t,
                           else Unknown
                in
                   case p of
-                     CPointer_add => 
+                     CPointer_add =>
                         if WordX.isZero w
                            then Var x
                         else Unknown
@@ -1986,9 +2013,9 @@ fun ('a, 'b) apply (p: 'a t,
              | (_, [Const (Real r), Var x]) => varReal (x, r, false)
              | (_, [Var x, Const (Word i)]) => varWord (x, i, true)
              | (_, [Const (Word i), Var x]) => varWord (x, i, false)
-             | (_, [Const (IntInf i1), Const (IntInf i2), _]) => 
+             | (_, [Const (IntInf i1), Const (IntInf i2), _]) =>
                   intInfBinary (i1, i2)
-             | (_, [Const (IntInf i1), Const (Word w2), _]) => 
+             | (_, [Const (IntInf i1), Const (Word w2), _]) =>
                   intInfShiftOrToString (i1, w2)
              | (_, [Const (IntInf i1), _]) => intInfUnary (i1)
              | (_, [Var x, Const (IntInf i), Var space]) =>
