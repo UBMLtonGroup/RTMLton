@@ -127,6 +127,7 @@ structure Operand =
          fn ArrayOffset _ => true
           | Cast (z, _) => isLocation z
           | Offset _ => true
+          | ChunkedOffset {base, ...} => true
           | Runtime _ => true
           | Var _ => true
           | _ => false
@@ -137,6 +138,7 @@ structure Operand =
                foldVars (index, foldVars (base, a, f), f)
           | Cast (z, _) => foldVars (z, a, f)
           | Offset {base, ...} => foldVars (base, a, f)
+          | ChunkedOffset {base, ...} => foldVars (base, a, f)
           | Var {var, ...} => f (var, a)
           | _ => a
 
@@ -155,6 +157,10 @@ structure Operand =
                      Offset {base = loop base,
                              offset = offset,
                              ty = ty}
+                | ChunkedOffset {base, offset, ty} =>
+                     ChunkedOffset {base = loop base,
+                                    offset = offset,
+                                    ty = ty}
                 | Var {var, ...} => f var
                 | _ => z
          in

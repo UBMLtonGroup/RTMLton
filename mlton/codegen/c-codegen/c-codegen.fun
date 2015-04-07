@@ -705,6 +705,10 @@ fun output {program as Machine.Program.T {chunks,
                   concat ["O", C.args [Type.toC ty,
                                        toString base,
                                        C.bytes offset]]
+             | ChunkedOffset {base, offset, ty} =>
+                  concat [ "UM_Pointer_select"
+                         , C.args [ toString base
+                                  , C.bytes offset ]]
              | Real r => RealX.toC r
              | Register r =>
                   concat [Type.name (Register.ty r), "_",
@@ -862,6 +866,8 @@ fun output {program as Machine.Program.T {chunks,
                       | Operand.Contents {oper, ...} =>
                            (usesStack oper)
                       | Operand.Offset {base, ...} =>
+                           (usesStack base)
+                      | Operand.ChunkedOffset {base, ...} =>
                            (usesStack base)
                       | Operand.StackOffset _ => true
                       | _ => false

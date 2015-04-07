@@ -214,6 +214,9 @@ structure Operand =
        | Offset of {base: t,
                     offset: Bytes.t,
                     ty: Type.t}
+       | ChunkedOffset of {base: t,
+                           offset: Bytes.t,
+                           ty: Type.t}
        | Register of Register.t
        | Real of RealX.t
        | StackOffset of StackOffset.t
@@ -231,6 +234,7 @@ structure Operand =
         | Label l => Type.label l
         | Null => Type.cpointer ()
         | Offset {ty, ...} => ty
+        | ChunkedOffset {ty, ...} => ty
         | Real r => Type.real (RealX.size r)
         | Register r => Register.ty r
         | StackOffset s => StackOffset.ty s
@@ -266,6 +270,10 @@ structure Operand =
                   seq [str (concat ["O", Type.name ty, " "]),
                        tuple [layout base, Bytes.layout offset],
                        constrain ty]
+             | ChunkedOffset {base, offset, ty} =>
+                  seq [str (concat ["CO", Type.name ty, " "]),
+                       tuple [layout base, Bytes.layout offset],
+                       constrain ty]
              | Real r => RealX.layout r
              | Register r => Register.layout r
              | StackOffset so => StackOffset.layout so
@@ -289,6 +297,9 @@ structure Operand =
            | (Offset {base = b, offset = i, ...},
               Offset {base = b', offset = i', ...}) =>
                 equals (b, b') andalso Bytes.equals (i, i')
+           | (ChunkedOffset {base = b, offset = i, ...},
+              ChunkedOffset {base = b', offset = i', ...}) =>
+                equals (b, b') andalso Bytes.equals (i, i')
            | (Real r, Real r') => RealX.equals (r, r')
            | (Register r, Register r') => Register.equals (r, r')
            | (StackOffset so, StackOffset so') => StackOffset.equals (so, so')
@@ -309,6 +320,7 @@ structure Operand =
              | (Contents {oper, ...}, _) => inter oper
              | (Global g, Global g') => Global.equals (g, g')
              | (Offset {base, ...}, _) => inter base
+             | (ChunkedOffset {base, ...}, _) => inter base
              | (Register r, Register r') => Register.equals (r, r')
              | (StackOffset so, StackOffset so') =>
                   StackOffset.interfere (so, so')
@@ -322,6 +334,7 @@ structure Operand =
           | GCState => true
           | Global _ => true
           | Offset _ => true
+          | ChunkedOffset _ => true
           | Register _ => true
           | StackOffset _ => true
           | _ => false
@@ -1117,6 +1130,8 @@ structure Program =
                             in true
                             end handle _ => false)
                       | Null => true
+                      (* Very weak type checking for chunked offset *)
+                      | ChunkedOffset _ => true
                       | Offset {base, offset, ty} =>
                            (checkOperand (base, alloc)
                             ; (Operand.isLocation base

@@ -561,9 +561,9 @@ structure Base =
                      ty: Type.t}: Operand.t * Statement.t list =
          case base of
             Object base =>
-               (Offset { base = base
-                       , offset = offset
-                       , ty = ty },
+               (ChunkedOffset { base = base
+                              , offset = offset
+                              , ty = ty },
                 [])
           | VectorSub {index, vector} =>
                let
@@ -660,20 +660,6 @@ structure Select =
                                     isMutable = false,
                                     src = src}]
                end
-            fun chunkedMove ((src, ss), ty) =
-              let
-                  val (dst, dstTy) = dst
-                  val (src, ss') = Statement.resize (src, dstTy)
-                  val tmpVar = Var.newNoname ()
-                  val tmpOp = Var {ty = ty, var = tmpVar}
-              in
-                  ss @ ss' @ [ ChunkAddr { dst = tmpOp
-                                         , src = src
-                                         }
-                             , Bind { dst = (dst, dstTy)
-                                    , isMutable = false
-                                    , src = Cast (tmpOp, dstTy) } ]
-              end
          in
             case s of
                None => []
@@ -685,9 +671,7 @@ structure Select =
                                               offset = offset,
                                               ty = ty}
                in
-                   case base of
-                       Base.Object _ => chunkedMove (oper, ty)
-                     | _ => move (oper)
+                   move (oper)
                end
              | IndirectUnpack {offset, rest, ty} =>
                   let
@@ -699,23 +683,10 @@ structure Select =
                                         offset = offset,
                                         ty = ty}
                   in
-                      case base of
-                         Base.Object _ =>
-                           let
-                               val tmpVar1 = Var.newNoname ()
-                               val tmpOp1 = Var {ty = ty, var = tmpVar1}
-                           in
-                               ss @ [ ChunkAddr { dst = tmpOp1
-                                                , src = src }
-                                    , Move { dst = tmpOp
-                                           , src = tmpOp1}
-                                    ]
-                                  @ Unpack.select (rest, {dst = dst, src = tmpOp})
-                           end
-                       | _ => ss @ (Bind {dst = (tmpVar, ty),
-                                          isMutable = false,
-                                          src = src}
-                                    :: Unpack.select (rest, {dst = dst, src = tmpOp}))
+                      ss @ (Bind {dst = (tmpVar, ty),
+                                  isMutable = false,
+                                  src = src}
+                            :: Unpack.select (rest, {dst = dst, src = tmpOp}))
 
                   end
              | Unpack u =>

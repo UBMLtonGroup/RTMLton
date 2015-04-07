@@ -89,6 +89,9 @@ signature MACHINE =
              | Offset of {base: t,
                           offset: Bytes.t,
                           ty: Type.t}
+             | ChunkedOffset of {base: t,
+                                 offset: Bytes.t,
+                                 ty: Type.t}
              | Real of RealX.t
              | Register of Register.t
              | StackOffset of StackOffset.t

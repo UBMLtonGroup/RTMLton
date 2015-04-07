@@ -527,9 +527,9 @@ let
                      val base = translateOperand base
                   in
                      if M.Operand.isLocation base
-                        then M.Operand.Offset {base = base,
-                                               offset = offset,
-                                               ty = ty}
+                        then M.Operand.ChunkedOffset {base = base,
+                                                      offset = offset,
+                                                      ty = ty}
                      else bogusOp ty
                   end
              | ObjptrTycon opt =>
