@@ -380,14 +380,13 @@ structure Statement =
                   Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize()))
                 val temp = Register (Register.new (Type.cpointer (), NONE))
             in
-                Vector.new3
-                ( Move { dst = temp, src = base }
-                , PrimApp { args = Vector.new3 ( temp
+                Vector.new2
+                ( PrimApp { args = Vector.new3 ( base
                                                , bytes offset
                                                , bytes (Type.bytes ty))
                           , dst = SOME temp
                           , prim = Prim.umcPointerOffset }
-                , Move { dst = temp, src = src })
+                , Move { dst = Contents { oper = temp, ty = Operand.ty dst }, src = src } )
             end
           | _ => Error.bug "Machine.Statement.chunkMove: Unable to translate offset"
 

@@ -283,8 +283,7 @@ structure Statement =
                             seq [str "= ", Operand.layout src]]
              | ChunkMove {dst, src} =>
                   mayAlign [Operand.layout dst,
-                            seq [ str "<ChunkMove> "
-                                , str "= "
+                            seq [ str " =c= "
                                 , Operand.layout src ]]
              | Object {dst = (dst, ty), header, size} =>
                   mayAlign

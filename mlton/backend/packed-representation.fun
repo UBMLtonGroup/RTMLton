@@ -561,9 +561,9 @@ structure Base =
                      ty: Type.t}: Operand.t * Statement.t list =
          case base of
             Object base =>
-               (ChunkedOffset { base = base
-                              , offset = offset
-                              , ty = ty },
+               (Offset { base = base
+                       , offset = offset
+                       , ty = ty },
                 [])
           | VectorSub {index, vector} =>
                let
@@ -968,9 +968,9 @@ structure ObjptrRep =
                 in
                    Component.tuple (component,
                                     {dst = (tmpVar, tmpTy), src = src})
-                   @ (ChunkMove { dst = ChunkedOffset { base = object
-                                                      , offset = offset
-                                                      , ty = tmpTy }
+                   @ (ChunkMove { dst = Offset { base = object
+                                               , offset = offset
+                                               , ty = tmpTy }
                                 , src = Var {ty = tmpTy, var = tmpVar} }
                       :: ac)
                 end)
@@ -1570,9 +1570,9 @@ structure Objptrs =
                                      WordX.le (w, w', {signed = false}))
             val shift = Operand.word (WordX.one WordSize.shiftArg)
             val (s, tag) =
-               Statement.rshift (ChunkedOffset { base = test
-                                               , offset = Runtime.headerOffset ()
-                                               , ty = Type.objptrHeader ()},
+               Statement.rshift (Offset { base = test
+                                        , offset = Runtime.headerOffset ()
+                                        , ty = Type.objptrHeader ()},
                                  shift)
          in
             ([s], Switch (Switch.T {cases = cases,
