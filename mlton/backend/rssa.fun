@@ -222,7 +222,7 @@ structure Statement =
              | ChunkMove {dst, src} => useOperand (src, useOperand (dst, a))
              | Object {dst = (dst, ty), ...} => def (dst, ty, a)
              | ChunkedObject {dst = (dst, ty), ...} => def (dst, ty, a)
-             | ChunkAddr {dst, src} => useOperand (dst, useOperand (src, a))
+             | ChunkAddr {dst, src} => useOperand (src, a)
              | PrimApp {dst, args, ...} =>
                   Vector.fold (args,
                                Option.fold (dst, a, fn ((x, t), a) =>
@@ -263,7 +263,7 @@ structure Statement =
                         src = oper src}
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
              | ChunkMove {dst, src} => ChunkMove {dst = oper dst, src = oper src }
-             | ChunkAddr {dst, src} => ChunkAddr {dst = oper dst, src = oper src }
+             | ChunkAddr {dst, src} => ChunkMove {dst = oper dst, src = oper src}
              | Object _ => s
              | ChunkedObject _  => s
              | PrimApp {args, dst, prim} =>

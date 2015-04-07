@@ -672,7 +672,7 @@ structure Select =
                                          }
                              , Bind { dst = (dst, dstTy)
                                     , isMutable = false
-                                    , src = tmpOp } ]
+                                    , src = Cast (tmpOp, dstTy) } ]
               end
          in
             case s of
@@ -707,9 +707,8 @@ structure Select =
                            in
                                ss @ [ ChunkAddr { dst = tmpOp1
                                                 , src = src }
-                                    , Bind {dst = (tmpVar, ty),
-                                          isMutable = false,
-                                          src = tmpOp1}
+                                    , Move { dst = tmpOp
+                                           , src = tmpOp1}
                                     ]
                                   @ Unpack.select (rest, {dst = dst, src = tmpOp})
                            end
