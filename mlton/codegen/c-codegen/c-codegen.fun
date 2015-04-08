@@ -707,8 +707,9 @@ fun output {program as Machine.Program.T {chunks,
                                        toString base,
                                        C.bytes offset]]
              | ChunkedOffset {base, offset, ty, size} =>
-                  concat [ "UM_CPointer_offset"
-                         , C.args [ toString base
+                  concat [ "CHOFF"
+                         , C.args [ Type.toC ty
+                                  , toString base
                                   , C.bytes offset
                                   , C.bytes size ]]
              | Real r => RealX.toC r
