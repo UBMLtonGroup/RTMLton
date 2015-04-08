@@ -529,7 +529,9 @@ let
                      if M.Operand.isLocation base
                         then M.Operand.ChunkedOffset {base = base,
                                                       offset = offset,
-                                                      ty = ty}
+                                                      ty = ty,
+                                                      size = Type.bytes ty
+                                                     }
                      else bogusOp ty
                   end
              | ObjptrTycon opt =>

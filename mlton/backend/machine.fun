@@ -216,7 +216,8 @@ structure Operand =
                     ty: Type.t}
        | ChunkedOffset of {base: t,
                            offset: Bytes.t,
-                           ty: Type.t}
+                           ty: Type.t,
+                           size: Bytes.t}
        | Register of Register.t
        | Real of RealX.t
        | StackOffset of StackOffset.t
@@ -270,8 +271,9 @@ structure Operand =
                   seq [str (concat ["O", Type.name ty, " "]),
                        tuple [layout base, Bytes.layout offset],
                        constrain ty]
-             | ChunkedOffset {base, offset, ty} =>
-                  seq [str (concat ["CO", Type.name ty, " "]),
+             | ChunkedOffset {base, offset, ty, size} =>
+                  seq [str (concat [ "CO", Type.name ty, " ["
+                                   ,  Bytes.toString size, "] "]),
                        tuple [layout base, Bytes.layout offset],
                        constrain ty]
              | Real r => RealX.layout r

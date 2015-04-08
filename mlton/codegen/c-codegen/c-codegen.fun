@@ -160,6 +160,7 @@ structure Operand =
           | Cast (z, _) => isMem z
           | Contents _ => true
           | Offset _ => true
+          | ChunkedOffset _ => true
           | StackOffset _ => true
           | _ => false
    end
@@ -705,10 +706,11 @@ fun output {program as Machine.Program.T {chunks,
                   concat ["O", C.args [Type.toC ty,
                                        toString base,
                                        C.bytes offset]]
-             | ChunkedOffset {base, offset, ty} =>
-                  concat [ "UM_Pointer_select"
+             | ChunkedOffset {base, offset, ty, size} =>
+                  concat [ "UM_CPointer_offset"
                          , C.args [ toString base
-                                  , C.bytes offset ]]
+                                  , C.bytes offset
+                                  , C.bytes size ]]
              | Real r => RealX.toC r
              | Register r =>
                   concat [Type.name (Register.ty r), "_",
