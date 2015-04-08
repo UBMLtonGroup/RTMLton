@@ -83,11 +83,6 @@ signature RSSA =
                         src: Operand.t}
              | Move of {dst: Operand.t,
                         src: Operand.t}
-             | ChunkMove of {dst: Operand.t,
-                             src: Operand.t}
-             | ChunkAddr of { dst: Operand.t
-                            , src: Operand.t
-                            }
              | Object of {dst: Var.t * Type.t,
                           header: word,
                           size: Bytes.t (* including header *)}

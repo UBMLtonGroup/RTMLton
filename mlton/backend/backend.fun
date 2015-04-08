@@ -563,10 +563,6 @@ let
                            (M.Statement.move {dst = varOperand var,
                                               src = translateOperand src}))
                   else Vector.new0 ()
-             | ChunkMove {dst, src} =>
-                   M.Statement.chunkMove { dst = translateOperand dst
-                                         , src = translateOperand src
-                                         }
              | Move {dst, src} =>
                   Vector.new1
                   (M.Statement.move {dst = translateOperand dst,
@@ -575,10 +571,6 @@ let
                M.Statement.chunkedObject { dst = varOperand (#1 dst)
                                          , header = header
                                          , size = size }
-             | ChunkAddr {dst, src} =>
-               M.Statement.chunkAddr { dst = translateOperand dst
-                                     , src = translateOperand src
-                                     }
              | Object {dst, header, size} =>
                   M.Statement.object {dst = varOperand (#1 dst),
                                       header = header,
