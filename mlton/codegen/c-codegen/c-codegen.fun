@@ -423,6 +423,10 @@ fun outputDeclarations
                 | Control.ProfileLabel => "PROFILE_NONE"
                 | Control.ProfileTimeField => "PROFILE_TIME_FIELD"
                 | Control.ProfileTimeLabel => "PROFILE_TIME_LABEL"
+            val gcmodule =
+            	case !Control.gcModule of
+            		Control.GCModuleNone => "GC_NONE"
+            	 |  Control.GCModuleDefault => "GC_DEFAULT"
          in
             C.callNoSemi (case !Control.format of
                              Control.Archive => "MLtonLibrary"
@@ -434,7 +438,8 @@ fun outputDeclarations
                            C.bytes maxFrameSize,
                            C.bool (!Control.markCards),
                            profile,
-                           C.bool (!Control.profileStack)]
+                           C.bool (!Control.profileStack),
+                           gcmodule]
                           @ additionalMainArgs,
                           print)
             ; print "\n"

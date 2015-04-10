@@ -92,6 +92,8 @@ COMPILE_TIME_ASSERT(sizeof_double__is_eight, sizeof(double) == 8);
 #include "platform/openbsd.h"
 #elif (defined (__sun__))
 #include "platform/solaris.h"
+#elif (defined (__rtems__))
+#warn todo rtems platform include
 #else
 #error unknown platform os
 #endif

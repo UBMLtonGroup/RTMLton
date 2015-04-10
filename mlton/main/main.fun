@@ -429,6 +429,13 @@ fun makeOptions {usage} =
                        | "first" => First
                        | "every" => Every
                        | _ => usage (concat ["invalid -gc-check flag: ", s])))),
+       (Expert, "gc-module", " {none|default}", "select GC module",
+        SpaceString (fn s =>
+                     gcModule :=
+                     (case s of
+                         "none" => GCModuleNone
+                       | "default" => GCModuleDefault
+                       | _ => usage (concat ["invalid -gc-module flag: ", s])))),
        (Normal, "ieee-fp", " {false|true}", "use strict IEEE floating-point",
         boolRef Native.IEEEFP),
        (Expert, "indentation", " <n>", "indentation level in ILs",

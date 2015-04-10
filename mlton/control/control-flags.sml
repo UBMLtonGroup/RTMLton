@@ -698,6 +698,28 @@ val gcCheck = control {name = "gc check",
                        default = Limit,
                        toString = GcCheck.toString}
 
+structure GcModule =
+   struct
+      datatype t =
+         GCModuleNone
+       | GCModuleDefault
+
+      local open Layout
+      in
+         val layout =
+            fn GCModuleNone => str "None"
+             | GCModuleDefault => str "Default"
+      end
+      val toString = Layout.toString o layout
+   end
+
+datatype gcModule = datatype GcModule.t
+
+val gcModule = control {name = "gc module",
+                       default = GCModuleDefault,
+                       toString = GcModule.toString}
+                       
+
 val indentation = control {name = "indentation",
                            default = 3,
                            toString = Int.toString}
