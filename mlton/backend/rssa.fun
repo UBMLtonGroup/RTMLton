@@ -194,13 +194,6 @@ structure Statement =
                   src: Operand.t}
        | Move of {dst: Operand.t,
                   src: Operand.t}
-       | ChunkMove of { dst: Operand.t
-                      , src: Operand.t
-                      }
-       (* Chunked address translation *)
-       | ChunkAddr of { dst: Operand.t
-                      , src: Operand.t
-                      }
        | Object of {dst: Var.t * Type.t,
                     header: word,
                     size: Bytes.t}
@@ -225,10 +218,8 @@ structure Statement =
             case s of
                Bind {dst = (x, t), src, ...} => def (x, t, useOperand (src, a))
              | Move {dst, src} => useOperand (src, useOperand (dst, a))
-             | ChunkMove {dst, src} => useOperand (src, useOperand (dst, a))
              | Object {dst = (dst, ty), ...} => def (dst, ty, a)
              | ChunkedObject {dst = (dst, ty), ...} => def (dst, ty, a)
-             | ChunkAddr {dst, src} => useOperand (src, a)
              | PrimApp {dst, args, ...} =>
                   Vector.fold (args,
                                Option.fold (dst, a, fn ((x, t), a) =>
@@ -268,8 +259,6 @@ structure Statement =
                         isMutable = isMutable,
                         src = oper src}
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
-             | ChunkMove {dst, src} => ChunkMove {dst = oper dst, src = oper src }
-             | ChunkAddr {dst, src} => ChunkMove {dst = oper dst, src = oper src}
              | Object _ => s
              | ChunkedObject _  => s
              | PrimApp {args, dst, prim} =>
@@ -293,14 +282,6 @@ structure Statement =
              | Move {dst, src} =>
                   mayAlign [Operand.layout dst,
                             seq [str "= ", Operand.layout src]]
-             | ChunkMove {dst, src} =>
-                  mayAlign [Operand.layout dst,
-                            seq [ str " =c= "
-                                , Operand.layout src ]]
-             | ChunkAddr {dst, src} =>
-                   mayAlign [ Operand.layout dst
-                            , seq [ str " =off= "
-                                  , Operand.layout src ]]
              | Object {dst = (dst, ty), header, size} =>
                   mayAlign
                   [seq [Var.layout dst, constrain ty],
@@ -1606,16 +1587,6 @@ structure Program =
                          ; (Type.isSubtype (Operand.ty src, Operand.ty dst)
                             andalso Operand.isLocation dst))
                    (* Ensure type safety in my rssa statements *)
-                   | ChunkMove {dst, src} =>
-                        (checkOperand dst
-                         ; checkOperand src
-                         ; (Type.isSubtype (Operand.ty src, Operand.ty dst)
-                            andalso Operand.isLocation dst))
-                   | ChunkAddr {dst, src} =>
-                        (checkOperand dst
-                         ; checkOperand src
-                         ; Operand.isLocation dst andalso
-                           Operand.isLocation src)
                    | ChunkedObject _  => true
                    | Object {dst = (_, ty), header, size} =>
                         let

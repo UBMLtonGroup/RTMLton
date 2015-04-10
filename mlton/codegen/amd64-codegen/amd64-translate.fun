@@ -165,6 +165,9 @@ struct
                       scale = amd64.Scale.One,
                       size = size}, size), offset + amd64.Size.toBytes size))
                end
+          | ChunkedOffset _ => Error.bug (concat
+                                         ["amd64Translate.Operand.toAMD64Operand:",
+                                          "chunkedOffset unimplemented"])
           | UMFrontier => Error.bug "UMFrontier not implemented"
           | Frontier =>
                let

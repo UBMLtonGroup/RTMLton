@@ -973,10 +973,10 @@ structure ObjptrRep =
                 in
                    Component.tuple (component,
                                     {dst = (tmpVar, tmpTy), src = src})
-                   @ (ChunkMove { dst = Offset { base = object
-                                               , offset = offset
-                                               , ty = tmpTy }
-                                , src = Var {ty = tmpTy, var = tmpVar} }
+                   @ (Move { dst = ChunkedOffset { base = object
+                                                 , offset = offset
+                                                 , ty = tmpTy }
+                           , src = Var {ty = tmpTy, var = tmpVar} }
                       :: ac)
                 end)
          in

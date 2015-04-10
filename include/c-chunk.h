@@ -45,6 +45,7 @@
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define S(ty, i) *(ty*)(StackTop + (i))
+#define CHOFF(ty, b, o, s) (*(ty*)(UM_CPointer_offset((b), (o), (s))))
 
 /* ------------------------------------------------- */
 /*                       Tests                       */

@@ -171,6 +171,9 @@ struct
                in
                   Vector.new1 (frontier, valOf (x86.Operand.size frontier))
                end
+          | ChunkedOffset _ => Error.bug (concat
+                                         ["x86Translate.Operand.toX86Operand: ",
+                                          "ChunkedOffset unimplemented"])
           | UMFrontier => Error.bug "UMFrontier not implemented in x86"
           | GCState =>
                Vector.new1 (x86.Operand.immediate_label x86MLton.gcState_label,
