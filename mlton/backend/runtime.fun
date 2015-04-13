@@ -20,6 +20,7 @@ structure GCField =
        | CurSourceSeqsIndex
        | ExnStack
        | Frontier
+       | UMFrontier
        | Limit
        | LimitPlusSlop
        | MaxFrameSize
@@ -43,7 +44,7 @@ structure GCField =
       val stackTopOffset: Bytes.t ref = ref Bytes.zero
 
       fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex, 
-                      exnStack, frontier, limit, limitPlusSlop, maxFrameSize, 
+                      exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize, 
                       signalIsPending, stackBottom, stackLimit, stackTop} =
          (atomicStateOffset := atomicState
           ; cardMapAbsoluteOffset := cardMapAbsolute
@@ -66,6 +67,7 @@ structure GCField =
           | CurSourceSeqsIndex => !curSourceSeqsIndexOffset
           | ExnStack => !exnStackOffset
           | Frontier => !frontierOffset
+          | UMFrontier => !frontierOffset
           | Limit => !limitOffset
           | LimitPlusSlop => !limitPlusSlopOffset
           | MaxFrameSize => !maxFrameSizeOffset
@@ -89,7 +91,7 @@ structure GCField =
       val stackTopSize: Bytes.t ref = ref Bytes.zero
 
       fun setSizes {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex, 
-                    exnStack, frontier, limit, limitPlusSlop, maxFrameSize, 
+                    exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize, 
                     signalIsPending, stackBottom, stackLimit, stackTop} =
          (atomicStateSize := atomicState
           ; cardMapAbsoluteSize := cardMapAbsolute
@@ -112,6 +114,7 @@ structure GCField =
           | CurSourceSeqsIndex => !curSourceSeqsIndexSize
           | ExnStack => !exnStackSize
           | Frontier => !frontierSize
+          | UMFrontier => !frontierSize
           | Limit => !limitSize
           | LimitPlusSlop => !limitPlusSlopSize
           | MaxFrameSize => !maxFrameSizeSize
@@ -127,6 +130,7 @@ structure GCField =
           | CurSourceSeqsIndex => "CurSourceSeqsIndex"
           | ExnStack => "ExnStack"
           | Frontier => "Frontier"
+          | UMFrontier => "UMFrontier"
           | Limit => "Limit"
           | LimitPlusSlop => "LimitPlusSlop"
           | MaxFrameSize => "MaxFrameSize"

@@ -56,6 +56,7 @@ val gcFields =
     "sourceMaps.curSourceSeqsIndex",
     "exnStack",
     "frontier",
+    "umfrontier",
     "generationalMaps.cardMapAbsolute",
     "limit",
     "limitPlusSlop",

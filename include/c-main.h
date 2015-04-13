@@ -50,7 +50,7 @@ static void MLton_callFromC () {                                        \
                 fprintf (stderr, "MLton_callFromC done\n");             \
 }
 
-#define MLtonMain(al, mg, mfs, mmc, pk, ps, mc, gc, ml)                 \
+#define MLtonMain(al, mg, mfs, mmc, pk, ps, gc, mc, ml)                 \
 MLtonCallFromC                                                          \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         struct cont cont;                                               \
@@ -77,7 +77,7 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         return 1;                                                       \
 }
 
-#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, mc, gc, ml)              \
+#define MLtonLibrary(al, mg, mfs, mmc, pk, ps, gc, mc, ml)              \
 MLtonCallFromC                                                          \
 PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
         struct cont cont;                                               \

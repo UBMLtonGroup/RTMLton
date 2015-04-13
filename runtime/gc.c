@@ -69,3 +69,4 @@
 #include "gc/translate.c"
 #include "gc/weak.c"
 #include "gc/world.c"
+#include "gc/um.c"

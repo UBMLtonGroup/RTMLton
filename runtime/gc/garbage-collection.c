@@ -102,7 +102,7 @@ void performGC (GC_state s,
   size_t totalBytesRequested;
 
   if (s->gc_module != GC_DEFAULT)
-	  return
+	  return;
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;

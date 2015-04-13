@@ -521,6 +521,7 @@ fun ofGCField (f: GCField.t): t =
        | CurSourceSeqsIndex => word32
        | ExnStack => exnStack ()
        | Frontier => cpointer ()
+       | UMFrontier => cpointer ()
        | Limit => cpointer ()
        | LimitPlusSlop => cpointer ()
        | MaxFrameSize => word32

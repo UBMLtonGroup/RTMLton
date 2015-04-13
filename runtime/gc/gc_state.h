@@ -21,6 +21,7 @@ struct GC_state {
    * size and improve cache performance.
    */
   pointer frontier; /* heap.start <= frontier < limit */
+  pointer umfrontier;
   pointer limit; /* limit = heap.start + heap.size */
   pointer stackTop; /* Top of stack in current thread. */
   pointer stackLimit; /* stackBottom + stackSize - maxFrameSize */

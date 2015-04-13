@@ -30,7 +30,9 @@
 #define GCState ((Pointer)&gcState)
 #define ExnStack *(size_t*)(GCState + ExnStackOffset)
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
+#define UMFrontierMem *(Pointer*)(GCState + UMFrontierOffset)
 #define Frontier frontier
+#define UMFrontier umfrontier
 #define StackBottom *(Pointer*)(GCState + StackBottomOffset)
 #define StackTopMem *(Pointer*)(GCState + StackTopOffset)
 #define StackTop stackTop
@@ -71,7 +73,7 @@
 
 #define FlushFrontier()                         \
         do {                                    \
-                FrontierMem = Frontier;         \
+                UMFrontierMem = UMFrontier;         \
         } while (0)
 
 #define FlushStackTop()                         \
@@ -81,7 +83,7 @@
 
 #define CacheFrontier()                         \
         do {                                    \
-                Frontier = FrontierMem;         \
+                UMFrontier = UMFrontierMem;         \
         } while (0)
 
 #define CacheStackTop()                         \
@@ -105,6 +107,7 @@
         DeclareChunk(n) {                       \
                 struct cont cont;               \
                 Pointer frontier;               \
+                Pointer umfrontier;               \
                 uintptr_t l_nextFun = nextFun;  \
                 Pointer stackTop;
 #endif
