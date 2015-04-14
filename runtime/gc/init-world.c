@@ -102,6 +102,11 @@ void initWorld (GC_state s) {
   createHeap (s, &s->heap,
               sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
               s->lastMajorStatistics.bytesLive);
+              
+  createHeap (s, &s->umheap,
+              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
+              s->lastMajorStatistics.bytesLive);
+              
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   s->frontier = start;
@@ -111,6 +116,11 @@ void initWorld (GC_state s) {
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
+  
+  start = alignFrontier (s, s->umheap.start);
+  s->umfrontier = umstart;
+  
   thread = newThread (s, sizeofStackInitialReserved (s));
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
 }
+
