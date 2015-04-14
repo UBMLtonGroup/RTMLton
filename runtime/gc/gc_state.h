@@ -47,6 +47,7 @@ struct GC_state {
   uint32_t globalsLength;
   bool hashConsDuringGC;
   struct GC_heap heap;
+  struct GC_heap umheap;
   struct GC_lastMajorStatistics lastMajorStatistics;
   pointer limitPlusSlop; /* limit + GC_HEAP_LIMIT_SLOP */
   int (*loadGlobals)(FILE *f); /* loads the globals from the file. */
