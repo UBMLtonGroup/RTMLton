@@ -117,8 +117,7 @@ void initWorld (GC_state s) {
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
   
-  start = alignFrontier (s, s->umheap.start);
-  s->umfrontier = umstart;
+  s->umfrontier = alignFrontier (s, s->umheap.start);
   
   thread = newThread (s, sizeofStackInitialReserved (s));
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
