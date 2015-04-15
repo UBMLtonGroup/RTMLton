@@ -12,21 +12,21 @@ Pointer
 UM_Header_alloc(Pointer umfrontier, C_Size_t s)
 {
 	DBG(umfrontier, s, 0, "enter");
-	return umfrontier+s;
+	return (umfrontier + s);
 }
 
 Pointer
 UM_Payload_alloc(Pointer umfrontier, C_Size_t s)
 {
 	DBG(umfrontier, s, 0, "enter");
-	umfrontier += s;
-	return umfrontier;
+	// umfrontier += s;
+	return (umfrontier + s);
 }
 
 Pointer
 UM_CPointer_offset(Pointer p, C_Size_t o, C_Size_t s)
 {
 	DBG(p, o, s, "enter");
-	return p+o;
+	return (p + o);
 }
 
