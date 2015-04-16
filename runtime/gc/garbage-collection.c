@@ -8,22 +8,27 @@
  */
 
 void minorGC (GC_state s) {
-  minorCheneyCopyGC (s);
+    if (s->gc_module != GC_DEFAULT)
+        return;
+    minorCheneyCopyGC (s);
 }
 
 void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   uintmax_t numGCs;
   size_t desiredSize;
 
+  if (s->gc_module != GC_DEFAULT)
+      return;
+
   s->lastMajorStatistics.numMinorGCs = 0;
-  numGCs = 
-    s->cumulativeStatistics.numCopyingGCs 
+  numGCs =
+    s->cumulativeStatistics.numCopyingGCs
     + s->cumulativeStatistics.numMarkCompactGCs;
   if (0 < numGCs
       and ((float)(s->cumulativeStatistics.numHashConsGCs) / (float)(numGCs)
            < s->controls.ratios.hashCons))
     s->hashConsDuringGC = TRUE;
-  desiredSize = 
+  desiredSize =
     sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive + bytesRequested, 0);
   if (not FORCE_MARK_COMPACT
       and not s->hashConsDuringGC // only markCompact can hash cons
@@ -56,7 +61,7 @@ void growStackCurrent (GC_state s) {
 
   reserved = sizeofStackGrowReserved (s, getStackCurrent(s));
   if (DEBUG_STACKS or s->controls.messages)
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC: Growing stack of size %s bytes to size %s bytes, using %s bytes.]\n",
              uintmaxToCommaString(getStackCurrent(s)->reserved),
              uintmaxToCommaString(reserved),
@@ -73,7 +78,7 @@ void enterGC (GC_state s) {
     /* We don't need to profileEnter for count profiling because it
      * has already bumped the counter.  If we did allow the bump, then
      * the count would look like function(s) had run an extra time.
-     */  
+     */
     if (s->profiling.stack
         and not (PROFILE_COUNT == s->profiling.kind))
       GC_profileEnter (s);
@@ -90,9 +95,9 @@ void leaveGC (GC_state s) {
   s->amInGC = FALSE;
 }
 
-void performGC (GC_state s, 
+void performGC (GC_state s,
                 size_t oldGenBytesRequested,
-                size_t nurseryBytesRequested, 
+                size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
   uintmax_t gcTime;
@@ -109,17 +114,17 @@ void performGC (GC_state s,
   if (DEBUG or s->controls.messages) {
     size_t nurserySize = s->heap.size - ((size_t)(s->heap.nursery - s->heap.start));
     size_t nurseryUsed = (size_t)(s->frontier - s->heap.nursery);
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC: Starting gc #%s; requesting %s nursery bytes and %s old-gen bytes,]\n",
              uintmaxToCommaString(s->cumulativeStatistics.numGCs),
              uintmaxToCommaString(nurseryBytesRequested),
              uintmaxToCommaString(oldGenBytesRequested));
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC:\theap at "FMTPTR" of size %s bytes (+ %s bytes card/cross map),]\n",
              (uintptr_t)(s->heap.start),
              uintmaxToCommaString(s->heap.size),
              uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
              uintmaxToCommaString(s->heap.oldGenSize),
              100.0 * ((double)(s->heap.oldGenSize) / (double)(s->heap.size)));
@@ -138,18 +143,18 @@ void performGC (GC_state s,
     startTiming (&ru_start);
   minorGC (s);
   stackTopOk = invariantForMutatorStack (s);
-  stackBytesRequested = 
-    stackTopOk 
-    ? 0 
+  stackBytesRequested =
+    stackTopOk
+    ? 0
     : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
-  totalBytesRequested = 
-    oldGenBytesRequested 
+  totalBytesRequested =
+    oldGenBytesRequested
     + nurseryBytesRequested
     + stackBytesRequested;
-  if (forceMajor 
+  if (forceMajor
       or totalBytesRequested > s->heap.size - s->heap.oldGenSize)
     majorGC (s, totalBytesRequested, mayResize);
-  setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested, 
+  setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,
                          nurseryBytesRequested);
   assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
                             nurseryBytesRequested));
@@ -158,22 +163,22 @@ void performGC (GC_state s,
   setGCStateCurrentThreadAndStack (s);
   if (needGCTime (s)) {
     gcTime = stopTiming (&ru_start, &s->cumulativeStatistics.ru_gc);
-    s->cumulativeStatistics.maxPauseTime = 
+    s->cumulativeStatistics.maxPauseTime =
       max (s->cumulativeStatistics.maxPauseTime, gcTime);
   } else
     gcTime = 0;  /* Assign gcTime to quell gcc warning. */
   if (DEBUG or s->controls.messages) {
     size_t nurserySize = s->heap.size - (size_t)(s->heap.nursery - s->heap.start);
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC: Finished gc #%s; time %s ms,]\n",
              uintmaxToCommaString(s->cumulativeStatistics.numGCs),
              uintmaxToCommaString(gcTime));
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC:\theap at "FMTPTR" of size %s bytes (+ %s bytes card/cross map),]\n",
              (uintptr_t)(s->heap.start),
              uintmaxToCommaString(s->heap.size),
              uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
              uintmaxToCommaString(s->heap.oldGenSize),
              100.0 * ((double)(s->heap.oldGenSize) / (double)(s->heap.size)));
@@ -188,10 +193,10 @@ void performGC (GC_state s,
     if (DEBUG_SIGNALS)
       fprintf (stderr, "GC Signal pending.\n");
     s->signalsInfo.gcSignalPending = TRUE;
-    unless (s->signalsInfo.amInSignalHandler) 
+    unless (s->signalsInfo.amInSignalHandler)
       s->signalsInfo.signalIsPending = TRUE;
   }
-  if (DEBUG) 
+  if (DEBUG)
     displayGCState (s, stderr);
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
   assert (invariantForGC (s));
@@ -209,9 +214,9 @@ void ensureInvariantForMutator (GC_state s, bool force) {
   assert (invariantForMutatorStack(s));
 }
 
-/* ensureHasHeapBytesFree (s, oldGen, nursery) 
+/* ensureHasHeapBytesFree (s, oldGen, nursery)
  */
-void ensureHasHeapBytesFree (GC_state s, 
+void ensureHasHeapBytesFree (GC_state s,
                              size_t oldGenBytesRequested,
                              size_t nurseryBytesRequested) {
   assert (s->heap.nursery <= s->limitPlusSlop);
@@ -222,6 +227,9 @@ void ensureHasHeapBytesFree (GC_state s,
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+    if (s->gc_module != GC_DEFAULT)
+        return;
+
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.

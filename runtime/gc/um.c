@@ -11,22 +11,23 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 Pointer
 UM_Header_alloc(Pointer umfrontier, C_Size_t s)
 {
-	DBG(umfrontier, s, 0, "enter");
+   if (DEBUG_MEM)
+        DBG(umfrontier, s, 0, "enter");
 	return (umfrontier + s);
 }
 
 Pointer
 UM_Payload_alloc(Pointer umfrontier, C_Size_t s)
 {
-	DBG(umfrontier, s, 0, "enter");
-	// umfrontier += s;
+	if (DEBUG_MEM)
+       DBG(umfrontier, s, 0, "enter");
 	return (umfrontier + s);
 }
 
 Pointer
 UM_CPointer_offset(Pointer p, C_Size_t o, C_Size_t s)
 {
-	DBG(p, o, s, "enter");
+	if (DEBUG_MEM)
+       DBG(p, o, s, "enter");
 	return (p + o);
 }
-
