@@ -85,7 +85,7 @@
 #define CacheFrontier()                         \
         do {                                    \
                 Frontier = FrontierMem;         \
-                UMFrontier = UMFrontierMem;     \
+                UMFrontier = UMFrontierMem;      \
         } while (0)
 
 #define CacheStackTop()                         \
