@@ -102,11 +102,11 @@ void initWorld (GC_state s) {
   createHeap (s, &s->heap,
               sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
               s->lastMajorStatistics.bytesLive);
-              
-  createHeap (s, &s->umheap,
-              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
-              s->lastMajorStatistics.bytesLive);
-              
+
+  createHeap (s, &s->umheap, 2147483647, 2147483647);
+//              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
+//              s->lastMajorStatistics.bytesLive);
+//  s->gc_module = GC_NONE;
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   s->frontier = start;
@@ -116,10 +116,12 @@ void initWorld (GC_state s) {
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
-  
+
   s->umfrontier = alignFrontier (s, s->umheap.start);
-  
+
   thread = newThread (s, sizeofStackInitialReserved (s));
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
+  if (DEBUG_MEM) {
+      fprintf(stderr, "UMFrontier start: %x\n", (s->umfrontier));
+  }
 }
-

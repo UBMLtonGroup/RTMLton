@@ -42,6 +42,7 @@ structure GCField =
       val stackBottomOffset: Bytes.t ref = ref Bytes.zero
       val stackLimitOffset: Bytes.t ref = ref Bytes.zero
       val stackTopOffset: Bytes.t ref = ref Bytes.zero
+      val umfrontierOffset: Bytes.t ref = ref Bytes.zero
 
       fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex, 
                       exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize, 
@@ -52,6 +53,7 @@ structure GCField =
           ; curSourceSeqsIndexOffset := curSourceSeqsIndex
           ; exnStackOffset := exnStack
           ; frontierOffset := frontier
+          ; umfrontierOffset := umfrontier
           ; limitOffset := limit
           ; limitPlusSlopOffset := limitPlusSlop
           ; maxFrameSizeOffset := maxFrameSize
@@ -67,7 +69,7 @@ structure GCField =
           | CurSourceSeqsIndex => !curSourceSeqsIndexOffset
           | ExnStack => !exnStackOffset
           | Frontier => !frontierOffset
-          | UMFrontier => !frontierOffset (* XXX probably not needed *)
+          | UMFrontier => !umfrontierOffset (* XXX probably not needed *)
           | Limit => !limitOffset
           | LimitPlusSlop => !limitPlusSlopOffset
           | MaxFrameSize => !maxFrameSizeOffset
