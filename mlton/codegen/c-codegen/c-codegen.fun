@@ -713,7 +713,8 @@ fun output {program as Machine.Program.T {chunks,
                                        C.bytes offset]]
              | ChunkedOffset {base, offset, ty, size} =>
                   concat [ "CHOFF"
-                         , C.args [ Type.toC ty
+                         , C.args [ toString GCState
+                                  , Type.toC ty
                                   , toString base
                                   , C.bytes offset
                                   , C.bytes size ]]
