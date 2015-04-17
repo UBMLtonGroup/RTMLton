@@ -8,17 +8,12 @@
  */
 
 void minorGC (GC_state s) {
-    if (s->gc_module != GC_DEFAULT)
-        return;
     minorCheneyCopyGC (s);
 }
 
 void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   uintmax_t numGCs;
   size_t desiredSize;
-
-  if (s->gc_module != GC_DEFAULT)
-      return;
 
   s->lastMajorStatistics.numMinorGCs = 0;
   numGCs =
@@ -227,9 +222,6 @@ void ensureHasHeapBytesFree (GC_state s,
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-    if (s->gc_module != GC_DEFAULT)
-        return;
-
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.
