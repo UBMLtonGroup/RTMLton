@@ -40,6 +40,7 @@ typedef GC_state GCState_t;
 #include "gc/object-size.h"
 #include "gc/generational.h"
 #include "gc/heap.h"
+#include "gc/umheap.h"
 #include "gc/current.h"
 #include "gc/foreach.h"
 #include "gc/translate.h"
@@ -77,4 +78,3 @@ typedef GC_state GCState_t;
 #include "gc/um.h"
 
 #endif /* _MLTON_GC_H_ */
-

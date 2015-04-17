@@ -103,7 +103,7 @@ void initWorld (GC_state s) {
               sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
               s->lastMajorStatistics.bytesLive);
 
-  createHeap (s, &s->umheap, 2147483647, 2147483647);
+  createUMHeap (s, &s->umheap, 2147483647, 2147483647);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
 //  s->gc_module = GC_NONE;
@@ -117,7 +117,9 @@ void initWorld (GC_state s) {
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
-  s->umfrontier = alignFrontier (s, s->umheap.start);
+  GC_UM_Chunk next_chunk = allocNextChunk(s, &(s->umheap));
+  next_chunk->next_chunk = NULL;
+  s->umfrontier = (Pointer) next_chunk->ml_object;
 
   thread = newThread (s, sizeofStackInitialReserved (s));
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));

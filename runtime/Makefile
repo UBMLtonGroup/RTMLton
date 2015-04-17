@@ -81,7 +81,7 @@ WARNXCFLAGS += -Wnested-externs
 # WARNXCFLAGS += -Wunreachable-code
 
 XCFLAGS := -fno-common $(WARNXCFLAGS)
-OPTXCFLAGS := -Wdisabled-optimization -O2 -fomit-frame-pointer
+OPTXCFLAGS := -Wdisabled-optimization -fomit-frame-pointer
 DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O0 -g
 PICXCFLAGS :=
 
@@ -170,7 +170,7 @@ endif
 
 
 XCFLAGS += -I. -Iplatform
-OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(OPTXCFLAGS)
+OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) 
 DEBUGCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(DEBUGXCFLAGS)
 PICCFLAGS := $(OPTCFLAGS) $(PICXCFLAGS)
 

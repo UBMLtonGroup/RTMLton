@@ -44,6 +44,7 @@
 #include "gc/handler.c"
 #include "gc/hash-cons.c"
 #include "gc/heap.c"
+#include "gc/umheap.c"
 #include "gc/heap_predicates.c"
 #include "gc/init-world.c"
 #include "gc/init.c"
