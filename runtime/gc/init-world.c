@@ -100,13 +100,15 @@ void initWorld (GC_state s) {
     s->globals[i] = BOGUS_OBJPTR;
   s->lastMajorStatistics.bytesLive = sizeofInitialBytesLive (s);
   createHeap (s, &s->heap,
-              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
-              s->lastMajorStatistics.bytesLive);
+              104857600,
+              104857600);
+              //sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
+              // s->lastMajorStatistics.bytesLive);
 
   createUMHeap (s, &s->umheap, 2147483647, 2147483647);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
-//  s->gc_module = GC_NONE;
+  s->gc_module = GC_DEFAULT;
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   s->frontier = start;
@@ -117,7 +119,7 @@ void initWorld (GC_state s) {
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
-  s->gc_module = GC_NONE;
+ // s->gc_module = GC_NONE;
   GC_UM_Chunk next_chunk = allocNextChunk(s, &(s->umheap));
   next_chunk->next_chunk = NULL;
   s->umfrontier = (Pointer) next_chunk->ml_object;
