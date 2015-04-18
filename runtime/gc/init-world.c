@@ -99,13 +99,15 @@ void initWorld (GC_state s) {
   for (i = 0; i < s->globalsLength; ++i)
     s->globals[i] = BOGUS_OBJPTR;
   s->lastMajorStatistics.bytesLive = sizeofInitialBytesLive (s);
+  createUMHeap (s, &s->umheap,
+                2147483647,
+                2147483647);
+
   createHeap (s, &s->heap,
               104857600,
               104857600);
-              //sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
-              // s->lastMajorStatistics.bytesLive);
-
-  createUMHeap (s, &s->umheap, 2147483647, 2147483647);
+//              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
+//               s->lastMajorStatistics.bytesLive);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
   s->gc_module = GC_DEFAULT;
@@ -120,7 +122,8 @@ void initWorld (GC_state s) {
   setGCStateCurrentHeap (s, 0, 0);
 
  // s->gc_module = GC_NONE;
-  GC_UM_Chunk next_chunk = allocNextChunk(s, &(s->umheap));
+  GC_UM_Chunk next_chunk = NULL;
+  next_chunk = allocNextChunk(s, &(s->umheap));
   next_chunk->next_chunk = NULL;
   s->umfrontier = (Pointer) next_chunk->ml_object;
 

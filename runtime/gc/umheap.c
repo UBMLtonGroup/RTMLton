@@ -38,6 +38,12 @@ bool createUMHeap(GC_state s,
                   __attribute__ ((unused)) size_t minSize) {
     pointer newStart;
     newStart = GC_mmapAnon (NULL, desiredSize);;
+
+    if (newStart == (void*) -1) {
+        fprintf(stderr, "[GC: MMap Failure]\n");
+        return FALSE;
+    }
+
     h->start = newStart;
     h->size = desiredSize;
 
