@@ -22,10 +22,16 @@ GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
 
 void insertFreeChunk(__attribute__ ((unused)) GC_state s,
                      GC_UM_heap h,
-                     GC_UM_Chunk c) {
-    c->next_chunk = h->fl_head;
-    c->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    h->fl_head = c;
+                     pointer c) {
+    if (DEBUG_MEM) {
+        fprintf(stderr, "Inserting chunk: %x\n", c);
+    }
+
+    GC_UM_Chunk pc = (GC_UM_Chunk) c;
+    pc->next_chunk = h->fl_head;
+    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
+    pc->chunk_header = 0;
+    h->fl_head = pc;
     h->fl_chunks += 1;
 }
 
@@ -39,8 +45,8 @@ bool createUMHeap(GC_state s,
     h->start = newStart;
     h->size = desiredSize;
 
-    GC_UM_Chunk pchunk;
-    GC_UM_Chunk end = h->start + h->size;
+    pointer pchunk;
+    pointer end = h->start + h->size;
     size_t step = sizeof(struct GC_UM_Chunk);
 
     for (pchunk=(GC_UM_Chunk) h->start;

@@ -19,7 +19,7 @@ typedef struct GC_UM_heap {
 #endif /* MLTON_GC_INTERNAL_TYPES */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
-static void insertFreeChunk(GC_state s, GC_UM_heap h, GC_UM_Chunk c);
+static void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 static void initUMHeap(GC_state s, GC_UM_heap h);
 GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h);
 bool createUMHeap(GC_state s, GC_UM_heap h,

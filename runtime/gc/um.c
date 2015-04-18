@@ -24,7 +24,12 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
        DBG(umfrontier, s, 0, "enter");
 
     GC_UM_Chunk next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-    GC_UM_Chunk current_chunk = (GC_UM_Chunk) &umfrontier;
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
+
+    if (DEBUG_MEM) {
+        fprintf(stderr, "Sentinel: %d \n", current_chunk->sentinel);
+        fprintf(stderr, "Nextchunk: %x \n", next_chunk);
+    }
     current_chunk->next_chunk = NULL;
 
     if (s <= UM_CHUNK_PAYLOAD_SIZE) {
@@ -63,7 +68,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     }
 
     /* On current chunk */
-    if (o + s < UM_CHUNK_PAYLOAD_SIZE) {
+    if (o + s + 4 <= UM_CHUNK_PAYLOAD_SIZE) {
         if (DEBUG_MEM)
             DBG(p, o, s, "current chunk");
         return (p + o);
@@ -73,9 +78,9 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
        DBG(p, o, s, "next chunk");
 
     /* On next chunk */
-    GC_UM_Chunk current_chunk = (GC_UM_Chunk) &p;
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
     if (current_chunk->sentinel == UM_CHUNK_SENTINEL_UNUSED) {
-        current_chunk->sentinel = o;
+        current_chunk->sentinel = o + 4;
         return (Pointer)(current_chunk->next_chunk->ml_object);
     }
 
