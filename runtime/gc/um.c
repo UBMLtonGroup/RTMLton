@@ -78,6 +78,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     }
 
     /* On current chunk */
+    /* TODO: currently 4 is hard-coded mlton's header size */
     if (o + s + 4 <= UM_CHUNK_PAYLOAD_SIZE) {
         if (DEBUG_MEM)
             DBG(p, o, s, "current chunk");
@@ -102,8 +103,10 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     }
 
     if (DEBUG_MEM) {
-        fprintf(stderr, "Multi-chunk: Go to next chunk: %x\n",
-                current_chunk->next_chunk);
+        fprintf(stderr, "Multi-chunk: Go to next chunk: %x\n, sentinel: %d\n",
+                current_chunk->next_chunk,
+                current_chunk->sentinel);
     }
-    return (Pointer)(current_chunk->next_chunk + o - current_chunk->sentinel);
+    return (Pointer)(current_chunk->next_chunk + (o + 4) -
+                     current_chunk->sentinel);
 }
