@@ -117,6 +117,7 @@ void initWorld (GC_state s) {
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
+  s->gc_module = GC_NONE;
   GC_UM_Chunk next_chunk = allocNextChunk(s, &(s->umheap));
   next_chunk->next_chunk = NULL;
   s->umfrontier = (Pointer) next_chunk->ml_object;
