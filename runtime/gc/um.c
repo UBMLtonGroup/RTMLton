@@ -41,6 +41,10 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
     if (DEBUG_MEM)
        DBG(umfrontier, s, 0, "allocate next chunk");
 
+    if (s > 2 * UM_CHUNK_PAYLOAD_SIZE) {
+        fprintf(stderr, "ERROR: Going over 2 chunks\n");
+        return NULL;
+    }
     /* Assume a maximum of 2 chunks
      * It can actually be 3 (fragmented chunks of LARGE objects)
      * TODO: Set header to represent chunked object
@@ -48,6 +52,12 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
     current_chunk->next_chunk = next_chunk;
     GC_UM_Chunk next_chunk_next = allocNextChunk(gc_stat, &(gc_stat->umheap));
     next_chunk->next_chunk = NULL;
+
+    if (DEBUG_MEM) {
+        fprintf(stderr, "Next chunk next: place frontier at %x\n",
+                next_chunk_next->ml_object);
+    }
+
     return (Pointer) next_chunk_next->ml_object;
 }
 
@@ -81,8 +91,19 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
     if (current_chunk->sentinel == UM_CHUNK_SENTINEL_UNUSED) {
         current_chunk->sentinel = o + 4;
+
+        if (DEBUG_MEM) {
+            fprintf(stderr, "Returning next chunk: %x\n", current_chunk->next_chunk);
+            fprintf(stderr, "Returning next chunk mlobject: %x\n",
+                    current_chunk->next_chunk->ml_object);
+        }
+
         return (Pointer)(current_chunk->next_chunk->ml_object);
     }
 
+    if (DEBUG_MEM) {
+        fprintf(stderr, "Multi-chunk: Go to next chunk: %x\n",
+                current_chunk->next_chunk);
+    }
     return (Pointer)(current_chunk->next_chunk + o - current_chunk->sentinel);
 }

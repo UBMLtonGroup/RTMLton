@@ -1,6 +1,6 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
-#define UM_CHUNK_PAYLOAD_SIZE 32
+#define UM_CHUNK_PAYLOAD_SIZE 16
 #define UM_CHUNK_SENTINEL_UNUSED 9999
 
 typedef struct GC_UM_Chunk {

@@ -23,10 +23,6 @@ GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
 void insertFreeChunk(__attribute__ ((unused)) GC_state s,
                      GC_UM_heap h,
                      pointer c) {
-    if (DEBUG_MEM) {
-        fprintf(stderr, "Inserting chunk: %x\n", c);
-    }
-
     GC_UM_Chunk pc = (GC_UM_Chunk) c;
     pc->next_chunk = h->fl_head;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
