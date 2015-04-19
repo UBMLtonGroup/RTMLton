@@ -73,7 +73,8 @@
 
 #define FlushFrontier()                         \
         do {                                    \
-                UMFrontierMem = UMFrontier;         \
+                FrontierMem = Frontier;     \
+                UMFrontierMem = UMFrontier;     \
         } while (0)
 
 #define FlushStackTop()                         \
@@ -83,7 +84,8 @@
 
 #define CacheFrontier()                         \
         do {                                    \
-                UMFrontier = UMFrontierMem;         \
+                Frontier = FrontierMem;     \
+                UMFrontier = UMFrontierMem;      \
         } while (0)
 
 #define CacheStackTop()                         \

@@ -60,7 +60,7 @@ structure Type =
          Bits.equals (width t, width t')
          andalso
          (case (node t, node t') of
-             (Bits, Bits) => true 
+             (Bits, Bits) => true
            | (CPointer, CPointer) => true
            | (ExnStack, ExnStack) => true
            | (GCState, GCState) => true
@@ -81,10 +81,10 @@ structure Type =
       val cpointer: unit -> t = fn () =>
          T {node = CPointer, width = WordSize.bits (WordSize.cpointer ())}
 
-      val exnStack: unit -> t = fn () => 
+      val exnStack: unit -> t = fn () =>
          T {node = ExnStack, width = WordSize.bits (WordSize.csize ())}
 
-      val gcState: unit -> t = fn () => 
+      val gcState: unit -> t = fn () =>
          T {node = GCState, width = WordSize.bits (WordSize.cpointer ())}
 
       val label: Label.t -> t =
@@ -96,8 +96,8 @@ structure Type =
 
       val real: RealSize.t -> t =
          fn s => T {node = Real s, width = RealSize.bits s}
- 
-      val word: WordSize.t -> t = 
+
+      val word: WordSize.t -> t =
          fn s => T {node = Word s, width = WordSize.bits s}
 
 
@@ -115,20 +115,20 @@ structure Type =
 
       val shiftArg: t = word WordSize.shiftArg
 
-      val stack : unit -> t = fn () => 
+      val stack : unit -> t = fn () =>
          objptr ObjptrTycon.stack
 
-      val thread : unit -> t = fn () => 
+      val thread : unit -> t = fn () =>
          objptr ObjptrTycon.thread
 
       val word0: t = bits Bits.zero
       val word8: t = word WordSize.word8
       val word32: t = word WordSize.word32
 
-      val wordVector: WordSize.t -> t = 
+      val wordVector: WordSize.t -> t =
          objptr o ObjptrTycon.wordVector o WordSize.bits
 
-      val word8Vector: unit -> t =  fn () => 
+      val word8Vector: unit -> t =  fn () =>
          wordVector WordSize.word8
 
       val string: unit -> t = word8Vector
@@ -138,7 +138,7 @@ structure Type =
       val zero: Bits.t -> t = bits
 
 
-      val ofWordX: WordX.t -> t = 
+      val ofWordX: WordX.t -> t =
          fn w => word (WordX.size w)
 
       fun ofWordXVector (v: WordXVector.t): t =
@@ -162,7 +162,7 @@ structure Type =
                                      [] => [t]
                                    | t' :: ac' =>
                                         (case (node t, node t') of
-                                            (Bits, Bits) => 
+                                            (Bits, Bits) =>
                                                bits (Bits.+ (width t, width t')) :: ac'
                                           | _ => t :: ac))))
             in
@@ -209,7 +209,7 @@ structure Type =
               (wordVector (WordSize.bigIntInfWord ()),
                seq (Vector.new2
                     (bits Bits.one,
-                     word (WordSize.fromBits 
+                     word (WordSize.fromBits
                            (Bits.- (WordSize.bits (WordSize.smallIntInfWord ()),
                                     Bits.one)))))))
 
@@ -220,7 +220,7 @@ structure Type =
           | _ => NONE
 
       val deObjptr: t -> ObjptrTycon.t option =
-         fn t => 
+         fn t =>
          case node t of
             Objptr opts =>
                if 1 = Vector.length opts
@@ -233,7 +233,7 @@ structure Type =
          case node t of
             Real s => SOME s
           | _ => NONE
-      
+
       val deSeq: t -> t vector option =
          fn t =>
          case node t of
@@ -274,18 +274,18 @@ structure Type =
               | (Bits, Objptr _) => true
               | (Word _, Objptr _) => true
               | (Seq ts, Objptr _) =>
-                   Vector.forall 
-                   (ts, (fn Bits => true 
-                          | Real _ => true 
-                          | Word _ => true 
+                   Vector.forall
+                   (ts, (fn Bits => true
+                          | Real _ => true
+                          | Word _ => true
                           | _ => false) o node)
               | (_, Bits) => true
               | (_, Word _) => true
-              | (_, Seq ts) => 
-                   Vector.forall 
-                   (ts, (fn Bits => true 
+              | (_, Seq ts) =>
+                   Vector.forall
+                   (ts, (fn Bits => true
                           | Real _ => true
-                          | Word _ => true 
+                          | Word _ => true
                           | _ => false) o node)
               | _ => false)
 
@@ -325,7 +325,7 @@ structure Type =
             fn t =>
             if isObjptr t
                then C.Objptr
-            else 
+            else
                case node t of
                   CPointer => C.CPointer
                 | GCState => C.CPointer
@@ -335,9 +335,9 @@ structure Type =
                          RealSize.R32 => C.Real32
                        | RealSize.R64 => C.Real64)
                 | _ => C.fromBits (width t)
-                         
+
          val name = C.name o toCType
-            
+
          val align: t * Bytes.t -> Bytes.t =
             fn (t, n) => C.align (toCType t, n)
       end
@@ -403,7 +403,7 @@ structure ObjectType =
                   val b = Bits.+ (Type.width ty,
                                   Type.width (Type.objptrHeader ()))
                in
-                  not (Type.isUnit ty) 
+                  not (Type.isUnit ty)
                   andalso (case !Control.align of
                               Control.Align4 => Bits.isWord32Aligned b
                             | Control.Align8 => Bits.isWord64Aligned b)
@@ -459,7 +459,7 @@ structure ObjectType =
        * WORD32_VECTOR_TYPE_INDEX.
        * WORD64_VECTOR_TYPE_INDEX.
        *)
-      val basic = fn () => 
+      val basic = fn () =>
          let
             fun wordVec i =
                let
@@ -534,7 +534,7 @@ fun ofGCField (f: GCField.t): t =
 fun castIsOk {from, to, tyconTy = _} =
    Bits.equals (width from, width to)
 
-fun checkPrimApp {args, prim, result} = 
+fun checkPrimApp {args, prim, result} =
    let
       datatype z = datatype Prim.Name.t
       fun done (argsP, resultP) =
@@ -542,7 +542,7 @@ fun checkPrimApp {args, prim, result} =
             val argsP = Vector.fromList argsP
          in
             (Vector.length args = Vector.length argsP)
-            andalso (Vector.forall2 (args, argsP, 
+            andalso (Vector.forall2 (args, argsP,
                                      fn (arg, argP) => argP arg))
             andalso (case (result, resultP) of
                         (NONE, NONE) => true
@@ -554,9 +554,9 @@ fun checkPrimApp {args, prim, result} =
       val cpointer = fn t => equals (t, cpointer ())
       val objptr = fn t => (case node t of Objptr _ => true | _ => false)
       val real = fn s => fn t => equals (t, real s)
-      val seq = fn s => fn t => 
-         (case node t 
-             of Seq _ => Bits.equals (width t, WordSize.bits s) 
+      val seq = fn s => fn t =>
+         (case node t
+             of Seq _ => Bits.equals (width t, WordSize.bits s)
            | _ => false)
       val word = fn s => fn t => equals (t, word s)
 
@@ -595,10 +595,13 @@ fun checkPrimApp {args, prim, result} =
        | CPointer_diff => done ([cpointer, cpointer], SOME cptrdiff)
        | CPointer_equal => done ([cpointer, cpointer], SOME bool)
        | CPointer_fromWord => done ([csize], SOME cpointer)
+       | UM_Header_alloc => done ([cpointer, cptrdiff], SOME cpointer)
+       | UM_Payload_alloc => done ([cpointer, cptrdiff], SOME cpointer)
+       | UM_CPointer_offset => done ([cpointer, cptrdiff, cptrdiff], SOME cpointer)
        | CPointer_lt => done ([cpointer, cpointer], SOME bool)
        | CPointer_sub => done ([cpointer, cptrdiff], SOME cpointer)
        | CPointer_toWord => done ([cpointer], SOME csize)
-       | FFI f => done (Vector.toListMap (CFunction.args f, 
+       | FFI f => done (Vector.toListMap (CFunction.args f,
                                           fn t' => fn t => equals (t', t)),
                         SOME (fn t => equals (t, CFunction.return f)))
        | FFI_Symbol _ => done ([], SOME cpointer)
@@ -637,7 +640,7 @@ fun checkPrimApp {args, prim, result} =
        | Word_andb s => wordBinary s
        | Word_castToReal (s, s') => done ([word s], SOME (real s'))
        | Word_equal s => (wordCompare s) orelse objptrCompare
-       | Word_extdToWord (s, s', _) => done ([wordOrBitsOrSeq s], 
+       | Word_extdToWord (s, s', _) => done ([wordOrBitsOrSeq s],
                                              SOME (wordOrBitsOrSeq s'))
        | Word_lshift s => wordShift s
        | Word_lt (s, _) => wordCompare s
@@ -675,7 +678,7 @@ fun checkOffset {base, isVector, offset, result} =
                   then tys
                else (case tys of
                         [] => escape false
-                      | ty::tys => 
+                      | ty::tys =>
                            let
                               val b = width ty
                            in
@@ -691,7 +694,7 @@ fun checkOffset {base, isVector, offset, result} =
             else loop (tys, bits)
          end
       val dropTys =
-         Trace.trace2 
+         Trace.trace2
          ("RepType.checkOffset.dropTys",
           List.layout Type.layout, Bits.layout,
           List.layout Type.layout)
@@ -744,11 +747,11 @@ fun checkOffset {base, isVector, offset, result} =
       val resultTys = getTys result
 
       val adjOffsetBits =
-         if Control.Target.bigEndian () 
+         if Control.Target.bigEndian ()
             andalso Bits.< (resultBits, Bits.inWord32)
             andalso Bits.> (baseBits, resultBits)
             then let
-                    val paddedComponentBits = 
+                    val paddedComponentBits =
                        if isVector
                           then Bits.min (baseBits, Bits.inWord32)
                        else Bits.inWord32
@@ -762,17 +765,17 @@ fun checkOffset {base, isVector, offset, result} =
                  end
          else offsetBits
    in
-      List.exists 
+      List.exists
       ([Bits.inWord8, Bits.inWord16, Bits.inWord32, Bits.inWord64], fn primBits =>
-       Bits.equals (resultBits, primBits) 
+       Bits.equals (resultBits, primBits)
        andalso Bits.isAligned (offsetBits, {alignment = Bits.min (primBits, alignBits)}))
       andalso
       equalsTys (resultTys, extractTys (baseTys, adjOffsetBits, resultBits))
    end)
 
-fun offsetIsOk {base, offset, tyconTy, result} = 
+fun offsetIsOk {base, offset, tyconTy, result} =
    case node base of
-      Objptr opts => 
+      Objptr opts =>
          if Bytes.equals (offset, Runtime.headerOffset ())
             then equals (result, objptrHeader ())
          else if Bytes.equals (offset, Runtime.arrayLengthOffset ())
@@ -783,7 +786,7 @@ fun offsetIsOk {base, offset, tyconTy, result} =
                  andalso (equals (result, seqIndex ()))
          else (1 = Vector.length opts)
               andalso (case tyconTy (Vector.sub (opts, 0)) of
-                          ObjectType.Normal {ty, ...} => 
+                          ObjectType.Normal {ty, ...} =>
                              checkOffset {base = ty,
                                           isVector = false,
                                           offset = offset,
@@ -791,9 +794,9 @@ fun offsetIsOk {base, offset, tyconTy, result} =
                         | _ => false)
     | _ => false
 
-fun arrayOffsetIsOk {base, index, offset, tyconTy, result, scale} = 
+fun arrayOffsetIsOk {base, index, offset, tyconTy, result, scale} =
    case node base of
-      CPointer => 
+      CPointer =>
          (equals (index, csize ()))
          andalso (case node result of
                      CPointer => true
@@ -805,15 +808,15 @@ fun arrayOffsetIsOk {base, index, offset, tyconTy, result, scale} =
                      NONE => false
                    | SOME s => scale = s)
          andalso (Bytes.equals (offset, Bytes.zero))
-    | Objptr opts => 
+    | Objptr opts =>
          (equals (index, seqIndex ()))
          andalso (1 = Vector.length opts)
          andalso (case tyconTy (Vector.sub (opts, 0)) of
-                     ObjectType.Array {elt, ...} => 
+                     ObjectType.Array {elt, ...} =>
                         if equals (elt, word8)
                            then (* special case for PackWord operations *)
                                 (case node result of
-                                    Word wsRes => 
+                                    Word wsRes =>
                                        (case Scale.fromBytes (WordSize.bytes wsRes) of
                                            NONE => false
                                          | SOME s => scale = s)
@@ -838,7 +841,7 @@ structure BuiltInCFunction =
       datatype z = datatype Convention.t
       datatype z = datatype Target.t
 
-      fun bug () = 
+      fun bug () =
          vanilla {args = Vector.new1 (string ()),
                   name = "MLton_bug",
                   prototype = (Vector.new1 CType.objptr, NONE),
