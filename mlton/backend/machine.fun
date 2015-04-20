@@ -474,13 +474,13 @@ structure Statement =
                                    ty = Type.objptrHeader ()},
                    src = Word (WordX.fromIntInf (Word.toIntInf header,
                                                  WordSize.objptrHeader ()))},
-             PrimApp {args = Vector.new2 (UMFrontier,
+             PrimApp {args = Vector.new3 (GCState, UMFrontier,
                                           bytes (Runtime.headerSize ())),
                       dst = SOME temp,
                       prim = Prim.umHeaderAlloc},
              (* CHECK; if objptr <> cpointer, need non-trivial coercion here. *)
              Move {dst = dst, src = Cast (temp, Operand.ty dst)},
-             PrimApp {args = Vector.new2 (UMFrontier, bytes size),
+             PrimApp {args = Vector.new3 (GCState, UMFrontier, bytes size),
                       dst = SOME UMFrontier,
                       prim = Prim.umPayloadAlloc})
          end
