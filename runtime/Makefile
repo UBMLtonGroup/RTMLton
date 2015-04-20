@@ -35,7 +35,7 @@ EXE :=
 
 # These flags can be overridden by the user
 CPPFLAGS :=
-CFLAGS :=  -g
+CFLAGS :=  -g 
 
 WARNXCFLAGS :=
 WARNXCFLAGS += -pedantic -Wall
@@ -81,7 +81,7 @@ WARNXCFLAGS += -Wnested-externs
 # WARNXCFLAGS += -Wunreachable-code
 
 XCFLAGS := -fno-common $(WARNXCFLAGS)
-OPTXCFLAGS := -Wdisabled-optimization -O2 -fomit-frame-pointer
+OPTXCFLAGS := -Wdisabled-optimization -fomit-frame-pointer
 DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O0 -g
 PICXCFLAGS :=
 
@@ -102,7 +102,7 @@ XCFLAGS += -mieee -mbwx -mtune=ev6 -mfp-rounding-mode=d
 endif
 
 ifeq ($(TARGET_ARCH), amd64)
-XCFLAGS += -m64
+    XCFLAGS += -m64
 endif
 
 ifeq ($(findstring $(TARGET_ARCH), hppa ia64 powerpc sparc),$(TARGET_ARCH))
@@ -170,7 +170,7 @@ endif
 
 
 XCFLAGS += -I. -Iplatform
-OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(OPTXCFLAGS)
+OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) 
 DEBUGCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(DEBUGXCFLAGS)
 PICCFLAGS := $(OPTCFLAGS) $(PICXCFLAGS)
 

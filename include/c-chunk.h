@@ -31,11 +31,13 @@
 #define ExnStack *(size_t*)(GCState + ExnStackOffset)
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define UMFrontierMem *(Pointer*)(GCState + UMFrontierOffset)
-#define Frontier frontier
-#define UMFrontier umfrontier
+#define Frontier *(Pointer*)(GCState + FrontierOffset)
+// frontier
+#define UMFrontier *(Pointer*)(GCState + UMFrontierOffset)
+// umfrontier
 #define StackBottom *(Pointer*)(GCState + StackBottomOffset)
 #define StackTopMem *(Pointer*)(GCState + StackTopOffset)
-#define StackTop stackTop
+#define StackTop StackTopMem
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
@@ -47,7 +49,7 @@
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define S(ty, i) *(ty*)(StackTop + (i))
-#define CHOFF(ty, b, o, s) (*(ty*)(UM_CPointer_offset((b), (o), (s))))
+#define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_CPointer_offset((gc_stat), (b), (o), (s))))
 
 /* ------------------------------------------------- */
 /*                       Tests                       */
@@ -73,8 +75,8 @@
 
 #define FlushFrontier()                         \
         do {                                    \
-                FrontierMem = Frontier;     \
-                UMFrontierMem = UMFrontier;     \
+                /* FrontierMem = Frontier; */     \
+               /* UMFrontierMem = UMFrontier; */     \
         } while (0)
 
 #define FlushStackTop()                         \
@@ -84,8 +86,8 @@
 
 #define CacheFrontier()                         \
         do {                                    \
-                Frontier = FrontierMem;     \
-                UMFrontier = UMFrontierMem;      \
+                /* Frontier = FrontierMem; */    \
+                /* UMFrontier = UMFrontierMem; */     \
         } while (0)
 
 #define CacheStackTop()                         \
@@ -101,17 +103,17 @@
 #define Chunk(n)                                                \
         DeclareChunk(n) {                                       \
                 struct cont cont;                               \
-                register unsigned int frontier asm("g5");       \
+                /* register unsigned int frontier asm("g5"); */       \
                 uintptr_t l_nextFun = nextFun;                  \
-                register unsigned int stackTop asm("g6");
+                /* register unsigned int stackTop asm("g6"); */
 #else
 #define Chunk(n)                                \
         DeclareChunk(n) {                       \
                 struct cont cont;               \
-                Pointer frontier;               \
-                Pointer umfrontier;               \
+     /*          Pointer frontier;  */             \
+     /*          Pointer umfrontier; */              \
                 uintptr_t l_nextFun = nextFun;  \
-                Pointer stackTop;
+     /*           Pointer stackTop; */
 #endif
 
 #define ChunkSwitch(n)                                                  \

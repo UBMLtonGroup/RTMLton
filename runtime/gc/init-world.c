@@ -99,20 +99,20 @@ void initWorld (GC_state s) {
   for (i = 0; i < s->globalsLength; ++i)
     s->globals[i] = BOGUS_OBJPTR;
   s->lastMajorStatistics.bytesLive = sizeofInitialBytesLive (s);
+<<<<<<< HEAD
 
   /* alloc um first so normal heap can expand without overrunning us */
 
 #define MEGABYTES 1024*1024
-  createHeap (s, &s->umheap, 512*MEGABYTES, 512*MEGABYTES);
+  createUMHeap (s, &s->umheap, 512*MEGABYTES, 512*MEGABYTES);
+
+  createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
+
+//              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
+//               s->lastMajorStatistics.bytesLive);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
-//  s->gc_module = GC_NONE;
-
-  createHeap (s, &s->heap,
-              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
-              s->lastMajorStatistics.bytesLive);
-
-
+  s->gc_module = GC_DEFAULT;
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   s->frontier = start;
@@ -123,7 +123,10 @@ void initWorld (GC_state s) {
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
-  s->umfrontier = alignFrontier (s, s->umheap.start);
+  GC_UM_Chunk next_chunk = NULL;
+  next_chunk = allocNextChunk(s, &(s->umheap));
+  next_chunk->next_chunk = NULL;
+  s->umfrontier = (Pointer) next_chunk->ml_object;
 
   thread = newThread (s, sizeofStackInitialReserved (s));
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
