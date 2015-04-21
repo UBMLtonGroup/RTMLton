@@ -38,14 +38,15 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.ssh.forward_agent = true
   config.ssh.forward_x11 = true
 
-
   # Share an additional folder to the guest VM. The first argument is
   # the path on the host to the actual folder. The second argument is
   # the path on the guest to mount the folder. And the optional third
   # argument is a set of non-required options.
 
   config.vm.synced_folder ".", "/vagrant_data"
-  config.vm.synced_folder "#{ENV['HOME']}/Documents/Aptana/CSE", "/git"
+  if ENV['USER'] == "jcmurphy" then
+      config.vm.synced_folder "#{ENV['HOME']}/Documents/Aptana/CSE", "/git"
+  end
 
   # Provider-specific configuration so you can fine-tune various
   # backing providers for Vagrant. These expose provider-specific options.

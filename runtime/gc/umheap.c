@@ -8,6 +8,7 @@ void initUMHeap(__attribute__ ((unused)) GC_state s,
 
 GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
                            GC_UM_heap h) {
+
     if (h->fl_chunks <= 3) {
         die("allocNextChunk: No more memory available\n");
     }

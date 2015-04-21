@@ -134,6 +134,6 @@ void initWorld (GC_state s) {
   thread = newThread (s, sizeofStackInitialReserved (s));
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
   if (DEBUG_MEM) {
-      fprintf(stderr, "UMFrontier start: %x\n", (s->umfrontier));
+      fprintf(stderr, "UMFrontier start: "FMTPRT"\n", (uintptr_t)(s->umfrontier));
   }
 }
