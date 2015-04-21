@@ -32,6 +32,9 @@ struct GC_state {
   struct GC_controls controls;
   struct GC_cumulativeStatistics cumulativeStatistics;
   objptr currentThread; /* Currently executing thread (in heap). */
+  int        numRealtimeThreads;
+  pthread_t *realtimeThreads;
+  bool      *realtimeThreadAllocated;
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
   uint32_t frameLayoutsLength; /* Cardinality of frameLayouts array. */

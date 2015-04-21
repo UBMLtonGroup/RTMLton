@@ -52,6 +52,13 @@ static void MLton_callFromC () {                                        \
 
 #define MLtonMain(al, mg, mfs, mmc, pk, ps, mc, ml)                     \
 MLtonCallFromC                                                          \
+void run (void *arg) {                                                  \
+        struct cont cont;                                               \
+        GC_state s = (GC_state)arg;                                     \
+                                                                        \
+        Proc_waitForInitialization (s);                         \
+        Parallel_run ();                                        \
+}                                                                       \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         struct cont cont;                                               \
         Initialize (al, mg, mfs, mmc, pk, ps);                          \
@@ -63,6 +70,32 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 nextFun = *(uintptr_t*)(gcState.stackTop - GC_RETURNADDRESS_SIZE); \
                 cont.nextChunk = nextChunks[nextFun];                   \
         }                                                               \
+                                                                        \
+        unsigned int NUM_REALTIME_THREADS = 100;                        \
+        pthread_t *realtimeThreads =                                    \
+                malloc(NUM_REALTIME_THREADS * sizeof(pthread_t));       \
+                                                                        \
+                                                                        \
+        unsigned int tNum;                                              \
+        for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
+            if (pthread_create(&realtimeThreads[tNum], NULL, &run,      \
+                        (void*)&gcState)) {                             \
+                fprintf (stderr, "pthread_create failed: %s\n", strerror (errno)); \
+                exit (1);                                               \
+            }                                                           \
+        }                                                               \
+                                                                        \
+        gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
+        gcState.realtimeThreads = realtimeThreads;                      \
+                                                                        \
+        bool *rtAllocated = malloc(NUM_REALTIME_THREADS * sizeof(bool));\
+        for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
+            rtAllocated[tNum] = false;                                  \
+        }                                                               \
+                                                                        \ 
+        gcState.realtimeThreadAllocated = rtAllocated;                  \
+                                                                        \ 
+                                                                        \ 
         /* Trampoline */                                                \
         while (1) {                                                     \
                 cont=(*(struct cont(*)(void))cont.nextChunk)();         \
