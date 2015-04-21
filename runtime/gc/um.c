@@ -53,8 +53,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
        DBG(umfrontier, s, 0, "allocate next chunk");
 
     if (s > 2 * UM_CHUNK_PAYLOAD_SIZE) {
-        fprintf(stderr, "ERROR: Going over 2 chunks\n");
-        return NULL;
+        die("BUG: Requiring allocation of more than 2 chunks\n");
     }
     /* Assume a maximum of 2 chunks
      * It can actually be 3 (fragmented chunks of LARGE objects)
