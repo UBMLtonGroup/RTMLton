@@ -10,6 +10,12 @@ make $arch_flags script &&
 make $arch_flags mlbpathmap &&
 make $arch_flags constants 
 
+echo <<EOF
+Try:
+./build/bin/mlton -codegen c -keep g -gc-module none -verbose 3 hello.sml 
+./hello
+EOF
+
 
 exit 0
 
