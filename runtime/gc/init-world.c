@@ -99,7 +99,6 @@ void initWorld (GC_state s) {
   for (i = 0; i < s->globalsLength; ++i)
     s->globals[i] = BOGUS_OBJPTR;
   s->lastMajorStatistics.bytesLive = sizeofInitialBytesLive (s);
-<<<<<<< HEAD
 
   /* alloc um first so normal heap can expand without overrunning us */
 

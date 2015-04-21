@@ -8,7 +8,7 @@ void initUMHeap(__attribute__ ((unused)) GC_state s,
 
 GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
                            GC_UM_heap h) {
-    if (h->fl_chunks <= 3) {
+    if (h->fl_head == NULL || h->fl_chunks <= 3) {
         fprintf(stderr, "NO More Memory Available\n");
         return NULL;
     }
