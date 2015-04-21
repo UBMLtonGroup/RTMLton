@@ -22,6 +22,7 @@ struct GC_state {
    */
   pointer frontier; /* heap.start <= frontier < limit */
   pointer umfrontier;
+  pointer umarfrontier;
   pointer limit; /* limit = heap.start + heap.size */
   pointer stackTop; /* Top of stack in current thread. */
   pointer stackLimit; /* stackBottom + stackSize - maxFrameSize */
@@ -48,6 +49,7 @@ struct GC_state {
   bool hashConsDuringGC;
   struct GC_heap heap;
   struct GC_UM_heap umheap;
+  struct GC_UM_Array_heap umarheap;
   struct GC_lastMajorStatistics lastMajorStatistics;
   pointer limitPlusSlop; /* limit + GC_HEAP_LIMIT_SLOP */
   int (*loadGlobals)(FILE *f); /* loads the globals from the file. */

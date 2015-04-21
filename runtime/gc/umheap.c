@@ -9,8 +9,7 @@ void initUMHeap(__attribute__ ((unused)) GC_state s,
 GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
                            GC_UM_heap h) {
     if (h->fl_chunks <= 3) {
-        fprintf(stderr, "NO More Memory Available\n");
-        return NULL;
+        die("allocNextChunk: No more memory available\n");
     }
 
     GC_UM_Chunk c = h->fl_head;
@@ -65,6 +64,24 @@ bool createUMHeap(GC_state s,
         fprintf(stderr,
                 "[GC: mapped freelist over the heap\n]");
     }
+
+    return TRUE;
+}
+
+bool createUMArrayHeap(GC_state s,
+                       GC_UM_Array_heap h,
+                       size_t desiredSize,
+                       __attribute__ ((unused)) size_t minSize) {
+    pointer newStart;
+    newStart = GC_mmapAnon (NULL, desiredSize);;
+
+    if (newStart == (void*) -1) {
+        fprintf(stderr, "[GC: MMap Failure]\n");
+        return FALSE;
+    }
+
+    h->start = newStart;
+    h->size = desiredSize;
 
     return TRUE;
 }
