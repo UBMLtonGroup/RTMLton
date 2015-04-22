@@ -14,6 +14,10 @@ pointer GC_arrayAllocate (GC_state s,
     arraySize = bytesPerElement * numElements;
     arraySize += GC_ARRAY_HEADER_SIZE;
 
+    if (arraySize < GC_ARRAY_HEADER_SIZE + OBJPTR_SIZE) {
+        arraySize = GC_ARRAY_HEADER_SIZE + OBJPTR_SIZE;
+    }
+
     frontier = s->umarfrontier;
     last = frontier + arraySize;
     s->umarfrontier = last;

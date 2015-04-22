@@ -24,7 +24,7 @@
 #include "gc/align.c"
 #include "gc/read_write.c"
 
-//#include "gc/array-allocate.c
+//#include "gc/array-allocate.c"
 #include "gc/umarray-allocate.c"
 #include "gc/array.c"
 #include "gc/atomic.c"
