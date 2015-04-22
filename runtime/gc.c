@@ -38,6 +38,7 @@
 #include "gc/foreach.c"
 #include "gc/forward.c"
 #include "gc/frame.c"
+#include "gc/processor.c"
 #include "gc/garbage-collection.c"
 #include "gc/gc_state.c"
 #include "gc/generational.c"
