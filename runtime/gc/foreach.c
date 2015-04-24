@@ -12,8 +12,8 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
 }
 
 /* foreachGlobalObjptr (s, f)
- * 
- * Apply f to each global object pointer into the heap. 
+ *
+ * Apply f to each global object pointer into the heap.
  */
 void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
   for (unsigned int i = 0; i < s->globalsLength; ++i) {
@@ -30,8 +30,8 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
 }
 
 
-/* foreachObjptrInObject (s, p, f, skipWeaks) 
- * 
+/* foreachObjptrInObject (s, p, f, skipWeaks)
+ *
  * Applies f to each object pointer in the object pointed to by p.
  * Returns pointer to the end of object, i.e. just past object.
  *
@@ -47,13 +47,13 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
   if (DEBUG_DETAILED)
-    fprintf (stderr, 
+    fprintf (stderr,
              "foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
              "  tag = %s"
              "  bytesNonObjptrs = %d"
-             "  numObjptrs = %d\n", 
-             (uintptr_t)p, header, objectTypeTagToString (tag), 
+             "  numObjptrs = %d\n",
+             (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
     p += bytesNonObjptrs;
@@ -61,7 +61,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     /* Apply f to all internal pointers. */
     for ( ; p < max; p += OBJPTR_SIZE) {
       if (DEBUG_DETAILED)
-        fprintf (stderr, 
+        fprintf (stderr,
                  "  p = "FMTPTR"  *p = "FMTOBJPTR"\n",
                  (uintptr_t)p, *(objptr*)p);
       callIfIsObjptr (s, f, (objptr*)p);
@@ -110,7 +110,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           p += bytesNonObjptrs;
           next = p + bytesObjptrs;
           /* For each internal pointer. */
-          for ( ; p < next; p += OBJPTR_SIZE) 
+          for ( ; p < next; p += OBJPTR_SIZE)
             callIfIsObjptr (s, f, (objptr*)p);
         }
       }
@@ -119,16 +119,16 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else { /* stack */
-    GC_stack stack; 
-    pointer top, bottom; 
+    GC_stack stack;
+    pointer top, bottom;
     unsigned int i;
-    GC_returnAddress returnAddress; 
+    GC_returnAddress returnAddress;
     GC_frameLayout frameLayout;
     GC_frameOffsets frameOffsets;
 
     assert (STACK_TAG == tag);
     stack = (GC_stack)p;
-    bottom = getStackBottom (s, stack); 
+    bottom = getStackBottom (s, stack);
     top = getStackTop (s, stack);
     if (DEBUG) {
       fprintf (stderr, "  bottom = "FMTPTR"  top = "FMTPTR"\n",
@@ -176,7 +176,7 @@ pointer foreachObjptrInRange (GC_state s, pointer front, pointer *back,
 
   assert (isFrontierAligned (s, front));
   if (DEBUG_DETAILED)
-    fprintf (stderr, 
+    fprintf (stderr,
              "foreachObjptrInRange  front = "FMTPTR"  *back = "FMTPTR"\n",
              (uintptr_t)front, (uintptr_t)(*back));
   b = *back;
@@ -185,7 +185,7 @@ pointer foreachObjptrInRange (GC_state s, pointer front, pointer *back,
     while (front < b) {
       assert (isAligned ((size_t)front, GC_MODEL_MINALIGN));
       if (DEBUG_DETAILED)
-        fprintf (stderr, 
+        fprintf (stderr,
                  "  front = "FMTPTR"  *back = "FMTPTR"\n",
                  (uintptr_t)front, (uintptr_t)(*back));
       pointer p = advanceToObjectData (s, front);

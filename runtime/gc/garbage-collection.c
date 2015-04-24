@@ -95,10 +95,12 @@ void leaveGC (GC_state s) {
 }
 
 void performUMGC(GC_state s) {
+    enterGC(s);
+
     foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
     GC_stack currentStack = getStackCurrent(s);
     foreachObjptrInObject(s, currentStack,
-                          dfsMarkWithoutHashConsWithLinkWeaks, TRUE);
+                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
 
     pointer pchunk;
     pointer end = s->umheap.start + s->umheap.size;
@@ -114,6 +116,8 @@ void performUMGC(GC_state s) {
             fprintf(stderr, "Collecting: %x, %d\n", pc, pc->sentinel);
         }
     }
+
+    leaveGC(s);
 }
 
 void performGC (GC_state s,

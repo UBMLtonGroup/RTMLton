@@ -37,7 +37,7 @@
 // umfrontier
 #define StackBottom *(Pointer*)(GCState + StackBottomOffset)
 #define StackTopMem *(Pointer*)(GCState + StackTopOffset)
-#define StackTop StackTopMem
+#define StackTop  *(Pointer*)(GCState + StackTopOffset)
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
@@ -81,7 +81,7 @@
 
 #define FlushStackTop()                         \
         do {                                    \
-                StackTopMem = StackTop;         \
+           /*     StackTopMem = StackTop;   */      \
         } while (0)
 
 #define CacheFrontier()                         \
@@ -92,7 +92,7 @@
 
 #define CacheStackTop()                         \
         do {                                    \
-                StackTop = StackTopMem;         \
+        /*        StackTop = StackTopMem;   */      \
         } while (0)
 
 /* ------------------------------------------------- */
