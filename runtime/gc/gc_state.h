@@ -12,7 +12,8 @@
 
 typedef enum {
   GC_NONE,
-  GC_DEFAULT
+  GC_DEFAULT,
+  GC_UM
 } GC_moduleKind;
 
 struct GC_state {

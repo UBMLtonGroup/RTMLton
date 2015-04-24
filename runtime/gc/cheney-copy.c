@@ -57,23 +57,23 @@ void majorCheneyCopyGC (GC_state s) {
   s->cumulativeStatistics.numCopyingGCs++;
   s->forwardState.amInMinorGC = FALSE;
   if (DEBUG or s->controls.messages) {
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC: Starting major Cheney-copy;]\n");
     fprintf (stderr,
              "[GC:\tfrom heap at "FMTPTR" of size %s bytes,]\n",
-             (uintptr_t)(s->heap.start), 
+             (uintptr_t)(s->heap.start),
              uintmaxToCommaString(s->heap.size));
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC:\tto heap at "FMTPTR" of size %s bytes.]\n",
-             (uintptr_t)(s->secondaryHeap.start), 
+             (uintptr_t)(s->secondaryHeap.start),
              uintmaxToCommaString(s->secondaryHeap.size));
   }
   s->forwardState.toStart = s->secondaryHeap.start;
   s->forwardState.toLimit = s->secondaryHeap.start + s->secondaryHeap.size;
   assert (s->secondaryHeap.start != (pointer)NULL);
   /* The next assert ensures there is enough space for the copy to
-   * succeed.  It does not assert 
-   *   (s->secondaryHeap.size >= s->heap.size) 
+   * succeed.  It does not assert
+   *   (s->secondaryHeap.size >= s->heap.size)
    * because that is too strong.
    */
   assert (s->secondaryHeap.size >= s->heap.oldGenSize);
@@ -90,7 +90,7 @@ void majorCheneyCopyGC (GC_state s) {
   if (detailedGCTime (s))
     stopTiming (&ru_start, &s->cumulativeStatistics.ru_gcCopying);
   if (DEBUG or s->controls.messages)
-    fprintf (stderr, 
+    fprintf (stderr,
              "[GC: Finished major Cheney-copy; copied %s bytes.]\n",
              uintmaxToCommaString(bytesCopied));
 }
@@ -120,7 +120,7 @@ void minorCheneyCopyGC (GC_state s) {
     s->cumulativeStatistics.numMinorGCs++;
     s->forwardState.amInMinorGC = TRUE;
     if (DEBUG_GENERATIONAL or s->controls.messages) {
-      fprintf (stderr, 
+      fprintf (stderr,
                "[GC: Starting minor Cheney-copy;]\n");
       fprintf (stderr,
                "[GC:\tfrom nursery at "FMTPTR" of size %s bytes.]\n",
@@ -137,7 +137,7 @@ void minorCheneyCopyGC (GC_state s) {
      */
     foreachGlobalObjptr (s, forwardObjptrIfInNursery);
     forwardInterGenerationalObjptrs (s);
-    foreachObjptrInRange (s, s->forwardState.toStart, &s->forwardState.back, 
+    foreachObjptrInRange (s, s->forwardState.toStart, &s->forwardState.back,
                           forwardObjptrIfInNursery, TRUE);
     updateWeaksForCheneyCopy (s);
     bytesCopied = (size_t)(s->forwardState.back - s->forwardState.toStart);
@@ -147,7 +147,7 @@ void minorCheneyCopyGC (GC_state s) {
     if (detailedGCTime (s))
       stopTiming (&ru_start, &s->cumulativeStatistics.ru_gcMinor);
     if (DEBUG_GENERATIONAL or s->controls.messages)
-      fprintf (stderr, 
+      fprintf (stderr,
                "[GC: Finished minor Cheney-copy; copied %s bytes.]\n",
                uintmaxToCommaString(bytesCopied));
   }

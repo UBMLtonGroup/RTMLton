@@ -8,7 +8,7 @@
  */
 
 void minorGC (GC_state s) {
-    minorCheneyCopyGC (s);
+//    minorCheneyCopyGC (s);
 }
 
 void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
@@ -46,22 +46,7 @@ void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
     resizeHeap (s, s->lastMajorStatistics.bytesLive + bytesRequested);
   }
 
-/*
-  pointer pchunk;
-  pointer end = s->umheap.start + s->umheap.size;
-  size_t step = sizeof(struct GC_UM_Chunk);
 
-  for (pchunk=s->umheap.start;
-       pchunk < end;
-       pchunk+=step) {
-      GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
-      if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-          !(pc->chunk_header & UM_CHUNK_HEADER_MASK)) {
-//          insertFreeChunk(s, &(s->umheap), pchunk);
-          fprintf(stderr, "Collecting: %x, %d\n", pc, pc->sentinel);
-      }
-  }
-*/
   fprintf(stderr, "Collection done\n");
 
   setCardMapAndCrossMap (s);
@@ -109,6 +94,28 @@ void leaveGC (GC_state s) {
   s->amInGC = FALSE;
 }
 
+void performUMGC(GC_state s) {
+    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
+    GC_stack currentStack = getStackCurrent(s);
+    foreachObjptrInObject(s, currentStack,
+                          dfsMarkWithoutHashConsWithLinkWeaks, TRUE);
+
+    pointer pchunk;
+    pointer end = s->umheap.start + s->umheap.size;
+    size_t step = sizeof(struct GC_UM_Chunk);
+
+    for (pchunk=s->umheap.start;
+         pchunk < end;
+         pchunk+=step) {
+        GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
+        if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
+            ((pc->chunk_header & UM_CHUNK_HEADER_MASK) == 0)) {
+            insertFreeChunk(s, &(s->umheap), pchunk);
+            fprintf(stderr, "Collecting: %x, %d\n", pc, pc->sentinel);
+        }
+    }
+}
+
 void performGC (GC_state s,
                 size_t oldGenBytesRequested,
                 size_t nurseryBytesRequested,
@@ -120,8 +127,14 @@ void performGC (GC_state s,
   struct rusage ru_start;
   size_t totalBytesRequested;
 
-  if (s->gc_module != GC_DEFAULT)
+  if (s->gc_module == GC_UM) {
+      performUMGC(s);
 	  return;
+  }
+
+  if (s->gc_module == GC_NONE) {
+      return;
+  }
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
@@ -216,6 +229,7 @@ void performGC (GC_state s,
   assert (invariantForGC (s));
   leaveGC (s);
 }
+
 
 void ensureInvariantForMutator (GC_state s, bool force) {
   if (force
