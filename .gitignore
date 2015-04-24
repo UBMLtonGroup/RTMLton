@@ -2,3 +2,4 @@
 /install/
 *~
 *.sml-e
+cscope.*
