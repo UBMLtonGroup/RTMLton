@@ -16,6 +16,7 @@ GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
     GC_UM_Chunk c = h->fl_head;
     h->fl_head = h->fl_head->next_chunk;
     c->next_chunk = NULL;
+    c->chunk_header = UM_CHUNK_IN_USE;
     h->fl_chunks -= 1;
     return c;
 }
@@ -26,7 +27,8 @@ void insertFreeChunk(__attribute__ ((unused)) GC_state s,
     GC_UM_Chunk pc = (GC_UM_Chunk) c;
     pc->next_chunk = h->fl_head;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header = 0;
+    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
+    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
     h->fl_head = pc;
     h->fl_chunks += 1;
 }

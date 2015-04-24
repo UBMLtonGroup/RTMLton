@@ -2,6 +2,9 @@
 
 #define UM_CHUNK_PAYLOAD_SIZE 32
 #define UM_CHUNK_SENTINEL_UNUSED 9999
+#define UM_CHUNK_HEADER_CLEAN 0
+#define UM_CHUNK_HEADER_MASK  1
+#define UM_CHUNK_IN_USE       2
 
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE];

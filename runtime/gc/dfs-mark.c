@@ -125,6 +125,19 @@ mark:
       GC_NORMAL_HEADER_SIZE
       + bytesNonObjptrs
       + (numObjptrs * OBJPTR_SIZE);
+/*
+    if (cur >= (s->umheap.start) &&
+        cur < (s->umheap.start + s->umheap.size)) {
+        GC_UM_Chunk pchunk = (GC_UM_Chunk)(cur - GC_NORMAL_HEADER_SIZE);
+        pchunk->chunk_header |= UM_CHUNK_HEADER_MASK;
+        fprintf(stderr, "dfs-mark: chunk: %x, sentinel: %d\n", pchunk,
+                pchunk->sentinel);
+
+        if (NULL != pchunk->next_chunk) {
+            pchunk->next_chunk->chunk_header |= UM_CHUNK_HEADER_MASK;
+        }
+    }
+*/
     if (0 == numObjptrs) {
       /* There is nothing to mark. */
 normalDone:
@@ -132,8 +145,14 @@ normalDone:
         cur = hashConsPointer (s, cur, TRUE);
       goto ret;
     }
+
+    /* TODO: These lines should be changed to understand chunking */
     todo = cur + bytesNonObjptrs;
     objptrIndex = 0;
+
+/*UM_CPointer_offset(s, cur,
+                              bytesNonObjptrs + objptrIndex * OBJPTR_SIZE,
+                              OBJPTR_SIZE);*/
 markInNormal:
     if (DEBUG_DFS_MARK)
       fprintf (stderr, "markInNormal  objptrIndex = %"PRIu32"\n", objptrIndex);
@@ -150,6 +169,11 @@ markNextInNormal:
         goto normalDone;
       }
       todo += OBJPTR_SIZE;
+/*
+UM_CPointer_offset(s, cur,
+                                bytesNonObjptrs + objptrIndex * OBJPTR_SIZE,
+                                OBJPTR_SIZE);
+*/
       goto markInNormal;
     }
     nextHeaderp = getHeaderp (next);

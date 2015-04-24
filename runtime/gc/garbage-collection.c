@@ -45,6 +45,25 @@ void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   if (mayResize) {
     resizeHeap (s, s->lastMajorStatistics.bytesLive + bytesRequested);
   }
+
+/*
+  pointer pchunk;
+  pointer end = s->umheap.start + s->umheap.size;
+  size_t step = sizeof(struct GC_UM_Chunk);
+
+  for (pchunk=s->umheap.start;
+       pchunk < end;
+       pchunk+=step) {
+      GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
+      if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
+          !(pc->chunk_header & UM_CHUNK_HEADER_MASK)) {
+//          insertFreeChunk(s, &(s->umheap), pchunk);
+          fprintf(stderr, "Collecting: %x, %d\n", pc, pc->sentinel);
+      }
+  }
+*/
+  fprintf(stderr, "Collection done\n");
+
   setCardMapAndCrossMap (s);
   resizeHeapSecondary (s);
   assert (s->heap.oldGenSize + bytesRequested <= s->heap.size);
@@ -237,4 +256,6 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   assert (invariantForMutatorFrontier(s));
   assert (invariantForMutatorStack(s));
   leave (s);
+
+  fprintf(stderr, "GC_collect done\n");
 }
