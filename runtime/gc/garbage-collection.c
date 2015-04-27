@@ -94,19 +94,21 @@ void leaveGC (GC_state s) {
   s->amInGC = FALSE;
 }
 
+
+
 void performUMGC(GC_state s) {
 
     enterGC(s);
-/*
-    if (s->umheap.fl_chunks >= 200) {
-        leaveGC(s);
-        return;
-    }
-*/
-    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
+    fprintf(stderr, "PerformUMGC\n");
+
     GC_stack currentStack = getStackCurrent(s);
-    foreachObjptrInObject(s, currentStack,
-                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
+    foreachGlobalObjptr (s, umDfsMarkObjectsMark);
+//    foreachObjptrInObject(s, currentStack, umDfsMarkObjectsMark, FALSE);
+
+//    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
+//    GC_stack currentStack = getStackCurrent(s);
+//    foreachObjptrInObject(s, currentStack,
+//                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
 
     pointer pchunk;
     pointer end = s->umheap.start + s->umheap.size;
@@ -119,14 +121,15 @@ void performUMGC(GC_state s) {
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
             if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting: %x, %d, %d\n", pc, pc->sentinel, pc->chunk_header);
+                fprintf(stderr, "Collecting: 0x%x, %d, %d\n",
+                        pc, pc->sentinel, pc->chunk_header);
             }
-            insertFreeChunk(s, &(s->umheap), pchunk);
-            // TODO: Cancel the marks on each in-use chunks
-
+//            insertFreeChunk(s, &(s->umheap), pchunk);
         }
     }
 
+//    foreachObjptrInObject(s, currentStack, umDfsMarkObjectsUnMark, FALSE);
+    foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
     leaveGC(s);
 }
 

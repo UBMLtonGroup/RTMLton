@@ -56,17 +56,24 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
-      fprintf(stderr, "GET NORMAL TAG!! 0x%x\n", p);
-    p += bytesNonObjptrs;
-    pointer max = p + (numObjptrs * OBJPTR_SIZE);
-    /* Apply f to all internal pointers. */
-    for ( ; p < max; p += OBJPTR_SIZE) {
-      if (DEBUG_DETAILED)
-        fprintf (stderr,
-                 "  p = "FMTPTR"  *p = "FMTOBJPTR"\n",
-                 (uintptr_t)p, *(objptr*)p);
-      callIfIsObjptr (s, f, (objptr*)p);
-    }
+      /*
+      p += bytesNonObjptrs;
+      pointer max = p + (numObjptrs * OBJPTR_SIZE);
+
+      for ( ; p < max; p += OBJPTR_SIZE) {
+          if (DEBUG_DETAILED)
+              fprintf (stderr,
+                       "  p = "FMTPTR"  *p = "FMTOBJPTR"\n",
+                       (uintptr_t)p, *(objptr*)p);
+          callIfIsObjptr (s, f, (objptr*)p);
+      }
+      */
+      for (int i=0; i<numObjptrs; i++) {
+          pointer todo = UM_CPointer_offset(s, p, bytesNonObjptrs + i * OBJPTR_SIZE,
+                                            OBJPTR_SIZE);
+          callIfIsObjptr (s, f, (objptr*)todo);
+      }
+//      p += bytesNonObjptrs;
   } else if (WEAK_TAG == tag) {
     p += bytesNonObjptrs;
     if (1 == numObjptrs) {
@@ -139,15 +146,16 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     while (top > bottom) {
       /* Invariant: top points just past a "return address". */
       returnAddress = *((GC_returnAddress*)(top - GC_RETURNADDRESS_SIZE));
-      if (DEBUG) {
+      //    if (DEBUG) {
         fprintf (stderr, "  top = "FMTPTR"  return address = "FMTRA"\n",
                  (uintptr_t)top, returnAddress);
-      }
+//      }
       frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
       frameOffsets = frameLayout->offsets;
       top -= frameLayout->size;
+      fprintf(stderr, "FRAME OFFSETS MaxI: %d\n", frameOffsets[0]);
       for (i = 0 ; i < frameOffsets[0] ; ++i) {
-        if (DEBUG)
+//        if (DEBUG)
           fprintf(stderr, "  offset %"PRIx16"  address "FMTOBJPTR"\n",
                   frameOffsets[i + 1], *(objptr*)(top + frameOffsets[i + 1]));
         callIfIsObjptr (s, f, (objptr*)(top + frameOffsets[i + 1]));

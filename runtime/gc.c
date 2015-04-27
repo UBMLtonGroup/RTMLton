@@ -72,3 +72,4 @@
 #include "gc/weak.c"
 #include "gc/world.c"
 #include "gc/um.c"
+#include "gc/ummark.c"
