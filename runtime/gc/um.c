@@ -23,6 +23,8 @@ UM_Header_alloc(__attribute__ ((unused)) GC_state gc_stat, Pointer umfrontier,
 {
     if (DEBUG_MEM)
         DBG(umfrontier, s, 0, "enter");
+    GC_UM_Chunk pchunk = (GC_UM_Chunk)umfrontier;
+    pchunk->chunk_header = UM_CHUNK_IN_USE;
 	return (umfrontier + s);
 }
 
@@ -53,14 +55,16 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
        DBG(umfrontier, s, 0, "allocate next chunk");
 
     if (s > 2 * UM_CHUNK_PAYLOAD_SIZE) {
-        fprintf(stderr, "ERROR: Going over 2 chunks\n");
-        return NULL;
+        die("BUG: Requiring allocation of more than 2 chunks\n");
     }
     /* Assume a maximum of 2 chunks
      * It can actually be 3 (fragmented chunks of LARGE objects)
      * TODO: Set header to represent chunked object
      */
     current_chunk->next_chunk = next_chunk;
+/////////////////
+    next_chunk->chunk_header = UM_CHUNK_IN_USE;
+/////////////////
     GC_UM_Chunk next_chunk_next = allocNextChunk(gc_stat, &(gc_stat->umheap));
     next_chunk->next_chunk = NULL;
 
@@ -106,6 +110,10 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 
     /* On next chunk */
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
+
+    if (current_chunk->chunk_header == UM_CHUNK_HEADER_CLEAN)
+        die("Visiting a chunk that is on free list!\n");
+
     if (current_chunk->sentinel == UM_CHUNK_SENTINEL_UNUSED) {
         current_chunk->sentinel = o + 4;
 

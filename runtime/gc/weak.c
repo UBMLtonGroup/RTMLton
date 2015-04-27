@@ -57,9 +57,17 @@ pointer GC_weakNew (GC_state s, GC_header header, pointer p) {
   GC_weak weak;
   pointer res;
 
+  res = UM_Header_alloc(s, s->umfrontier, GC_NORMAL_HEADER_SIZE);
+  pointer new_frontier = UM_Payload_alloc(s, s->umfrontier,
+                                          GC_NORMAL_HEADER_SIZE + sizeofWeak(s));
+  *((GC_header*)(s->umfrontier)) = header;
+  s->umfrontier = new_frontier;
+
+/*
   res = newObject (s, header,
                    sizeofWeak (s),
                    FALSE);
+*/
   weak = (GC_weak)(res + offsetofWeak (s));
   weak->objptr = pointerToObjptr(p, s->heap.start);
   if (DEBUG_WEAK)

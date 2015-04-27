@@ -2,6 +2,9 @@
 
 #define UM_CHUNK_PAYLOAD_SIZE 32
 #define UM_CHUNK_SENTINEL_UNUSED 9999
+#define UM_CHUNK_HEADER_CLEAN 0
+#define UM_CHUNK_HEADER_MASK  1
+#define UM_CHUNK_IN_USE       2
 
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE];
@@ -16,6 +19,11 @@ typedef struct GC_UM_heap {
     int fl_chunks;
     GC_UM_Chunk fl_head;
 } *GC_UM_heap;
+
+typedef struct GC_UM_Array_heap {
+    pointer start;
+    size_t size;
+} *GC_UM_Array_heap;
 #endif /* MLTON_GC_INTERNAL_TYPES */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
@@ -25,4 +33,7 @@ GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h);
 bool createUMHeap(GC_state s, GC_UM_heap h,
                   size_t diredSize,
                   size_t minSize);
+bool createUMArrayHeap(GC_state s, GC_UM_Array_heap h,
+                       size_t diredSize,
+                       size_t minSize);
 #endif

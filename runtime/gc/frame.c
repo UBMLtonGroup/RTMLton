@@ -25,6 +25,8 @@ GC_frameLayout getFrameLayoutFromFrameIndex (GC_state s, GC_frameIndex findex) {
   assert (findex < s->frameLayoutsLength);
   layout = &(s->frameLayouts[findex]);
   assert (layout->size > 0);
+
+  // fprintf(stderr, "Frame size: %ld\n", layout->size);
   return layout;
 }
 

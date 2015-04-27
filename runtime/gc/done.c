@@ -38,7 +38,8 @@ static void displayCollectionStats (FILE *out, const char *name, struct rusage *
 }
 
 void GC_done (GC_state s) {
-  if (s->gc_module == GC_NONE) {
+  if (s->gc_module == GC_NONE ||
+      s->gc_module == GC_UM) {
       return;
   }
   FILE *out;
