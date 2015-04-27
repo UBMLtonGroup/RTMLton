@@ -130,8 +130,10 @@ mark:
         cur < (s->umheap.start + s->umheap.size)) {
         GC_UM_Chunk pchunk = (GC_UM_Chunk)(cur - GC_NORMAL_HEADER_SIZE);
         pchunk->chunk_header |= UM_CHUNK_HEADER_MASK;
-        fprintf(stderr, "dfs-mark: chunk: %x, sentinel: %d\n", pchunk,
-                pchunk->sentinel);
+        if (DEBUG_MEM) {
+            fprintf(stderr, "dfs-mark: chunk: %x, sentinel: %d\n", pchunk,
+                    pchunk->sentinel);
+        }
 
         if (NULL != pchunk->next_chunk) {
             pchunk->next_chunk->chunk_header |= UM_CHUNK_HEADER_MASK;
@@ -392,7 +394,6 @@ void dfsMarkWithHashConsWithLinkWeaks (GC_state s, objptr *opp) {
 
 void dfsMarkWithoutHashConsWithLinkWeaks (GC_state s, objptr *opp) {
   pointer p;
-
   p = objptrToPointer (*opp, s->heap.start);
   dfsMarkByMode (s, p, MARK_MODE, FALSE, TRUE);
 }

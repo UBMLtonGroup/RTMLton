@@ -56,6 +56,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
+      fprintf(stderr, "GET NORMAL TAG!! 0x%x\n", p);
     p += bytesNonObjptrs;
     pointer max = p + (numObjptrs * OBJPTR_SIZE);
     /* Apply f to all internal pointers. */

@@ -95,8 +95,14 @@ void leaveGC (GC_state s) {
 }
 
 void performUMGC(GC_state s) {
-    enterGC(s);
 
+    enterGC(s);
+/*
+    if (s->umheap.fl_chunks >= 200) {
+        leaveGC(s);
+        return;
+    }
+*/
     foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
     GC_stack currentStack = getStackCurrent(s);
     foreachObjptrInObject(s, currentStack,
@@ -111,9 +117,13 @@ void performUMGC(GC_state s) {
          pchunk+=step) {
         GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-            ((pc->chunk_header & UM_CHUNK_HEADER_MASK) == 0)) {
+            (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
+            if (DEBUG_MEM) {
+                fprintf(stderr, "Collecting: %x, %d, %d\n", pc, pc->sentinel, pc->chunk_header);
+            }
             insertFreeChunk(s, &(s->umheap), pchunk);
-            fprintf(stderr, "Collecting: %x, %d\n", pc, pc->sentinel);
+            // TODO: Cancel the marks on each in-use chunks
+
         }
     }
 
@@ -262,6 +272,11 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   if (s->gc_module == GC_NONE) {
       return;
   }
+
+  if (s->gc_module == GC_UM) {
+      performUMGC(s);
+      return;
+  }
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.
@@ -275,5 +290,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   assert (invariantForMutatorStack(s));
   leave (s);
 
-  fprintf(stderr, "GC_collect done\n");
+  if (DEBUG_MEM) {
+      fprintf(stderr, "GC_collect done\n");
+  }
 }
