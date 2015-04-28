@@ -40,6 +40,9 @@ void getObjectType(GC_state s, objptr *opp) {
 
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     pointer p = objptrToPointer(*opp, s->heap.start);
+    if (DEBUG_MEM)
+        fprintf(stderr, "original obj: 0x%x, obj: 0x%x\n",
+                (uintptr_t)*opp, (uintptr_t)p);
     GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
     uint16_t bytesNonObjptrs;
@@ -52,26 +55,35 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
     /* Using MLton's header to track if it's marked */
     if (isPointerMarkedByMode(p, m)) {
-        fprintf(stderr, FMTPTR"marked by mark_mode: %d, RETURN\n",
-                (uintptr_t)p,
-                (m == MARK_MODE));
+        if (DEBUG_MEM)
+            fprintf(stderr, FMTPTR"marked by mark_mode: %d, RETURN\n",
+                    (uintptr_t)p,
+                    (m == MARK_MODE));
         return;
     }
 
     if (m == MARK_MODE) {
-        fprintf(stderr, FMTPTR" mark b pheader: %x, header: %x\n",
-                (uintptr_t)p, *(getHeaderp(p)), header);
+        if (DEBUG_MEM)
+            fprintf(stderr, FMTPTR" mark b pheader: %x, header: %x\n",
+                    (uintptr_t)p, *(getHeaderp(p)), header);
+
         header = header | MARK_MASK;
         *headerp = header;
-        fprintf(stderr, FMTPTR" mark a pheader: %x, header: %x\n",
-                (uintptr_t)p, *(getHeaderp(p)), header);
+
+        if (DEBUG_MEM)
+            fprintf(stderr, FMTPTR" mark a pheader: %x, header: %x\n",
+                    (uintptr_t)p, *(getHeaderp(p)), header);
     } else {
-        fprintf(stderr, FMTPTR" unmark b pheader: %x, header: %x\n",
-                (uintptr_t)p, *(getHeaderp(p)), header);
+        if (DEBUG_MEM)
+            fprintf(stderr, FMTPTR" unmark b pheader: %x, header: %x\n",
+                    (uintptr_t)p, *(getHeaderp(p)), header);
+
         header = header & ~MARK_MASK;
         (*headerp) = header;
-        fprintf(stderr, FMTPTR" unmark a pheader: %x, header: %x\n",
-                (uintptr_t)p, *(getHeaderp(p)), header);
+
+        if (DEBUG_MEM)
+            fprintf(stderr, FMTPTR" unmark a pheader: %x, header: %x\n",
+                    (uintptr_t)p, *(getHeaderp(p)), header);
     }
 
     if (tag == NORMAL_TAG) {
@@ -91,7 +103,11 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
             }
 
             if (NULL != pchunk->next_chunk) {
-                pchunk->next_chunk->chunk_header ^= UM_CHUNK_HEADER_MASK;
+                if (m == MARK_MODE) {
+                    pchunk->next_chunk->chunk_header |= UM_CHUNK_HEADER_MASK;
+                } else {
+                    pchunk->next_chunk->chunk_header &= ~UM_CHUNK_HEADER_MASK;
+                }
             }
         }
     }

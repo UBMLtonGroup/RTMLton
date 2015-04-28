@@ -98,12 +98,12 @@ void leaveGC (GC_state s) {
 
 void performUMGC(GC_state s) {
 
-    enterGC(s);
-    fprintf(stderr, "PerformUMGC\n");
+    if (DEBUG_MEM)
+        fprintf(stderr, "PerformUMGC\n");
 
-//    GC_stack currentStack = getStackCurrent(s);
+    GC_stack currentStack = getStackCurrent(s);
     foreachGlobalObjptr (s, umDfsMarkObjectsMark);
-//    foreachObjptrInObject(s, currentStack, umDfsMarkObjectsMark, FALSE);
+    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
 
 //    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
 //    GC_stack currentStack = getStackCurrent(s);
@@ -124,30 +124,29 @@ void performUMGC(GC_state s) {
                 fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
                         (uintptr_t)pc, pc->sentinel, pc->chunk_header);
             }
-//            insertFreeChunk(s, &(s->umheap), pchunk);
+            insertFreeChunk(s, &(s->umheap), pchunk);
         }
     }
 
-//    foreachObjptrInObject(s, currentStack, umDfsMarkObjectsUnMark, FALSE);
+    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
     foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
-    leaveGC(s);
 }
 
 void performGC (GC_state s,
                 size_t oldGenBytesRequested,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
-                bool mayResize) {
+                __attribute__ ((unused)) bool mayResize) {
   uintmax_t gcTime;
   bool stackTopOk;
   size_t stackBytesRequested;
   struct rusage ru_start;
   size_t totalBytesRequested;
+//  if (s->gc_module == GC_UM) {
+//      performUMGC(s);
+//	  return;
+//  }
 
-  if (s->gc_module == GC_UM) {
-      performUMGC(s);
-	  return;
-  }
 
   if (s->gc_module == GC_NONE) {
       return;
@@ -196,8 +195,11 @@ void performGC (GC_state s,
     + nurseryBytesRequested
     + stackBytesRequested;
   if (forceMajor
-      or totalBytesRequested > s->heap.size - s->heap.oldGenSize)
-    majorGC (s, totalBytesRequested, mayResize);
+      or totalBytesRequested > s->heap.size - s->heap.oldGenSize) {
+//    majorGC (s, totalBytesRequested, mayResize);
+      performUMGC(s);
+  }
+
   setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,
                          nurseryBytesRequested);
   assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
@@ -273,11 +275,6 @@ void ensureHasHeapBytesFree (GC_state s,
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   if (s->gc_module == GC_NONE) {
-      return;
-  }
-
-  if (s->gc_module == GC_UM) {
-      performUMGC(s);
       return;
   }
   enter (s);
