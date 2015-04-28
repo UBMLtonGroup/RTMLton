@@ -8,7 +8,7 @@
  */
 
 void minorGC (GC_state s) {
-//    minorCheneyCopyGC (s);
+    minorCheneyCopyGC (s);
 }
 
 void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
@@ -101,7 +101,7 @@ void performUMGC(GC_state s) {
     enterGC(s);
     fprintf(stderr, "PerformUMGC\n");
 
-    GC_stack currentStack = getStackCurrent(s);
+//    GC_stack currentStack = getStackCurrent(s);
     foreachGlobalObjptr (s, umDfsMarkObjectsMark);
 //    foreachObjptrInObject(s, currentStack, umDfsMarkObjectsMark, FALSE);
 
@@ -121,8 +121,8 @@ void performUMGC(GC_state s) {
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
             if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting: 0x%x, %d, %d\n",
-                        pc, pc->sentinel, pc->chunk_header);
+                fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
+                        (uintptr_t)pc, pc->sentinel, pc->chunk_header);
             }
 //            insertFreeChunk(s, &(s->umheap), pchunk);
         }

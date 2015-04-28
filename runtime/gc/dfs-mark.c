@@ -131,7 +131,8 @@ mark:
         GC_UM_Chunk pchunk = (GC_UM_Chunk)(cur - GC_NORMAL_HEADER_SIZE);
         pchunk->chunk_header |= UM_CHUNK_HEADER_MASK;
         if (DEBUG_MEM) {
-            fprintf(stderr, "dfs-mark: chunk: %x, sentinel: %d\n", pchunk,
+            fprintf(stderr, "dfs-mark: chunk: "FMTPTR", sentinel: %d\n",
+                    (uintptr_t)pchunk,
                     pchunk->sentinel);
         }
 

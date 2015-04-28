@@ -33,6 +33,8 @@ void getObjectType(GC_state s, objptr *opp) {
     case STACK_TAG:
         fprintf(stderr, "STACK\n");
         break;
+    default:
+        die("getObjetctType: swith: Shouldn't be here!\n");
     }
 }
 
@@ -51,25 +53,25 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     /* Using MLton's header to track if it's marked */
     if (isPointerMarkedByMode(p, m)) {
         fprintf(stderr, FMTPTR"marked by mark_mode: %d, RETURN\n",
-                p,
+                (uintptr_t)p,
                 (m == MARK_MODE));
         return;
     }
 
     if (m == MARK_MODE) {
-        fprintf(stderr, FMTPTR" mark b pheader: %x, header: %x\n", p,
-                *(getHeaderp(p)), header);
+        fprintf(stderr, FMTPTR" mark b pheader: %x, header: %x\n",
+                (uintptr_t)p, *(getHeaderp(p)), header);
         header = header | MARK_MASK;
         *headerp = header;
-        fprintf(stderr, FMTPTR" mark a pheader: %x, header: %x\n", p,
-                *(getHeaderp(p)), header);
+        fprintf(stderr, FMTPTR" mark a pheader: %x, header: %x\n",
+                (uintptr_t)p, *(getHeaderp(p)), header);
     } else {
-        fprintf(stderr, FMTPTR" unmark b pheader: %x, header: %x\n", p,
-                *(getHeaderp(p)), header);
+        fprintf(stderr, FMTPTR" unmark b pheader: %x, header: %x\n",
+                (uintptr_t)p, *(getHeaderp(p)), header);
         header = header & ~MARK_MASK;
         (*headerp) = header;
-        fprintf(stderr, FMTPTR" unmark a pheader: %x, header: %x\n", p,
-                *(getHeaderp(p)), header);
+        fprintf(stderr, FMTPTR" unmark a pheader: %x, header: %x\n",
+                (uintptr_t)p, *(getHeaderp(p)), header);
     }
 
     if (tag == NORMAL_TAG) {
@@ -83,8 +85,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
             }
 
             if (DEBUG_MEM) {
-                fprintf(stderr, "umDfsMarkObjects: chunk: 0x%x, sentinel: %d,"
-                        " mark_mode: %d\n", pchunk, pchunk->sentinel,
+                fprintf(stderr, "umDfsMarkObjects: chunk: "FMTPTR", sentinel: %d,"
+                        " mark_mode: %d\n", (uintptr_t)pchunk, pchunk->sentinel,
                         (m == MARK_MODE));
             }
 
