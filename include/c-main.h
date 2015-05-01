@@ -92,10 +92,9 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
             rtAllocated[tNum] = false;                                  \
         }                                                               \
-                                                                        \ 
+                                                                        \
         gcState.realtimeThreadAllocated = rtAllocated;                  \
-                                                                        \ 
-                                                                        \ 
+                                                                        \
         /* Trampoline */                                                \
         while (1) {                                                     \
                 cont=(*(struct cont(*)(void))cont.nextChunk)();         \
