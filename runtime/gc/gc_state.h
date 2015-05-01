@@ -35,6 +35,7 @@ struct GC_state {
   int        numRealtimeThreads;
   pthread_t *realtimeThreads;
   bool      *realtimeThreadAllocated;
+  struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
   uint32_t frameLayoutsLength; /* Cardinality of frameLayouts array. */
