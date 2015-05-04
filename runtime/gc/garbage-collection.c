@@ -11,7 +11,7 @@ void minorGC (GC_state s) {
     minorCheneyCopyGC (s);
 }
 
-void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
+__attribute__ ((unused)) void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   uintmax_t numGCs;
   size_t desiredSize;
 

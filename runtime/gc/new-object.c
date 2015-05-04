@@ -48,8 +48,10 @@ pointer newObject (GC_state s,
   return result;
 }
 
-pointer newUMObject (GC_state s, GC_header header,
-                     size_t bytesRequested, bool allocInOldGen) {
+pointer newUMObject (GC_state s,
+                     GC_header header,
+                     size_t bytesRequested,
+                     __attribute__ ((unused)) bool allocInOldGen) {
     pointer frontier;
     pointer result;
 
