@@ -48,6 +48,18 @@ pointer newObject (GC_state s,
   return result;
 }
 
+pointer newUMObject (GC_state s, GC_header header,
+                     size_t bytesRequested, bool allocInOldGen) {
+    pointer frontier;
+    pointer result;
+
+    frontier = s->frontier;
+    s->frontier += bytesRequested;
+    *((GC_header*)frontier) = header;
+    result = frontier + GC_NORMAL_HEADER_SIZE;
+    return result;
+}
+
 GC_stack newStack (GC_state s,
                    size_t reserved,
                    bool allocInOldGen) {
@@ -56,9 +68,9 @@ GC_stack newStack (GC_state s,
   assert (isStackReservedAligned (s, reserved));
   if (reserved > s->cumulativeStatistics.maxStackSize)
     s->cumulativeStatistics.maxStackSize = reserved;
-  stack = (GC_stack)(newObject (s, GC_STACK_HEADER,
-                                sizeofStackWithHeader (s, reserved),
-                                allocInOldGen));
+  stack = (GC_stack)(newUMObject (s, GC_STACK_HEADER,
+                                  sizeofStackWithHeader (s, reserved),
+                                  allocInOldGen));
   stack->reserved = reserved;
   stack->used = 0;
   if (DEBUG_STACKS)
@@ -76,9 +88,9 @@ GC_thread newThread (GC_state s, size_t reserved) {
   assert (isStackReservedAligned (s, reserved));
   ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
   stack = newStack (s, reserved, FALSE);
-  res = newObject (s, GC_THREAD_HEADER,
-                   sizeofThread (s),
-                   FALSE);
+  res = newUMObject (s, GC_THREAD_HEADER,
+                     sizeofThread (s),
+                     FALSE);
   thread = (GC_thread)(res + offsetofThread (s));
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;

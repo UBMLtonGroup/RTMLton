@@ -91,6 +91,14 @@ void initVectors (GC_state s) {
   s->frontier = frontier;
 }
 
+double get_time()
+{
+    struct timeval t;
+    struct timezone tzp;
+    gettimeofday(&t, &tzp);
+    return t.tv_sec + t.tv_usec*1e-6;
+}
+
 void initWorld (GC_state s) {
   uint32_t i;
   pointer start;
@@ -102,12 +110,14 @@ void initWorld (GC_state s) {
 
   /* alloc um first so normal heap can expand without overrunning us */
 
+//  fprintf(stderr, "%f\n", get_time());
 #define MEGABYTES 1024*1024
   createUMHeap (s, &s->umheap, 512*MEGABYTES, 512*MEGABYTES);
 
   createUMArrayHeap (s, &s->umarheap, 512*MEGABYTES, 512*MEGABYTES);
 
   createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
+//  fprintf(stderr, "%f\n", get_time());
 
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //               s->lastMajorStatistics.bytesLive);

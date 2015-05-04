@@ -184,7 +184,7 @@ void performGC (GC_state s,
   assert (invariantForGC (s));
   if (needGCTime (s))
     startTiming (&ru_start);
-  minorGC (s);
+//  minorGC (s);
   stackTopOk = invariantForMutatorStack (s);
   stackBytesRequested =
     stackTopOk
