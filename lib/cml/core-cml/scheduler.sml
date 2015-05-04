@@ -29,9 +29,10 @@ structure Scheduler : SCHEDULER =
       datatype thread = datatype RepTypes.thread
       datatype rdy_thread = datatype RepTypes.rdy_thread
 
-      fun prep (THRD (tid, t)) = RTHRD (tid, T.prepare (t, ()))
-      fun prepVal (THRD (tid, t), v) = RTHRD (tid, T.prepare (t, v))
-      fun prepFn (THRD (tid, t), f) = RTHRD (tid, T.prepare (T.prepend (t, f), ()))
+			(* TODO add prio param *)
+      fun prep (THRD (tid, t)) = RTHRD (tid, T.prepare (t, (), 1))
+      fun prepVal (THRD (tid, t), v) = RTHRD (tid, T.prepare (t, v, 1))
+      fun prepFn (THRD (tid, t), f) = RTHRD (tid, T.prepare (T.prepend (t, f), (), 1))
 
       (* the dummy thread Id; this is used when an ID is needed to get
        * the types right

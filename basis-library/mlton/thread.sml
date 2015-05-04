@@ -55,6 +55,7 @@ structure Runnable =
 
 fun prepend (T r: 'a t, f: 'b -> 'a): 'b t =
    let
+   		val prio = 1
       val t =
          case !r of
             Dead => raise Fail "prepend to a Dead thread"
@@ -65,7 +66,7 @@ fun prepend (T r: 'a t, f: 'b -> 'a): 'b t =
       ; T (ref t)
    end
 
-fun prepare (t: 'a t, v: 'a): Runnable.t =
+fun prepare (t: 'a t, v: 'a, prio: int): Runnable.t =
    prepend (t, fn () => v)
 
 fun new f = T (ref (New f))
@@ -139,6 +140,7 @@ in
 
    fun switch f =
       (atomicBegin ()
+       ; print "switch\n"
        ; atomicSwitch f)
 end
 
@@ -156,10 +158,10 @@ fun toPrimitive (t as T r : unit t): Prim.thread =
          (fn cur : Prim.thread t =>
           prepare
           (prepend (t, fn () =>
-                    switch
-                    (fn t' : unit t =>
-                     prepare (cur, toPrimitive t'))),
-           ()))
+                       switch(fn t' : unit t => prepare (cur, toPrimitive t', 1))
+                    ), (), 1
+          )
+         )
     | Paused (f, t) =>
          (r := Dead
           ; f (fn () => ()) 

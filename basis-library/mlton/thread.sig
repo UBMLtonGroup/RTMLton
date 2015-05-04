@@ -47,7 +47,7 @@ signature MLTON_THREAD =
        * create a new runnable thread (destroying t in the process)
        * that will evaluate t on v.
        *)
-      val prepare: 'a t * 'a -> Runnable.t
+      val prepare: 'a t * 'a * int -> Runnable.t
       (* switch f 
        * apply f to the current thread to get rt, and then start
        * running thread rt.  It is an error for f to
