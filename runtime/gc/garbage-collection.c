@@ -8,10 +8,10 @@
  */
 
 void minorGC (GC_state s) {
-//    minorCheneyCopyGC (s);
+    minorCheneyCopyGC (s);
 }
 
-void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
+__attribute__ ((unused)) void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   uintmax_t numGCs;
   size_t desiredSize;
 
@@ -94,19 +94,21 @@ void leaveGC (GC_state s) {
   s->amInGC = FALSE;
 }
 
+
+
 void performUMGC(GC_state s) {
 
-    enterGC(s);
-/*
-    if (s->umheap.fl_chunks >= 200) {
-        leaveGC(s);
-        return;
-    }
-*/
-    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
+    if (DEBUG_MEM)
+        fprintf(stderr, "PerformUMGC\n");
+
     GC_stack currentStack = getStackCurrent(s);
-    foreachObjptrInObject(s, currentStack,
-                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
+    foreachGlobalObjptr (s, umDfsMarkObjectsMark);
+    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
+
+//    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
+//    GC_stack currentStack = getStackCurrent(s);
+//    foreachObjptrInObject(s, currentStack,
+//                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
 
     pointer pchunk;
     pointer end = s->umheap.start + s->umheap.size;
@@ -119,32 +121,32 @@ void performUMGC(GC_state s) {
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
             if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting: %x, %d, %d\n", pc, pc->sentinel, pc->chunk_header);
+                fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
+                        (uintptr_t)pc, pc->sentinel, pc->chunk_header);
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
-            // TODO: Cancel the marks on each in-use chunks
-
         }
     }
 
-    leaveGC(s);
+    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
+    foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
 }
 
 void performGC (GC_state s,
                 size_t oldGenBytesRequested,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
-                bool mayResize) {
+                __attribute__ ((unused)) bool mayResize) {
   uintmax_t gcTime;
   bool stackTopOk;
   size_t stackBytesRequested;
   struct rusage ru_start;
   size_t totalBytesRequested;
+//  if (s->gc_module == GC_UM) {
+//      performUMGC(s);
+//	  return;
+//  }
 
-  if (s->gc_module == GC_UM) {
-      performUMGC(s);
-	  return;
-  }
 
   if (s->gc_module == GC_NONE) {
       return;
@@ -182,7 +184,7 @@ void performGC (GC_state s,
   assert (invariantForGC (s));
   if (needGCTime (s))
     startTiming (&ru_start);
-  minorGC (s);
+//  minorGC (s);
   stackTopOk = invariantForMutatorStack (s);
   stackBytesRequested =
     stackTopOk
@@ -193,8 +195,11 @@ void performGC (GC_state s,
     + nurseryBytesRequested
     + stackBytesRequested;
   if (forceMajor
-      or totalBytesRequested > s->heap.size - s->heap.oldGenSize)
-    majorGC (s, totalBytesRequested, mayResize);
+      or totalBytesRequested > s->heap.size - s->heap.oldGenSize) {
+//    majorGC (s, totalBytesRequested, mayResize);
+      performUMGC(s);
+  }
+
   setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,
                          nurseryBytesRequested);
   assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
@@ -270,11 +275,6 @@ void ensureHasHeapBytesFree (GC_state s,
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   if (s->gc_module == GC_NONE) {
-      return;
-  }
-
-  if (s->gc_module == GC_UM) {
-      performUMGC(s);
       return;
   }
   enter (s);

@@ -102,6 +102,7 @@ void initWorld (GC_state s) {
 
   /* alloc um first so normal heap can expand without overrunning us */
 
+
 #define MEGABYTES 1024*1024
   createUMHeap (s, &s->umheap, 512*MEGABYTES, 512*MEGABYTES);
 

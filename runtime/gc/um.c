@@ -41,14 +41,14 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 
     if (DEBUG_MEM) {
         fprintf(stderr, "Sentinel: %d \n", current_chunk->sentinel);
-        fprintf(stderr, "Nextchunk: %x \n", next_chunk);
+        fprintf(stderr, "Nextchunk: "FMTPTR" \n", (uintptr_t) next_chunk);
     }
     current_chunk->next_chunk = NULL;
 
     if (s <= UM_CHUNK_PAYLOAD_SIZE) {
         if (DEBUG_MEM)
             DBG(umfrontier, s, 0, "move frontier to next chunk");
-        return next_chunk->ml_object;
+        return (Pointer)next_chunk->ml_object;
     }
 
     if (DEBUG_MEM)
@@ -69,8 +69,8 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
     next_chunk->next_chunk = NULL;
 
     if (DEBUG_MEM) {
-        fprintf(stderr, "Next chunk next: place frontier at %x\n",
-                next_chunk_next->ml_object);
+        fprintf(stderr, "Next chunk next: place frontier at "FMTPTR"\n",
+                (uintptr_t) next_chunk_next->ml_object);
     }
 
     return (Pointer) next_chunk_next->ml_object;
@@ -118,17 +118,18 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
         current_chunk->sentinel = o + 4;
 
         if (DEBUG_MEM) {
-            fprintf(stderr, "Returning next chunk: %x\n", current_chunk->next_chunk);
-            fprintf(stderr, "Returning next chunk mlobject: %x\n",
-                    current_chunk->next_chunk->ml_object);
+            fprintf(stderr, "Returning next chunk: "FMTPTR"\n",
+                    (uintptr_t) current_chunk->next_chunk);
+            fprintf(stderr, "Returning next chunk mlobject: "FMTPTR"\n",
+                    (uintptr_t) current_chunk->next_chunk->ml_object);
         }
 
         return (Pointer)(current_chunk->next_chunk->ml_object);
     }
 
     if (DEBUG_MEM) {
-        fprintf(stderr, "Multi-chunk: Go to next chunk: %x\n, sentinel: %d\n",
-                current_chunk->next_chunk,
+        fprintf(stderr, "Multi-chunk: Go to next chunk: "FMTPTR"\n, sentinel: %d\n",
+                (uintptr_t) current_chunk->next_chunk,
                 current_chunk->sentinel);
     }
     return (Pointer)(current_chunk->next_chunk + (o + 4) -

@@ -53,7 +53,7 @@ bool createUMHeap(GC_state s,
     pointer end = h->start + h->size;
     size_t step = sizeof(struct GC_UM_Chunk);
 
-    for (pchunk=(GC_UM_Chunk) h->start;
+    for (pchunk=h->start;
          pchunk < end;
          pchunk+=step) {
         insertFreeChunk(s, h, pchunk);
@@ -71,7 +71,7 @@ bool createUMHeap(GC_state s,
     return TRUE;
 }
 
-bool createUMArrayHeap(GC_state s,
+bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
                        GC_UM_Array_heap h,
                        size_t desiredSize,
                        __attribute__ ((unused)) size_t minSize) {
