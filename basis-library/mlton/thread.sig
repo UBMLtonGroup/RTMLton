@@ -37,15 +37,19 @@ signature MLTON_THREAD =
        * switch-ing to another thread or exiting the process.
        *)
       val new: ('a -> unit) -> 'a t
-      (* prepend(t, f)
+      (* prepend(t, f, p)
        * create a new thread (destroying t in the process) that first
        * applies f to the value given to the thread and then continues
-       * with t.  This is a constant time operation.
+       * with t.  This is a constant time operation. p is the priority
+       * level. 1 is the lowest level, 2 is reserved for the GC, 3+ 
+       * are available.
        *)
-      val prepend: 'a t * ('b -> 'a) -> 'b t
-      (* prepare(t, v)
+      val prepend: 'a t * ('b -> 'a) * int -> 'b t
+      (* prepare(t, v, p)
        * create a new runnable thread (destroying t in the process)
-       * that will evaluate t on v.
+       * that will evaluate t on v.  p is the priority
+       * level. 1 is the lowest level, 2 is reserved for the GC, 3+ 
+       * are available.
        *)
       val prepare: 'a t * 'a * int -> Runnable.t
       (* switch f 

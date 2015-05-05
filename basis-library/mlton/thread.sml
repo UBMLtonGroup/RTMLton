@@ -53,9 +53,9 @@ structure Runnable =
       type t = unit t
    end
 
-fun prepend (T r: 'a t, f: 'b -> 'a): 'b t =
+fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
    let
-   		val prio = 1
+   		val prio = prio'
       val t =
          case !r of
             Dead => raise Fail "prepend to a Dead thread"
@@ -67,7 +67,7 @@ fun prepend (T r: 'a t, f: 'b -> 'a): 'b t =
    end
 
 fun prepare (t: 'a t, v: 'a, prio: int): Runnable.t =
-   prepend (t, fn () => v)
+   prepend (t, fn () => v, prio)
 
 fun new f = T (ref (New f))
 
@@ -158,7 +158,8 @@ fun toPrimitive (t as T r : unit t): Prim.thread =
          (fn cur : Prim.thread t =>
           prepare
           (prepend (t, fn () =>
-                       switch(fn t' : unit t => prepare (cur, toPrimitive t', 1))
+                       switch(fn t' : unit t => prepare (cur, toPrimitive t', 1)),
+                       1
                     ), (), 1
           )
          )
