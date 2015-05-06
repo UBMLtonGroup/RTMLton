@@ -69,6 +69,7 @@ void growStackCurrent (GC_state s) {
 }
 
 void enterGC (GC_state s) {
+  sem_wait(&s->gc_semaphore);
   if (s->profiling.isOn) {
     /* We don't need to profileEnter for count profiling because it
      * has already bumped the counter.  If we did allow the bump, then
@@ -88,9 +89,36 @@ void leaveGC (GC_state s) {
       GC_profileLeave (s);
   }
   s->amInGC = FALSE;
+  sem_post(&s->gc_semaphore);
 }
 
 void performGC (GC_state s, 
+                size_t oldGenBytesRequested,
+                size_t nurseryBytesRequested, 
+                bool forceMajor,
+                bool mayResize) {
+
+    /* In our two-thread formulation of realtime MLton, the zeroth thread runs
+     * ML code, which will sometimes call the performGC function (this
+     * function!). Meanwhile, the first thread repeatedly calls
+     * performGC_helper with the saved parameters.
+     *
+     * TODO When we support a 1-1 mapping between ML threads and pthreads, we
+     * must revisit this method of inter-thread communication.
+     */
+
+    s->oldGenBytesRequested = oldGenBytesRequested;
+    s->nurseryBytesRequested = nurseryBytesRequested;
+    s->forceMajor = forceMajor;
+    s->mayResize = mayResize;
+
+    sem_post(&s->gc_semaphore); // release semaphore
+                                // GC will run, since it has been waiting
+    sem_wait(&s->gc_semaphore); // reacquire semaphore (waits for GC to release)
+
+}
+
+void performGC_helper (GC_state s, 
                 size_t oldGenBytesRequested,
                 size_t nurseryBytesRequested, 
                 bool forceMajor,

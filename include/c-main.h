@@ -86,6 +86,11 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
         gcState.realtimeThreads = realtimeThreads;                      \
                                                                         \
+        /* Initialize semaphore with value zero.  The middle parameter */\
+        /* signifies that the semaphore will be shared between threads.*/\
+        sem_init(&gcState.gc_semaphore, 0, 0);                          \
+                                                                        \
+                                                                        \
         bool *rtAllocated = malloc(NUM_REALTIME_THREADS * sizeof(bool));\
         for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
             rtAllocated[tNum] = false;                                  \
