@@ -55,9 +55,7 @@ MLtonCallFromC                                                          \
 void run (void *arg) {                                                  \
         struct cont cont;                                               \
         GC_state s = (GC_state)arg;                                     \
-                                                                        \
-        RTThread_waitForInitialization (s);                         \
-        Parallel_run ();                                        \
+        RTThread_waitForInitialization (s);                             \
 }                                                                       \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         struct cont cont;                                               \
