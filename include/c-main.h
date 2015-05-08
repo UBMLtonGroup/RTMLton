@@ -52,11 +52,6 @@ static void MLton_callFromC () {                                        \
 
 #define MLtonMain(al, mg, mfs, mmc, pk, ps, mc, ml)                     \
 MLtonCallFromC                                                          \
-void run (void *arg) {                                                  \
-        struct cont cont;                                               \
-        GC_state s = (GC_state)arg;                                     \
-        RTThread_waitForInitialization (s);                             \
-}                                                                       \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         struct cont cont;                                               \
         Initialize (al, mg, mfs, mmc, pk, ps);                          \
@@ -69,35 +64,7 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 cont.nextChunk = nextChunks[nextFun];                   \
         }                                                               \
                                                                         \
-        unsigned int NUM_REALTIME_THREADS = 100;                        \
-        pthread_t *realtimeThreads =                                    \
-                malloc(NUM_REALTIME_THREADS * sizeof(pthread_t));       \
-                                                                        \
-                                                                        \
-        unsigned int tNum;                                              \
-        for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
-            if (pthread_create(&realtimeThreads[tNum], NULL, &run,      \
-                        (void*)&gcState)) {                             \
-                fprintf (stderr, "pthread_create failed: %s\n", strerror (errno)); \
-                exit (1);                                               \
-            }                                                           \
-        }                                                               \
-                                                                        \
-        gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
-        gcState.realtimeThreads = realtimeThreads;                      \
-                                                                        \
-        /* Initialize semaphore with value zero.  The middle parameter */\
-        /* signifies that the semaphore will be shared between threads.*/\
-        sem_init(&gcState.gc_semaphore, 0, 0);                          \
-                                                                        \
-                                                                        \
-        bool *rtAllocated = malloc(NUM_REALTIME_THREADS * sizeof(bool));\
-        for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
-            rtAllocated[tNum] = false;                                  \
-        }                                                               \
-                                                                        \
-        gcState.realtimeThreadAllocated = rtAllocated;                  \
-                                                                        \
+        fprintf(stderr, "c-main trampoline\n");                                                                \
         /* Trampoline */                                                \
         while (1) {                                                     \
                 cont=(*(struct cont(*)(void))cont.nextChunk)();         \

@@ -69,7 +69,9 @@ void growStackCurrent (GC_state s) {
 }
 
 void enterGC (GC_state s) {
+#ifdef THREADED
   sem_wait(&s->gc_semaphore);
+#endif
   if (s->profiling.isOn) {
     /* We don't need to profileEnter for count profiling because it
      * has already bumped the counter.  If we did allow the bump, then
@@ -82,6 +84,10 @@ void enterGC (GC_state s) {
   s->amInGC = TRUE;
 }
 
+/* TODO
+ * define THREADED to enable threading (right now its linear just like
+ * the original code)
+ */
 void leaveGC (GC_state s) {
   if (s->profiling.isOn) {
     if (s->profiling.stack
@@ -89,12 +95,25 @@ void leaveGC (GC_state s) {
       GC_profileLeave (s);
   }
   s->amInGC = FALSE;
+#ifdef THREADED
   sem_post(&s->gc_semaphore);
+#endif
 }
 
-void performGC (GC_state s, 
+void GCrunner(void *_s) {
+	GC_state s = (GC_state) _s;
+	printf("%x] GC_Runner Thread running.\n", pthread_self());
+
+#ifdef THREADED
+	XXX call performGC_helper() using the _s-> variables and see what happens
+#endif
+
+	pthread_exit(NULL);
+}
+
+void performGC (GC_state s,
                 size_t oldGenBytesRequested,
-                size_t nurseryBytesRequested, 
+                size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
 
@@ -107,6 +126,7 @@ void performGC (GC_state s,
      * must revisit this method of inter-thread communication.
      */
 
+#ifdef THREADED
     s->oldGenBytesRequested = oldGenBytesRequested;
     s->nurseryBytesRequested = nurseryBytesRequested;
     s->forceMajor = forceMajor;
@@ -115,7 +135,9 @@ void performGC (GC_state s,
     sem_post(&s->gc_semaphore); // release semaphore
                                 // GC will run, since it has been waiting
     sem_wait(&s->gc_semaphore); // reacquire semaphore (waits for GC to release)
-
+#else
+    performGC_helper(s, oldGenBytesRequested, nurseryBytesRequested, forceMajor, mayResize);
+#endif
 }
 
 void performGC_helper (GC_state s, 
@@ -128,6 +150,8 @@ void performGC_helper (GC_state s,
   size_t stackBytesRequested;
   struct rusage ru_start;
   size_t totalBytesRequested;
+
+  fprintf(stderr, "in performGC_helper\n");
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;

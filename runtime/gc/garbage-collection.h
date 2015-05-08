@@ -7,6 +7,8 @@
  * See the file MLton-LICENSE for details.
  */
 
+void GCrunner(void *);
+
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
 static void minorGC (GC_state s);
@@ -19,6 +21,11 @@ static void performGC (GC_state s,
                        size_t nurseryBytesRequested, 
                        bool forceMajor,
                        bool mayResize);
+static void performGC_helper (GC_state s,
+								size_t oldGenBytesRequested,
+								size_t nurseryBytesRequested,
+								bool forceMajor,
+								bool mayResize);
 static inline void ensureInvariantForMutator (GC_state s, bool force);
 static inline void ensureHasHeapBytesFree (GC_state s, 
                                            size_t oldGenBytesRequested,

@@ -63,6 +63,40 @@ PRIVATE Pointer gcStateAddress;
         gcState.profiling.kind = pk;                                    \
         gcState.profiling.stack = ps;                                   \
         MLton_init (argc, argv, &gcState);                              \
+                                                                        \
+        unsigned int NUM_REALTIME_THREADS = 2; /*disabled*/                          \
+        pthread_t *realtimeThreads =                                    \
+                malloc(NUM_REALTIME_THREADS * sizeof(pthread_t));       \
+        assert(realtimeThreads != NULL);                                \
+		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
+		assert(GCrunner_thread != NULL);                                \
+                                                                        \
+        pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
+                                                                        \
+        unsigned int tNum;                                              \
+        for (tNum = 2; tNum < NUM_REALTIME_THREADS; tNum++) {           \
+        	fprintf(stderr, "spawning thread %d\n", tNum);              \
+            if (pthread_create(&realtimeThreads[tNum], NULL, NULL, \
+                        (void*)&gcState)) {                             \
+                fprintf (stderr, "pthread_create failed: %s\n", strerror (errno)); \
+                exit (1);                                               \
+            }                                                           \
+        }                                                               \
+                                                                        \
+        gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
+        gcState.realtimeThreads = realtimeThreads;                      \
+                                                                        \
+        /* Initialize semaphore with value zero.  The middle parameter */\
+        /* signifies that the semaphore will be shared between threads.*/\
+        sem_init(&gcState.gc_semaphore, 0, 0);                          \
+                                                                        \
+                                                                        \
+        bool *rtAllocated = malloc(NUM_REALTIME_THREADS * sizeof(bool));\
+        for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
+            rtAllocated[tNum] = false;                                  \
+        }                                                               \
+                                                                        \
+        gcState.realtimeThreadAllocated = rtAllocated;                  \
 
 #define LIB_PASTE(x,y) x ## y
 #define LIB_OPEN(x) LIB_PASTE(x, _open)
