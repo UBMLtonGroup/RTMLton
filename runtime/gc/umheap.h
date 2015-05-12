@@ -31,6 +31,10 @@ typedef union GC_UM_Array_Payload {
     unsigned char ml_object[UM_CHUNK_ARRAY_PAYLOAD_SIZE];
 } GC_UM_Array_Payload;
 
+/* The array chunk. It still has a portion of ml header... for object type
+   recognition. GC_arrayAllocate now returns p = &ml_array_payload, so that
+   p - 4 returns the header of the array
+*/
 typedef struct GC_UM_Array_Chunk {
     Word32_t array_chunk_ml_header;         /* MLton's array header         */
     GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer  */

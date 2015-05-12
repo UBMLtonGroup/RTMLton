@@ -135,3 +135,31 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     return (Pointer)(current_chunk->next_chunk + (o + 4) -
                      current_chunk->sentinel);
 }
+
+Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index, C_Size_t elemSize) {
+    Pointer heap_end = (gc_stat->umarheap).start + (gc_stat->umarheap).size;
+    if (base < gc_stat->umarheap.start || base >= heap_end) {
+        if (DEBUG_MEM) {
+            fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR"\n", base);
+            return base + index * elemSize;
+        }
+    }
+
+    if (DEBUG_MEM) {
+        fprintf(stderr, "UM_Array_offset: "FMTPTR" index: %d size: %d\n", (base - 4), index,
+                elemSize);
+    }
+    GC_UM_Array_Chunk root = base - GC_HEADER_SIZE;
+    size_t chunk_index = index / root->array_chunk_numObjs;
+    GC_UM_Array_Chunk current = root;
+    size_t i;
+    while (true) {
+        i = chunk_index / current->array_chunk_fan_out;
+        chunk_index = chunk_index % current->array_chunk_fan_out;
+        current = current->ml_array_payload.um_array_pointers[i];
+        if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
+            size_t chunk_offset = (index % root->array_chunk_numObjs) * elemSize;
+            return (Pointer)(current->ml_array_payload.ml_object + chunk_offset);
+        }
+    }
+}
