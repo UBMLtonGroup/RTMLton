@@ -7,8 +7,8 @@
 #define UM_CHUNK_HEADER_CLEAN            0
 #define UM_CHUNK_HEADER_MASK             1
 #define UM_CHUNK_IN_USE                  2
-#define UM_CHUNK_ARRAY_INTERNAL          4
-#define UM_CHUNK_ARRAY_LEAF              8
+#define UM_CHUNK_ARRAY_INTERNAL          0
+#define UM_CHUNK_ARRAY_LEAF              1
 
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE];
@@ -32,12 +32,17 @@ typedef union GC_UM_Array_Payload {
 } GC_UM_Array_Payload;
 
 typedef struct GC_UM_Array_Chunk {
-    GC_UM_Array_Payload ml_array_payload;
-    Word32_t array_chunk_counter;
-    Word32_t array_chunk_length;
-    Word32_t array_chunk_ml_header;
-    Word32_t array_chunk_header;
-    struct GC_UM_Array_Chunk* next_chunk;
+    Word32_t array_chunk_ml_header;         /* MLton's array header         */
+    GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer  */
+    Word32_t array_chunk_header;            /* For Mark / Sweep             */
+    Word32_t array_chunk_counter;           /* MLton's array counter        */
+    Word32_t array_chunk_length;            /* Array Length                 */
+    Word32_t array_chunk_type;              /* Internal or Leaf             */
+    size_t array_height;                    /* Height of the tree (subtree) */
+    size_t array_chunk_numObjs;             /* Number of objects in leaf    */
+    size_t array_num_chunks;                /* Number of leaf chunks        */
+    size_t array_chunk_fan_out;             /* How many chunk in each ptr   */
+    struct GC_UM_Array_Chunk* next_chunk;   /* For free list maintainance   */
 } *GC_UM_Array_Chunk;
 
 typedef struct GC_UM_Array_heap {
