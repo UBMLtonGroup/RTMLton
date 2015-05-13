@@ -36,11 +36,11 @@ typedef union GC_UM_Array_Payload {
    p - 4 returns the header of the array
 */
 typedef struct GC_UM_Array_Chunk {
+    Word32_t array_chunk_length;            /* Array Length                 */
     Word32_t array_chunk_ml_header;         /* MLton's array header         */
     GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer  */
     Word32_t array_chunk_header;            /* For Mark / Sweep             */
     Word32_t array_chunk_counter;           /* MLton's array counter        */
-    Word32_t array_chunk_length;            /* Array Length                 */
     Word32_t array_chunk_type;              /* Internal or Leaf             */
     size_t array_height;                    /* Height of the tree (subtree) */
     size_t array_chunk_numObjs;             /* Number of objects in leaf    */

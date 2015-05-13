@@ -151,7 +151,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         fprintf(stderr, "UM_Array_offset: "FMTPTR" index: %d size: %d offset %d\n",
                 (base - 4), index, elemSize, offset);
     }
-    GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk) (base - GC_HEADER_SIZE);
+    GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk) (base - GC_HEADER_SIZE - GC_HEADER_SIZE);
     GC_UM_Array_Chunk root = fst_leaf->next_chunk;
     size_t chunk_index = index / root->array_chunk_numObjs;
     GC_UM_Array_Chunk current = root;

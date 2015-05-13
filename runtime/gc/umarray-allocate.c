@@ -82,6 +82,7 @@ pointer GC_arrayAllocate (GC_state s,
     }
     current->array_chunk_ml_header = header;
     current->next_chunk = parray_header;
+    current->array_chunk_length = numElements;
     return (pointer) &(current->ml_array_payload); // parray_header->ml_array_payload);
 
     /* Not used below */
