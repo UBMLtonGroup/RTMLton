@@ -60,8 +60,6 @@ pointer GC_arrayAllocate (GC_state s,
                 log(numChunks), log(UM_CHUNK_ARRAY_INTERNAL_POINTERS));
     }
 
-
-
     GC_UM_Array_Chunk parray_header = allocNextArrayChunk(s, &s->umarheap);
     parray_header->array_chunk_counter = 0;
     parray_header->array_chunk_length = numElements;

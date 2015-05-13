@@ -38,6 +38,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(__attribute__ ((unused) )GC_state s,
     GC_UM_Array_Chunk c = h->fl_array_head;
     h->fl_array_head = h->fl_array_head->next_chunk;
     c->next_chunk = NULL;
+    c->array_chunk_magic = 9998;
     c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
     h->fl_array_chunks -= 1;
     return c;
