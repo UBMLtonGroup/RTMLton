@@ -46,7 +46,7 @@ endif
 
 FLAGS += -target $(TARGET)
 FLAGS += -verbose 2 -output "$(AOUT)"
-FLAGS += $(COMPILE_ARGS)
+FLAGS += $(COMPILE_ARGS) -link-opt -lpthread
 
 FRONT_END_SOURCES :=		\
 	front-end/ml.lex.sml	\

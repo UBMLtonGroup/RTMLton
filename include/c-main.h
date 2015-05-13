@@ -64,7 +64,6 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 cont.nextChunk = nextChunks[nextFun];                   \
         }                                                               \
                                                                         \
-        fprintf(stderr, "c-main trampoline\n");                                                                \
         /* Trampoline */                                                \
         while (1) {                                                     \
                 cont=(*(struct cont(*)(void))cont.nextChunk)();         \

@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-void GCrunner(void *);
+void *GCrunner(void *);
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 

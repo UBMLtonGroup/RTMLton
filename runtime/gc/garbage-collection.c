@@ -69,9 +69,6 @@ void growStackCurrent (GC_state s) {
 }
 
 void enterGC (GC_state s) {
-#ifdef THREADED
-  sem_wait(&s->gc_semaphore);
-#endif
   if (s->profiling.isOn) {
     /* We don't need to profileEnter for count profiling because it
      * has already bumped the counter.  If we did allow the bump, then
@@ -95,20 +92,46 @@ void leaveGC (GC_state s) {
       GC_profileLeave (s);
   }
   s->amInGC = FALSE;
-#ifdef THREADED
-  sem_post(&s->gc_semaphore);
-#endif
 }
 
-void GCrunner(void *_s) {
+#define THREADED
+
+#define GCLOCK(X) { assert(pthread_mutex_lock(&(X->gc_mutex)) == 0); }
+#define GCUNLOCK(X) { assert(pthread_mutex_unlock(&(X->gc_mutex)) == 0); }
+
+__attribute__((noreturn))
+void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
+
 	printf("%x] GC_Runner Thread running.\n", pthread_self());
 
+	s->GCrunnerRunning = TRUE;
+
+	/* we create, and then immediately lock the mutex in Initialize
+	 * prior to starting this threads. The next GCLOCK should
+	 * hang this thread.
+	 */
 #ifdef THREADED
-	XXX call performGC_helper() using the _s-> variables and see what happens
+	while (1) {
+		fprintf(stderr, "%x] GCrunner: locking mutex %x (should hang first time)\n",
+				pthread_self(), s);
+		GCLOCK(s);
+		fprintf(stderr, "%x] GCrunner: got lock\n", pthread_self());
+
+		performGC_helper(s,
+				s->oldGenBytesRequested,
+				s->nurseryBytesRequested,
+				s->forceMajor,
+				s->mayResize);
+
+		fprintf(stderr, "%x] GCrunner: unlocking mutex\n", pthread_self());
+		GCUNLOCK(s);
+		fprintf(stderr, "%x] GCrunner: unlocked\n", pthread_self());
+	}
 #endif
 
 	pthread_exit(NULL);
+	/*NOTREACHED*/
 }
 
 void performGC (GC_state s,
@@ -117,10 +140,12 @@ void performGC (GC_state s,
                 bool forceMajor,
                 bool mayResize) {
 
+
     /* In our two-thread formulation of realtime MLton, the zeroth thread runs
      * ML code, which will sometimes call the performGC function (this
      * function!). Meanwhile, the first thread repeatedly calls
-     * performGC_helper with the saved parameters.
+     * performGC_helper with the saved parameters. We use a mutex to synchronize
+     * the two threads.
      *
      * TODO When we support a 1-1 mapping between ML threads and pthreads, we
      * must revisit this method of inter-thread communication.
@@ -132,9 +157,16 @@ void performGC (GC_state s,
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
-    sem_post(&s->gc_semaphore); // release semaphore
-                                // GC will run, since it has been waiting
-    sem_wait(&s->gc_semaphore); // reacquire semaphore (waits for GC to release)
+    fprintf(stderr, "%x] performGC: release mutex\n", pthread_self());
+    GCUNLOCK(s);
+
+    /* GCrunner should acquire the lock and proceed */
+
+    fprintf(stderr, "%x] performGC: locking mutex\n", pthread_self());
+    GCLOCK(s);
+    fprintf(stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self());
+
+
 #else
     performGC_helper(s, oldGenBytesRequested, nurseryBytesRequested, forceMajor, mayResize);
 #endif
@@ -151,7 +183,7 @@ void performGC_helper (GC_state s,
   struct rusage ru_start;
   size_t totalBytesRequested;
 
-  fprintf(stderr, "in performGC_helper\n");
+  fprintf(stderr, "%x] in performGC_helper\n", pthread_self());
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;

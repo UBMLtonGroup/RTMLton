@@ -62,6 +62,7 @@ PRIVATE Pointer gcStateAddress;
         gcState.sourceMaps.sourcesLength = cardof(sources);             \
         gcState.profiling.kind = pk;                                    \
         gcState.profiling.stack = ps;                                   \
+        gcState.GCrunnerRunning = FALSE;                                \
         MLton_init (argc, argv, &gcState);                              \
                                                                         \
         unsigned int NUM_REALTIME_THREADS = 2; /*disabled*/                          \
@@ -70,9 +71,13 @@ PRIVATE Pointer gcStateAddress;
         assert(realtimeThreads != NULL);                                \
 		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
 		assert(GCrunner_thread != NULL);                                \
-                                                                        \
-        pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
-                                                                        \
+		assert(pthread_mutux_init(&(gcState.gc_mutex), NULL) == 0);             \
+		assert(pthread_mutex_lock(&(gcState.gc_mutex)) == 0);             \
+		fprintf(stderr, "%x] main thread locking %x\n", pthread_self(), gcStateAddress); \
+		assert(pthread_mutex_trylock(&(gcState.gc_mutex)) == EBUSY);      \
+		fprintf(stderr, "relock\n"); pthread_mutex_lock(&gcState.gc_mutex); pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
+        while (!gcState.GCrunnerRunning){}; \
+          fprintf(stderr, "sleeping 10\n"); sleep(10);                                                              \
         unsigned int tNum;                                              \
         for (tNum = 2; tNum < NUM_REALTIME_THREADS; tNum++) {           \
         	fprintf(stderr, "spawning thread %d\n", tNum);              \
@@ -85,11 +90,6 @@ PRIVATE Pointer gcStateAddress;
                                                                         \
         gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
         gcState.realtimeThreads = realtimeThreads;                      \
-                                                                        \
-        /* Initialize semaphore with value zero.  The middle parameter */\
-        /* signifies that the semaphore will be shared between threads.*/\
-        sem_init(&gcState.gc_semaphore, 0, 0);                          \
-                                                                        \
                                                                         \
         bool *rtAllocated = malloc(NUM_REALTIME_THREADS * sizeof(bool));\
         for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \

@@ -37,11 +37,12 @@ struct GC_state {
   bool      *realtimeThreadAllocated;
   struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */
   /* Begin inter-thread GC communication data */
-  sem_t gc_semaphore;
+  pthread_mutex_t gc_mutex;
   size_t oldGenBytesRequested;
   size_t nurseryBytesRequested;
   bool forceMajor;
   bool mayResize;
+  bool GCrunnerRunning;
   /* -------------------------- */
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
