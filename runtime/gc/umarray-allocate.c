@@ -40,12 +40,12 @@ pointer GC_arrayAllocate (GC_state s,
                           __attribute__ ((unused)) size_t ensureBytesFree,
                           GC_arrayLength numElements,
                           GC_header header) {
-    size_t arraySize;
+//    size_t arraySize;
     size_t bytesPerElement;
     uint16_t bytesNonObjptrs;
     uint16_t numObjptrs;
-    pointer frontier, last;
-    pointer result;
+//    pointer frontier, last;
+//    pointer result;
 
     splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
@@ -71,11 +71,20 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->array_num_chunks = numChunks;
 
     if (numChunks == 0) {
-        return &(parray_header->ml_array_payload);
+        return (pointer)&(parray_header->ml_array_payload);
     }
     UM_Create_Array_Chunk(s, &s->umarheap, parray_header, numChunks, height);
 
-    return &(parray_header->ml_array_payload);
+    /* Find the left most leaf, return its payload as the pointer for
+       relative addressing: a hack to fix string printing.
+    */
+    GC_UM_Array_Chunk current = parray_header;
+    while (current->array_chunk_type != UM_CHUNK_ARRAY_LEAF) {
+        current = current->ml_array_payload.um_array_pointers[0];
+    }
+    current->array_chunk_ml_header = header;
+    current->next_chunk = parray_header;
+    return (pointer) &(current->ml_array_payload); // parray_header->ml_array_payload);
 
     /* Not used below */
 //    if (DEBUG_MEM) {

@@ -48,7 +48,7 @@
 #define GPNR(i) G(ObjptrNonRoot, i)
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 // #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
-#define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s))))
+#define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
 #define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_CPointer_offset((gc_stat), (b), (o), (s))))
 
