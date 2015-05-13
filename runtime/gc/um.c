@@ -159,7 +159,9 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     GC_UM_Array_Chunk root = fst_leaf->next_chunk;
 
     /* Fix object index for tupling reference */
-    assert((index * elemSize) % root->array_chunk_objSize == 0);
+    if ((index * elemSize) % root->array_chunk_objSize != 0) {
+        die("Unable to calibrate the index of flatten objects\n");
+    }
     index = index * elemSize / root->array_chunk_objSize;
 
     size_t chunk_index = index / root->array_chunk_numObjs;
