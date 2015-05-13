@@ -139,6 +139,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset) {
     Pointer heap_end = (gc_stat->umarheap).start + (gc_stat->umarheap).size;
+
     if (base < gc_stat->umarheap.start || base >= heap_end) {
         if (DEBUG_MEM) {
             fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
@@ -151,8 +152,16 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         fprintf(stderr, "UM_Array_offset: "FMTPTR" index: %d size: %d offset %d\n",
                 (base - 4), index, elemSize, offset);
     }
+
+
+    /* FIXME: length field size is not correct across platforms (OK on 32 bit though) */
     GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk) (base - GC_HEADER_SIZE - GC_HEADER_SIZE);
     GC_UM_Array_Chunk root = fst_leaf->next_chunk;
+
+    /* Fix object index for tupling reference */
+    assert((index * elemSize) % root->array_chunk_objSize == 0);
+    index = index * elemSize / root->array_chunk_objSize;
+
     size_t chunk_index = index / root->array_chunk_numObjs;
     GC_UM_Array_Chunk current = root;
     size_t i;
@@ -174,7 +183,6 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
             size_t chunk_offset = (index % root->array_chunk_numObjs) * elemSize + offset;
             Pointer res = (Pointer)(current->ml_array_payload.ml_object + chunk_offset);
-/*
             if (DEBUG_MEM) {
                 fprintf(stderr, "chunk base: "FMTPTR", offset: %d, addr "FMTPTR" word: %x, %d, "
                         " char: %c\n",
@@ -183,7 +191,6 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         *((Word32_t*)(res)),
                         *((char*)(res)));
             }
-*/
             return res;
         }
     }

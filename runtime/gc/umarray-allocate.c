@@ -67,6 +67,7 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
     parray_header->array_chunk_numObjs = chunkNumObjs;
     parray_header->array_num_chunks = numChunks;
+    parray_header->array_chunk_objSize = bytesPerElement;
 
     if (numChunks == 0) {
         return (pointer)&(parray_header->ml_array_payload);
@@ -83,6 +84,7 @@ pointer GC_arrayAllocate (GC_state s,
     current->array_chunk_ml_header = header;
     current->next_chunk = parray_header;
     current->array_chunk_length = numElements;
+    current->array_chunk_objSize = bytesPerElement;
     return (pointer) &(current->ml_array_payload); // parray_header->ml_array_payload);
 
     /* Not used below */
