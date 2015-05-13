@@ -3,3 +3,4 @@
 *~
 *.sml-e
 cscope.*
+regression/*
