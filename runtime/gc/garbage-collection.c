@@ -95,9 +95,12 @@ void leaveGC (GC_state s) {
 }
 
 #define THREADED
+#undef NDEBUG
 
-#define GCLOCK(X) { assert(pthread_mutex_lock(&(X->gc_mutex)) == 0); }
-#define GCUNLOCK(X) { assert(pthread_mutex_unlock(&(X->gc_mutex)) == 0); }
+pthread_mutex_t gclock;
+
+#define GCLOCK(X) { assert(pthread_mutex_lock(&gclock) == 0); }
+#define GCUNLOCK(X) { assert(pthread_mutex_unlock(&gclock) == 0); }
 
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
@@ -114,8 +117,9 @@ void *GCrunner(void *_s) {
 #ifdef THREADED
 	while (1) {
 		fprintf(stderr, "%x] GCrunner: locking mutex %x (should hang first time)\n",
-				pthread_self(), s);
-		GCLOCK(s);
+				pthread_self(), &gclock);
+		fprintf(stderr, "lock %d\n", pthread_mutex_lock(&gclock));
+		/*GCLOCK(s); /**/
 		fprintf(stderr, "%x] GCrunner: got lock\n", pthread_self());
 
 		performGC_helper(s,
@@ -168,6 +172,7 @@ void performGC (GC_state s,
 
 
 #else
+    fprintf(stderr, "non-threaded mode, passing thru to performGC_helper\n");
     performGC_helper(s, oldGenBytesRequested, nurseryBytesRequested, forceMajor, mayResize);
 #endif
 }

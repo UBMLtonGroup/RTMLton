@@ -65,18 +65,19 @@ PRIVATE Pointer gcStateAddress;
         gcState.GCrunnerRunning = FALSE;                                \
         MLton_init (argc, argv, &gcState);                              \
                                                                         \
-        unsigned int NUM_REALTIME_THREADS = 2; /*disabled*/                          \
+        setvbuf(stderr, NULL, _IONBF, 0); \
+		unsigned int NUM_REALTIME_THREADS = 2; /*disabled*/                          \
         pthread_t *realtimeThreads =                                    \
                 malloc(NUM_REALTIME_THREADS * sizeof(pthread_t));       \
         assert(realtimeThreads != NULL);                                \
 		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
 		assert(GCrunner_thread != NULL);                                \
-		assert(pthread_mutux_init(&(gcState.gc_mutex), NULL) == 0);             \
-		assert(pthread_mutex_lock(&(gcState.gc_mutex)) == 0);             \
-		fprintf(stderr, "%x] main thread locking %x\n", pthread_self(), gcStateAddress); \
-		assert(pthread_mutex_trylock(&(gcState.gc_mutex)) == EBUSY);      \
-		fprintf(stderr, "relock\n"); pthread_mutex_lock(&gcState.gc_mutex); pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
-        while (!gcState.GCrunnerRunning){}; \
+		assert(pthread_mutux_init(&gclock, NULL) == 0);             \
+		assert(pthread_mutex_lock(&gclock) == 0);             \
+		fprintf(stderr, "%x] main thread locking %x\n", pthread_self(), &gclock); \
+		fprintf(stderr, "cmon\n");  assert(1==2);    \
+		pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
+        while (!gcState.GCrunnerRunning){fprintf(stderr, "spin..");} \
           fprintf(stderr, "sleeping 10\n"); sleep(10);                                                              \
         unsigned int tNum;                                              \
         for (tNum = 2; tNum < NUM_REALTIME_THREADS; tNum++) {           \

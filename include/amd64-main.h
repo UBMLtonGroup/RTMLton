@@ -63,6 +63,7 @@ static void MLton_callFromC () {                                        \
 }
 
 #define MLtonMain(al, mg, mfs, mmc, pk, ps, ml)                         \
+		extern pthread_mutex_t gclock; \
 MLtonCallFromC                                                          \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         pointer jump;                                                   \
