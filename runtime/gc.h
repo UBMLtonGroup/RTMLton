@@ -42,6 +42,7 @@ typedef GC_state GCState_t;
 #include "gc/heap.h"
 #include "gc/umheap.h"
 #include "gc/current.h"
+#include "gc/umarray.h"
 #include "gc/foreach.h"
 #include "gc/dfs-mark.h"
 #include "gc/ummark.h"

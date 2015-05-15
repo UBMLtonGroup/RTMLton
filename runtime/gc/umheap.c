@@ -40,6 +40,10 @@ GC_UM_Array_Chunk allocNextArrayChunk(__attribute__ ((unused) )GC_state s,
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
     c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
+    int i;
+    for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
+        c->ml_array_payload.um_array_pointers[i] = NULL;
+    }
     h->fl_array_chunks -= 1;
     return c;
 }

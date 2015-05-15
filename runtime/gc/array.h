@@ -11,10 +11,10 @@
 
 /*
  * Array objects have the following layout:
- * 
- * counter :: 
- * length :: 
- * header :: 
+ *
+ * counter ::
+ * length ::
+ * header ::
  * ( (non heap-pointers)* :: (heap pointers)* )*
  *
  * The counter word is used by mark compact GC.  The length word is
