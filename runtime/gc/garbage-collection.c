@@ -172,15 +172,15 @@ void performGC (GC_state s,
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
-    fprintf(stderr, "\t\t%x] performGC: release mutex (GCrunner can run)\n", pthread_self());
+    fprintf(stderr, "%x] performGC: release mutex (GCrunner can run)\n", pthread_self());
     GCUNLOCK(s);
     pthread_yield();
 
     /* GCrunner should acquire the lock and proceed */
 
-    fprintf(stderr, "\t\t%x] performGC: locking mutex\n", pthread_self());
+    fprintf(stderr, "%x] performGC: locking mutex\n", pthread_self());
     GCLOCK(s);
-    fprintf(stderr, "\t\t%x] performGC: mutex locked; ML resumes\n", pthread_self());
+    fprintf(stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self());
 
 
 #else
@@ -200,7 +200,7 @@ void performGC_helper (GC_state s,
   struct rusage ru_start;
   size_t totalBytesRequested;
 
-  fprintf(stderr, "%x] in performGC_helper\n", pthread_self());
+  fprintf(stderr, "\t\t%x] in performGC_helper\n", pthread_self());
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
