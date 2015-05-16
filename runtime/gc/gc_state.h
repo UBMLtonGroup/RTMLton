@@ -42,7 +42,7 @@ struct GC_state {
   size_t nurseryBytesRequested;
   bool forceMajor;
   bool mayResize;
-  bool GCrunnerRunning;
+  volatile bool GCrunnerRunning;
   /* -------------------------- */
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */

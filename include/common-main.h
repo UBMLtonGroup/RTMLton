@@ -29,6 +29,14 @@
 #define LoadArray(a, f) if (fread (a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
 #define SaveArray(a, f) if (fwrite(a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
 
+#define GCTHRDEBUG
+
+#ifdef GCTHRDEBUG
+# define DBG(X) fprintf X
+#else
+# define DBG(X)
+#endif
+
 #define STR_VALUE(arg)      #arg
 #define FUNCTION_NAME(name) STR_VALUE(name)
 #define MYASSERT(X, RV) { \
@@ -85,15 +93,15 @@ PRIVATE Pointer gcStateAddress;
 		assert(GCrunner_thread != NULL);                                \
 		MYASSERT(pthread_mutex_init(&gclock, NULL), 0);             \
 		MYASSERT(pthread_mutex_lock(&gclock), 0);             \
-		fprintf(stderr, "%x] main thread locking %x\n", pthread_self(), &gclock); \
-		pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
-        while (!gcState.GCrunnerRunning){fprintf(stderr, "spin..");} \
+		DBG((stderr, "%x] main thread locking %x\n", pthread_self(), &gclock)); \
+		MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), 0); \
+        while (!gcState.GCrunnerRunning){DBG((stderr, "spin.."));} \
         unsigned int tNum;                                              \
         for (tNum = 2; tNum < NUM_REALTIME_THREADS; tNum++) {           \
-        	fprintf(stderr, "spawning thread %d\n", tNum);              \
+        	DBG((stderr, "spawning thread %d\n", tNum));              \
             if (pthread_create(&realtimeThreads[tNum], NULL, NULL, \
                         (void*)&gcState)) {                             \
-                fprintf (stderr, "pthread_create failed: %s\n", strerror (errno)); \
+                DBG( (stderr, "pthread_create failed: %s\n", strerror (errno)) ); \
                 exit (1);                                               \
             }                                                           \
         }                                                               \

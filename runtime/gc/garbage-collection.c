@@ -97,7 +97,13 @@ void leaveGC (GC_state s) {
 #define THREADED
 
 pthread_mutex_t gclock;
-static int sem;
+static volatile int sem;
+
+#ifdef GCTHRDEBUG
+# define DBG(X) fprintf X
+#else
+# define DBG(X)
+#endif
 
 #define STR_VALUE(arg)      #arg
 #define FUNCTION_NAME(name) STR_VALUE(name)
@@ -117,7 +123,7 @@ __attribute__((noreturn))
 void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
 
-	printf("\t%x] GC_Runner Thread running.\n", pthread_self());
+	DBG((stderr, "\t%x] GC_Runner Thread running.\n", pthread_self()));
 
 	s->GCrunnerRunning = TRUE;
 	sem = 0;
@@ -128,11 +134,10 @@ void *GCrunner(void *_s) {
 	 */
 #ifdef THREADED
 	while (1) {
-		fprintf(stderr, "\t%x] GCrunner: locking mutex %x\n",
-				pthread_self(), &gclock);
+		DBG((stderr, "\t%x] GCrunner: locking mutex %x\n",
+				pthread_self(), &gclock));
 		GCLOCK(s);
-		fprintf(stderr, "\t%x] GCrunner: got lock\n", pthread_self());
-		fflush(stderr);
+		DBG((stderr, "\t%x] GCrunner: got lock\n", pthread_self()));
 
 		if (sem == 0) {
 			performGC_helper(s,
@@ -142,12 +147,13 @@ void *GCrunner(void *_s) {
 					s->mayResize);
 			sem = 1;
 		}
-		else
-			fprintf(stderr, "\t%x] GCrunner: skipping consecutive call to helper\n");
+		else {
+			DBG((stderr, "\t%x] GCrunner: skipping consecutive call to helper\n"));
+		}
 
-		fprintf(stderr, "\t%x] GCrunner: unlocking mutex\n", pthread_self());
+		DBG((stderr, "\t%x] GCrunner: unlocking mutex\n", pthread_self()));
 		GCUNLOCK(s);
-		fprintf(stderr, "\t%x] GCrunner: unlocked (ML runs)\n", pthread_self());
+		DBG((stderr, "\t%x] GCrunner: unlocked (ML runs)\n", pthread_self()));
 	    pthread_yield();
 	}
 #endif
@@ -179,22 +185,22 @@ void performGC (GC_state s,
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
-    fprintf(stderr, "%x] performGC: release mutex (GCrunner can run)\n", pthread_self());
+    DBG((stderr, "%x] performGC: release mutex (GCrunner can run)\n", pthread_self()));
     GCUNLOCK(s);
     while (sem == 0) {
-    	fprintf(stderr, "spin..");
+    	DBG((stderr, "spin.."));
     	pthread_yield();
     }
 
     /* GCrunner should acquire the lock and proceed */
 
-    fprintf(stderr, "%x] performGC: locking mutex\n", pthread_self());
+    DBG((stderr, "%x] performGC: locking mutex\n", pthread_self()));
     GCLOCK(s);
-    fprintf(stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self());
+    DBG((stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self()));
     sem = 0;
 
 #else
-    fprintf(stderr, "non-threaded mode, passing thru to performGC_helper\n");
+    DBG((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
     performGC_helper(s, oldGenBytesRequested, nurseryBytesRequested, forceMajor, mayResize);
 #endif
 }
@@ -210,7 +216,7 @@ void performGC_helper (GC_state s,
   struct rusage ru_start;
   size_t totalBytesRequested;
 
-  fprintf(stderr, "\t\t%x] in performGC_helper\n", pthread_self());
+  DBG((stderr, "\t\t%x] in performGC_helper\n", pthread_self()));
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
