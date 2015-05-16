@@ -95,18 +95,28 @@ void leaveGC (GC_state s) {
 }
 
 #define THREADED
-#undef NDEBUG
 
 pthread_mutex_t gclock;
 
-#define GCLOCK(X) { assert(pthread_mutex_lock(&gclock) == 0); }
-#define GCUNLOCK(X) { assert(pthread_mutex_unlock(&gclock) == 0); }
+#define STR_VALUE(arg)      #arg
+#define FUNCTION_NAME(name) STR_VALUE(name)
+#define MYASSERT(X, RV) { \
+	int rv = X; \
+	if (rv != RV ) { \
+		fprintf(stderr, "%s failed, expect %d got %d\n", \
+				FUNCTION_NAME(X), RV, rv); \
+		exit(-1); \
+	} \
+}
+
+#define GCLOCK(X) { MYASSERT(pthread_mutex_lock(&gclock), 0); }
+#define GCUNLOCK(X) { MYASSERT(pthread_mutex_unlock(&gclock), 0); }
 
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
 
-	printf("%x] GC_Runner Thread running.\n", pthread_self());
+	printf("\t%x] GC_Runner Thread running.\n", pthread_self());
 
 	s->GCrunnerRunning = TRUE;
 
@@ -116,11 +126,11 @@ void *GCrunner(void *_s) {
 	 */
 #ifdef THREADED
 	while (1) {
-		fprintf(stderr, "%x] GCrunner: locking mutex %x (should hang first time)\n",
+		fprintf(stderr, "\t%x] GCrunner: locking mutex %x\n",
 				pthread_self(), &gclock);
-		fprintf(stderr, "lock %d\n", pthread_mutex_lock(&gclock));
-		/*GCLOCK(s); /**/
-		fprintf(stderr, "%x] GCrunner: got lock\n", pthread_self());
+		GCLOCK(s);
+		fprintf(stderr, "\t%x] GCrunner: got lock\n", pthread_self());
+		fflush(stderr);
 
 		performGC_helper(s,
 				s->oldGenBytesRequested,
@@ -128,9 +138,10 @@ void *GCrunner(void *_s) {
 				s->forceMajor,
 				s->mayResize);
 
-		fprintf(stderr, "%x] GCrunner: unlocking mutex\n", pthread_self());
+		fprintf(stderr, "\t%x] GCrunner: unlocking mutex\n", pthread_self());
 		GCUNLOCK(s);
-		fprintf(stderr, "%x] GCrunner: unlocked\n", pthread_self());
+		fprintf(stderr, "\t%x] GCrunner: unlocked (ML runs)\n", pthread_self());
+	    pthread_yield();
 	}
 #endif
 
@@ -161,14 +172,15 @@ void performGC (GC_state s,
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
-    fprintf(stderr, "%x] performGC: release mutex\n", pthread_self());
+    fprintf(stderr, "\t\t%x] performGC: release mutex (GCrunner can run)\n", pthread_self());
     GCUNLOCK(s);
+    pthread_yield();
 
     /* GCrunner should acquire the lock and proceed */
 
-    fprintf(stderr, "%x] performGC: locking mutex\n", pthread_self());
+    fprintf(stderr, "\t\t%x] performGC: locking mutex\n", pthread_self());
     GCLOCK(s);
-    fprintf(stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self());
+    fprintf(stderr, "\t\t%x] performGC: mutex locked; ML resumes\n", pthread_self());
 
 
 #else

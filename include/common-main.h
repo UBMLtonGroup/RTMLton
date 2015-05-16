@@ -29,6 +29,17 @@
 #define LoadArray(a, f) if (fread (a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
 #define SaveArray(a, f) if (fwrite(a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
 
+#define STR_VALUE(arg)      #arg
+#define FUNCTION_NAME(name) STR_VALUE(name)
+#define MYASSERT(X, RV) { \
+	int rv = X; \
+	if (rv != RV ) { \
+		fprintf(stderr, "%s failed, expect %d got %d\n", \
+				FUNCTION_NAME(X), RV, rv); \
+		exit(-1); \
+	} \
+}
+
 PRIVATE Pointer gcStateAddress;
 
 #define Initialize(al, mg, mfs, mmc, pk, ps)                            \
@@ -72,13 +83,11 @@ PRIVATE Pointer gcStateAddress;
         assert(realtimeThreads != NULL);                                \
 		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
 		assert(GCrunner_thread != NULL);                                \
-		assert(pthread_mutux_init(&gclock, NULL) == 0);             \
-		assert(pthread_mutex_lock(&gclock) == 0);             \
+		MYASSERT(pthread_mutex_init(&gclock, NULL), 0);             \
+		MYASSERT(pthread_mutex_lock(&gclock), 0);             \
 		fprintf(stderr, "%x] main thread locking %x\n", pthread_self(), &gclock); \
-		fprintf(stderr, "cmon\n");  assert(1==2);    \
 		pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState); \
         while (!gcState.GCrunnerRunning){fprintf(stderr, "spin..");} \
-          fprintf(stderr, "sleeping 10\n"); sleep(10);                                                              \
         unsigned int tNum;                                              \
         for (tNum = 2; tNum < NUM_REALTIME_THREADS; tNum++) {           \
         	fprintf(stderr, "spawning thread %d\n", tNum);              \

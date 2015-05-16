@@ -21,6 +21,7 @@ all:	$(NAME)
 
 $(NAME): $(NAME).mlb $(shell PATH="$(BIN):$$PATH" && "$(MLTON)" -stop f $(NAME).mlb)
 	@echo 'Compiling $(NAME)'
+	which $(MLTON)
 	"$(MLTON)" $(FLAGS) $(NAME).mlb
 
 html/index.html: $(TEX_FILES)
