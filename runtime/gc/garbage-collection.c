@@ -97,6 +97,7 @@ void leaveGC (GC_state s) {
 #define THREADED
 
 pthread_mutex_t gclock;
+static int sem;
 
 #define STR_VALUE(arg)      #arg
 #define FUNCTION_NAME(name) STR_VALUE(name)
@@ -119,6 +120,7 @@ void *GCrunner(void *_s) {
 	printf("\t%x] GC_Runner Thread running.\n", pthread_self());
 
 	s->GCrunnerRunning = TRUE;
+	sem = 0;
 
 	/* we create, and then immediately lock the mutex in Initialize
 	 * prior to starting this threads. The next GCLOCK should
@@ -132,11 +134,16 @@ void *GCrunner(void *_s) {
 		fprintf(stderr, "\t%x] GCrunner: got lock\n", pthread_self());
 		fflush(stderr);
 
-		performGC_helper(s,
-				s->oldGenBytesRequested,
-				s->nurseryBytesRequested,
-				s->forceMajor,
-				s->mayResize);
+		if (sem == 0) {
+			performGC_helper(s,
+					s->oldGenBytesRequested,
+					s->nurseryBytesRequested,
+					s->forceMajor,
+					s->mayResize);
+			sem = 1;
+		}
+		else
+			fprintf(stderr, "\t%x] GCrunner: skipping consecutive call to helper\n");
 
 		fprintf(stderr, "\t%x] GCrunner: unlocking mutex\n", pthread_self());
 		GCUNLOCK(s);
@@ -174,14 +181,17 @@ void performGC (GC_state s,
 
     fprintf(stderr, "%x] performGC: release mutex (GCrunner can run)\n", pthread_self());
     GCUNLOCK(s);
-    pthread_yield();
+    while (sem == 0) {
+    	fprintf(stderr, "spin..");
+    	pthread_yield();
+    }
 
     /* GCrunner should acquire the lock and proceed */
 
     fprintf(stderr, "%x] performGC: locking mutex\n", pthread_self());
     GCLOCK(s);
     fprintf(stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self());
-
+    sem = 0;
 
 #else
     fprintf(stderr, "non-threaded mode, passing thru to performGC_helper\n");
