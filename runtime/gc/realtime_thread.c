@@ -41,7 +41,7 @@ void realtimeThreadInit(struct GC_state *state) {
             state->realtimeThreadConts[tNum].nextChunk = NULL;
 
             if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner,
-                        (void*)&params)) {
+                        (void*)params)) {
                 fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
                 exit (1);
             }
@@ -61,11 +61,11 @@ void* realtimeRunner(void* paramsPtr) {
     struct realtimeRunnerParameters *params = paramsPtr;
 
     while (1) {
-        printf("\t%x] realtimeRunner running.\n", pthread_self());
         // TODO lock lock[tNum]
 
         // Trampoline
         int tNum = params->tNum;
+        printf("\t%x] realtimeRunner[%d] running.\n", pthread_self(), tNum);
 
         // copy the cont struct to this local variable
         struct GC_state *state = params->state;
