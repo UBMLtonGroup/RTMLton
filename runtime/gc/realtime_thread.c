@@ -29,6 +29,9 @@ void realtimeThreadInit(struct GC_state *state) {
 
         state->realtimeThreadConts =
                 malloc(state->numRealtimeThreads * sizeof(struct cont));
+
+	//Initializing the locks for each realtime thread created,
+	state->realtimeThreadLocks= malloc(state->numRealtimeThreads *sizeof(pthread_mutex_t));
         int tNum;
         for (tNum = 2; tNum < state->numRealtimeThreads; tNum++) {
         	fprintf(stderr, "spawning thread %d\n", tNum);
@@ -61,8 +64,6 @@ void* realtimeRunner(void* paramsPtr) {
     struct realtimeRunnerParameters *params = paramsPtr;
 
     while (1) {
-        // TODO lock lock[tNum]
-
         // Trampoline
         int tNum = params->tNum;
         printf("\t%x] realtimeRunner[%d] running.\n", pthread_self(), tNum);
@@ -71,12 +72,20 @@ void* realtimeRunner(void* paramsPtr) {
         struct GC_state *state = params->state;
         printf("state = %x\n", state);
 
+        // TODO lock lock[tNum]
+	//Acquiring lock associated with pThread from GC state
+	pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
+
+
+        printf("Acquired thread lock\n");
+
         struct cont* realtimeThreadConts = state->realtimeThreadConts;
         printf("realtimeThreadConts = %x\n", realtimeThreadConts);
 
+        printf("cont.nextChunk: if next line doesn't print, cont is null\n");
         struct cont cont = realtimeThreadConts[tNum];
-        printf("cont.nextChunk = %x\n", cont.nextChunk);
 
+        printf("cont.nextChunk = %x\n", cont.nextChunk);
         if (cont.nextChunk != NULL) {
             printf("\t%x] realtimeRunner trampolining.\n", pthread_self());
             cont=(*(struct cont(*)(void))cont.nextChunk)();
@@ -90,11 +99,14 @@ void* realtimeRunner(void* paramsPtr) {
 
             // copy local variable back to gcstate
             params->state->realtimeThreadConts[tNum] = cont;
+	
         } else {
             printf("\t%x] realtimeRunner has nothing to trampoline.\n", pthread_self());
         }
 
         // TODO unlock lock[tNum]
+	pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
+        printf("Released thread lock \n");
     }
     return NULL;
 }
