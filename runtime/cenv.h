@@ -58,6 +58,7 @@
 
 #include <gmp.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 
 #define COMPILE_TIME_ASSERT(name, x) \

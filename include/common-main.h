@@ -85,10 +85,7 @@ PRIVATE Pointer gcStateAddress;
         MLton_init (argc, argv, &gcState);                              \
                                                                         \
         setvbuf(stderr, NULL, _IONBF, 0); \
-		unsigned int NUM_REALTIME_THREADS = 2; /*disabled*/                          \
-        pthread_t *realtimeThreads =                                    \
-                malloc(NUM_REALTIME_THREADS * sizeof(pthread_t));       \
-        assert(realtimeThreads != NULL);                                \
+		unsigned int NUM_REALTIME_THREADS = 100;                        \
 		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
 		assert(GCrunner_thread != NULL);                                \
 		MYASSERT(pthread_mutex_init(&gclock, NULL), 0);             \
@@ -96,25 +93,9 @@ PRIVATE Pointer gcStateAddress;
 		DBG((stderr, "%x] main thread locking %x\n", pthread_self(), &gclock)); \
 		MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), 0); \
         while (!gcState.GCrunnerRunning){DBG((stderr, "spin.."));} \
-        unsigned int tNum;                                              \
-        for (tNum = 2; tNum < NUM_REALTIME_THREADS; tNum++) {           \
-        	DBG((stderr, "spawning thread %d\n", tNum));              \
-            if (pthread_create(&realtimeThreads[tNum], NULL, NULL, \
-                        (void*)&gcState)) {                             \
-                DBG( (stderr, "pthread_create failed: %s\n", strerror (errno)) ); \
-                exit (1);                                               \
-            }                                                           \
-        }                                                               \
-                                                                        \
         gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
-        gcState.realtimeThreads = realtimeThreads;                      \
-                                                                        \
-        bool *rtAllocated = malloc(NUM_REALTIME_THREADS * sizeof(bool));\
-        for (tNum = 0; tNum < NUM_REALTIME_THREADS; tNum++) {           \
-            rtAllocated[tNum] = false;                                  \
-        }                                                               \
-                                                                        \
-        gcState.realtimeThreadAllocated = rtAllocated;                  \
+        realtimeThreadInit(&gcState);                                   \
+        
 
 #define LIB_PASTE(x,y) x ## y
 #define LIB_OPEN(x) LIB_PASTE(x, _open)
