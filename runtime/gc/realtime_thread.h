@@ -8,7 +8,7 @@ struct realtimeRunnerParameters {
 };
 
 void realtimeThreadInit(struct GC_state *state);
-void realtimeRunner(struct realtimeRunnerParameters* params);
+void *realtimeRunner(void* paramsPtr);
 void allocate_pthread(struct GC_state *state, struct cont *cont);
 
 /* Unique number for this thread */

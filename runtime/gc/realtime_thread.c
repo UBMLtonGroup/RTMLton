@@ -28,8 +28,8 @@ void realtimeThreadInit(struct GC_state *state) {
         assert(realtimeThreads != NULL);
 
         state->realtimeThreadConts =
-                malloc(state->numRealtimeThreads*sizeof(struct cont*));
-        unsigned int tNum;
+                malloc(state->numRealtimeThreads * sizeof(struct cont));
+        int tNum;
         for (tNum = 2; tNum < state->numRealtimeThreads; tNum++) {
         	fprintf(stderr, "spawning thread %d\n", tNum);
 
@@ -56,7 +56,10 @@ void realtimeThreadInit(struct GC_state *state) {
         }
 }
 
-void realtimeRunner(struct realtimeRunnerParameters* params) {
+void* realtimeRunner(void* paramsPtr) {
+
+    struct realtimeRunnerParameters *params = paramsPtr;
+
     while (1) {
         printf("\t%x] realtimeRunner running.\n", pthread_self());
         // TODO lock lock[tNum]
@@ -65,7 +68,14 @@ void realtimeRunner(struct realtimeRunnerParameters* params) {
         int tNum = params->tNum;
 
         // copy the cont struct to this local variable
-        struct cont cont = params->state->realtimeThreadConts[tNum];
+        struct GC_state *state = params->state;
+        printf("state = %x\n", state);
+
+        struct cont* realtimeThreadConts = state->realtimeThreadConts;
+        printf("realtimeThreadConts = %x\n", realtimeThreadConts);
+
+        struct cont cont = realtimeThreadConts[tNum];
+        printf("cont.nextChunk = %x\n", cont.nextChunk);
 
         if (cont.nextChunk != NULL) {
             printf("\t%x] realtimeRunner trampolining.\n", pthread_self());
@@ -86,6 +96,7 @@ void realtimeRunner(struct realtimeRunnerParameters* params) {
 
         // TODO unlock lock[tNum]
     }
+    return NULL;
 }
 
 void allocate_pthread(struct GC_state *state, struct cont *cont) {
