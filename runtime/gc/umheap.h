@@ -36,19 +36,20 @@ typedef union GC_UM_Array_Payload {
    p - 4 returns the header of the array
 */
 typedef struct GC_UM_Array_Chunk {
-    Word32_t array_chunk_length;            /* Array Length                 */
-    Word32_t array_chunk_ml_header;         /* MLton's array header         */
-    GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer  */
-    Word32_t array_chunk_header;            /* For Mark / Sweep             */
-    Word32_t array_chunk_counter;           /* MLton's array counter        */
-    Word32_t array_chunk_type;              /* Internal or Leaf             */
-    size_t array_height;                    /* Height of the tree (subtree) */
-    size_t array_chunk_numObjs;             /* Number of objects in leaf    */
-    size_t array_num_chunks;                /* Number of leaf chunks        */
-    size_t array_chunk_fan_out;             /* How many chunk in each ptr   */
-    size_t array_chunk_objSize;             /* Object size of each element  */
-    Word32_t array_chunk_magic;             /* A magic value for debug      */
-    struct GC_UM_Array_Chunk* next_chunk;   /* For free list maintainance   */
+    Word32_t array_chunk_length;            /* Array Length                     */
+    Word32_t array_chunk_ml_header;         /* MLton's array header             */
+    GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer      */
+    Word32_t array_chunk_header;            /* For Mark / Sweep                 */
+    Word32_t array_chunk_counter;           /* MLton's array counter            */
+    Word32_t array_chunk_type;              /* Internal or Leaf                 */
+    size_t array_height;                    /* Height of the tree (subtree)     */
+    size_t array_chunk_numObjs;             /* Number of objects in leaf        */
+    size_t array_num_chunks;                /* Number of leaf chunks            */
+    size_t array_chunk_fan_out;             /* How many chunk in each ptr       */
+    size_t array_chunk_objSize;             /* Object size of each element      */
+    Word32_t array_chunk_magic;             /* A magic value for debug          */
+    struct GC_UM_Array_Chunk* parent;       /* Pointer to parent chunk for iter */
+    struct GC_UM_Array_Chunk* next_chunk;   /* For free list maintainance       */
 } *GC_UM_Array_Chunk;
 
 typedef struct GC_UM_Array_heap {

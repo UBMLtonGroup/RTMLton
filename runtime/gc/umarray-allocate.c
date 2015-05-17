@@ -5,7 +5,7 @@ size_t UM_Create_Array_Chunk(GC_state s,
                              size_t height) {
     size_t i;
     root->array_height = height;
-    root->array_chunk_fan_out = (1 << (5 * height));
+    root->array_chunk_fan_out = (1 << (5 * height)); // 32 ^ height
     if (height == 0) {
         root->array_chunk_fan_out = 1;
         size_t goal = (numChunks <= UM_CHUNK_ARRAY_INTERNAL_POINTERS) ? numChunks :
@@ -14,6 +14,7 @@ size_t UM_Create_Array_Chunk(GC_state s,
         for (i=0; i<goal; i++) {
             GC_UM_Array_Chunk puac = allocNextArrayChunk(s, &s->umarheap);
             puac->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
+            puac->parent = root;
             root->ml_array_payload.um_array_pointers[i] = puac;
         }
         return goal;
@@ -24,6 +25,7 @@ size_t UM_Create_Array_Chunk(GC_state s,
     for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
         GC_UM_Array_Chunk puac = allocNextArrayChunk(s, &s->umarheap);
         puac->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
+        puac->parent = root;
         root->ml_array_payload.um_array_pointers[i] = puac;
         size_t t = UM_Create_Array_Chunk(
             s, h, puac, numChunks, height - 1);
@@ -68,6 +70,7 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->array_chunk_numObjs = chunkNumObjs;
     parray_header->array_num_chunks = numChunks;
     parray_header->array_chunk_objSize = bytesPerElement;
+    parray_header->parent = NULL;
 
     if (numChunks == 0) {
         return (pointer)&(parray_header->ml_array_payload);
