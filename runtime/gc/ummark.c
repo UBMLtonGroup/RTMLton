@@ -113,12 +113,13 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     }
 
     if (tag == ARRAY_TAG) {
-        GC_UM_Array_Chunk stack[32]; // 32 ^ 32 for maximum non-recursive iteraction
+        GC_UM_Array_Chunk stack[32]; // FIXME: 32 ^ 32 for maximum non-recursive
+                                     // iteraction
         int stackTop = 0;
         GC_UM_Array_Chunk root = ((GC_UM_Array_Chunk)(p - 8))->next_chunk;
         size_t length = root->array_chunk_length;
         stack[stackTop++] = root;
-        int i, j;
+        size_t i, j;
         while (stackTop) {
             GC_UM_Array_Chunk cur = stack[--stackTop];
             if (m == MARK_MODE) {
@@ -129,6 +130,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
             pointer ptr;
             if (cur->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
+                ptr = (pointer) cur->ml_array_payload.ml_object;
                 for (i=0; i<root->array_chunk_numObjs && length; i++) {
                     length--;
                     ptr += bytesNonObjptrs;
