@@ -5,6 +5,8 @@ volatile int32_t RTThreads_initialized= 0;
 volatile int32_t Proc_criticalCount;
 volatile int32_t Proc_criticalTicket;
 
+pthread_mutex_t AllocatedThreadLock;
+
 void RTThread_waitForInitialization (GC_state s) {
   int32_t unused;
 
@@ -111,11 +113,29 @@ void* realtimeRunner(void* paramsPtr) {
     return NULL;
 }
 
-void allocate_pthread(struct GC_state *state, struct cont *cont) {
+int allocate_pthread(struct GC_state *state, struct cont *cont) {
 
-	// TODO implement this 
-	(void)state;
-	(void)cont;
+	//grab a lock for accessing the allocated threads structure
 
-	printf("allocate_pthread() is not yet implemented\n");
+	pthread_mutex_lock(&AllocatedThreadLock);
+	
+	//Loop through allocate thread structure to find free spot
+	for(int i=0;i<state->numRealtimeThreads;i++)
+	{
+		if(!state->realtimeThreadAllocated[i])
+		  {	
+			pthread_mutex_lock(&state->realtimeThreadLocks[i]);
+			state->realtimeThreadConts[i] = *cont;
+			pthread_mutex_unlock(&state->realtimeThreadLocks[i]);
+			
+			//Mark thread as allocated
+			state->realtimeThreadAllocated[i]=true;
+			pthread_mutex_unlock(&AllocatedThreadLock);
+			return i;
+		  }	
+	}
+	
+	pthread_mutex_unlock(&AllocatedThreadLock);
+	return -1;
+
 }

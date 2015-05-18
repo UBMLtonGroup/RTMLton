@@ -9,7 +9,7 @@ struct realtimeRunnerParameters {
 
 void realtimeThreadInit(struct GC_state *state);
 void *realtimeRunner(void* paramsPtr);
-void allocate_pthread(struct GC_state *state, struct cont *cont);
+int allocate_pthread(struct GC_state *state, struct cont *cont);
 
 /* Unique number for this thread */
 int32_t Proc_processorNumber (GC_state s);
