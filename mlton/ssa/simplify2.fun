@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor Simplify2 (S: SIMPLIFY2_STRUCTS): SIMPLIFY2 = 
+functor Simplify2 (S: SIMPLIFY2_STRUCTS): SIMPLIFY2 =
 struct
 
 open S
@@ -37,8 +37,8 @@ structure Zone = Zone (S)
 type pass = {name: string,
              doit: Program.t -> Program.t}
 
-val ssa2PassesDefault = 
-   {name = "deepFlatten", doit = DeepFlatten.transform2} ::
+val ssa2PassesDefault =
+(*   {name = "deepFlatten", doit = DeepFlatten.transform2} :: *)
    {name = "refFlatten", doit = RefFlatten.transform2} ::
    {name = "removeUnused5", doit = RemoveUnused2.transform2} ::
    {name = "zone", doit = Zone.transform2} ::
@@ -62,12 +62,12 @@ local
       end
 
 
-   val passGens = 
+   val passGens =
       List.map([("addProfile", Profile2.addProfile),
-                ("deepFlatten", DeepFlatten.transform2),
+(*                ("deepFlatten", DeepFlatten.transform2), *)
                 ("dropProfile", Profile2.dropProfile),
                 ("refFlatten", RefFlatten.transform2),
-                ("removeUnused", RemoveUnused2.transform2), 
+                ("removeUnused", RemoveUnused2.transform2),
                 ("zone", Zone.transform2),
                 ("eliminateDeadBlocks",S.eliminateDeadBlocks),
                 ("orderFunctions",S.orderFunctions),
@@ -79,8 +79,8 @@ in
       Exn.withEscape
       (fn esc =>
        (let val ss = String.split (s, #":")
-        in 
-           ssa2Passes := 
+        in
+           ssa2Passes :=
            List.map(ss, fn s =>
                     case (List.peekMap (passGens, fn gen => gen s)) of
                        NONE => esc (Result.No s)
@@ -110,7 +110,7 @@ fun pass ({name, doit, midfix}, p) =
       val _ =
          let open Control
          in maybeSaveToFile
-            ({name = name, 
+            ({name = name,
               suffix = midfix ^ "pre.ssa2"},
              Control.No, p, Control.Layouts Program.layouts)
          end
@@ -125,7 +125,7 @@ fun pass ({name, doit, midfix}, p) =
           typeCheck = typeCheck}
    in
       p
-   end 
+   end
 fun maybePass ({name, doit, midfix}, p) =
    if List.exists (!Control.dropPasses, fn re =>
                    Regexp.Compiled.matchesAll (re, name))
@@ -142,7 +142,7 @@ fun simplify p =
          in
             if n = !Control.loopPasses
                then p
-            else simplify' 
+            else simplify'
                  (n + 1)
                  (List.fold
                   (!ssa2Passes, p, fn ({name, doit}, p) =>
@@ -154,7 +154,7 @@ fun simplify p =
    end
 
 val simplify = fn p => let
-                         (* Always want to type check the initial and final SSA 
+                         (* Always want to type check the initial and final SSA
                           * programs, even if type checking is turned off, just
                           * to catch bugs.
                           *)

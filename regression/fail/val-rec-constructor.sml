@@ -1,1 +1,0 @@
-val rec NONE = fn () => ()

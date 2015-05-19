@@ -135,3 +135,67 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     return (Pointer)(current_chunk->next_chunk + (o + 4) -
                      current_chunk->sentinel);
 }
+
+Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
+                        C_Size_t elemSize, C_Size_t offset) {
+    Pointer heap_end = (gc_stat->umarheap).start + (gc_stat->umarheap).size;
+
+    if (base < gc_stat->umarheap.start || base >= heap_end) {
+        if (DEBUG_MEM) {
+            fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
+                    base + offset);
+        }
+        return base + index * elemSize + offset;
+    }
+
+    if (DEBUG_MEM) {
+        fprintf(stderr, "UM_Array_offset: "FMTPTR" index: %d size: %d offset %d\n",
+                (base - 4), index, elemSize, offset);
+    }
+
+
+    /* FIXME: length field size is not correct across platforms (OK on 32 bit though) */
+    GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk) (base - GC_HEADER_SIZE - GC_HEADER_SIZE);
+    GC_UM_Array_Chunk root = fst_leaf->next_chunk;
+
+    /* Fix object index for tupling reference */
+    if ((index * elemSize) % root->array_chunk_objSize != 0) {
+        die("Unable to calibrate the index of flatten objects\n");
+    }
+//    index = index * elemSize / root->array_chunk_objSize;
+
+    size_t chunk_index = index / root->array_chunk_numObjs;
+    GC_UM_Array_Chunk current = root;
+    size_t i;
+    if (DEBUG_MEM) {
+        fprintf(stderr, "Start to fetch chunk index: %d\n", chunk_index);
+    }
+    while (true) {
+        i = chunk_index / current->array_chunk_fan_out;
+        if (DEBUG_MEM) {
+            fprintf(stderr, "  --> chunk_index: %d, current fan out: %d, "
+                    "in chunk index: %d, with height: %d\n",
+                    chunk_index,
+                    current->array_chunk_fan_out,
+                    i,
+                    current->array_height);
+        }
+        chunk_index = chunk_index % current->array_chunk_fan_out;
+        current = current->ml_array_payload.um_array_pointers[i];
+        if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
+            size_t chunk_offset = (index % root->array_chunk_numObjs) * elemSize + offset;
+            Pointer res = (Pointer)(current->ml_array_payload.ml_object + chunk_offset);
+            if (DEBUG_MEM) {
+                fprintf(stderr, "chunk base: "FMTPTR", offset: %d, addr "FMTPTR" word: %x, %d, "
+                        " char: %c\n",
+                        current->ml_array_payload.ml_object, chunk_offset, res,
+                        *((Word32_t*)(res)),
+                        *((Word32_t*)(res)),
+                        *((char*)(res)));
+            }
+            return res;
+        }
+    }
+
+    die("UM_Array_Offset: shouldn't be here!");
+}

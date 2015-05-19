@@ -6,6 +6,14 @@ void initUMHeap(__attribute__ ((unused)) GC_state s,
     h->fl_chunks = 0;
 }
 
+void initUMArrayHeap(__attribute__ ((unused)) GC_state s,
+                     GC_UM_Array_heap h) {
+    h->start = NULL;
+    h->size = 0;
+    h->fl_array_chunks = 0;
+    h->fl_array_head = NULL;
+}
+
 GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
                            GC_UM_heap h) {
 
@@ -21,6 +29,25 @@ GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
     return c;
 }
 
+GC_UM_Array_Chunk allocNextArrayChunk(__attribute__ ((unused) )GC_state s,
+                                      GC_UM_Array_heap h) {
+    if (h->fl_array_chunks <= 3) {
+        die("allocNextArrayChunk: No more memory available\n");
+    }
+
+    GC_UM_Array_Chunk c = h->fl_array_head;
+    h->fl_array_head = h->fl_array_head->next_chunk;
+    c->next_chunk = NULL;
+    c->array_chunk_magic = 9998;
+    c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
+    int i;
+    for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
+        c->ml_array_payload.um_array_pointers[i] = NULL;
+    }
+    h->fl_array_chunks -= 1;
+    return c;
+}
+
 void insertFreeChunk(__attribute__ ((unused)) GC_state s,
                      GC_UM_heap h,
                      pointer c) {
@@ -33,6 +60,16 @@ void insertFreeChunk(__attribute__ ((unused)) GC_state s,
     h->fl_chunks += 1;
 }
 
+void insertArrayFreeChunk(__attribute__ ((unused)) GC_state s,
+                          GC_UM_Array_heap h,
+                          pointer c) {
+    GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) c;
+    memset(pc->ml_array_payload.ml_object, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE);
+    pc->next_chunk = h->fl_array_head;
+    pc->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
+    h->fl_array_head = pc;
+    h->fl_array_chunks += 1;
+}
 
 bool createUMHeap(GC_state s,
                   GC_UM_heap h,
@@ -85,6 +122,16 @@ bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
 
     h->start = newStart;
     h->size = desiredSize;
+
+    pointer pchunk;
+    pointer end = h->start + h->size;
+
+    size_t step = sizeof(struct GC_UM_Array_Chunk);
+    for (pchunk=h->start;
+         pchunk < end;
+         pchunk+=step) {
+        insertArrayFreeChunk(s, h, pchunk);
+    }
 
     return TRUE;
 }

@@ -689,11 +689,12 @@ fun output {program as Machine.Program.T {chunks,
          fun toString (z: Operand.t): string =
             case z of
                ArrayOffset {base, index, offset, scale, ty} =>
-                  concat ["X", C.args [Type.toC ty,
-                                       toString base,
-                                       toString index,
-                                       Scale.toString scale,
-                                       C.bytes offset]]
+               concat ["X", C.args [Type.toC ty,
+                                    toString GCState,
+                                    toString base,
+                                    toString index,
+                                    Scale.toString scale,
+                                    C.bytes offset]]
              | Cast (z, ty) => concat ["(", Type.toC ty, ")", toString z]
              | Contents {oper, ty} => contents (ty, toString oper)
              | Frontier => "Frontier"

@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  *)
 
-functor Simplify (S: SIMPLIFY_STRUCTS): SIMPLIFY = 
+functor Simplify (S: SIMPLIFY_STRUCTS): SIMPLIFY =
 struct
 
 open S
@@ -41,14 +41,14 @@ val ssaPassesDefault =
    {name = "removeUnused1", doit = RemoveUnused.transform} ::
    {name = "introduceLoops1", doit = IntroduceLoops.transform} ::
    {name = "loopInvariant1", doit = LoopInvariant.transform} ::
-   {name = "inlineLeaf1", doit = fn p => 
+   {name = "inlineLeaf1", doit = fn p =>
     Inline.inlineLeaf (p, !Control.inlineLeafA)} ::
-   {name = "inlineLeaf2", doit = fn p => 
+   {name = "inlineLeaf2", doit = fn p =>
     Inline.inlineLeaf (p, !Control.inlineLeafB)} ::
    {name = "contify1", doit = Contify.transform} ::
-   {name = "localFlatten1", doit = LocalFlatten.transform} ::
+(*   {name = "localFlatten1", doit = LocalFlatten.transform} :: *)
    {name = "constantPropagation", doit = ConstantPropagation.transform} ::
-   (* useless should run 
+   (* useless should run
     *   - after constant propagation because constant propagation makes
     *     slots of tuples that are constant useless
     *)
@@ -70,14 +70,14 @@ val ssaPassesDefault =
    {name = "contify2", doit = Contify.transform} ::
    {name = "inlineNonRecursive", doit = fn p =>
     Inline.inlineNonRecursive (p, !Control.inlineNonRec)} ::
-   {name = "localFlatten2", doit = LocalFlatten.transform} ::
+(*   {name = "localFlatten2", doit = LocalFlatten.transform} :: *)
    {name = "removeUnused3", doit = RemoveUnused.transform} ::
    {name = "contify3", doit = Contify.transform} ::
    {name = "introduceLoops3", doit = IntroduceLoops.transform} ::
    {name = "loopInvariant3", doit = LoopInvariant.transform} ::
    {name = "localRef", doit = LocalRef.transform} ::
-   {name = "flatten", doit = Flatten.transform} ::
-   {name = "localFlatten3", doit = LocalFlatten.transform} ::
+(*   {name = "flatten", doit = Flatten.transform} :: *)
+(*   {name = "localFlatten3", doit = LocalFlatten.transform} :: *)
    {name = "combineConversions", doit = CombineConversions.transform} ::
    {name = "commonArg", doit = CommonArg.transform} ::
    {name = "commonSubexp", doit = CommonSubexp.transform} ::
@@ -121,7 +121,7 @@ local
              else let
                      val l = String.length s
                   in
-                     if String.sub (s, 0) = #"(" 
+                     if String.sub (s, 0) = #"("
                         andalso String.sub (s, l - 1)= #")"
                         then let
                                 val s = String.substring2 (s, {start = 1, finish = l - 1})
@@ -147,42 +147,42 @@ local
          if String.hasPrefix (s, {prefix = "inlineNonRecursive"})
             then let
                     fun mk (product, small) =
-                       SOME {name = concat ["inlineNonRecursive(", 
+                       SOME {name = concat ["inlineNonRecursive(",
                                             Int.toString product, ",",
                                             Int.toString small, ")#",
                                             Int.toString (Counter.next count)],
-                             doit = (fn p => 
-                                     Inline.inlineNonRecursive 
+                             doit = (fn p =>
+                                     Inline.inlineNonRecursive
                                      (p, {small = small, product = product}))}
                     val s = String.dropPrefix (s, String.size "inlineNonRecursive")
                  in
                     case nums s of
-                       SOME [IntOpt (SOME product), IntOpt (SOME small)] => 
+                       SOME [IntOpt (SOME product), IntOpt (SOME small)] =>
                           mk (product, small)
                      | _ => NONE
                  end
          else if String.hasPrefix (s, {prefix = "inlineLeaf"})
             then let
                     fun mk (loops, repeat, size) =
-                       SOME {name = concat ["inlineLeafRepeat(", 
+                       SOME {name = concat ["inlineLeafRepeat(",
                                             Bool.toString loops, ",",
                                             Bool.toString repeat, ",",
                                             Option.toString Int.toString size, ")#",
                                             Int.toString (Counter.next count)],
-                             doit = (fn p => 
+                             doit = (fn p =>
                                      Inline.inlineLeaf
                                      (p, {loops = loops, repeat = repeat, size = size}))}
                     val s = String.dropPrefix (s, String.size "inlineLeaf")
                  in
                     case nums s of
-                       SOME [Bool loops, Bool repeat, IntOpt size] => 
+                       SOME [Bool loops, Bool repeat, IntOpt size] =>
                           mk (loops, repeat, size)
                      | _ => NONE
                  end
          else NONE
       end
 
-   val passGens = 
+   val passGens =
       inlinePassGen ::
       (List.map([("addProfile", Profile.addProfile),
                  ("combineConversions",  CombineConversions.transform),
@@ -192,10 +192,10 @@ local
                  ("constantPropagation", ConstantPropagation.transform),
                  ("contify", Contify.transform),
                  ("dropProfile", Profile.dropProfile),
-                 ("flatten", Flatten.transform),
+(*                 ("flatten", Flatten.transform), *)
                  ("introduceLoops", IntroduceLoops.transform),
                  ("knownCase", KnownCase.transform),
-                 ("localFlatten", LocalFlatten.transform),
+(*                 ("localFlatten", LocalFlatten.transform), *)
                  ("localRef", LocalRef.transform),
                  ("loopInvariant", LoopInvariant.transform),
                  ("polyEqual", PolyEqual.transform),
@@ -205,20 +205,20 @@ local
                  ("removeUnused", RemoveUnused.transform),
                  ("simplifyTypes", SimplifyTypes.transform),
                  ("useless", Useless.transform),
-                 ("breakCriticalEdges",fn p => 
+                 ("breakCriticalEdges",fn p =>
                   S.breakCriticalEdges (p, {codeMotion = true})),
                  ("eliminateDeadBlocks",S.eliminateDeadBlocks),
                  ("orderFunctions",S.orderFunctions),
                  ("reverseFunctions",S.reverseFunctions),
-                 ("shrink", S.shrink)], 
+                 ("shrink", S.shrink)],
                 mkSimplePassGen))
 in
    fun ssaPassesSetCustom s =
       Exn.withEscape
       (fn esc =>
        (let val ss = String.split (s, #":")
-        in 
-           ssaPasses := 
+        in
+           ssaPasses :=
            List.map(ss, fn s =>
                     case (List.peekMap (passGens, fn gen => gen s)) of
                        NONE => esc (Result.No s)
@@ -248,7 +248,7 @@ fun pass ({name, doit, midfix}, p) =
       val _ =
          let open Control
          in maybeSaveToFile
-            ({name = name, 
+            ({name = name,
               suffix = midfix ^ "pre.ssa"},
              Control.No, p, Control.Layouts Program.layouts)
          end
@@ -263,7 +263,7 @@ fun pass ({name, doit, midfix}, p) =
           typeCheck = typeCheck}
    in
       p
-   end 
+   end
 fun maybePass ({name, doit, midfix}, p) =
    if List.exists (!Control.dropPasses, fn re =>
                    Regexp.Compiled.matchesAll (re, name))
@@ -280,7 +280,7 @@ fun simplify p =
          in
             if n = !Control.loopPasses
                then p
-            else simplify' 
+            else simplify'
                  (n + 1)
                  (List.fold
                   (!ssaPasses, p, fn ({name, doit}, p) =>
@@ -292,7 +292,7 @@ fun simplify p =
    end
 
 val simplify = fn p => let
-                         (* Always want to type check the initial and final SSA 
+                         (* Always want to type check the initial and final SSA
                           * programs, even if type checking is turned off, just
                           * to catch bugs.
                           *)
