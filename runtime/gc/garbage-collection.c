@@ -253,7 +253,9 @@ void performGC (GC_state s,
 void ensureInvariantForMutator (GC_state s, bool force) {
   if (force
       or not (invariantForMutatorFrontier(s))
-      or not (invariantForMutatorStack(s))) {
+      or not (invariantForMutatorStack(s))
+      or (s->umheap.fl_chunks <= 2000)
+      or (s->umarheap.fl_array_chunks <= 2000)) {
     /* This GC will grow the stack, if necessary. */
     performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
   }
