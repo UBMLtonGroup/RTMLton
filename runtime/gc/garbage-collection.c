@@ -128,6 +128,22 @@ void performUMGC(GC_state s) {
         }
     }
 
+    end = s->umarheap.start + s->umarheap.size;
+    step = sizeof(struct GC_UM_Array_Chunk);
+    for (pchunk=s->umarheap.start;
+         pchunk < end;
+         pchunk += step) {
+        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
+        if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
+            (!(pc->array_chunk_header & UM_CHUNK_HEADER_MASK))) {
+            if (DEBUG_MEM) {
+                fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
+                        (uintptr_t)pc, pc->array_chunk_magic, pc->array_chunk_header);
+            }
+            insertArrayFreeChunk(s, &(s->umarheap), pchunk);
+        }
+    }
+
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
     foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
 }
