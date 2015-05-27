@@ -52,6 +52,7 @@ pointer GC_arrayAllocate (GC_state s,
 //    pointer result;
 
 //    GC_collect(s, 0, false);
+    GC_collect(s, 0, false);
     splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
 
