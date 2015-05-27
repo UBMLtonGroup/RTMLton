@@ -72,3 +72,4 @@ structure Main : BMARK =
           TextIO.output (outstrm, Int.toString(!sum_iterations) ^ " iterations\n"))
 
   end (* Mandelbrot *)
+val () = Main.doit 20

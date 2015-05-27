@@ -111,8 +111,9 @@ void performUMGC(GC_state s) {
 //                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
 
     pointer pchunk;
-    pointer end = s->umheap.start + s->umheap.size;
     size_t step = sizeof(struct GC_UM_Chunk);
+    pointer end = s->umheap.start + s->umheap.size - step;
+
 
     for (pchunk=s->umheap.start;
          pchunk < end;
@@ -128,8 +129,9 @@ void performUMGC(GC_state s) {
         }
     }
 
-    end = s->umarheap.start + s->umarheap.size;
     step = sizeof(struct GC_UM_Array_Chunk);
+    end = s->umarheap.start + s->umarheap.size - step;
+
     for (pchunk=s->umarheap.start;
          pchunk < end;
          pchunk += step) {

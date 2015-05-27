@@ -89,8 +89,9 @@ bool createUMHeap(GC_state s,
     h->size = desiredSize;
 
     pointer pchunk;
-    pointer end = h->start + h->size;
     size_t step = sizeof(struct GC_UM_Chunk);
+    pointer end = h->start + h->size - step;
+
 
     for (pchunk=h->start;
          pchunk < end;
@@ -126,9 +127,9 @@ bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
     h->size = desiredSize;
 
     pointer pchunk;
-    pointer end = h->start + h->size;
-
     size_t step = sizeof(struct GC_UM_Array_Chunk);
+    pointer end = h->start + h->size - step;
+
     for (pchunk=h->start;
          pchunk < end;
          pchunk+=step) {

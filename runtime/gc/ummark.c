@@ -40,7 +40,7 @@ void getObjectType(GC_state s, objptr *opp) {
 
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     pointer p = objptrToPointer(*opp, s->heap.start);
-    if (DEBUG_MEM)
+//    if (DEBUG_MEM)
         fprintf(stderr, "original obj: 0x%x, obj: 0x%x\n",
                 (uintptr_t)*opp, (uintptr_t)p);
     GC_header* headerp = getHeaderp(p);
@@ -50,7 +50,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     GC_objectTypeTag tag;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
-    if (DEBUG_MEM)
+//    if (DEBUG_MEM)
         getObjectType(s, opp);
 
     /* Using MLton's header to track if it's marked */
@@ -125,39 +125,39 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
         if (fst_leaf->array_chunk_length > 0) {
             GC_UM_Array_Chunk root = ((GC_UM_Array_Chunk)(p - 8))->next_chunk;
-            size_t length = root->array_chunk_length;
-
-            size_t i, j;
-            size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
-            for (i=0; i<length; i++) {
-                pointer pobj = UM_Array_offset(s, p, i, elem_size, 0) +
-                    bytesNonObjptrs;
-
-                for (j=0; j<numObjptrs; j++) {
-                    if (m == MARK_MODE)
-                        foreachObjptrInObject(s, pobj, umDfsMarkObjectsMark, true);
-                    else
-                        foreachObjptrInObject(s, pobj, umDfsMarkObjectsUnMark, true);
-                    pobj += OBJPTR_SIZE;
-                }
-            }
+//            size_t length = root->array_chunk_length;
+//
+//            size_t i, j;
+//            size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
+//            for (i=0; i<length; i++) {
+//                pointer pobj = UM_Array_offset(s, p, i, elem_size, 0) +
+//                    bytesNonObjptrs;
+//
+//                for (j=0; j<numObjptrs; j++) {
+//                    if (m == MARK_MODE)
+//                        foreachObjptrInObject(s, pobj, umDfsMarkObjectsMark, true);
+//                    else
+//                        foreachObjptrInObject(s, pobj, umDfsMarkObjectsUnMark, true);
+//                    pobj += OBJPTR_SIZE;
+//                }
+//            }
             markUMArrayChunks(s, root, m);
         } else
             markUMArrayChunks(s, fst_leaf, m);
-    } else {
-        if (numObjptrs > 0) {
-            if (m == MARK_MODE)
-                foreachObjptrInObject(s, p, umDfsMarkObjectsMark, true);
-            else
-                foreachObjptrInObject(s, p, umDfsMarkObjectsUnMark, true);
-        }
+    }
+
+    if (numObjptrs > 0) {
+        if (m == MARK_MODE)
+            foreachObjptrInObject(s, p, umDfsMarkObjectsMark, false);
+        else
+            foreachObjptrInObject(s, p, umDfsMarkObjectsUnMark, false);
     }
 }
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
-    if (DEBUG_MEM) {
-        fprintf(stderr, "markUMArrayChunks: marking array markmode: %d\n", m);
-    }
+    fprintf(stderr, "markUMArrayChunks: %x: marking array markmode: %d, type: %d\n", p, m,
+            p->array_chunk_type);
+
     if (m == MARK_MODE)
         p->array_chunk_header |= UM_CHUNK_HEADER_MASK;
     else

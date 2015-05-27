@@ -116,7 +116,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
         callIfIsObjptr (s, f, (objptr*)p);
       p += OBJPTR_SIZE;
     }
-  } else if (ARRAY_TAG == tag) {
+  } else if (ARRAY_TAG == tag &&
+             ((p >= s->umarheap.start + s->umarheap.size) ||
+              (p < s->umarheap.start))) {
     size_t bytesPerElement;
     size_t dataBytes;
     pointer last;
@@ -161,7 +163,25 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       p -= dataBytes;
     }
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
-  } else { /* stack */
+  } else if (ARRAY_TAG == tag) {
+      GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
+      if (fst_leaf->array_chunk_length > 0) {
+          GC_UM_Array_Chunk root = ((GC_UM_Array_Chunk)(p - 8))->next_chunk;
+          size_t length = root->array_chunk_length;
+
+          size_t i, j;
+          size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
+          for (i=0; i<length; i++) {
+              pointer pobj = UM_Array_offset(s, p, i, elem_size, 0) +
+                  bytesNonObjptrs;
+
+              for (j=0; j<numObjptrs; j++) {
+                  callIfIsObjptr (s, f, (objptr*)pobj);
+                  pobj += OBJPTR_SIZE;
+              }
+          }
+      }
+  }else { /* stack */
     GC_stack stack;
     pointer top, bottom;
     unsigned int i;
