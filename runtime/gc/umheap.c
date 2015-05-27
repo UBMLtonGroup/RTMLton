@@ -14,10 +14,11 @@ void initUMArrayHeap(__attribute__ ((unused)) GC_state s,
     h->fl_array_head = NULL;
 }
 
-GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
+GC_UM_Chunk allocNextChunk(GC_state s,
                            GC_UM_heap h) {
 
     if (h->fl_chunks <= 3) {
+//        GC_collect(s, 0, true);
         die("allocNextChunk: No more memory available\n");
     }
 
@@ -29,9 +30,10 @@ GC_UM_Chunk allocNextChunk(__attribute__ ((unused)) GC_state s,
     return c;
 }
 
-GC_UM_Array_Chunk allocNextArrayChunk(__attribute__ ((unused) )GC_state s,
+GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_Array_heap h) {
     if (h->fl_array_chunks <= 3) {
+//        GC_collect(s, 0, true);
         die("allocNextArrayChunk: No more memory available\n");
     }
 
