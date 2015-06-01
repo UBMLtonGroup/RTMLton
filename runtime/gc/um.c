@@ -18,17 +18,19 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
  * - 4 bytes next chunk pointer (initialize in the C code)
  */
 Pointer
-UM_Header_alloc(__attribute__ ((unused)) GC_state gc_stat, Pointer umfrontier,
+UM_Header_alloc(GC_state gc_stat,
+                Pointer umfrontier,
                 C_Size_t s)
 {
     if (DEBUG_MEM)
         DBG(umfrontier, s, 0, "enter");
-    GC_UM_Chunk pchunk = (GC_UM_Chunk)umfrontier;
-    pchunk->chunk_header = UM_CHUNK_IN_USE;
+//    GC_UM_Chunk pchunk = (GC_UM_Chunk)umfrontier;
+//    pchunk->chunk_header = UM_CHUNK_IN_USE;
+//    GC_collect(gc_stat, 0, true);
+//    GC_UM_Chunk pchunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
 	return (umfrontier + s);
+//	return (((Pointer)pchunk) + s);
 }
-
-#define CHUNKSIZE 100
 
 Pointer
 UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
@@ -36,8 +38,10 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
     if (DEBUG_MEM)
        DBG(umfrontier, s, 0, "enter");
 
+    GC_collect(gc_stat, 0, false);
     GC_UM_Chunk next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
+    current_chunk->chunk_header= UM_CHUNK_IN_USE;
 
     if (DEBUG_MEM) {
         fprintf(stderr, "Sentinel: %d \n", current_chunk->sentinel);
@@ -159,9 +163,9 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     GC_UM_Array_Chunk root = fst_leaf->next_chunk;
 
     /* Fix object index for tupling reference */
-    if ((index * elemSize) % root->array_chunk_objSize != 0) {
-        die("Unable to calibrate the index of flatten objects\n");
-    }
+//    if ((index * elemSize) % root->array_chunk_objSize != 0) {
+//        die("Unable to calibrate the index of flatten objects\n");
+//    }
 //    index = index * elemSize / root->array_chunk_objSize;
 
     size_t chunk_index = index / root->array_chunk_numObjs;

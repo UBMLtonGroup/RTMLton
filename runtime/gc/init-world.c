@@ -104,9 +104,9 @@ void initWorld (GC_state s) {
 
 
 #define MEGABYTES 1024*1024
-  createUMHeap (s, &s->umheap, 512*MEGABYTES, 512*MEGABYTES);
+  createUMHeap (s, &s->umheap, 1024*MEGABYTES, 1024*MEGABYTES);
 
-  createUMArrayHeap (s, &s->umarheap, 512*MEGABYTES, 512*MEGABYTES);
+  createUMArrayHeap (s, &s->umarheap, 1024*MEGABYTES, 1024*MEGABYTES);
 
   createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
 
@@ -114,7 +114,7 @@ void initWorld (GC_state s) {
 //               s->lastMajorStatistics.bytesLive);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
-  s->gc_module = GC_NONE;
+  s->gc_module = GC_UM;
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   s->umarfrontier = s->umarheap.start;

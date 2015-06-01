@@ -16,7 +16,8 @@ MLTON := mlton
 TARGET := self
 FLAGS := -target $(TARGET)	\
 	-default-ann 'sequenceNonUnit warn' \
-	-default-ann 'warnUnused true'
+	-default-ann 'warnUnused true' \
+	-codegen c
 NAME := benchmark
 PATH := $(BIN):$(shell echo $$PATH)
 

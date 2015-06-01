@@ -13,6 +13,7 @@ size_t UM_Create_Array_Chunk(GC_state s,
 
         for (i=0; i<goal; i++) {
             GC_UM_Array_Chunk puac = allocNextArrayChunk(s, &s->umarheap);
+            puac->array_chunk_header = UM_CHUNK_IN_USE;
             puac->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
             puac->parent = root;
             root->ml_array_payload.um_array_pointers[i] = puac;
@@ -25,6 +26,7 @@ size_t UM_Create_Array_Chunk(GC_state s,
     for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
         GC_UM_Array_Chunk puac = allocNextArrayChunk(s, &s->umarheap);
         puac->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
+        puac->array_chunk_header = UM_CHUNK_IN_USE;
         puac->parent = root;
         root->ml_array_payload.um_array_pointers[i] = puac;
         size_t t = UM_Create_Array_Chunk(
@@ -49,6 +51,8 @@ pointer GC_arrayAllocate (GC_state s,
 //    pointer frontier, last;
 //    pointer result;
 
+//    GC_collect(s, 0, false);
+    GC_collect(s, 0, false);
     splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
 
@@ -71,6 +75,7 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->array_num_chunks = numChunks;
     parray_header->array_chunk_objSize = bytesPerElement;
     parray_header->parent = NULL;
+    parray_header->array_chunk_header = UM_CHUNK_IN_USE;
 
     if (numChunks == 0) {
         return (pointer)&(parray_header->ml_array_payload);
