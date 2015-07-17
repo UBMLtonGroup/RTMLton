@@ -19,6 +19,7 @@ pthread_mutex_t AllocatedThreadLock;
 int RTThread_addThreadToQueue(GC_thread t, int priority) {
 	if (priority < RESPRI || priority > MAXPRI) return -1;
 	thread_queue[priority - RESPRI] = 1;
+	MYASSERT(1, ==, 1);
 	return 0;
 }
 

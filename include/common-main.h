@@ -37,15 +37,13 @@
 # define DBG(X)
 #endif
 
-#define STR_VALUE(arg)      #arg
-#define FUNCTION_NAME(name) STR_VALUE(name)
-#define MYASSERT(X, RV) { \
-	int rv = X; \
-	if (rv != RV ) { \
-		fprintf(stderr, "%s failed, expect %d got %d\n", \
-				FUNCTION_NAME(X), RV, rv); \
-		exit(-1); \
-	} \
+#define MYASSERT(X, COMP, RV) {                                  \
+	void *rv = (void *)X;                                    \
+	if (!(rv COMP (void*)RV)) {                              \
+		fprintf(stderr, #X " failed, %x " #COMP " %x\n", \
+				RV, rv);                         \
+		exit(-1);                                        \
+	}                                                        \
 }
 
 PRIVATE Pointer gcStateAddress;
@@ -87,10 +85,10 @@ PRIVATE Pointer gcStateAddress;
         setvbuf(stderr, NULL, _IONBF, 0);                               \
 		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
 		assert(GCrunner_thread != NULL);                                \
-		MYASSERT(pthread_mutex_init(&gclock, NULL), 0);                 \
-		MYASSERT(pthread_mutex_lock(&gclock), 0);                       \
+		MYASSERT(pthread_mutex_init(&gclock, NULL), ==, 0);                 \
+		MYASSERT(pthread_mutex_lock(&gclock), ==, 0);                       \
 		DBG((stderr, "%x] main thread locking %x\n", pthread_self(), &gclock));         \
-		MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), 0); \
+		MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
         while (!gcState.GCrunnerRunning){DBG((stderr, "spin.."));}              \
         realtimeThreadInit(&gcState);                                   \
         

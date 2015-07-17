@@ -105,19 +105,17 @@ static volatile int sem;
 # define DBG(X)
 #endif
 
-#define STR_VALUE(arg)      #arg
-#define FUNCTION_NAME(name) STR_VALUE(name)
-#define MYASSERT(X, RV) { \
-	int rv = X; \
-	if (rv != RV ) { \
-		fprintf(stderr, "%s failed, expect %d got %d\n", \
-				FUNCTION_NAME(X), RV, rv); \
-		exit(-1); \
-	} \
+#define MYASSERT(X, COMP, RV) {                                  \
+	int rv = X;                                              \
+        if (!(rv COMP RV)) {                                     \
+                fprintf(stderr, #X " failed, %d " #COMP " %d\n", \
+                                rv, RV);                         \
+                exit(-1);                                        \
+        }                                                        \
 }
 
-#define GCLOCK(X) { MYASSERT(pthread_mutex_lock(&gclock), 0); }
-#define GCUNLOCK(X) { MYASSERT(pthread_mutex_unlock(&gclock), 0); }
+#define GCLOCK(X) { MYASSERT(pthread_mutex_lock(&gclock), ==, 0); }
+#define GCUNLOCK(X) { MYASSERT(pthread_mutex_unlock(&gclock), ==, 0); }
 
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
