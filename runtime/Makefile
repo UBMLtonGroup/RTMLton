@@ -82,7 +82,7 @@ WARNXCFLAGS += -Wnested-externs
 
 XCFLAGS := -fno-common $(WARNXCFLAGS)
 OPTXCFLAGS := -Wdisabled-optimization -O2 -fomit-frame-pointer
-DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O0 -g
+DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O0 -g -DDEBUG=1
 PICXCFLAGS :=
 
 # Win32&64 don't use PIC code, all other platforms do

@@ -84,16 +84,14 @@ PRIVATE Pointer gcStateAddress;
         gcState.GCrunnerRunning = FALSE;                                \
         MLton_init (argc, argv, &gcState);                              \
                                                                         \
-        setvbuf(stderr, NULL, _IONBF, 0); \
+        setvbuf(stderr, NULL, _IONBF, 0);                               \
 		pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
 		assert(GCrunner_thread != NULL);                                \
-		MYASSERT(pthread_mutex_init(&gclock, NULL), 0);             \
-		MYASSERT(pthread_mutex_lock(&gclock), 0);             \
-		DBG((stderr, "%x] main thread locking %x\n", pthread_self(), &gclock)); \
+		MYASSERT(pthread_mutex_init(&gclock, NULL), 0);                 \
+		MYASSERT(pthread_mutex_lock(&gclock), 0);                       \
+		DBG((stderr, "%x] main thread locking %x\n", pthread_self(), &gclock));         \
 		MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), 0); \
-        while (!gcState.GCrunnerRunning){DBG((stderr, "spin.."));} \
-		unsigned int NUM_REALTIME_THREADS = 100;                        \
-        gcState.numRealtimeThreads = NUM_REALTIME_THREADS;              \
+        while (!gcState.GCrunnerRunning){DBG((stderr, "spin.."));}              \
         realtimeThreadInit(&gcState);                                   \
         
 

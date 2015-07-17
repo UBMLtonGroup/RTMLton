@@ -32,7 +32,6 @@ struct GC_state {
   struct GC_controls controls;
   struct GC_cumulativeStatistics cumulativeStatistics;
   objptr currentThread; /* Currently executing thread (in heap). */
-  int        numRealtimeThreads;
   pthread_t *realtimeThreads;
   bool      *realtimeThreadAllocated;
   struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */

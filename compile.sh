@@ -1,7 +1,7 @@
 #!/bin/bash
 rm -rf build
 
-arch_flags=""
+arch_flags="-j 8"
 make $arch_flags dirs     &&
 make $arch_flags runtime  &&
 make $arch_flags compiler &&
@@ -12,7 +12,7 @@ make $arch_flags constants
 
 cat <<EOF
 Try:
-./build/bin/mlton -codegen c -keep g -gc-module none -verbose 3 hello.sml 
+./build/bin/mlton -codegen c -keep g -verbose 3 thread0.sml 
 ./hello
 EOF
 
