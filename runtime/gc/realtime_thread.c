@@ -19,7 +19,6 @@ pthread_mutex_t AllocatedThreadLock;
 int RTThread_addThreadToQueue(GC_thread t, int priority) {
 	if (priority < RESPRI || priority > MAXPRI) return -1;
 	thread_queue[priority - RESPRI] = 1;
-	MYASSERT(1, ==, 1);
 	return 0;
 }
 
@@ -47,7 +46,7 @@ void realtimeThreadInit(struct GC_state *state) {
 	memset(&thread_queue, 0, sizeof(int)*(MAXPRI-2));
 
         pthread_t *realtimeThreads =
-                malloc(MAXPRI-RESPRI * sizeof(pthread_t));
+                malloc((MAXPRI-RESPRI) * sizeof(pthread_t));
         assert(realtimeThreads != NULL);
 
         state->realtimeThreadConts =
@@ -64,9 +63,7 @@ void realtimeThreadInit(struct GC_state *state) {
             params->tNum = tNum;
             params->state = state;
 
-printf("1\n");
             state->realtimeThreadConts[tNum].nextChunk = NULL;
-printf("2\n");
 
             if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner,
                         (void*)params)) {
