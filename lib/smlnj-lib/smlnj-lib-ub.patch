@@ -6,10 +6,10 @@ diff -Naur smlnj-lib/Util/engine.mlton.sml smlnj-lib-ubmlton/Util/engine.mlton.s
  	     val _ = done return
  	  in
 -	     Thread.switch (fn _ => Thread.prepare (ret, res))
-+	     Thread.switch (fn _ => Thread.prepare (ret, res, 1))
++	     Thread.switch (fn _ => Thread.prepare (ret, res, 0))
  	  end)
 -      val thread = Thread.prepare (thread, ())
-+      val thread = Thread.prepare (thread, (), 1)
++      val thread = Thread.prepare (thread, (), 0)
     in
        T {return = return, thread = thread}
     end
@@ -19,8 +19,8 @@ diff -Naur smlnj-lib/Util/engine.mlton.sml smlnj-lib-ubmlton/Util/engine.mlton.s
  					  ; TimeOut (T {return = return,
 -							thread = me}))),
 -	   ())
-+							thread = me})), 1),
-+	   (), 1)
++							thread = me})), 0),
++	   (), 0)
         val _ = Signal.setHandler (signal, Signal.Handler.handler handler)
         val _ = Itimer.set (which, {value = time,
  				   interval = Time.zeroTime})
