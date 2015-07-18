@@ -31,7 +31,7 @@ size_t sizeofThread (GC_state s) {
 
     splitHeader (s, GC_THREAD_HEADER, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
     check = GC_NORMAL_HEADER_SIZE + (bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE));
-//    if (DEBUG_DETAILED)
+    if (DEBUG_DETAILED)
       fprintf (stderr,
                "sizeofThread: res = %"PRIuMAX"  check = %"PRIuMAX"\n",
                (uintmax_t)res, (uintmax_t)check);

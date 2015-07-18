@@ -84,7 +84,7 @@ GC_thread newThread (GC_state s, size_t reserved, uint32_t prio) {
   thread->exnStack = BOGUS_EXN_STACK;
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
   thread->prio = prio;
-//  if (DEBUG_THREADS)
+  if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX") prio=%u\n",
              (uintptr_t)thread, (uintmax_t)reserved, prio);
 
