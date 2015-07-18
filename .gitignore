@@ -2,3 +2,5 @@
 /install/
 *.swp
 core
+
+.project

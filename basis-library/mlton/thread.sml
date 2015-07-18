@@ -140,7 +140,6 @@ in
 
    fun switch f =
       (atomicBegin ()
-       ; print "switch\n"
        ; atomicSwitch f)
 end
 
