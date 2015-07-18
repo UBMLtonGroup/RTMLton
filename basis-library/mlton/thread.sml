@@ -55,7 +55,7 @@ structure Runnable =
 
 fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
    let
-   		val prio = prio'
+      val prio = prio'
       val t =
          case !r of
             Dead => raise Fail "prepend to a Dead thread"

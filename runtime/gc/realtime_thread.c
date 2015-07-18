@@ -1,8 +1,25 @@
+/* http://stackoverflow.com/questions/3649281/how-to-increase-thread-priority-in-pthreads */
+
 #include "realtime_thread.h"
 
-// pri 0 is non RT threads handled by "main"
-// pri 1 is reserved for GC
-// so we subtract 2 when allocating/accessing tracking structures
+#define LOCK(X) { MYASSERT(pthread_mutex_lock(&X), ==, 0); }
+#define UNLOCK(X) { MYASSERT(pthread_mutex_unlock(&X), ==, 0); }
+
+/*
+ pri 0 is non RT threads handled by "main"
+ pri 1 is reserved for GC
+ pri 2..N are RT threads
+ so we subtract 2 when allocating/accessing tracking structures
+
+ TODO
+
+ we need to consider how pri 0 threads are handled. currently
+ init-world will create a thread with pri 0 and switch to it
+ and ML code will run in that thread by default. but pri 0
+ gets passed to this module... but we don't want to track it (?)
+ and instead just let main handle it. or do we want to spin
+ main and handle pri 0 threads explicitly in this code?
+*/
 #define RESPRI  2
 #define MAXPRI 10 /* 0 .. 10 */
 
@@ -17,8 +34,10 @@ volatile int32_t Proc_criticalTicket;
 pthread_mutex_t AllocatedThreadLock;
 
 int RTThread_addThreadToQueue(GC_thread t, int priority) {
-	if (priority < RESPRI || priority > MAXPRI) return -1;
+	if (priority < 0 || priority == 1 || priority > MAXPRI) return -1;
+	LOCK(thread_queue_lock);
 	thread_queue[priority - RESPRI] = 1;
+	UNLOCK(thread_queue_lock);
 	return 0;
 }
 
@@ -88,28 +107,31 @@ void* realtimeRunner(void* paramsPtr) {
     while (1) {
         // Trampoline
         int tNum = params->tNum;
-        printf("\t%x] realtimeRunner[%d] running.\n", pthread_self(), tNum);
+        printf("%x] realtimeRunner[%d] running.\n", pthread_self(), tNum);
+
+	sleep(1);
+
+        LOCK(thread_queue_lock);
+        if ( thread_queue[params->tNum] != 0 ) {
+		printf("%x] pri %d has work to do\n", pthread_self(), tNum);
+	}
+	else {
+		printf("%x] pri %d has nothing to do\n", pthread_self(), tNum);
+	}
+        UNLOCK(thread_queue_lock);
 
         // copy the cont struct to this local variable
         struct GC_state *state = params->state;
-        printf("state = %x\n", state);
 
         // TODO lock lock[tNum]
 	//Acquiring lock associated with pThread from GC state
 	pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
 
-
-        printf("Acquired thread lock\n");
-
         struct cont* realtimeThreadConts = state->realtimeThreadConts;
-        printf("realtimeThreadConts = %x\n", realtimeThreadConts);
 
-        printf("cont.nextChunk: if next line doesn't print, cont is null\n");
         struct cont cont = realtimeThreadConts[tNum];
 
-        printf("cont.nextChunk = %x\n", cont.nextChunk);
         if (cont.nextChunk != NULL) {
-            printf("\t%x] realtimeRunner trampolining.\n", pthread_self());
             cont=(*(struct cont(*)(void))cont.nextChunk)();
             cont=(*(struct cont(*)(void))cont.nextChunk)();
             cont=(*(struct cont(*)(void))cont.nextChunk)();
@@ -122,13 +144,10 @@ void* realtimeRunner(void* paramsPtr) {
             // copy local variable back to gcstate
             params->state->realtimeThreadConts[tNum] = cont;
 	
-        } else {
-            printf("\t%x] realtimeRunner has nothing to trampoline.\n", pthread_self());
-        }
+        } 
 
         // TODO unlock lock[tNum]
 	pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
-        printf("Released thread lock \n");
     }
     return NULL;
 }

@@ -87,6 +87,11 @@ GC_thread newThread (GC_state s, size_t reserved, uint32_t prio) {
 //  if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX") prio=%u\n",
              (uintptr_t)thread, (uintmax_t)reserved, prio);
+
+  if (RTThread_addThreadToQueue(thread, prio) != 0) {
+	fprintf(stderr, "failed to addThreadToQueue\n");
+  }
+
   return thread;
 }
 
