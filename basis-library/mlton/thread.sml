@@ -87,7 +87,8 @@ local
                      val () = atomicEnd ()
                      (* Atomic 0 *)
                   in
-                     (x () handle e => MLtonExn.topLevelHandler e)
+                     print "calling into function\n"
+                     ; (x () handle e => MLtonExn.topLevelHandler e)
                      ; die "Thread didn't exit properly.\n"
                   end
          end
