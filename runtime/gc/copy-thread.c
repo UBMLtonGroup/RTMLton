@@ -29,7 +29,12 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used, int new_priority)
              (GC_stack)(objptrToPointer(to->stack, s->heap.start)));
   to->bytesNeeded = from->bytesNeeded;
   to->exnStack = from->exnStack;
-  to->prio = from->prio;
+
+  if (new_priority < 0)
+	  to->prio = from->prio;
+  else
+	  to->prio = new_priority;
+
   return to;
 }
 
@@ -55,7 +60,7 @@ void GC_copyCurrentThread (GC_state s) {
   s->savedThread = pointerToObjptr((pointer)toThread - offsetofThread (s), s->heap.start);
 }
 
-pointer GC_copyThread (GC_state s, pointer p) {
+pointer GC_copyThread (GC_state s, pointer p, int new_priority) {
   GC_thread fromThread;
   GC_stack fromStack;
   GC_thread toThread;
@@ -66,7 +71,8 @@ pointer GC_copyThread (GC_state s, pointer p) {
   enter (s);
   fromThread = (GC_thread)(p + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
-  toThread = copyThread (s, fromThread, fromStack->used, fromThread->prio);
+  toThread = copyThread (s, fromThread, fromStack->used,
+		  	  	  	  	  new_priority < 0 ? fromThread->prio : new_priority);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
   assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);

@@ -15,6 +15,6 @@ static inline GC_thread copyThread (GC_state s, GC_thread from, size_t size, int
 #if (defined (MLTON_GC_INTERNAL_BASIS))
 
 PRIVATE void GC_copyCurrentThread (GC_state s);
-PRIVATE pointer GC_copyThread (GC_state s, pointer p);
+PRIVATE pointer GC_copyThread (GC_state s, pointer p, int new_priority);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */

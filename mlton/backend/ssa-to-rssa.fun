@@ -73,7 +73,7 @@ structure CFunction =
 
       (* CHECK; thread as objptr *)
       val copyThread = fn () =>
-         T {args = Vector.new2 (Type.gcState (), Type.thread ()),
+         T {args = Vector.new2 (Type.gcState (), Type.thread (), Type.cint()),
             convention = Cdecl,
             kind = Kind.Runtime {bytesNeeded = NONE,
                                  ensuresBytesFree = false,
