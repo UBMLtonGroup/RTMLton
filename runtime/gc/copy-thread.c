@@ -7,11 +7,11 @@
  * See the file MLton-LICENSE for details.
  */
 
-GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
+GC_thread copyThread (GC_state s, GC_thread from, size_t used, int new_priority) {
   GC_thread to;
 
   if (DEBUG_THREADS)
-    fprintf (stderr, "copyThread ("FMTPTR") prio=%u\n", (uintptr_t)from, from->prio);
+    fprintf (stderr, "copyThread ("FMTPTR") copies_prio=%u new_pri=%u\n", (uintptr_t)from, from->prio, new_priority);
   /* newThread may do a GC, which invalidates from.
    * Hence we need to stash from someplace that the GC can find it.
    */
@@ -39,13 +39,13 @@ void GC_copyCurrentThread (GC_state s) {
   GC_thread toThread;
   LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
-  if (DEBUG_THREADS)
+//  if (DEBUG_THREADS)
     fprintf (stderr, "GC_copyCurrentThread\n");
   enter (s);
   fromThread = (GC_thread)(objptrToPointer(s->currentThread, s->heap.start) 
                            + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
-  toThread = copyThread (s, fromThread, fromStack->used);
+  toThread = copyThread (s, fromThread, fromStack->used, fromThread->prio);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
   assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
@@ -61,12 +61,12 @@ pointer GC_copyThread (GC_state s, pointer p) {
   GC_thread toThread;
   LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
-  if (DEBUG_THREADS)
+//  if (DEBUG_THREADS)
     fprintf (stderr, "GC_copyThread ("FMTPTR")\n", (uintptr_t)p);
   enter (s);
   fromThread = (GC_thread)(p + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
-  toThread = copyThread (s, fromThread, fromStack->used);
+  toThread = copyThread (s, fromThread, fromStack->used, fromThread->prio);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
   assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);

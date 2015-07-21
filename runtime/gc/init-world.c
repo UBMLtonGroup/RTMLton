@@ -111,6 +111,8 @@ void initWorld (GC_state s) {
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
+  fprintf(stderr, "initWorld\n");
   thread = newThread (s, sizeofStackInitialReserved (s), 0);
+  fprintf(stderr, "initWorld\n");
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
 }
