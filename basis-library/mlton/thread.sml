@@ -42,11 +42,11 @@ fun atomically f =
 datatype 'a thread =
    Dead
  | Interrupted of Prim.thread
- | New of 'a -> unit
+ | New of (('a -> unit) * int)
  (* In Paused (f, t), f is guaranteed to not raise an exception. *)
  | Paused of ((unit -> 'a) -> unit) * Prim.thread
 
-datatype 'a t = T of 'a thread ref
+datatype 'a t = T of 'a thread ref 
 
 structure Runnable =
    struct
@@ -55,13 +55,12 @@ structure Runnable =
 
 fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
    let
-      val prio = prio'
       val t =
          case !r of
             Dead => raise Fail "prepend to a Dead thread"
           | Interrupted _ => raise Fail "prepend to a Interrupted thread"
-          | New g => New (g o f)
-          | Paused (g, t) => Paused (fn h => g (f o h), t)
+          | New (g, prio') => New ((g o f), prio')
+          | Paused (g, t)  => Paused (fn h => g (f o h), t)
    in r := Dead
       ; T (ref t)
    end
@@ -69,7 +68,7 @@ fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
 fun prepare (t: 'a t, v: 'a, prio: int): Runnable.t =
    prepend (t, fn () => v, prio)
 
-fun new f = T (ref (New f))
+fun new (f, prio) = T (ref (New (f, prio)))
 
 local
    local
@@ -93,10 +92,11 @@ local
                   end
          end
    in
-      fun newThread (f: unit -> unit) : Prim.thread =
+      fun newThread (f: unit -> unit, prio' : int) : Prim.thread =
          let
             (* Atomic 2 *)
             val () = func := SOME f
+            val prio = prio'
          in
             Prim.copy base
          end
@@ -128,7 +128,7 @@ in
                case !t' before t' := Dead of
                   Dead => fail (Fail "switch to a Dead thread")
                 | Interrupted t => t
-                | New g => (atomicBegin (); newThread g)
+                | New (g, prio) => (atomicBegin (); newThread (g, prio))
                 | Paused (f, t) => (f (fn () => ()); t)
             val _ = switching := false
             (* Atomic 1 when Paused/Interrupted, Atomic 2 when New *)
@@ -140,7 +140,6 @@ in
 
    fun switch f =
       (atomicBegin ()
-       ; print "switch\n"
        ; atomicSwitch f)
 end
 
@@ -202,7 +201,7 @@ in
             end
          val p =
             toPrimitive
-            (new (fn () => loop () handle e => MLtonExn.topLevelHandler e))
+            (new ((fn () => loop () handle e => MLtonExn.topLevelHandler e), 0))
          val _ = signalHandler := SOME p
       in
          Prim.setSignalHandler (gcState, p)
@@ -259,7 +258,7 @@ in
                   in
                      workerLoop ()
                   end
-               val workerThread = toPrimitive (new workerLoop)
+               val workerThread = toPrimitive (new (workerLoop, 0))
                val _ = thisWorker := SOME (workerThread, savedRef)
             in
                (workerThread, savedRef)
@@ -279,7 +278,7 @@ in
             in
                handlerLoop ()
             end
-         val handlerThread = toPrimitive (new handlerLoop)
+         val handlerThread = toPrimitive (new (handlerLoop, 0))
          val _ = Prim.setCallFromCHandler (gcState, handlerThread)
       in
          fn (i, f) => Array.update (exports, i, f)
