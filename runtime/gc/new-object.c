@@ -73,7 +73,7 @@ GC_thread newThread (GC_state s, size_t reserved, uint32_t prio) {
   GC_thread thread;
   pointer res;
 
-  fprintf(stderr, "newThread\n");
+  fprintf(stderr, "newThread pri=%d\n", prio);
 
   assert (isStackReservedAligned (s, reserved));
   ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));

@@ -202,7 +202,7 @@ in
             end
          val p =
             toPrimitive
-            (new ((fn () => loop () handle e => MLtonExn.topLevelHandler e), 0))
+            (new ((fn () => loop () handle e => MLtonExn.topLevelHandler e), 102)) (* FIX *)
          val _ = signalHandler := SOME p
       in
          Prim.setSignalHandler (gcState, p)
@@ -259,7 +259,7 @@ in
                   in
                      workerLoop ()
                   end
-               val workerThread = toPrimitive (new (workerLoop, 0))
+               val workerThread = toPrimitive (new (workerLoop, 101)) (* FIX *)
                val _ = thisWorker := SOME (workerThread, savedRef)
             in
                (workerThread, savedRef)
@@ -279,7 +279,7 @@ in
             in
                handlerLoop ()
             end
-         val handlerThread = toPrimitive (new (handlerLoop, 0))
+         val handlerThread = toPrimitive (new (handlerLoop, 100)) (* FIX *)
          val _ = Prim.setCallFromCHandler (gcState, handlerThread)
       in
          fn (i, f) => Array.update (exports, i, f)

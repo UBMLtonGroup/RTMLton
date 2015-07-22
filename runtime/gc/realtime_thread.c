@@ -34,6 +34,8 @@ volatile int32_t Proc_criticalTicket;
 pthread_mutex_t AllocatedThreadLock;
 
 int RTThread_addThreadToQueue(GC_thread t, int priority) {
+        fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
+
 	if (priority < 0 || priority == 1 || priority > MAXPRI) return -1;
 	LOCK(thread_queue_lock);
 	thread_queue[priority - RESPRI] = 1;
