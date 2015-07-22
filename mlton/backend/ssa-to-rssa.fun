@@ -73,7 +73,7 @@ structure CFunction =
 
       (* CHECK; thread as objptr *)
       val copyThread = fn () =>
-         T {args = Vector.new2 (Type.gcState (), Type.thread (), Type.cint()),
+         T {args = Vector.new3 (Type.gcState (), Type.thread (), Type.cint()),
             convention = Cdecl,
             kind = Kind.Runtime {bytesNeeded = NONE,
                                  ensuresBytesFree = false,
@@ -85,7 +85,7 @@ structure CFunction =
             prototype = let
                            open CType
                         in
-                           (Vector.new2 (CPointer, CPointer), SOME CPointer)
+                           (Vector.new3 (CPointer, CPointer, CType.cint ()), SOME CPointer)
                         end,
             return = Type.thread (),
             symbolScope = Private,
@@ -1411,9 +1411,12 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                      end)
                                | Thread_atomicState =>
                                     move (Runtime GCField.AtomicState)
-                               | Thread_copy =>
-                                    simpleCCallWithGCState
-                                    (CFunction.copyThread ())
+                               | Thread_copy => 
+                                    ccall {args = (Vector.new3
+                                                   (GCState,
+                                                    a 0,
+                                                    a 1)),
+                                           func = CFunction.copyThread ()}
                                | Thread_switchTo =>
                                     ccall {args = (Vector.new3
                                                    (GCState,

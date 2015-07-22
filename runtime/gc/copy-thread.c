@@ -67,7 +67,7 @@ pointer GC_copyThread (GC_state s, pointer p, int new_priority) {
   LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
 //  if (DEBUG_THREADS)
-    fprintf (stderr, "GC_copyThread ("FMTPTR")\n", (uintptr_t)p);
+    fprintf (stderr, "GC_copyThread ("FMTPTR", %u)\n", (uintptr_t)p, new_priority);
   enter (s);
   fromThread = (GC_thread)(p + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));

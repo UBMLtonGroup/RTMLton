@@ -1323,7 +1323,7 @@ fun 'a checkApp (prim: 'a t,
        | Thread_atomicBegin => noTargs (fn () => (noArgs, unit))
        | Thread_atomicEnd => noTargs (fn () => (noArgs, unit))
        | Thread_atomicState => noTargs (fn () => (noArgs, word32))
-       | Thread_copy => noTargs (fn () => (oneArg thread, thread))
+       | Thread_copy => noTargs (fn () => (twoArgs (thread, cint), thread))
        | Thread_copyCurrent => noTargs (fn () => (noArgs, unit))
        | Thread_returnToC => noTargs (fn () => (noArgs, unit))
        | Thread_switchTo => noTargs (fn () => (oneArg thread, unit))

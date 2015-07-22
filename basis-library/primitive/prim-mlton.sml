@@ -321,7 +321,7 @@ structure Thread =
          if atomicState () = 0w0
             then raise Primitive.Exn.Fail8 "Thread.atomicEnd"
             else _prim "Thread_atomicEnd": unit -> unit; ()
-      val copy = _prim "Thread_copy": preThread -> thread;
+      val copy = _prim "Thread_copy": preThread * Int32.int -> thread;
       (* copyCurrent's result is accesible via savedPre ().
        * It is not possible to have the type of copyCurrent as
        * unit -> preThread, because there are two different ways to

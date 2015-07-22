@@ -99,7 +99,7 @@ local
             val () = func := SOME f
             val prio = prio'
          in
-            Prim.copy base
+            Prim.copy(base, prio)
          end
    end
    val switching = ref false
