@@ -7,7 +7,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-GC_thread copyThread (GC_state s, GC_thread from, size_t used, int new_priority) {
+GC_thread copyThread (GC_state s, GC_thread from, size_t used, int32_t new_priority) {
   GC_thread to;
 
 //  if (DEBUG_THREADS)
@@ -56,7 +56,7 @@ void GC_copyCurrentThread (GC_state s) {
   s->savedThread = pointerToObjptr((pointer)toThread - offsetofThread (s), s->heap.start);
 }
 
-pointer GC_copyThread (GC_state s, pointer p, int new_priority) {
+pointer GC_copyThread (GC_state s, pointer p, int32_t new_priority) {
   GC_thread fromThread;
   GC_stack fromStack;
   GC_thread toThread;
