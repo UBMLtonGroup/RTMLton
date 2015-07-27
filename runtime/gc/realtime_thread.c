@@ -5,26 +5,14 @@
 #define LOCK(X) { MYASSERT(pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(pthread_mutex_unlock(&X), ==, 0); }
 
-/*
- pri 0 is non RT threads handled by "main"
- pri 1 is reserved for GC
- pri 2..N are RT threads
- so we subtract 2 when allocating/accessing tracking structures
-
- TODO
-
- we need to consider how pri 0 threads are handled. currently
- init-world will create a thread with pri 0 and switch to it
- and ML code will run in that thread by default. but pri 0
- gets passed to this module... but we don't want to track it (?)
- and instead just let main handle it. or do we want to spin
- main and handle pri 0 threads explicitly in this code?
-*/
 #define RESPRI  2
 #define MAXPRI 10 /* 0 .. 10 */
 
 static pthread_mutex_t thread_queue_lock;
-static int thread_queue[MAXPRI-2];
+static struct _TQ {
+	GC_thread t;
+	bool runnable;
+} thread_queue[MAXPRI-2];
 
 volatile bool RTThreads_beginInit = FALSE;
 volatile int32_t RTThreads_initialized= 0;
@@ -33,12 +21,38 @@ volatile int32_t Proc_criticalTicket;
 
 pthread_mutex_t AllocatedThreadLock;
 
+int32_t GC_getThreadPriority(GC_state s, pointer p) {
+	GC_thread gct;
+	gct = (GC_thread)(objptrToPointer(s->currentThread, s->heap.start) + offsetofThread (s));
+
+	return gct->prio;
+}
+
+/* TODO
+ * lookup thread,
+ * change prio in GC_thread struct,
+ * move thread to new queue if nec'y
+ * change the posix priority
+ */
+int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
+	return prio;
+}
+
+/* TODO
+ * move thread to back of queue
+ * pthread_yield
+ */
+int32_t GC_threadYield(GC_state s) {
+	return 0;
+}
+
 int RTThread_addThreadToQueue(GC_thread t, int priority) {
-        fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
+    fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
 
 	if (priority < 0 || priority == 1 || priority > MAXPRI) return -1;
 	LOCK(thread_queue_lock);
-	thread_queue[priority - RESPRI] = 1;
+	thread_queue[priority - RESPRI].runnable = TRUE;
+	thread_queue[priority - RESPRI].t = t;
 	UNLOCK(thread_queue_lock);
 	return 0;
 }
@@ -64,14 +78,14 @@ void realtimeThreadInit(struct GC_state *state) {
 
 	rv = pthread_mutex_init(&thread_queue_lock, NULL);
 	assert(rv == 0);
-	memset(&thread_queue, 0, sizeof(int)*(MAXPRI-2));
+	memset(&thread_queue, 0, sizeof(struct _TQ)*(MAXPRI-2));
 
-        pthread_t *realtimeThreads =
-                malloc((MAXPRI-RESPRI) * sizeof(pthread_t));
-        assert(realtimeThreads != NULL);
+	pthread_t *realtimeThreads =
+			malloc((MAXPRI-RESPRI) * sizeof(pthread_t));
+	assert(realtimeThreads != NULL);
 
-        state->realtimeThreadConts =
-                malloc((MAXPRI-RESPRI) * sizeof(struct cont));
+	state->realtimeThreadConts =
+			malloc((MAXPRI-RESPRI) * sizeof(struct cont));
 
 	//Initializing the locks for each realtime thread created,
 	state->realtimeThreadLocks= malloc((MAXPRI-RESPRI) * sizeof(pthread_mutex_t));
@@ -97,6 +111,7 @@ void realtimeThreadInit(struct GC_state *state) {
 
         state->realtimeThreadAllocated =
             malloc((MAXPRI-RESPRI) * sizeof(bool));
+
         for (tNum = 0; tNum < (MAXPRI-RESPRI); tNum++) {
             state->realtimeThreadAllocated[tNum] = false;
         }
@@ -114,20 +129,20 @@ void* realtimeRunner(void* paramsPtr) {
 	sleep(1);
 
         LOCK(thread_queue_lock);
-        if ( thread_queue[params->tNum] != 0 ) {
-		printf("%x] pri %d has work to do\n", pthread_self(), tNum);
-	}
-	else {
-		printf("%x] pri %d has nothing to do\n", pthread_self(), tNum);
-	}
-        UNLOCK(thread_queue_lock);
+        if ( thread_queue[params->tNum].runnable != TRUE ) {
+        	printf("%x] pri %d has work to do\n", pthread_self(), tNum);
+		}
+		else {
+			printf("%x] pri %d has nothing to do\n", pthread_self(), tNum);
+		}
+		UNLOCK(thread_queue_lock);
 
-        // copy the cont struct to this local variable
-        struct GC_state *state = params->state;
+		// copy the cont struct to this local variable
+		struct GC_state *state = params->state;
 
-        // TODO lock lock[tNum]
-	//Acquiring lock associated with pThread from GC state
-	pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
+		// TODO lock lock[tNum]
+		//Acquiring lock associated with pThread from GC state
+		pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
 
         struct cont* realtimeThreadConts = state->realtimeThreadConts;
 
