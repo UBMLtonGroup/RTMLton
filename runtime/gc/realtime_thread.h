@@ -7,6 +7,7 @@ struct realtimeRunnerParameters {
     struct GC_state *state;
 };
 
+
 void realtimeThreadInit(struct GC_state *state);
 void *realtimeRunner(void* paramsPtr);
 int allocate_pthread(struct GC_state *state, struct cont *cont);
@@ -29,4 +30,13 @@ bool Proc_executingInSection (__attribute__ ((unused)) GC_state s);
 
 
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
+
+#if (defined (MLTON_GC_INTERNAL_BASIS))
+
+int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio);
+int32_t GC_getThreadPriority(GC_state s, pointer p);
+int32_t GC_threadYield(GC_state s);
+
+#endif
+
 #endif /* _REALTIME_THREAD_H_ */

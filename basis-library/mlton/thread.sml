@@ -87,8 +87,7 @@ local
                      val () = atomicEnd ()
                      (* Atomic 0 *)
                   in
-                     print "calling into function\n"
-                     ; (x () handle e => MLtonExn.topLevelHandler e)
+                     (x () handle e => MLtonExn.topLevelHandler e)
                      ; die "Thread didn't exit properly.\n"
                   end
          end
@@ -144,6 +143,12 @@ in
        ; atomicSwitch f)
 end
 
+fun getPriority (t: Runnable.t) : int = 
+	Prim.getPriority()
+	
+fun setPriority (t: Runnable.t, prio : int) : int = 
+	Prim.setPriority(prio)
+	
 fun fromPrimitive (t: Prim.thread): Runnable.t =
    T (ref (Interrupted t))
 
