@@ -42,7 +42,7 @@ fun atomically f =
 datatype 'a thread =
    Dead
  | Interrupted of Prim.thread
- | New of (('a -> unit) * int)
+ | New of ('a -> unit)
  (* In Paused (f, t), f is guaranteed to not raise an exception. *)
  | Paused of ((unit -> 'a) -> unit) * Prim.thread
 
@@ -59,7 +59,7 @@ fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
          case !r of
             Dead => raise Fail "prepend to a Dead thread"
           | Interrupted _ => raise Fail "prepend to a Interrupted thread"
-          | New (g, prio') => New ((g o f), prio')
+          | New g => New (g o f)
           | Paused (g, t)  => Paused (fn h => g (f o h), t)
    in r := Dead
       ; T (ref t)
@@ -68,7 +68,7 @@ fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
 fun prepare (t: 'a t, v: 'a, prio: int): Runnable.t =
    prepend (t, fn () => v, prio)
 
-fun new (f, prio) = T (ref (New (f, prio)))
+fun new f = T (ref (New f))
 
 local
    local
@@ -128,7 +128,7 @@ in
                case !t' before t' := Dead of
                   Dead => fail (Fail "switch to a Dead thread")
                 | Interrupted t => t
-                | New (g, prio) => (atomicBegin (); newThread (g, prio))
+                | New g => (atomicBegin (); newThread (g, 111)) (* FIX *)
                 | Paused (f, t) => (f (fn () => ()); t)
             val _ = switching := false
             (* Atomic 1 when Paused/Interrupted, Atomic 2 when New *)
@@ -143,11 +143,11 @@ in
        ; atomicSwitch f)
 end
 
-fun getPriority (t: Runnable.t) : int = 
-	Prim.getPriority()
+fun getPriority (t: Prim.thread) : int = 
+	Prim.getPriority(gcState, t)
 	
-fun setPriority (t: Runnable.t, prio : int) : int = 
-	Prim.setPriority(prio)
+fun setPriority (t: Prim.thread, prio : int) : int = 
+	Prim.setPriority(gcState, t, prio)
 	
 fun fromPrimitive (t: Prim.thread): Runnable.t =
    T (ref (Interrupted t))
@@ -207,7 +207,7 @@ in
             end
          val p =
             toPrimitive
-            (new ((fn () => loop () handle e => MLtonExn.topLevelHandler e), 102)) (* FIX *)
+            (new (fn () => loop () handle e => MLtonExn.topLevelHandler e)) (* 102 FIX *)
          val _ = signalHandler := SOME p
       in
          Prim.setSignalHandler (gcState, p)
@@ -264,7 +264,7 @@ in
                   in
                      workerLoop ()
                   end
-               val workerThread = toPrimitive (new (workerLoop, 101)) (* FIX *)
+               val workerThread = toPrimitive (new workerLoop) (* 101 FIX *)
                val _ = thisWorker := SOME (workerThread, savedRef)
             in
                (workerThread, savedRef)
@@ -284,7 +284,7 @@ in
             in
                handlerLoop ()
             end
-         val handlerThread = toPrimitive (new (handlerLoop, 100)) (* FIX *)
+         val handlerThread = toPrimitive (new handlerLoop) (* 100 FIX *)
          val _ = Prim.setCallFromCHandler (gcState, handlerThread)
       in
          fn (i, f) => Array.update (exports, i, f)

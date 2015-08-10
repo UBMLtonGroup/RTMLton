@@ -36,7 +36,7 @@ signature MLTON_THREAD =
        * the value given to the thread.  f must terminate by
        * switch-ing to another thread or exiting the process.
        *)
-      val new: (('a -> unit) * int) -> 'a t
+      val new: ('a -> unit) -> 'a t
       (* prepend(t, f, p)
        * create a new thread (destroying t in the process) that first
        * applies f to the value given to the thread and then continues
@@ -65,8 +65,8 @@ signature MLTON_THREAD_EXTRA =
    sig
       include MLTON_THREAD
 
-      val getPriority: Runnable.t -> int
-      val setPriority: Runnable.t * int -> int
+      val getPriority: Primitive.MLton.Thread.thread -> int
+      val setPriority: Primitive.MLton.Thread.thread * int -> int
       val amInSignalHandler: unit -> bool
       val register: int * (MLtonPointer.t -> unit) -> unit
       val setSignalHandler: (Runnable.t -> Runnable.t) -> unit
