@@ -18,6 +18,7 @@ in
       signature MLTON
       signature MLTON_ARRAY
       signature MLTON_BIN_IO
+      signature PRIM_THREAD
       signature MLTON_CONT
       signature MLTON_EXN
       signature MLTON_FINALIZABLE

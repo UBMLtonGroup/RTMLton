@@ -343,6 +343,8 @@ in
    ../mlton/array.sig
    ../mlton/cont.sig
    ../mlton/cont.sml
+   ../mlton/primthread.sig
+   ../mlton/primthread.sml
    ../mlton/random.sig
    ../mlton/random.sml
    ../mlton/io.sig

@@ -10,6 +10,7 @@ structure MLtonThread:> MLTON_THREAD_EXTRA =
 struct
 
 structure Prim = Primitive.MLton.Thread
+open Prim
 
 fun die (s: string): 'a =
    (PrimitiveFFI.Stdio.print s
@@ -61,6 +62,7 @@ fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
           | Interrupted _ => raise Fail "prepend to a Interrupted thread"
           | New g => New (g o f)
           | Paused (g, t)  => Paused (fn h => g (f o h), t)
+       (*val _ = setPriority(gcState, t, prio') *)
    in r := Dead
       ; T (ref t)
    end
@@ -142,6 +144,8 @@ in
       (atomicBegin ()
        ; atomicSwitch f)
 end
+
+fun getCurrent () : Prim.thread = Prim.current gcState
 
 fun getPriority (t: Prim.thread) : int = 
 	Prim.getPriority(gcState, t)

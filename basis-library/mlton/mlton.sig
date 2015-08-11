@@ -46,6 +46,7 @@ signature MLTON =
       structure LargeWord: MLTON_WORD
       structure Platform: MLTON_PLATFORM
       structure Pointer: MLTON_POINTER
+      structure PrimThread: PRIM_THREAD
       structure ProcEnv: MLTON_PROC_ENV
       structure Process: MLTON_PROCESS
       structure Profile: MLTON_PROFILE
