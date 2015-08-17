@@ -8,11 +8,14 @@
 
 signature PRIM_THREAD =
    sig
-      type 'a t
 
-      val callcc: ('a t -> 'a) -> 'a
-      val isolate: ('a -> unit) -> 'a t
-      val prepend: 'a t * ('b -> 'a) -> 'b t
-      val throw: 'a t * 'a -> 'b
-      val throw': 'a t * (unit -> 'a) -> 'b
+      type 'a t
+(*
+			type preThread = PreThread.t
+
+			val savedPre: unit -> preThread
+	*)
+
+   val primthreadtest: string -> int
+
    end
