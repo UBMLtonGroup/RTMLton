@@ -8,24 +8,23 @@
 
 structure PrimThread : PRIM_THREAD =
 struct
-	open Primitive
-  open Primitive.MLton.Thread
+    open Primitive
+    open Primitive.MLton.Thread
 
-	structure Thread =
-	   struct
-	      open Primitive.MLton.Thread
-	      val savedPre = fn () => savedPre Primitive.MLton.GCState.gcState
-	   end
-	
-	type 'a t = (unit -> 'a) -> unit
-	
-	fun primthreadtest (s : string) : int =
-	let
-		val _ = print "testing\n"
-		; val _ = print s
-	in
-	  123
-	end
-		
+    structure Thread =
+    struct
+        open Primitive.MLton.Thread
+        val savedPre = fn () => savedPre Primitive.MLton.GCState.gcState
+    end
+
+    type 'a t = (unit -> 'a) -> unit
+
+    fun primthreadtest (s : string) : int =
+    let
+        val _ = print "testing\n"
+      ; val _ = print s
+    in
+        123
+    end
 end
 

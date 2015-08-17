@@ -14,16 +14,14 @@ signature PRIM_THREAD =
         type t 
      end
      
-		 structure Thread :
-		   sig
-      	  type preThread = PreThread.t
-		      val savedPre: unit -> preThread
-		   end
-	   
+     structure Thread :
+     sig
+        type preThread = PreThread.t
+        val savedPre: unit -> preThread
+     end
+
      type 'a t
-
-
    
-    val primthreadtest: string -> int
+     val primthreadtest: string -> int
 
  end
