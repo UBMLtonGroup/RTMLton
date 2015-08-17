@@ -18,12 +18,6 @@ struct
 	   end
 	
 	type 'a t = (unit -> 'a) -> unit
-
-	(*
-	type preThread = PreThread.t
-	
-	val savedPre = fn () => savedPre Primitive.MLton.GCState.gcState
-	*)
 	
 	fun primthreadtest (s : string) : int =
 	let
