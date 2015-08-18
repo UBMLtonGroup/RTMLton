@@ -65,8 +65,6 @@ signature MLTON_THREAD_EXTRA =
    sig
       include MLTON_THREAD
 
-      val getPriority: Primitive.MLton.Thread.thread -> int
-      val setPriority: Primitive.MLton.Thread.thread * int -> int
       val amInSignalHandler: unit -> bool
       val register: int * (MLtonPointer.t -> unit) -> unit
       val setSignalHandler: (Runnable.t -> Runnable.t) -> unit

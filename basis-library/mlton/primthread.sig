@@ -16,12 +16,20 @@ signature PRIM_THREAD =
      
      structure Thread :
      sig
+        type t
+     end
+     
+     structure PThread :
+     sig
         type preThread = PreThread.t
+        type thread = Thread.t
         val savedPre: unit -> preThread
+        val copyCurrent: unit -> unit
+        (*val setPriority: unit * thread * int -> int *)
      end
 
      type 'a t
    
-     val primthreadtest: string -> int
+     val setPriority: PThread.preThread * int -> int 
 
  end

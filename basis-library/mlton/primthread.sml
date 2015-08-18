@@ -11,20 +11,21 @@ struct
     open Primitive
     open Primitive.MLton.Thread
 
-    structure Thread =
+    structure PThread =
     struct
         open Primitive.MLton.Thread
         val savedPre = fn () => savedPre Primitive.MLton.GCState.gcState
+        val copyCurrent = fn () => copyCurrent ()
     end
 
     type 'a t = (unit -> 'a) -> unit
 
-    fun primthreadtest (s : string) : int =
-    let
-        val _ = print "testing\n"
-      ; val _ = print s
-    in
-        123
-    end
+	  fun setPriority (pt : PThread.preThread, prio' : int) : int = 
+	  let
+	    val _ = print "PrimThread.setPriority\n"
+	  in
+	  	Primitive.MLton.Thread.setPriority(Primitive.MLton.GCState.gcState, pt, prio')
+	  end
+
 end
 

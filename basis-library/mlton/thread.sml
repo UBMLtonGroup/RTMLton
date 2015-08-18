@@ -146,12 +146,6 @@ in
 end
 
 fun getCurrent () : Prim.thread = Prim.current gcState
-
-fun getPriority (t: Prim.thread) : int = 
-	Prim.getPriority(gcState, t)
-	
-fun setPriority (t: Prim.thread, prio : int) : int = 
-	Prim.setPriority(gcState, t, prio)
 	
 fun fromPrimitive (t: Prim.thread): Runnable.t =
    T (ref (Interrupted t))

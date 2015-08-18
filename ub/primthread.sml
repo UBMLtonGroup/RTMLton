@@ -1,7 +1,18 @@
 open MLton.PrimThread
 
-val x = primthreadtest("hihi\n")
-val _ = print (Int.toString(x))
-val _ = print "\n"
+fun loop 0 = 0
+  | loop (n:int) = 
+  let
+	in
+	    MLton.PrimThread.PThread.copyCurrent() ;
+	    loop(n - 1) 
+	end
 
-val sp = MLton.PrimThread.Thread.savedPre() 
+
+(* val _ = loop 10 ignore *)
+
+val () = MLton.PrimThread.PThread.copyCurrent() 
+
+val sp = MLton.PrimThread.PThread.savedPre() 
+
+val p = setPriority(sp, 5)
