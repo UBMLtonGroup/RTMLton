@@ -9,9 +9,17 @@
 #define MAXPRI 10 /* 0 .. 10 */
 
 static pthread_mutex_t thread_queue_lock;
-static struct _TQ {
+
+typedef struct _TQNode TQNode;
+struct _TQNode {
 	GC_thread t;
 	bool runnable;
+	TQNode *next;
+};
+
+static struct _TQ {
+	TQNode *head;
+	TQNode *tail;
 } thread_queue[MAXPRI-2];
 
 volatile bool RTThreads_beginInit = FALSE;
@@ -21,8 +29,34 @@ volatile int32_t Proc_criticalTicket;
 
 pthread_mutex_t AllocatedThreadLock;
 
+static TQNode* find_runnable(struct _TQ queue) {
+	TQNode *n = queue.head;
+	while(n != NULL && n->runnable == FALSE)
+		n = n->next;
+	return n;
+}
+
+static TQNode* make_tqnode(GC_thread t) {
+	TQNode *n = NULL;
+	if (t != NULL) {
+		n = malloc(sizeof(TQNode));
+		if (n != NULL) {
+			n->t = t;
+			n->runnable = FALSE;
+			n->next = NULL;
+		}
+		else {
+			fprintf(stderr, "make_tqnode: out of memory\n");
+			exit(-1);
+		}
+	}
+	return n;
+}
+
 int32_t GC_getThreadPriority(GC_state s, pointer p) {
 	GC_thread gct;
+	fprintf(stderr, "GC_getThreadPriority("FMTPTR")\n", p);
+
 	gct = (GC_thread)(objptrToPointer(s->currentThread, s->heap.start) + offsetofThread (s));
 
 	return gct->prio;
@@ -35,6 +69,7 @@ int32_t GC_getThreadPriority(GC_state s, pointer p) {
  * change the posix priority
  */
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
+	fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", p, prio);
 	return prio;
 }
 
@@ -43,17 +78,34 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
  * pthread_yield
  */
 int32_t GC_threadYield(GC_state s) {
+	fprintf(stderr, "GC_threadYield()\n");
 	return 0;
 }
 
+TQNode *RTThread_findThreadInQueue(TQNode *head, GC_thread t) {
+	TQNode *n = NULL;
+	for (n = head ; n != NULL && n->t != t ; n = n->next);
+	return n;
+}
+
 int RTThread_addThreadToQueue(GC_thread t, int priority) {
+	TQNode *node;
+
     fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
 
-	if (priority < 0 || priority == 1 || priority > MAXPRI) return -1;
+	if (t == NULL || priority < 0 || priority == 1 || priority > MAXPRI) return -1;
+
 	LOCK(thread_queue_lock);
-	thread_queue[priority - RESPRI].runnable = TRUE;
-	thread_queue[priority - RESPRI].t = t;
+	node = make_tqnode(t);
+	if (thread_queue[priority - RESPRI].head == NULL) {
+		thread_queue[priority - RESPRI].head = thread_queue[priority - RESPRI].tail = node;
+	}
+	else {
+		thread_queue[priority - RESPRI].tail->next = node;
+	}
+
 	UNLOCK(thread_queue_lock);
+
 	return 0;
 }
 
@@ -126,45 +178,58 @@ void* realtimeRunner(void* paramsPtr) {
         int tNum = params->tNum;
         printf("%x] realtimeRunner[%d] running.\n", pthread_self(), tNum);
 
-	sleep(1);
+	sleep(1); /* testing.. slow things down so output is readable */
 
+		/* 1. lock the queue
+		 * 2. find a runnable thread
+		 * 3. unlock the queue
+		 * 4. run it until it completes or yields
+		 * 5. lock the queue
+		 * 6. move it to the back of the queue
+		 * 7. unlock the queue
+		 * 8. repeat
+		 */
         LOCK(thread_queue_lock);
-        if ( thread_queue[params->tNum].runnable != TRUE ) {
-        	printf("%x] pri %d has work to do\n", pthread_self(), tNum);
-		}
-		else {
-			printf("%x] pri %d has nothing to do\n", pthread_self(), tNum);
-		}
+        TQNode *node = find_runnable(thread_queue[params->tNum]);
 		UNLOCK(thread_queue_lock);
 
-		// copy the cont struct to this local variable
-		struct GC_state *state = params->state;
+        if (node != NULL) {
+        	printf("%x] pri %d has work to do\n", pthread_self(), tNum);
 
-		// TODO lock lock[tNum]
-		//Acquiring lock associated with pThread from GC state
-		pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
+        	/* run it, etc; steps 4-7 */
 
-        struct cont* realtimeThreadConts = state->realtimeThreadConts;
+			// copy the cont struct to this local variable
+			struct GC_state *state = params->state;
 
-        struct cont cont = realtimeThreadConts[tNum];
+			// TODO lock lock[tNum]
+			//Acquiring lock associated with pThread from GC state
+			pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
 
-        if (cont.nextChunk != NULL) {
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
-            cont=(*(struct cont(*)(void))cont.nextChunk)();
+			struct cont* realtimeThreadConts = state->realtimeThreadConts;
 
-            // copy local variable back to gcstate
-            params->state->realtimeThreadConts[tNum] = cont;
-	
-        } 
+			struct cont cont = realtimeThreadConts[tNum];
 
-        // TODO unlock lock[tNum]
-	pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
+			if (cont.nextChunk != NULL) {
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				cont=(*(struct cont(*)(void))cont.nextChunk)();
+
+				// copy local variable back to gcstate
+				params->state->realtimeThreadConts[tNum] = cont;
+
+			}
+
+			// TODO unlock lock[tNum]
+			pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
+        }
+        else {
+			printf("%x] pri %d has nothing to do\n", pthread_self(), tNum);
+		}
     }
     return NULL;
 }
