@@ -5,7 +5,6 @@
 #define LOCK(X) { MYASSERT(pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(pthread_mutex_unlock(&X), ==, 0); }
 
-#define RESPRI  2
 #define MAXPRI 10 /* 0 .. 10 */
 
 static pthread_mutex_t thread_queue_lock;
@@ -20,7 +19,7 @@ struct _TQNode {
 static struct _TQ {
 	TQNode *head;
 	TQNode *tail;
-} thread_queue[MAXPRI-2];
+} thread_queue[MAXPRI];
 
 volatile bool RTThreads_beginInit = FALSE;
 volatile int32_t RTThreads_initialized= 0;
@@ -93,15 +92,16 @@ int RTThread_addThreadToQueue(GC_thread t, int priority) {
 
     fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
 
+    // priority 1 is reserved to the GC
 	if (t == NULL || priority < 0 || priority == 1 || priority > MAXPRI) return -1;
 
 	LOCK(thread_queue_lock);
 	node = make_tqnode(t);
-	if (thread_queue[priority - RESPRI].head == NULL) {
-		thread_queue[priority - RESPRI].head = thread_queue[priority - RESPRI].tail = node;
+	if (thread_queue[priority].head == NULL) {
+		thread_queue[priority].head = thread_queue[priority].tail = node;
 	}
 	else {
-		thread_queue[priority - RESPRI].tail->next = node;
+		thread_queue[priority].tail->next = node;
 	}
 
 	UNLOCK(thread_queue_lock);
@@ -122,7 +122,7 @@ void RTThread_waitForInitialization (GC_state s) {
 
 
 bool RTThread_isInitialized (GC_state s) {
-  return RTThreads_initialized == (MAXPRI-RESPRI);
+  return RTThreads_initialized == MAXPRI;
 }
 
 void realtimeThreadInit(struct GC_state *state) {
@@ -130,19 +130,19 @@ void realtimeThreadInit(struct GC_state *state) {
 
 	rv = pthread_mutex_init(&thread_queue_lock, NULL);
 	assert(rv == 0);
-	memset(&thread_queue, 0, sizeof(struct _TQ)*(MAXPRI-2));
+	memset(&thread_queue, 0, sizeof(struct _TQ)*(MAXPRI));
 
 	pthread_t *realtimeThreads =
-			malloc((MAXPRI-RESPRI) * sizeof(pthread_t));
+			malloc(MAXPRI * sizeof(pthread_t));
 	assert(realtimeThreads != NULL);
 
 	state->realtimeThreadConts =
-			malloc((MAXPRI-RESPRI) * sizeof(struct cont));
+			malloc(MAXPRI * sizeof(struct cont));
 
 	//Initializing the locks for each realtime thread created,
-	state->realtimeThreadLocks= malloc((MAXPRI-RESPRI) * sizeof(pthread_mutex_t));
+	state->realtimeThreadLocks= malloc(MAXPRI * sizeof(pthread_mutex_t));
         int tNum;
-        for (tNum = 0; tNum < (MAXPRI-RESPRI); tNum++) {
+        for (tNum = 0; tNum < MAXPRI; tNum++) {
 	    fprintf(stderr, "spawning thread %d\n", tNum);
 
             struct realtimeRunnerParameters* params =
@@ -162,9 +162,9 @@ void realtimeThreadInit(struct GC_state *state) {
         state->realtimeThreads = realtimeThreads;
 
         state->realtimeThreadAllocated =
-            malloc((MAXPRI-RESPRI) * sizeof(bool));
+            malloc(MAXPRI * sizeof(bool));
 
-        for (tNum = 0; tNum < (MAXPRI-RESPRI); tNum++) {
+        for (tNum = 0; tNum < MAXPRI; tNum++) {
             state->realtimeThreadAllocated[tNum] = false;
         }
 }
@@ -196,7 +196,10 @@ void* realtimeRunner(void* paramsPtr) {
         if (node != NULL) {
         	printf("%x] pri %d has work to do\n", pthread_self(), tNum);
 
-        	/* run it, etc; steps 4-7 */
+        	/* run it, etc; steps 4-7
+        	 *     node->t->stack
+        	 *
+        	 */
 
 			// copy the cont struct to this local variable
 			struct GC_state *state = params->state;
@@ -241,7 +244,7 @@ int allocate_pthread(struct GC_state *state, struct cont *cont) {
 	pthread_mutex_lock(&AllocatedThreadLock);
 	
 	//Loop through allocate thread structure to find free spot
-	for(int i = 0 ; i < (MAXPRI-RESPRI) ; i++)
+	for(int i = 0 ; i < MAXPRI ; i++)
 	{
 		if(!state->realtimeThreadAllocated[i])
 		  {	
