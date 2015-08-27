@@ -85,30 +85,25 @@ pointer GC_arrayAllocate (GC_state s,
     int i;
 
     for (i=0; i<numChunks; i++) {
-      cur_chunk->next = allocateNextArrayChunks(s, &s->umarheap);
+      cur_chunk->next_chunk = allocateNextArrayChunks(s, &s->umarheap);
+      cur_chunk->next_chunk->array_chunk_fan_out = chunkNumObjs;
       cur_chunk = cur_chunk->next_chunk;
     }
 
     GC_UM_Array_Chunk root = UM_Group_Array_Chunk(s,
                                                   parray_header->next_chunk,
+                                                  UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+                                                  chunkNumObjs *
                                                   UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+
     while (root->next) {
-      root = UM_Group_Array_Chunk(s, root, UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+      root = UM_Group_Array_Chunk(s, root, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+                                  root->array_chunk_fan_out *
+                                  UM_CHUNK_ARRAY_INTERNAL_POINTERS);
     }
 
-    // TODO: Add pointer to root for the header / 2nd chunk
-    /* Find the left most leaf, return its payload as the pointer for
-       relative addressing: a hack to fix string printing.
-    */
-    GC_UM_Array_Chunk current = parray_header;
-    while (current->array_chunk_type != UM_CHUNK_ARRAY_LEAF) {
-        current = current->ml_array_payload.um_array_pointers[0];
-    }
-    current->array_chunk_ml_header = header;
-    current->next_chunk = parray_header;
-    current->array_chunk_length = numElements;
-    current->array_chunk_objSize = bytesPerElement;
-    return (pointer) &(current->ml_array_payload); // parray_header->ml_array_payload);
+    parray_header->root = root;
+    return (pointer) &(parray_header->next_chunk->ml_array_payload);
 
     /* Not used below */
 //    if (DEBUG_MEM) {
@@ -169,13 +164,17 @@ pointer GC_arrayAllocate (GC_state s,
 
 GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
                                        GC_UM_Array_Chunk head,
-                                       size_t num)
+                                       size_t num,
+                                       size_t fan_out)
 {
   if (head->next_chunk == NULL)
     return head;
 
   GC_UM_Array_Chunk start = allocNextArrayChunk(s, &s->umarheap);
   GC_UM_Array_Chunk cur_chunk = start;
+  cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
+  cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;
+  cur_chunk->array_chunk_fan_out = fan_out;
 
   int cur_index = 0;
   while (head) {
@@ -185,6 +184,9 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
     if (cur_index >= num) {
       cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umarheap);
       cur_chunk = cur_chunk->next_chunk;
+      cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
+      cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;
+      cur_chunk->array_chunk_fan_out = fan_out;
       cur_index = 0;
     }
   }

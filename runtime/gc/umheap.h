@@ -50,6 +50,7 @@ typedef struct GC_UM_Array_Chunk {
     Word32_t array_chunk_magic;             /* A magic value for debug          */
     struct GC_UM_Array_Chunk* parent;       /* Pointer to parent chunk for iter */
     struct GC_UM_Array_Chunk* next_chunk;   /* For free list maintainance       */
+    struct GC_UM_Array_Chunk* root;         /* For header to connect root       */
 } *GC_UM_Array_Chunk;
 
 typedef struct GC_UM_Array_heap {
