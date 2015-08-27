@@ -80,8 +80,23 @@ pointer GC_arrayAllocate (GC_state s,
     if (numChunks == 0) {
         return (pointer)&(parray_header->ml_array_payload);
     }
-    UM_Create_Array_Chunk(s, &s->umarheap, parray_header, numChunks, height);
 
+    GC_UM_Array_Chunk cur_chunk = parray_header;
+    int i;
+
+    for (i=0; i<numChunks; i++) {
+      cur_chunk->next = allocateNextArrayChunks(s, &s->umarheap);
+      cur_chunk = cur_chunk->next_chunk;
+    }
+
+    GC_UM_Array_Chunk root = UM_Group_Array_Chunk(s,
+                                                  parray_header->next_chunk,
+                                                  UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+    while (root->next) {
+      root = UM_Group_Array_Chunk(s, root, UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+    }
+
+    // TODO: Add pointer to root for the header / 2nd chunk
     /* Find the left most leaf, return its payload as the pointer for
        relative addressing: a hack to fix string printing.
     */
@@ -150,4 +165,29 @@ pointer GC_arrayAllocate (GC_state s,
 //    }
 //
 //    return result;
+}
+
+GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
+                                       GC_UM_Array_Chunk head,
+                                       size_t num)
+{
+  if (head->next_chunk == NULL)
+    return head;
+
+  GC_UM_Array_Chunk start = allocNextArrayChunk(s, &s->umarheap);
+  GC_UM_Array_Chunk cur_chunk = start;
+
+  int cur_index = 0;
+  while (head) {
+    cur_chunk->ml_array_payload.ml_object[cur_index] = head;
+    head = head->next_chunk;
+    cur_index++;
+    if (cur_index >= num) {
+      cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umarheap);
+      cur_chunk = cur_chunk->next_chunk;
+      cur_index = 0;
+    }
+  }
+
+  return start;
 }
