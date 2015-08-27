@@ -85,7 +85,7 @@ pointer GC_arrayAllocate (GC_state s,
     int i;
 
     for (i=0; i<numChunks; i++) {
-      cur_chunk->next_chunk = allocateNextArrayChunks(s, &s->umarheap);
+      cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umarheap);
       cur_chunk->next_chunk->array_chunk_fan_out = chunkNumObjs;
       cur_chunk = cur_chunk->next_chunk;
     }
@@ -96,13 +96,14 @@ pointer GC_arrayAllocate (GC_state s,
                                                   chunkNumObjs *
                                                   UM_CHUNK_ARRAY_INTERNAL_POINTERS);
 
-    while (root->next) {
+    while (root->next_chunk) {
       root = UM_Group_Array_Chunk(s, root, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
                                   root->array_chunk_fan_out *
                                   UM_CHUNK_ARRAY_INTERNAL_POINTERS);
     }
 
     parray_header->root = root;
+    parray_header->next_chunk->root = root;
     return (pointer) &(parray_header->next_chunk->ml_array_payload);
 
     /* Not used below */

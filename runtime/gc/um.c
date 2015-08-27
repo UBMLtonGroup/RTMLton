@@ -160,7 +160,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     /* FIXME: length field size is not correct across platforms (OK on 32 bit though) */
     GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk) (base - GC_HEADER_SIZE - GC_HEADER_SIZE);
-    GC_UM_Array_Chunk root = fst_leaf->next_chunk;
+    GC_UM_Array_Chunk root = fst_leaf->root;
 
     /* Fix object index for tupling reference */
 //    if ((index * elemSize) % root->array_chunk_objSize != 0) {
