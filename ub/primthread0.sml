@@ -29,12 +29,12 @@ val _ = print (Int.toString(b))
 
 val p = getPriority(sp)
 
-val _ = print "Priority is: "
+val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
 
-val _ = print (Int.toString(p))
 
-val _ = print "\n"
+val r = setRunnable(sp)
 
+val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
 
 val rec delay =
    fn 0 => ()

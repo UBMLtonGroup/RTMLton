@@ -35,7 +35,7 @@ static TQNode* make_tqnode(GC_thread t) {
 		if (n != NULL) {
 			n->t = t;
 			n->runnable = FALSE;
-			n->next = NULL;
+			n->next = n->prev = NULL;
 		}
 		else {
 			fprintf(stderr, "make_tqnode: out of memory\n");
@@ -62,15 +62,51 @@ int32_t GC_getThreadPriority(GC_state s, pointer p) {
  */
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	GC_thread gct;
+	TQNode *n;
 
 	fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", (uintptr_t)p, prio);
+
 	gct = (GC_thread)(p + offsetofThread (s));
-	gct->prio = prio;
+
+	LOCK(thread_queue_lock);
+
+	n = RTThread_findThreadInQueue(gct, gct->prio);
+
+	if (n) {
+		RTThread_unlinkThreadFromQueue(gct, gct->prio);
+		gct->prio = prio;
+		RTThread_addThreadToQueue(gct, prio);
+	}
+
+	UNLOCK(thread_queue_lock);
 
 	displayThread(s, gct, stderr);
 	displayStack(s, (GC_stack)(gct->stack), stderr);
 
 	return prio;
+}
+
+
+/* TODO
+ * lookup thread,
+ * change runnable to true,
+ */
+int32_t GC_setThreadRunnable(GC_state s, pointer p) {
+	GC_thread gct;
+	TQNode *n = NULL;
+
+	fprintf(stderr, "GC_setThreadRunnable("FMTPTR")\n", (uintptr_t)p);
+	gct = (GC_thread)(p + offsetofThread (s));
+
+	LOCK(thread_queue_lock);
+	n = RTThread_findThread(gct);
+	UNLOCK(thread_queue_lock);
+
+	if (n)
+		n->runnable = TRUE;
+	else
+		return 0;
+	return 1;
 }
 
 /* TODO
@@ -82,13 +118,35 @@ int32_t GC_threadYield(__attribute__ ((unused)) GC_state s) {
 	return 0;
 }
 
-TQNode *RTThread_findThreadInQueue(TQNode *head, GC_thread t) {
+TQNode *RTThread_findThread(GC_thread t) {
+	int i;
+	for (i = 0 ; i < MAXPRI ; i++) {
+		TQNode *n = RTThread_findThreadInQueue(t, t->prio);
+		if (n) return n;
+	}
+	return NULL;
+}
+
+TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority) {
 	TQNode *n = NULL;
-	for (n = head ; n != NULL && n->t != t ; n = n->next);
+	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
 	return n;
 }
 
-int RTThread_addThreadToQueue(GC_thread t, int priority) {
+TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
+	TQNode *n = NULL;
+	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
+	if (n) {
+		if (n != thread_queue[priority].head)
+			n->prev->next = n->next;
+		else
+			thread_queue[priority].head = n->next;
+		n->prev = n->next = NULL;
+	}
+	return n;
+}
+
+int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
 	TQNode *node;
 
     fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
@@ -102,7 +160,10 @@ int RTThread_addThreadToQueue(GC_thread t, int priority) {
 		thread_queue[priority].head = thread_queue[priority].tail = node;
 	}
 	else {
+		TQNode *_t = thread_queue[priority].tail;
 		thread_queue[priority].tail->next = node;
+		thread_queue[priority].tail = node;
+		node->prev = _t;
 	}
 
 	UNLOCK(thread_queue_lock);
@@ -155,13 +216,9 @@ void realtimeThreadInit(struct GC_state *state) {
 
 		state->realtimeThreadConts[tNum].nextChunk = NULL;
 
-		set_pthread_num(0); // "main" is thread0, GC is thread1
-
-		if (tNum > 1) {
-			if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
-				fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
-				exit (1);
-			}
+		if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
+			fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
+			exit (1);
 		}
 	}
 
@@ -175,6 +232,7 @@ void realtimeThreadInit(struct GC_state *state) {
 	}
 }
 
+__attribute__ ((noreturn))
 void* realtimeRunner(void* paramsPtr) {
 
     struct realtimeRunnerParameters *params = paramsPtr;
@@ -242,7 +300,6 @@ void* realtimeRunner(void* paramsPtr) {
 			printf("%lx] pri %d has nothing to do\n", pthread_self(), tNum);
 		}
     }
-    return NULL;
 }
 
 int allocate_pthread(struct GC_state *state, struct cont *cont) {

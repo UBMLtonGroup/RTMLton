@@ -33,5 +33,6 @@ signature PRIM_THREAD =
    
      val setPriority: PThread.preThread * int -> int 
      val getPriority: PThread.preThread -> int 
-
+     val setRunnable: PThread.preThread -> int 
+ 
  end

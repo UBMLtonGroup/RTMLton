@@ -10,32 +10,3 @@ GC_numStackFrames   in call-stack.c
 GC_copyCurrentThread
 GC_copyThread
 	convert SML code, remove prio param replace with pthread param
-
-
-
-
-void * f(void *_p)
-{
-        uint32_t i2 = 0;
-        pthread_t i = pthread_self();
-        uint32_t p = (uint32_t)*(uint32_t*)_p;
-        set_tid(p);
-        i2 = get_tid();
-        printf("func %lx %u\n", i, i2);
-}
-
-int main()
-{
-        uint32_t n;
-        pthread_t t;
-        pthread_t i = pthread_self();
-
-        for (n = 0; n<10 ;n++) {
-                uint32_t *tparm = malloc(sizeof(uint32_t));
-                *tparm = n;
-                pthread_create(&t, NULL, &f, (void *)tparm);
-        }
-        printf("main %lx\n", i);
-        sleep(10);
-}
-

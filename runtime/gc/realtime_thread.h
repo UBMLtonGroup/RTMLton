@@ -13,11 +13,15 @@ struct _TQNode {
 	GC_thread t;
 	bool runnable;
 	TQNode *next;
+	TQNode *prev;
 };
 
+int32_t GC_setThreadRunnable(GC_state s, pointer p);
 
-TQNode *RTThread_findThreadInQueue(TQNode *head, GC_thread t);
-int RTThread_addThreadToQueue(GC_thread t, int priority);
+TQNode *RTThread_findThread(GC_thread t);
+TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority);
+int RTThread_addThreadToQueue(GC_thread t, int32_t priority);
+TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority);
 
 void realtimeThreadInit(struct GC_state *state);
 void *realtimeRunner(void* paramsPtr);

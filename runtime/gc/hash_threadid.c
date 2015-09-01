@@ -7,7 +7,7 @@ static pthread_key_t key;
 static pthread_once_t key_once = PTHREAD_ONCE_INIT;
 
 uint32_t
-get_pthread_num()
+get_pthread_num(void)
 {
         uint32_t *ptr;
         ptr = (uint32_t *)pthread_getspecific(key);
@@ -17,7 +17,7 @@ get_pthread_num()
 
 
 static void
-make_key()
+make_key(void)
 {
     (void) pthread_key_create(&key, NULL);
 }
