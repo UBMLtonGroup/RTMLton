@@ -11,7 +11,7 @@ get_pthread_num()
 {
         uint32_t *ptr;
         ptr = (uint32_t *)pthread_getspecific(key);
-        if (ptr != NULL) return (uint32_t)*ptr;
+        if (ptr != NULL) return *ptr;
         return 0;
 }
 
@@ -26,12 +26,12 @@ make_key()
 void
 set_pthread_num(uint32_t tid)
 {
-    void *ptr;
+    uint32_t *ptr;
 
     (void) pthread_once(&key_once, make_key);
-    if ((ptr = pthread_getspecific(key)) == NULL) {
-        ptr = (void*)malloc(sizeof(uint32_t));
-        *(uint32_t *)ptr = (uint32_t)tid;
+    if ((ptr = (uint32_t *)pthread_getspecific(key)) == NULL) {
+        ptr = (uint32_t *)malloc(sizeof(uint32_t));
+        *ptr = tid;
         (void) pthread_setspecific(key, ptr);
     }
 }
