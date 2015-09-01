@@ -86,10 +86,10 @@ bool invariantForGC (GC_state s) {
   /* Current thread. */
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
-  assert (s->stackBottom == getStackBottom (s, stack));
-  assert (s->stackTop == getStackTop (s, stack));
-  assert (s->stackLimit == getStackLimit (s, stack));
-  assert (s->stackBottom <= s->stackTop);
+  assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
+  assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
+  assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
+  assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
   assert (stack->used == sizeofGCStateCurrentStackUsed (s));
   assert (stack->used <= stack->reserved);
   if (DEBUG)

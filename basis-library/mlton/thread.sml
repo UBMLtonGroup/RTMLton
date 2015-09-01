@@ -62,7 +62,6 @@ fun prepend (T r: 'a t, f: 'b -> 'a, prio': int): 'b t =
           | Interrupted _ => raise Fail "prepend to a Interrupted thread"
           | New g => New (g o f)
           | Paused (g, t)  => Paused (fn h => g (f o h), t)
-       (*val _ = setPriority(gcState, t, prio') *)
    in r := Dead
       ; T (ref t)
    end

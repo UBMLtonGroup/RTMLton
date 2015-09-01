@@ -105,17 +105,17 @@ static volatile int sem;
 # define DBG(X)
 #endif
 
-#define MYASSERT(X, COMP, RV) {                                  \
-	int rv = X;                                              \
-        if (!(rv COMP RV)) {                                     \
-                fprintf(stderr, #X " failed, %d " #COMP " %d\n", \
-                                rv, RV);                         \
+#define MYASSERT(T, X, COMP, RV) {                               \
+	  T __rv__ = (T)X;                                           \
+        if (!(__rv__ COMP (T)RV)) {                              \
+                fprintf(stderr, #X " failed, %x " #COMP " %x\n", \
+                                __rv__, (T)RV);                  \
                 exit(-1);                                        \
         }                                                        \
 }
 
-#define GCLOCK(X) { MYASSERT(pthread_mutex_lock(&gclock), ==, 0); }
-#define GCUNLOCK(X) { MYASSERT(pthread_mutex_unlock(&gclock), ==, 0); }
+#define GCLOCK(X) { MYASSERT(int, pthread_mutex_lock(&gclock), ==, 0); }
+#define GCUNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&gclock), ==, 0); }
 
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
@@ -296,7 +296,7 @@ void performGC_helper (GC_state s,
   }
   /* Send a GC signal. */
   if (s->signalsInfo.gcSignalHandled
-      and s->signalHandlerThread != BOGUS_OBJPTR) {
+      and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
     if (DEBUG_SIGNALS)
       fprintf (stderr, "GC Signal pending.\n");
     s->signalsInfo.gcSignalPending = TRUE;

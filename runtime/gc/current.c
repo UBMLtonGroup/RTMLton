@@ -7,7 +7,7 @@
  */
 
 objptr getThreadCurrentObjptr (GC_state s) {
-  return s->currentThread;
+  return s->currentThread[PTHREAD_NUM];
 }
 
 GC_thread getThreadCurrent (GC_state s) {

@@ -24,9 +24,9 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
   if (DEBUG_DETAILED)
     fprintf (stderr, "foreachGlobal threads\n");
   callIfIsObjptr (s, f, &s->callFromCHandlerThread);
-  callIfIsObjptr (s, f, &s->currentThread);
-  callIfIsObjptr (s, f, &s->savedThread);
-  callIfIsObjptr (s, f, &s->signalHandlerThread);
+  callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
+  callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
+  callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }
 
 
@@ -211,8 +211,8 @@ void foreachStackFrame (GC_state s, GC_foreachStackFrameFun f) {
   bottom = getStackBottom (s, getStackCurrent(s));
   if (DEBUG_PROFILE)
     fprintf (stderr, "  bottom = "FMTPTR"  top = "FMTPTR".\n",
-             (uintptr_t)bottom, (uintptr_t)s->stackTop);
-  for (top = s->stackTop; top > bottom; top -= layout->size) {
+             (uintptr_t)bottom, (uintptr_t)s->stackTop[PTHREAD_NUM]);
+  for (top = s->stackTop[PTHREAD_NUM]; top > bottom; top -= layout->size) {
     returnAddress = *((GC_returnAddress*)(top - GC_RETURNADDRESS_SIZE));
     findex = getFrameIndexFromReturnAddress (s, returnAddress);
     if (DEBUG_PROFILE)

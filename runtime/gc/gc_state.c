@@ -10,8 +10,8 @@
 void displayGCState (GC_state s, FILE *stream) {
   fprintf (stream,
            "GC state\n");
-  fprintf (stream, "\tcurrentThread = "FMTOBJPTR"\n", s->currentThread);
-  displayThread (s, (GC_thread)(objptrToPointer (s->currentThread, s->heap.start)
+  fprintf (stream, "\tcurrentThread = "FMTOBJPTR"\n", s->currentThread[PTHREAD_NUM]);
+  displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
                  stream);
   fprintf (stream, "\tgenerational\n");
@@ -25,12 +25,12 @@ void displayGCState (GC_state s, FILE *stream) {
            "\tstackBottom = "FMTPTR"\n"
            "\tstackTop = "FMTPTR"\n",
            (uintptr_t)s->limit,
-           (uintptr_t)s->stackBottom,
-           (uintptr_t)s->stackTop);
+           (uintptr_t)s->stackBottom[PTHREAD_NUM],
+           (uintptr_t)s->stackTop[PTHREAD_NUM]);
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
-  return (size_t)(s->stackTop - s->stackBottom);
+  return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
 
 void setGCStateCurrentThreadAndStack (GC_state s) {
@@ -38,11 +38,11 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   GC_stack stack;
 
   thread = getThreadCurrent (s);
-  s->exnStack = thread->exnStack;
+  s->exnStack[PTHREAD_NUM] = thread->exnStack;
   stack = getStackCurrent (s);
-  s->stackBottom = getStackBottom (s, stack);
-  s->stackTop = getStackTop (s, stack);
-  s->stackLimit = getStackLimit (s, stack);
+  s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
+  s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
+  s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
   markCard (s, (pointer)stack);
 }
 
@@ -164,30 +164,30 @@ void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
 }
 
 pointer GC_getCurrentThread (GC_state s) {
-  pointer p = objptrToPointer (s->currentThread, s->heap.start);
+  pointer p = objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start);
   return p;
 }
 
 pointer GC_getSavedThread (GC_state s) {
   pointer p;
 
-  assert(s->savedThread != BOGUS_OBJPTR);
-  p = objptrToPointer (s->savedThread, s->heap.start);
-  s->savedThread = BOGUS_OBJPTR;
+  assert(s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR);
+  p = objptrToPointer (s->savedThread[PTHREAD_NUM], s->heap.start);
+  s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
   return p;
 }
 
 void GC_setSavedThread (GC_state s, pointer p) {
   objptr op;
 
-  assert(s->savedThread == BOGUS_OBJPTR);
+  assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   op = pointerToObjptr (p, s->heap.start);
-  s->savedThread = op;
+  s->savedThread[PTHREAD_NUM] = op;
 }
 
 void GC_setSignalHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
-  s->signalHandlerThread = op;
+  s->signalHandlerThread[PTHREAD_NUM] = op;
 }
 
 struct rusage* GC_getRusageGCAddr (GC_state s) {

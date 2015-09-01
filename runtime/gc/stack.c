@@ -78,7 +78,7 @@ GC_frameIndex getCachedStackTopFrameIndex (GC_state s) {
 
   res =
     getFrameIndexFromReturnAddress
-    (s, *((GC_returnAddress*)(s->stackTop - GC_RETURNADDRESS_SIZE)));
+    (s, *((GC_returnAddress*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE)));
   return res;
 }
 

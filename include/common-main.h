@@ -38,12 +38,12 @@
 #endif
 
 #define MYASSERT(X, COMP, RV) {                                  \
-	void *rv = (void *)X;                                    \
-	if (!(rv COMP (void*)RV)) {                              \
-		fprintf(stderr, #X " failed, %x " #COMP " %x\n", \
-				RV, rv);                         \
-		exit(-1);                                        \
-	}                                                        \
+	int __rv__ = X;                                              \
+	if (!(__rv__ COMP RV)) {                                     \
+		fprintf(stderr, #X " failed, %x " #COMP " %x\n",         \
+				RV, __rv__);                                     \
+		exit(-1);                                                \
+	}                                                            \
 }
 
 PRIVATE Pointer gcStateAddress;

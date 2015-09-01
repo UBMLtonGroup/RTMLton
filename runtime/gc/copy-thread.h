@@ -8,13 +8,13 @@
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
-static inline GC_thread copyThread (GC_state s, GC_thread from, size_t size, int32_t new_priority);
+static inline GC_thread copyThread (GC_state s, GC_thread from, size_t size);
 
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 
 #if (defined (MLTON_GC_INTERNAL_BASIS))
 
 PRIVATE void GC_copyCurrentThread (GC_state s);
-PRIVATE pointer GC_copyThread (GC_state s, pointer p, int32_t new_priority);
+PRIVATE pointer GC_copyThread (GC_state s, pointer p);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */

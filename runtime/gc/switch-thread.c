@@ -20,7 +20,7 @@ void switchToThread (GC_state s, objptr op) {
              "  reserved = %"PRIuMAX"\n",
              op, (uintmax_t)stack->used, (uintmax_t)stack->reserved);
   }
-  s->currentThread = op;
+  s->currentThread[PTHREAD_NUM] = op;
   setGCStateCurrentThreadAndStack (s);
 }
 
@@ -46,7 +46,7 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
   } else {
     /* BEGIN: enter(s); */
     getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
-    getThreadCurrent(s)->exnStack = s->exnStack;
+    getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
     beginAtomic (s);
     /* END: enter(s); */
     getThreadCurrent(s)->bytesNeeded = ensureBytesFree;

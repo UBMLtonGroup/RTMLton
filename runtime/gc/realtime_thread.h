@@ -8,6 +8,17 @@ struct realtimeRunnerParameters {
 };
 
 
+typedef struct _TQNode TQNode;
+struct _TQNode {
+	GC_thread t;
+	bool runnable;
+	TQNode *next;
+};
+
+
+TQNode *RTThread_findThreadInQueue(TQNode *head, GC_thread t);
+int RTThread_addThreadToQueue(GC_thread t, int priority);
+
 void realtimeThreadInit(struct GC_state *state);
 void *realtimeRunner(void* paramsPtr);
 int allocate_pthread(struct GC_state *state, struct cont *cont);

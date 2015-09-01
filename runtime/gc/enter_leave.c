@@ -16,7 +16,7 @@ void enter (GC_state s) {
     fprintf (stderr, "enter\n");
   /* used needs to be set because the mutator has changed s->stackTop. */
   getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
-  getThreadCurrent(s)->exnStack = s->exnStack;
+  getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
   if (DEBUG) 
     displayGCState (s, stderr);
   beginAtomic (s);

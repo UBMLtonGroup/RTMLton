@@ -24,8 +24,8 @@ void GC_startSignalHandler (GC_state s) {
   assert (s->signalsInfo.signalIsPending);
   s->signalsInfo.signalIsPending = FALSE;
   s->signalsInfo.amInSignalHandler = TRUE;
-  assert (s->savedThread == BOGUS_OBJPTR);
-  s->savedThread = s->currentThread;
+  assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+  s->savedThread[PTHREAD_NUM] = s->currentThread[PTHREAD_NUM];
   /* Set s->atomicState to 2 when switching to the signal handler
    * thread; leaving the runtime will decrement s->atomicState to 1,
    * the signal handler will then run atomically and will finish by
@@ -46,7 +46,7 @@ void switchToSignalHandlerThreadIfNonAtomicAndSignalPending (GC_state s) {
   if (s->atomicState == 1 
       and s->signalsInfo.signalIsPending) {
     GC_startSignalHandler (s);
-    switchToThread (s, s->signalHandlerThread);
+    switchToThread (s, s->signalHandlerThread[PTHREAD_NUM]);
   }
 }
 

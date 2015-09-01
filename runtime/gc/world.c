@@ -20,8 +20,8 @@ void loadWorldFromFILE (GC_state s, FILE *f) {
   s->heap.oldGenSize = readSize (f);
   s->atomicState = readUint32 (f);
   s->callFromCHandlerThread = readObjptr (f);
-  s->currentThread = readObjptr (f);
-  s->signalHandlerThread = readObjptr (f);
+  s->currentThread[PTHREAD_NUM] = readObjptr (f);
+  s->signalHandlerThread[PTHREAD_NUM] = readObjptr (f);
   createHeap (s, &s->heap,
               sizeofHeapDesired (s, s->heap.oldGenSize, 0),
               s->heap.oldGenSize);
@@ -77,7 +77,7 @@ int saveWorldToFILE (GC_state s, FILE *f) {
   if (fwrite (&s->atomicState, sizeof(uint32_t), 1, f) != 1) return -1;
   if (fwrite (&s->callFromCHandlerThread, sizeof(objptr), 1, f) != 1) return -1;
   if (fwrite (&s->currentThread, sizeof(objptr), 1, f) != 1) return -1;
-  if (fwrite (&s->signalHandlerThread, sizeof(objptr), 1, f) != 1) return -1;
+  if (fwrite (&s->signalHandlerThread[PTHREAD_NUM], sizeof(objptr), 1, f) != 1) return -1;
 
   if (fwrite (s->heap.start, 1, s->heap.oldGenSize, f) != s->heap.oldGenSize)
     return -1;

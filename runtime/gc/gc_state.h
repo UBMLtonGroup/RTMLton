@@ -16,9 +16,30 @@ struct GC_state {
    */
   pointer frontier; /* heap.start <= frontier < limit */
   pointer limit; /* limit = heap.start + heap.size */
-  pointer stackTop; /* Top of stack in current thread. */
-  pointer stackLimit; /* stackBottom + stackSize - maxFrameSize */
-  size_t exnStack;
+  pointer stackTop[100]; /* Top of stack in current thread. */
+  pointer stackLimit[100]; /* stackBottom + stackSize - maxFrameSize */
+  pointer stackBottom[100]; /* Bottom of stack in current thread. */
+  size_t exnStack[100];
+  objptr currentThread[100]; /* Currently executing thread (in heap). */
+  objptr savedThread[100]; /* Result of GC_copyCurrentThread.
+                       	    * Thread interrupted by arrival of signal.
+                       	    */
+  objptr signalHandlerThread[100]; /* Handler for signals (in heap). */
+
+
+  /* added for rt-threading */
+
+  pthread_t *realtimeThreads;
+  bool      *realtimeThreadAllocated;
+  struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */
+  pthread_mutex_t *realtimeThreadLocks;
+  /* Begin inter-thread GC communication data */
+  pthread_mutex_t gc_mutex;
+  volatile bool GCrunnerRunning;
+
+  /* end of rt-threading additions */
+
+
   /* Alphabetized fields follow. */
   size_t alignment; /* */
   bool amInGC;
@@ -31,18 +52,11 @@ struct GC_state {
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;
   struct GC_cumulativeStatistics cumulativeStatistics;
-  objptr currentThread; /* Currently executing thread (in heap). */
-  pthread_t *realtimeThreads;
-  bool      *realtimeThreadAllocated;
-  struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */
-  pthread_mutex_t *realtimeThreadLocks; 
-  /* Begin inter-thread GC communication data */
-  pthread_mutex_t gc_mutex;
+
   size_t oldGenBytesRequested;
   size_t nurseryBytesRequested;
   bool forceMajor;
   bool mayResize;
-  volatile bool GCrunnerRunning;
   /* -------------------------- */
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
@@ -63,16 +77,12 @@ struct GC_state {
   uint32_t objectTypesLength; /* Cardinality of objectTypes array. */
   struct GC_profiling profiling;
   GC_frameIndex (*returnAddressToFrameIndex) (GC_returnAddress ra);
-  objptr savedThread; /* Result of GC_copyCurrentThread.
-                       * Thread interrupted by arrival of signal.
-                       */
+
   int (*saveGlobals)(FILE *f); /* saves the globals to the file. */
   bool saveWorldStatus; /* */
   struct GC_heap secondaryHeap; /* Used for major copying collection. */
-  objptr signalHandlerThread; /* Handler for signals (in heap). */
   struct GC_signalsInfo signalsInfo;
   struct GC_sourceMaps sourceMaps;
-  pointer stackBottom; /* Bottom of stack in current thread. */
   struct GC_sysvals sysvals;
   struct GC_translateState translateState;
   struct GC_vectorInit *vectorInits;
