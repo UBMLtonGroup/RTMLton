@@ -142,37 +142,44 @@ void realtimeThreadInit(struct GC_state *state) {
 
 	//Initializing the locks for each realtime thread created,
 	state->realtimeThreadLocks= malloc(MAXPRI * sizeof(pthread_mutex_t));
-        int tNum;
-        for (tNum = 0; tNum < MAXPRI; tNum++) {
-	    fprintf(stderr, "spawning thread %d\n", tNum);
 
-            struct realtimeRunnerParameters* params =
-                malloc(sizeof(struct realtimeRunnerParameters));
-            params->tNum = tNum;
-            params->state = state;
+	int tNum;
+	for (tNum = 0; tNum < MAXPRI; tNum++) {
+		fprintf(stderr, "spawning thread %d\n", tNum);
 
-            state->realtimeThreadConts[tNum].nextChunk = NULL;
+		struct realtimeRunnerParameters* params =
+			malloc(sizeof(struct realtimeRunnerParameters));
 
-            if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner,
-                        (void*)params)) {
-                fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
-                exit (1);
-            }
-        }
+		params->tNum = tNum;
+		params->state = state;
 
-        state->realtimeThreads = realtimeThreads;
+		state->realtimeThreadConts[tNum].nextChunk = NULL;
 
-        state->realtimeThreadAllocated =
-            malloc(MAXPRI * sizeof(bool));
+		set_pthread_num(0); // "main" is thread0, GC is thread1
 
-        for (tNum = 0; tNum < MAXPRI; tNum++) {
-            state->realtimeThreadAllocated[tNum] = false;
-        }
+		if (tNum > 1) {
+			if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
+				fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
+				exit (1);
+			}
+		}
+	}
+
+	state->realtimeThreads = realtimeThreads;
+
+	state->realtimeThreadAllocated =
+		malloc(MAXPRI * sizeof(bool));
+
+	for (tNum = 0; tNum < MAXPRI; tNum++) {
+		state->realtimeThreadAllocated[tNum] = false;
+	}
 }
 
 void* realtimeRunner(void* paramsPtr) {
 
     struct realtimeRunnerParameters *params = paramsPtr;
+
+    set_pthread_num(params->tNum);
 
     while (1) {
         // Trampoline

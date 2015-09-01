@@ -20,6 +20,8 @@
 #define LOCAL_USED_FOR_ASSERT  __attribute__ ((unused))
 #endif
 
+#include "gc/hash_threadid.c"
+
 #include "gc/virtual-memory.c"
 #include "gc/align.c"
 #include "gc/read_write.c"
