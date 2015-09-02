@@ -16,8 +16,6 @@ struct _TQNode {
 	TQNode *prev;
 };
 
-int32_t GC_setThreadRunnable(GC_state s, pointer p);
-
 TQNode *RTThread_findThread(GC_thread t);
 TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority);
 int RTThread_addThreadToQueue(GC_thread t, int32_t priority);
@@ -51,6 +49,7 @@ bool Proc_executingInSection (__attribute__ ((unused)) GC_state s);
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio);
 int32_t GC_getThreadPriority(GC_state s, pointer p);
 int32_t GC_threadYield(GC_state s);
+int32_t GC_setThreadRunnable(GC_state s, pointer p);
 
 #endif
 

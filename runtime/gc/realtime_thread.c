@@ -9,6 +9,8 @@
 
 static pthread_mutex_t thread_queue_lock;
 
+static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority);
+
 static struct _TQ {
 	TQNode *head;
 	TQNode *tail;
@@ -75,7 +77,7 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	if (n) {
 		RTThread_unlinkThreadFromQueue(gct, gct->prio);
 		gct->prio = prio;
-		RTThread_addThreadToQueue(gct, prio);
+		RTThread_addThreadToQueue_nolock(gct, prio);
 	}
 
 	UNLOCK(thread_queue_lock);
@@ -146,7 +148,7 @@ TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
 	return n;
 }
 
-int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
+static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority) {
 	TQNode *node;
 
     fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
@@ -154,7 +156,6 @@ int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
     // priority 1 is reserved to the GC
 	if (t == NULL || priority < 0 || priority == 1 || priority > MAXPRI) return -1;
 
-	LOCK(thread_queue_lock);
 	node = make_tqnode(t);
 	if (thread_queue[priority].head == NULL) {
 		thread_queue[priority].head = thread_queue[priority].tail = node;
@@ -166,9 +167,15 @@ int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
 		node->prev = _t;
 	}
 
-	UNLOCK(thread_queue_lock);
-
 	return 0;
+}
+
+int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
+	int rv = -1;
+	LOCK(thread_queue_lock);
+	rv = RTThread_addThreadToQueue_nolock(t, priority);
+	UNLOCK(thread_queue_lock);
+	return rv;
 }
 
 void RTThread_waitForInitialization (GC_state s) {
