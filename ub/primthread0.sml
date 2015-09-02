@@ -15,7 +15,11 @@ val () = MLton.PrimThread.PThread.copyCurrent()
 
 val sp = MLton.PrimThread.PThread.savedPre()
 
+val _ = displayThreadQueue(0)
+
 val p = setPriority(sp, 5)
+
+val _ = displayThreadQueue(0)
 
 fun f() = 2
 

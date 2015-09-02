@@ -23,6 +23,17 @@ volatile int32_t Proc_criticalTicket;
 
 pthread_mutex_t AllocatedThreadLock;
 
+int GC_displayThreadQueue(__attribute__ ((unused)) GC_state s, __attribute__ ((unused)) int unused) {
+	LOCK(thread_queue_lock);
+	for(int i = 0 ; i < MAXPRI ; i++) {
+		int count = 0;
+		for(TQNode *n = thread_queue[i].head ; n != NULL ; n = n->next, count++);
+		fprintf(stderr, "priority: %d num_threads: %d\n", i, count);
+	}
+	UNLOCK(thread_queue_lock);
+	return 0;
+}
+
 static TQNode* find_runnable(struct _TQ queue) {
 	TQNode *n = queue.head;
 	while(n != NULL && n->runnable == FALSE)

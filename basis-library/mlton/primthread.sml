@@ -42,5 +42,13 @@ struct
 	  	Primitive.MLton.Thread.getPriority(Primitive.MLton.GCState.gcState, pt)
 	  end
 	  
+	  fun displayThreadQueue (x : int) : int = 
+	  let
+	    val _ = print "PrimThread.displayThreadQueue\n"
+	  in
+	  	Primitive.MLton.Thread.displayThreadQueue(Primitive.MLton.GCState.gcState, x)
+	  end
+	  
+	  
 end
 

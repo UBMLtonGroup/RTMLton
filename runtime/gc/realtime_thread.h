@@ -50,6 +50,7 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio);
 int32_t GC_getThreadPriority(GC_state s, pointer p);
 int32_t GC_threadYield(GC_state s);
 int32_t GC_setThreadRunnable(GC_state s, pointer p);
+int32_t GC_displayThreadQueue(GC_state s, int32_t);
 
 #endif
 
