@@ -28,7 +28,8 @@ int GC_displayThreadQueue(__attribute__ ((unused)) GC_state s, __attribute__ ((u
 	for(int i = 0 ; i < MAXPRI ; i++) {
 		int count = 0;
 		for(TQNode *n = thread_queue[i].head ; n != NULL ; n = n->next, count++);
-		fprintf(stderr, "priority: %d num_threads: %d\n", i, count);
+		if (DEBUG)
+			fprintf(stderr, "priority: %d num_threads: %d\n", i, count);
 	}
 	UNLOCK(thread_queue_lock);
 	return 0;
@@ -60,7 +61,8 @@ static TQNode* make_tqnode(GC_thread t) {
 
 int32_t GC_getThreadPriority(GC_state s, pointer p) {
 	GC_thread gct;
-	fprintf(stderr, "GC_getThreadPriority("FMTPTR")\n", (uintptr_t)p);
+	if (DEBUG)
+		fprintf(stderr, "GC_getThreadPriority("FMTPTR")\n", (uintptr_t)p);
 
 	gct = (GC_thread)(p + offsetofThread (s));
 
@@ -77,7 +79,8 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	GC_thread gct;
 	TQNode *n;
 
-	fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", (uintptr_t)p, prio);
+	if (DEBUG)
+		fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", (uintptr_t)p, prio);
 
 	gct = (GC_thread)(p + offsetofThread (s));
 
@@ -108,7 +111,9 @@ int32_t GC_setThreadRunnable(GC_state s, pointer p) {
 	GC_thread gct;
 	TQNode *n = NULL;
 
-	fprintf(stderr, "GC_setThreadRunnable("FMTPTR")\n", (uintptr_t)p);
+	if (DEBUG)
+		fprintf(stderr, "GC_setThreadRunnable("FMTPTR")\n", (uintptr_t)p);
+
 	gct = (GC_thread)(p + offsetofThread (s));
 
 	LOCK(thread_queue_lock);
@@ -162,7 +167,8 @@ TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
 static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority) {
 	TQNode *node;
 
-    fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
+	if (DEBUG)
+		fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
 
     // priority 1 is reserved to the GC
 	if (t == NULL || priority < 0 || priority == 1 || priority > MAXPRI) return -1;
@@ -224,7 +230,8 @@ void realtimeThreadInit(struct GC_state *state) {
 
 	int tNum;
 	for (tNum = 0; tNum < MAXPRI; tNum++) {
-		fprintf(stderr, "spawning thread %d\n", tNum);
+		if (DEBUG)
+			fprintf(stderr, "spawning thread %d\n", tNum);
 
 		struct realtimeRunnerParameters* params =
 			malloc(sizeof(struct realtimeRunnerParameters));
@@ -236,7 +243,7 @@ void realtimeThreadInit(struct GC_state *state) {
 
 		if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
 			fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
-			exit (1);
+			exit (-1);
 		}
 	}
 
@@ -260,7 +267,8 @@ void* realtimeRunner(void* paramsPtr) {
     while (1) {
         // Trampoline
         int tNum = params->tNum;
-        printf("%lx] realtimeRunner[%d] running.\n", pthread_self(), tNum);
+        if (DEBUG)
+        	printf("%lx] realtimeRunner[%d] running.\n", pthread_self(), tNum);
 
 	sleep(1); /* testing.. slow things down so output is readable */
 
@@ -278,7 +286,8 @@ void* realtimeRunner(void* paramsPtr) {
 		UNLOCK(thread_queue_lock);
 
         if (node != NULL) {
-        	printf("%lx] pri %d has work to do\n", pthread_self(), tNum);
+        	if (DEBUG)
+        		printf("%lx] pri %d has work to do\n", pthread_self(), tNum);
 
         	/* run it, etc; steps 4-7
         	 *     node->t->stack
@@ -315,7 +324,8 @@ void* realtimeRunner(void* paramsPtr) {
 			pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
         }
         else {
-			printf("%lx] pri %d has nothing to do\n", pthread_self(), tNum);
+        	if (DEBUG)
+        		printf("%lx] pri %d has nothing to do\n", pthread_self(), tNum);
 		}
     }
 }
