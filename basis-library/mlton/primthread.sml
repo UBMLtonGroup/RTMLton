@@ -16,7 +16,7 @@ struct
         open Primitive.MLton.Thread
         val savedPre = fn () => savedPre Primitive.MLton.GCState.gcState
         val copyCurrent = fn () => copyCurrent ()
-        val copy = fn (base, prio) => copy(base, prio)
+        val copy = fn (base) => copy(base)
     end
 
     type 'a t = (unit -> 'a) -> unit

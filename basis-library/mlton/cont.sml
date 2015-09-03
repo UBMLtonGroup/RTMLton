@@ -54,7 +54,7 @@ fun callcc (f: 'a t -> 'a): 'a =
                       let
                          val _ = Thread.atomicBegin () (* Match 2 *)
                          val _ = r := Copy v
-                         val new = Thread.copy(t, 123)  (* FIX *)
+                         val new = Thread.copy(t)
                          val _ = Thread.atomicBegin () (* Match 3 *)
                       in
                          Thread.switchTo new (* Match 3 *)
@@ -95,7 +95,7 @@ val isolate: ('a -> unit) -> 'a t =
       val _ = Thread.atomicBegin () (* Match 1 *)
       val _ = Thread.atomicBegin () (* Match 2 *)
       val () = thRef := SOME (f o v)
-      val new = Thread.copy(base, 321) (* FIX *)
+      val new = Thread.copy(base)
    in
       Thread.switchTo new (* Match 2 *)
    end
