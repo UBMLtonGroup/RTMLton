@@ -32,9 +32,9 @@ structure Scheduler : SCHEDULER =
       (* threads created through this library default to priority zero so as to 
        * keep the API consistent
        *)
-      fun prep (THRD (tid, t)) = RTHRD (tid, T.prepare (t, (), 0))
-      fun prepVal (THRD (tid, t), v) = RTHRD (tid, T.prepare (t, v, 0))
-      fun prepFn (THRD (tid, t), f) = RTHRD (tid, T.prepare (T.prepend (t, f, 0), (), 0))
+      fun prep (THRD (tid, t)) = RTHRD (tid, T.prepare (t, ()))
+      fun prepVal (THRD (tid, t), v) = RTHRD (tid, T.prepare (t, v))
+      fun prepFn (THRD (tid, t), f) = RTHRD (tid, T.prepare (T.prepend (t, f), ()))
 
       (* the dummy thread Id; this is used when an ID is needed to get
        * the types right
@@ -166,7 +166,7 @@ structure Scheduler : SCHEDULER =
          let
             val () = Assert.assertAtomic' ("Scheduler.prepend", NONE)
             val THRD (tid, t) = thrd
-            val t = T.prepend (t, f, 0) 
+            val t = T.prepend (t, f) 
          in
             THRD (tid, t)
          end

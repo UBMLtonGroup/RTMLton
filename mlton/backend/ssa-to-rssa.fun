@@ -1412,10 +1412,10 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | Thread_atomicState =>
                                     move (Runtime GCField.AtomicState)
                                | Thread_copy => 
-                                    ccall {args = (Vector.new3
+                                    ccall {args = (Vector.new2
                                                    (GCState,
-                                                    a 0,
-                                                    a 1)),
+                                                    a 0
+                                                    )),
                                            func = CFunction.copyThread ()}
                                | Thread_switchTo =>
                                     ccall {args = (Vector.new3
