@@ -10,14 +10,16 @@
 GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
   GC_thread to;
 
-//  if (DEBUG_THREADS)
-    fprintf (stderr, "copyThread ("FMTPTR") copies_prio=%u pthread=%u\n", (uintptr_t)from, from->prio, PTHREAD_NUM);
+  if (DEBUG_THREADS)
+    fprintf (stderr, "copyThread ("FMTPTR") copy_prio=%u my_pthread=%u\n", (uintptr_t)from, from->prio, PTHREAD_NUM);
+  // TODO.. assert from-prio == PTHREAD_NUM ?
+
   /* newThread may do a GC, which invalidates from.
    * Hence we need to stash from someplace that the GC can find it.
    */
   assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
-  to = newThread (s, alignStackReserved(s, used), from->prio);
+  to = newThread (s, alignStackReserved(s, used));
   from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->heap.start) + offsetofThread (s));
   s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
   if (DEBUG_THREADS) {

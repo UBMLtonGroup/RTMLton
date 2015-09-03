@@ -68,12 +68,13 @@ GC_stack newStack (GC_state s,
   return stack;
 }
 
-GC_thread newThread (GC_state s, size_t reserved, uint32_t prio) {
+GC_thread newThread (GC_state s, size_t reserved) {
   GC_stack stack;
   GC_thread thread;
   pointer res;
 
-  fprintf(stderr, "newThread pri=%d\n", prio);
+  if (DEBUG)
+	  fprintf(stderr, "newThread\n");
 
   assert (isStackReservedAligned (s, reserved));
   ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
@@ -85,13 +86,14 @@ GC_thread newThread (GC_state s, size_t reserved, uint32_t prio) {
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
-  thread->prio = prio;
+  thread->prio = 0; // default to lowest priority
   if (DEBUG_THREADS)
-    fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX") prio=%u\n",
-             (uintptr_t)thread, (uintmax_t)reserved, prio);
+    fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
+             (uintptr_t)thread, (uintmax_t)reserved);
 
-  if (RTThread_addThreadToQueue(thread, prio) != 0) {
+  if (RTThread_addThreadToQueue(thread, thread->prio) != 0) {
 	fprintf(stderr, "failed to addThreadToQueue\n");
+	exit(-1);
   }
 
   return thread;

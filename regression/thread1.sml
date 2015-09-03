@@ -55,17 +55,17 @@ structure Thread:
          Thread.prepare
          (Thread.new (fn () => ((f() handle _ => exit())
                                 ; exit())),
-          (), 3)
+          ())
          
       fun schedule t = (ready t; next())
 
-      fun yield(): unit = switch(fn t => schedule (Thread.prepare (t, (), 3)))
+      fun yield(): unit = switch(fn t => schedule (Thread.prepare (t, ())))
 
       val spawn = ready o new
 
       fun run(): unit =
          (switch(fn t =>
-                 (topLevel := SOME (Thread.prepare (t, (), 3))
+                 (topLevel := SOME (Thread.prepare (t, ()))
                   ; next()))
           ; topLevel := NONE)
    end

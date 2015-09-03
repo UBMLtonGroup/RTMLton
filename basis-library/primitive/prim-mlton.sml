@@ -321,7 +321,7 @@ structure Thread =
          if atomicState () = 0w0
             then raise Primitive.Exn.Fail8 "Thread.atomicEnd"
             else _prim "Thread_atomicEnd": unit -> unit; ()
-      val copy = _prim "Thread_copy": preThread * Int32.int -> thread;
+      val copy = _prim "Thread_copy": preThread -> thread;
       (* copyCurrent's result is accesible via savedPre ().
        * It is not possible to have the type of copyCurrent as
        * unit -> preThread, because there are two different ways to
@@ -337,11 +337,13 @@ structure Thread =
        *)
       val copyCurrent = _prim "Thread_copyCurrent": unit -> unit;
       val current = _import "GC_getCurrentThread" runtime private: GCState.t -> thread;
+      
       val getPriority = _import "GC_getThreadPriority": GCState.t * preThread -> Int32.int;
       val setRunnable = _import "GC_setThreadRunnable": GCState.t * preThread -> Int32.int;
       val displayThreadQueue = _import "GC_displayThreadQueue": GCState.t * Int32.int -> Int32.int;
       val setPriority = _import "GC_setThreadPriority": GCState.t * preThread * Int32.int -> Int32.int;
       val yield = _import "GC_threadYield": GCState.t -> Int32.int;
+      
       val finishSignalHandler = _import "GC_finishSignalHandler" runtime private: GCState.t -> unit;
       val returnToC = _prim "Thread_returnToC": unit -> unit;
       val saved = _import "GC_getSavedThread" runtime private: GCState.t -> thread;

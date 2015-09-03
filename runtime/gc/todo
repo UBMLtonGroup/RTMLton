@@ -1,3 +1,5 @@
+examine to determine if changes needed
+
 structure CallStack =
 basis-library/primitive/prim-mlton.sml
 	GC_callStack
@@ -10,3 +12,4 @@ GC_numStackFrames   in call-stack.c
 GC_copyCurrentThread
 GC_copyThread
 	convert SML code, remove prio param replace with pthread param
+
