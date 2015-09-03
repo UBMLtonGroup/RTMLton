@@ -28,8 +28,7 @@ int GC_displayThreadQueue(__attribute__ ((unused)) GC_state s, __attribute__ ((u
 	for(int i = 0 ; i < MAXPRI ; i++) {
 		int count = 0;
 		for(TQNode *n = thread_queue[i].head ; n != NULL ; n = n->next, count++);
-		if (DEBUG)
-			fprintf(stderr, "priority: %d num_threads: %d\n", i, count);
+		fprintf(stderr, "priority: %d num_threads: %d\n", i, count);
 	}
 	UNLOCK(thread_queue_lock);
 	return 0;
@@ -96,8 +95,10 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 
 	UNLOCK(thread_queue_lock);
 
-	displayThread(s, gct, stderr);
-	displayStack(s, (GC_stack)(gct->stack), stderr);
+	if (DEBUG) {
+		displayThread(s, gct, stderr);
+		displayStack(s, (GC_stack)(gct->stack), stderr);
+	}
 
 	return prio;
 }

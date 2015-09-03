@@ -23,28 +23,24 @@ struct
 
 	  fun setPriority (pt : PThread.preThread, prio' : int) : int = 
 	  let
-	    val _ = print "PrimThread.setPriority\n"
 	  in
 	  	Primitive.MLton.Thread.setPriority(Primitive.MLton.GCState.gcState, pt, prio')
 	  end
 
 	  fun setRunnable (pt : PThread.preThread) : int = 
 	  let
-	    val _ = print "PrimThread.setRunnable\n"
 	  in
 	  	Primitive.MLton.Thread.setRunnable(Primitive.MLton.GCState.gcState, pt)
 	  end
 	  
 	  fun getPriority (pt : PThread.preThread) : int = 
 	  let
-	    val _ = print "PrimThread.getPriority\n"
 	  in
 	  	Primitive.MLton.Thread.getPriority(Primitive.MLton.GCState.gcState, pt)
 	  end
 	  
 	  fun displayThreadQueue (x : int) : int = 
 	  let
-	    val _ = print "PrimThread.displayThreadQueue\n"
 	  in
 	  	Primitive.MLton.Thread.displayThreadQueue(Primitive.MLton.GCState.gcState, x)
 	  end
