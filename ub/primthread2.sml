@@ -1,33 +1,32 @@
 open MLton.PrimThread
-
+      
 local
     val func: (unit -> unit) option ref = ref NONE
-    val base: Prim.preThread =
+    val base: PThread.preThread =
        let
-          val () = Prim.copyCurrent ()
+          val () = MLton.PrimThread.PThread.copyCurrent ()
        in
           case !func of
-             NONE => Prim.savedPre gcState
+             NONE => MLton.PrimThread.PThread.savedPre ()
            | SOME x =>
                 (* This branch never returns. *)
               let
                  (* Atomic 1 *)
                  val () = func := NONE
-                 val () = atomicEnd ()
                  (* Atomic 0 *)
               in
-                 (x () handle e => MLtonExn.topLevelHandler e)
-                 ; die "Thread didn't exit properly.\n"
+                 (x ()) 
+                 ; print "Thread didn't exit properly.\n"
                 end
        end
 in
-    fun newThread (f: unit -> unit, prio' : int) : Prim.thread =
+    fun newThread (f: unit -> unit, prio' : int) : PThread.thread =
        let
           (* Atomic 2 *)
           val () = func := SOME f
           val prio = prio'
        in
-          Prim.copy(base, prio')
+          MLton.PrimThread.PThread.copy(base)
        end
 end
    

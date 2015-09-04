@@ -21,6 +21,8 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
+		fun gcState = Primitive.MLton.GCState.gcState
+		
 	  fun setPriority (pt : PThread.preThread, prio' : int) : int = 
 	  let
 	  in
