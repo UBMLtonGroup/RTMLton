@@ -1,4 +1,6 @@
 open MLton.PrimThread
+
+fun die (s: string): 'a = let in print s ; raise Fail "child failed" end
       
 local
     val func: (unit -> unit) option ref = ref NONE
@@ -15,18 +17,17 @@ local
                  val () = func := NONE
                  (* Atomic 0 *)
               in
-                 (x ()) 
-                 ; print "Thread didn't exit properly.\n"
-                end
+                 x () 
+                 ; die "Thread didn't exit properly.\n"
+              end
        end
 in
-    fun newThread (f: unit -> unit, prio' : int) : PThread.thread =
+    fun newThread (f: unit -> unit) : PThread.thread =
        let
           (* Atomic 2 *)
           val () = func := SOME f
-          val prio = prio'
        in
-          MLton.PrimThread.PThread.copy(base)
+          MLton.PrimThread.PThread.copy base
        end
 end
    
