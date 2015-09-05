@@ -21,32 +21,29 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
-		fun gcState = Primitive.MLton.GCState.gcState
 		
-	  fun setPriority (pt : PThread.preThread, prio' : int) : int = 
-	  let
-	  in
-	  	Primitive.MLton.Thread.setPriority(Primitive.MLton.GCState.gcState, pt, prio')
-	  end
+    fun setPriority (pt : PThread.preThread, prio' : int) : int = 
+    let
+    in
+        Primitive.MLton.Thread.setPriority(Primitive.MLton.GCState.gcState, pt, prio')
+    end
 
-	  fun setRunnable (pt : PThread.preThread) : int = 
-	  let
-	  in
-	  	Primitive.MLton.Thread.setRunnable(Primitive.MLton.GCState.gcState, pt)
-	  end
+    fun setRunnable (pt : PThread.preThread) : int = 
+    let
+    in
+        Primitive.MLton.Thread.setRunnable(Primitive.MLton.GCState.gcState, pt)
+    end
 	  
-	  fun getPriority (pt : PThread.preThread) : int = 
-	  let
-	  in
-	  	Primitive.MLton.Thread.getPriority(Primitive.MLton.GCState.gcState, pt)
-	  end
+    fun getPriority (pt : PThread.preThread) : int = 
+    let
+    in
+        Primitive.MLton.Thread.getPriority(Primitive.MLton.GCState.gcState, pt)
+    end
 	  
-	  fun displayThreadQueue (x : int) : int = 
-	  let
-	  in
-	  	Primitive.MLton.Thread.displayThreadQueue(Primitive.MLton.GCState.gcState, x)
-	  end
-	  
-	  
+    fun displayThreadQueue (x : int) : int = 
+    let
+    in
+        Primitive.MLton.Thread.displayThreadQueue(Primitive.MLton.GCState.gcState, x)
+    end
 end
 
