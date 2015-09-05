@@ -9,7 +9,7 @@ local
           val () = MLton.PrimThread.PThread.copyCurrent ()
        in
           case !func of
-             NONE => let val _ = print "parent?\n" in  MLton.PrimThread.PThread.savedPre () end
+             NONE => let val _ = print "in parent-thread\n" in MLton.PrimThread.PThread.savedPre () end
            | SOME x =>
                 (* This branch never returns. *)
               let
@@ -17,7 +17,7 @@ local
                  val () = func := NONE
                  (* Atomic 0 *)
               in
-		 print "calling X\n"
+                 print "in sub-thread: calling X\n"
                  ; x () 
                  ; die "Thread didn't exit properly.\n"
               end
@@ -32,26 +32,29 @@ in
           MLton.PrimThread.PThread.copy base
        end
 end
-   
-	fun e () = print "In function e()\n"
-	val a = ref e
-	val () = MLton.PrimThread.PThread.copyCurrent() 
-	val sp = MLton.PrimThread.PThread.savedPre()
-	
-	(* this should show the thread is in queue #0 *)
-	
-	val _ = displayThreadQueue(0)
-	val p = setPriority(sp, 5)
-	
-	(* this should show the thread moved to queue #5 *)
-	
-	val _ = displayThreadQueue(0)
-	val p = getPriority(sp)
-	val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
-	val r = setRunnable(sp)
-	val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
-	val _  = newThread e
-	(* if we are in the thread, then call !a() otherwise dont *)
+
+
+fun e () = print "In function e()\n"
+val a = ref e
+val () = MLton.PrimThread.PThread.copyCurrent() 
+val sp = MLton.PrimThread.PThread.savedPre()
+
+(* this should show the thread is in queue #0 *)
+
+val _ = displayThreadQueue(0)
+val p = setPriority(sp, 5)
+
+(* this should show the thread moved to queue #5 *)
+
+val _ = displayThreadQueue(0)
+val p = getPriority(sp)
+val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
+val r = setRunnable(sp)
+val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
+val _  = newThread e
+
+
+(* delay the parent for 5s or so *)
 
 val rec delay =
    fn 0 => ()
