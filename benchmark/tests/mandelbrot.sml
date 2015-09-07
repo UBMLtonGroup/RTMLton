@@ -62,7 +62,8 @@ structure Main : BMARK =
           fun loop n =
              if n = 0
                 then ()
-             else (doit();
+             else (print "Looping: " ^ (Int.toString n);
+                   doit();
                    loop(n-1))
        in loop size
        end

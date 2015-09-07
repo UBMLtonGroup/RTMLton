@@ -278,10 +278,27 @@ void ensureInvariantForMutator (GC_state s, bool force) {
         /* This GC will grow the stack, if necessary. */
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
+
         if ((s->umheap.fl_chunks <= 2000) or
             (s->umarheap.fl_array_chunks <= 2000))
             force = true;
+
+#ifdef PROFILE_UMGC
+            long start = getCurrentTime();
+            fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
+                    s->umheap.fl_chunks,
+                    s->umarheap.fl_array_chunks);
+#endif
+
         performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
+
+#ifdef PROFILE_UMGC
+        long end = getCurrentTime();
+        fprintf(stderr, "[GC] Time: %ld, Free chunk: %d, Free array chunk: %d\n",
+                end - start,
+                s->umheap.fl_chunks,
+                s->umarheap.fl_array_chunks);
+#endif
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
     }

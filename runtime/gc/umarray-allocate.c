@@ -33,7 +33,7 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->parent = NULL;
     parray_header->array_chunk_header = UM_CHUNK_IN_USE;
 
-    if (numChunks <= 1) {
+    if (numElements == 0) {
         return (pointer)&(parray_header->ml_array_payload);
     }
 
@@ -64,6 +64,7 @@ pointer GC_arrayAllocate (GC_state s,
     }
 
     root->array_chunk_numObjs = parray_header->array_chunk_numObjs;
+    root->array_chunk_length = parray_header->array_chunk_length;
     parray_header->root = root;
 
     if (DEBUG_MEM)

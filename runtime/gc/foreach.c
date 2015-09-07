@@ -166,8 +166,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   } else if (ARRAY_TAG == tag) {
       GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
       if (fst_leaf->array_chunk_length > 0) {
-          GC_UM_Array_Chunk root = ((GC_UM_Array_Chunk)(p - 8))->next_chunk;
-          size_t length = root->array_chunk_length;
+          size_t length = fst_leaf->array_chunk_length;
 
           size_t i, j;
           size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
