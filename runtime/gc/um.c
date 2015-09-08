@@ -160,7 +160,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         (base - GC_HEADER_SIZE - GC_HEADER_SIZE);
 
     if (fst_leaf->array_num_chunks <= 1) {
-        return ((Pointer)&(fst_leaf->ml_array_payload)) + index * elemSize + offset;
+        return ((Pointer)&(fst_leaf->ml_array_payload.ml_object[0])) + index * elemSize + offset;
     }
 
     GC_UM_Array_Chunk root = fst_leaf->root;
@@ -195,7 +195,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         current = current->ml_array_payload.um_array_pointers[i];
         if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
             size_t chunk_offset = (index % root->array_chunk_numObjs) * elemSize + offset;
-            Pointer res = ((Pointer)&(current->ml_array_payload.ml_object)) +
+            Pointer res = ((Pointer)&(current->ml_array_payload.ml_object[0])) +
                 chunk_offset;
             if (DEBUG_MEM) {
                 fprintf(stderr,

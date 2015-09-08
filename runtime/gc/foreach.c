@@ -165,19 +165,23 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
       GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-      if (fst_leaf->array_chunk_length > 0) {
+      if (fst_leaf->array_chunk_length > 0 &&
+          fst_leaf->array_num_chunks > 1) {
           size_t length = fst_leaf->array_chunk_length;
-
+          GC_UM_Array_Chunk cur_chunk = fst_leaf;
           size_t i, j;
           size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
           for (i=0; i<length; i++) {
-              pointer pobj = UM_Array_offset(s, p, i, elem_size, 0) +
-                  bytesNonObjptrs;
-
+              pointer start = (pointer)&(cur_chunk->ml_array_payload.ml_object[0]);
+              size_t offset = (i % fst_leaf->array_chunk_numObjs) * elem_size + bytesNonObjptrs;
+              pointer pobj = start + offset;
               for (j=0; j<numObjptrs; j++) {
                   callIfIsObjptr (s, f, (objptr*)pobj);
                   pobj += OBJPTR_SIZE;
               }
+
+              if (i > 0 && i % fst_leaf->array_chunk_numObjs == 0)
+                  cur_chunk = cur_chunk->next_chunk;
           }
       }
   }else { /* stack */

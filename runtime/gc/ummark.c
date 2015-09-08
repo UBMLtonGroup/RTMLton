@@ -126,7 +126,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
                     "magic: %d\n", fst_leaf, m, fst_leaf->array_chunk_magic);
         }
 
-        if (//fst_leaf->array_num_chunks > 1 &&
+        if (fst_leaf->array_num_chunks > 1 &&
             fst_leaf->array_chunk_length > 0) {
             GC_UM_Array_Chunk root = fst_leaf->root;
 //            size_t length = root->array_chunk_length;
