@@ -28,7 +28,7 @@ in
           (* Atomic 2 *)
           val () = func := SOME f
        in
-	  print "in newThread\n" ;
+          print "in newThread\n" ;
           MLton.PrimThread.PThread.copy base
        end
 end
@@ -37,7 +37,7 @@ end
 fun e () = print "In function e()\n"
 
 val T  = newThread e
-val _ = setPriority(T, 5)
+val _ = setPriority2(T, 5)
 val _ = setRunnable2(T)
 
 

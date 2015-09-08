@@ -312,6 +312,7 @@ void* realtimeRunner(void* paramsPtr) {
 			cont.nextChunk = nextChunks[nextFun];
 
 			if (cont.nextChunk != NULL) {
+				printf("%lx] pri %d trampolining\n", pthread_self(), tNum);
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
