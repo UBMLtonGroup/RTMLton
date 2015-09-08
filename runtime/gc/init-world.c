@@ -104,9 +104,10 @@ void initWorld (GC_state s) {
 
 
 #define MEGABYTES 1024*1024
-  createUMHeap (s, &s->umheap, 128*MEGABYTES, 128*MEGABYTES);
+#define MEM_AVAILABLE 1
+  createUMHeap (s, &s->umheap, MEM_AVAILABLE*MEGABYTES, MEM_AVAILABLE*MEGABYTES);
 
-  createUMArrayHeap (s, &s->umarheap, 128*MEGABYTES, 128*MEGABYTES);
+  createUMArrayHeap (s, &s->umarheap, MEM_AVAILABLE*MEGABYTES, MEM_AVAILABLE*MEGABYTES);
 
   createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
 

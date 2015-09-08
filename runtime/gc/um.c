@@ -28,7 +28,7 @@ UM_Header_alloc(GC_state gc_stat,
 //    pchunk->chunk_header = UM_CHUNK_IN_USE;
 //    GC_collect(gc_stat, 0, true);
 //    GC_UM_Chunk pchunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-	return (umfrontier + s);
+    return (umfrontier + s);
 //	return (((Pointer)pchunk) + s);
 }
 
@@ -88,7 +88,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 Pointer
 UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 {
-	if (DEBUG_MEM)
+    if (DEBUG_MEM)
        DBG(p, o, s, "enter");
 
     Pointer heap_end = (gc_stat->umheap).start + (gc_stat->umheap).size;
@@ -101,27 +101,26 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
         return (p + o);
     }
 
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
+    if (current_chunk->chunk_header == UM_CHUNK_HEADER_CLEAN)
+        die("Visiting a chunk that is on free list!\n");
+
     /* On current chunk */
     /* TODO: currently 4 is hard-coded mlton's header size */
     if (o + s + 4 <= UM_CHUNK_PAYLOAD_SIZE) {
         if (DEBUG_MEM) {
             DBG(p, o, s, "current chunk");
             fprintf(stderr, " sentinel: %d, val: "FMTPTR"\n",
-                    ((GC_UM_Chunk)(p - 4))->sentinel,
+                    current_chunk->sentinel,
                     *(p + o));
         }
         return (p + o);
     }
 
     if (DEBUG_MEM)
-       DBG(p, o, s, "next chunk");
+       DBG(p, o, s, "go to next chunk");
 
     /* On next chunk */
-    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
-
-    if (current_chunk->chunk_header == UM_CHUNK_HEADER_CLEAN)
-        die("Visiting a chunk that is on free list!\n");
-
     if (current_chunk->sentinel == UM_CHUNK_SENTINEL_UNUSED) {
         current_chunk->sentinel = o + 4;
 
