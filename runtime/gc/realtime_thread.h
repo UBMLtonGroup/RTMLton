@@ -1,6 +1,9 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
+#define MAXPRI 10 /* 0 .. 10 */
+
+
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 struct realtimeRunnerParameters {
     int tNum;

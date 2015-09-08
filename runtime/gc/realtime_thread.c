@@ -5,8 +5,6 @@
 #define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
 
-#define MAXPRI 10 /* 0 .. 10 */
-
 static pthread_mutex_t thread_queue_lock;
 
 static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority);

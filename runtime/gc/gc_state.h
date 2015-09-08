@@ -16,15 +16,15 @@ struct GC_state {
    */
   pointer frontier; /* heap.start <= frontier < limit */
   pointer limit; /* limit = heap.start + heap.size */
-  pointer stackTop[100]; /* Top of stack in current thread. */
-  pointer stackLimit[100]; /* stackBottom + stackSize - maxFrameSize */
-  pointer stackBottom[100]; /* Bottom of stack in current thread. */
-  size_t exnStack[100];
-  objptr currentThread[100]; /* Currently executing thread (in heap). */
-  objptr savedThread[100]; /* Result of GC_copyCurrentThread.
+  pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
+  pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
+  size_t exnStack[MAXPRI];
+  objptr currentThread[MAXPRI]; /* Currently executing thread (in heap). */
+  objptr savedThread[MAXPRI]; /* Result of GC_copyCurrentThread.
                        	    * Thread interrupted by arrival of signal.
                        	    */
-  objptr signalHandlerThread[100]; /* Handler for signals (in heap). */
+  objptr signalHandlerThread[MAXPRI]; /* Handler for signals (in heap). */
 
 
   /* added for rt-threading */
