@@ -310,6 +310,7 @@ void* realtimeRunner(void* paramsPtr) {
 
 			nextFun = *(uintptr_t*)(node->t->stack - GC_RETURNADDRESS_SIZE);
 			cont.nextChunk = nextChunks[nextFun];
+			displayStack(state, (GC_stack)node->t->stack, stderr);
 
 			if (cont.nextChunk != NULL) {
 				printf("%lx] pri %d trampolining\n", pthread_self(), tNum);

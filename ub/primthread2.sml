@@ -1,7 +1,9 @@
 open MLton.PrimThread
 
+val _ = print "primthread2 starts\n"
+
 fun die (s: string): 'a = let in print s ; raise Fail "child failed" end
-      
+
 local
     val func: (unit -> unit) option ref = ref NONE
     val base: PThread.preThread =
@@ -35,6 +37,8 @@ end
 
 
 fun e () = print "In function e()\n"
+
+val _ = print "calling newThread\n"
 
 val T  = newThread e
 val _ = setPriority2(T, 5)
