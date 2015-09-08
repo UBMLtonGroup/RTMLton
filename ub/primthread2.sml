@@ -35,23 +35,10 @@ end
 
 
 fun e () = print "In function e()\n"
-val a = ref e
-val () = MLton.PrimThread.PThread.copyCurrent() 
-val sp = MLton.PrimThread.PThread.savedPre()
 
-(* this should show the thread is in queue #0 *)
-
-val _ = displayThreadQueue(0)
-val p = setPriority(sp, 5)
-
-(* this should show the thread moved to queue #5 *)
-
-val _ = displayThreadQueue(0)
-val p = getPriority(sp)
-val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
-val r = setRunnable(sp)
-val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
-val _  = newThread e
+val T  = newThread e
+val _ = setPriority(T, 5)
+val _ = setRunnable2(T)
 
 
 (* delay the parent for 5s or so *)

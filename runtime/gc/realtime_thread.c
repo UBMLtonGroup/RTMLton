@@ -273,6 +273,8 @@ void* realtimeRunner(void* paramsPtr) {
 
 	sleep(1); /* testing.. slow things down so output is readable */
 
+		if (tNum <= 1) continue;
+
 		/* 1. lock the queue
 		 * 2. find a runnable thread
 		 * 3. unlock the queue
@@ -287,7 +289,7 @@ void* realtimeRunner(void* paramsPtr) {
 		UNLOCK(thread_queue_lock);
 
         if (node != NULL) {
-        	if (DEBUG)
+        	//if (DEBUG)
         		printf("%lx] pri %d has work to do\n", pthread_self(), tNum);
 
         	/* run it, etc; steps 4-7
@@ -305,6 +307,9 @@ void* realtimeRunner(void* paramsPtr) {
 			struct cont* realtimeThreadConts = state->realtimeThreadConts;
 
 			struct cont cont = realtimeThreadConts[tNum];
+
+			nextFun = *(uintptr_t*)(node->t->stack - GC_RETURNADDRESS_SIZE);
+			cont.nextChunk = nextChunks[nextFun];
 
 			if (cont.nextChunk != NULL) {
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
