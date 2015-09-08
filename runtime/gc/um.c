@@ -132,6 +132,10 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
                     (uintptr_t) current_chunk->next_chunk->ml_object);
         }
 
+        if (current_chunk->next_chunk->chunk_header == UM_CHUNK_HEADER_CLEAN) {
+            die("Next chunk on free list!\n");
+        }
+
         return (Pointer)(current_chunk->next_chunk->ml_object);
     }
 
@@ -183,6 +187,9 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     }
 
     while (true) {
+        if (current->array_chunk_header == UM_CHUNK_HEADER_CLEAN)
+            die("Visiting a chunk that is on free list!\n");
+
         i = chunk_index / current->array_chunk_fan_out;
         if (DEBUG_MEM) {
             fprintf(stderr, "  --> chunk_index: %d, current fan out: %d, "

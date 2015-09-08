@@ -79,5 +79,6 @@ typedef GC_state GCState_t;
 #include "gc/size.h"
 #include "gc/share.h"
 #include "gc/um.h"
+#include "gc/um_profile.h"
 
 #endif /* _MLTON_GC_H_ */

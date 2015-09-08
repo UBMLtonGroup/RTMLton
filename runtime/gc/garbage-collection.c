@@ -126,6 +126,8 @@ void performUMGC(GC_state s) {
                         (uintptr_t)pc, pc->sentinel, pc->chunk_header);
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
+        } else if (pc->chunk_header & UM_CHUNK_IN_USE) {
+            pc->chunk_header &= ~UM_CHUNK_HEADER_MASK;
         }
     }
 
@@ -143,11 +145,13 @@ void performUMGC(GC_state s) {
                         (uintptr_t)pc, pc->array_chunk_magic, pc->array_chunk_header);
             }
             insertArrayFreeChunk(s, &(s->umarheap), pchunk);
+        } else if (pc->array_chunk_header & UM_CHUNK_IN_USE) {
+            pc->array_chunk_header &= UM_CHUNK_HEADER_MASK;
         }
     }
 
-    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
-    foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
+    //    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
+    //    foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
 }
 
 void performGC (GC_state s,
@@ -289,8 +293,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
                     s->umheap.fl_chunks,
                     s->umarheap.fl_array_chunks);
 #endif
-
-        performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
+            performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
 
 #ifdef PROFILE_UMGC
         long end = getCurrentTime();
@@ -299,6 +302,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
                 s->umheap.fl_chunks,
                 s->umarheap.fl_array_chunks);
 #endif
+
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
     }

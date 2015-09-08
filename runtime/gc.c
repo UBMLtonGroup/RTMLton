@@ -73,4 +73,5 @@
 #include "gc/world.c"
 #include "gc/um.c"
 #include "gc/ummark.c"
+#include "gc/um_profile.c"
 //#include "gc/umarray.c"

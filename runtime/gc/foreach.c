@@ -165,8 +165,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
       GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-      if (fst_leaf->array_chunk_length > 0 &&
-          fst_leaf->array_num_chunks > 1) {
+      if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
           size_t i, j;

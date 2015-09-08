@@ -35,7 +35,7 @@ EXE :=
 
 # These flags can be overridden by the user
 CPPFLAGS :=
-CFLAGS :=  -g3 -O1
+CFLAGS :=  -g3 -O0
 
 WARNXCFLAGS :=
 WARNXCFLAGS += -pedantic -Wall
@@ -82,7 +82,7 @@ WARNXCFLAGS += -Wnested-externs
 
 XCFLAGS := -fno-common $(WARNXCFLAGS)
 OPTXCFLAGS := -Wdisabled-optimization -fomit-frame-pointer
-DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O1 -g
+DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O0 -g
 PICXCFLAGS :=
 
 # Win32&64 don't use PIC code, all other platforms do
@@ -170,7 +170,7 @@ endif
 
 
 XCFLAGS += -I. -Iplatform
-OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) 
+OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS)
 DEBUGCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(DEBUGXCFLAGS)
 PICCFLAGS := $(OPTCFLAGS) $(PICXCFLAGS)
 
