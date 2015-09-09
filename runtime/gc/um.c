@@ -24,11 +24,13 @@ UM_Header_alloc(GC_state gc_stat,
 {
     if (DEBUG_MEM)
         DBG(umfrontier, s, 0, "enter");
+
+    return (umfrontier + s);
 //    GC_UM_Chunk pchunk = (GC_UM_Chunk)umfrontier;
 //    pchunk->chunk_header = UM_CHUNK_IN_USE;
 //    GC_collect(gc_stat, 0, true);
 //    GC_UM_Chunk pchunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-    return (umfrontier + s);
+//    return (umfrontier + s);
 //	return (((Pointer)pchunk) + s);
 }
 
@@ -37,8 +39,8 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
     if (DEBUG_MEM)
        DBG(umfrontier, s, 0, "enter");
-
     GC_collect(gc_stat, 0, false);
+    //    GC_collect(gc_stat, 0, false);
     GC_UM_Chunk next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
     current_chunk->chunk_header= UM_CHUNK_IN_USE;

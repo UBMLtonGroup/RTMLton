@@ -80,5 +80,6 @@ typedef GC_state GCState_t;
 #include "gc/share.h"
 #include "gc/um.h"
 #include "gc/um_profile.h"
+#include "gc/visualize.h"
 
 #endif /* _MLTON_GC_H_ */
