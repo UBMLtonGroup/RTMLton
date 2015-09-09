@@ -98,10 +98,10 @@ void leaveGC (GC_state s) {
 
 void performUMGC(GC_state s) {
 
-    if (DEBUG_MEM)
+    if (DEBUG_MEM) {
         fprintf(stderr, "PerformUMGC\n");
-
-    dumpUMHeap(s);
+        dumpUMHeap(s);
+    }
     GC_stack currentStack = getStackCurrent(s);
     foreachGlobalObjptr (s, umDfsMarkObjectsMark);
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);

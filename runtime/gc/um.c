@@ -39,7 +39,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
     if (DEBUG_MEM)
        DBG(umfrontier, s, 0, "enter");
-    GC_collect(gc_stat, 0, false);
+    //    GC_collect(gc_stat, 0, false);
     //    GC_collect(gc_stat, 0, false);
     GC_UM_Chunk next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
