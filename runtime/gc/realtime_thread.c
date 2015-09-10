@@ -297,22 +297,35 @@ void* realtimeRunner(void* paramsPtr) {
         	 *
         	 */
 
+		/*
+		 *
+		 * changes keeping array of conts structure
 			// copy the cont struct to this local variable
 			struct GC_state *state = params->state;
 
 			// TODO lock lock[tNum]
 			//Acquiring lock associated with pThread from GC state
 			pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
-
+			
 			struct cont* realtimeThreadConts = state->realtimeThreadConts;
 
 			struct cont cont = realtimeThreadConts[tNum];
-
-			nextFun = *(uintptr_t*)(node->t->stack - GC_RETURNADDRESS_SIZE);
-			cont.nextChunk = nextChunks[nextFun];
+		*/	
+			struct GC_state *state = params->state;
 			displayStack(state, (GC_stack)node->t->stack, stderr);
 
-			if (cont.nextChunk != NULL) {
+			struct cont cont;
+			//since each thread has a different stack, The nextFun will be the stack top
+                	nextFun = *(uintptr_t*)(node->t->stack - GC_RETURNADDRESS_SIZE); 
+                	cont.nextChunk = nextChunks[nextFun];                   
+			
+			if(node->t == NULL)
+				printf("Thread is non existent. Cannot trampoline.\n");
+			if(node->t->stack == NULL)
+				printf("Thread Stack is empty, cannot trampoline.\n");
+			
+			//if (cont.nextChunk != NULL) {
+			while(1){
 				printf("%lx] pri %d trampolining\n", pthread_self(), tNum);
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
@@ -322,14 +335,14 @@ void* realtimeRunner(void* paramsPtr) {
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
-
+				
 				// copy local variable back to gcstate
-				params->state->realtimeThreadConts[tNum] = cont;
+				//params->state->realtimeThreadConts[tNum] = cont;
 
 			}
 
 			// TODO unlock lock[tNum]
-			pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
+			//pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
         }
         else {
         	if (DEBUG)
