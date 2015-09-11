@@ -706,6 +706,7 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
           ; Machine.Label.printNameAlphaNumeric := true)
       val () =
          case !Control.codegen of
+	         Control.CCodegen =>
             Control.AMD64Codegen =>
                (clearNames ()
                 ; (Control.trace (Control.Top, "amd64 code gen")
@@ -729,6 +730,7 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
                    x86Codegen.output {program = machine,
                                       outputC = outputC,
                                       outputS = outputS}))
+                                      
       val _ = Control.message (Control.Detail, PropertyList.stats)
       val _ = Control.message (Control.Detail, HashSet.stats)
    in

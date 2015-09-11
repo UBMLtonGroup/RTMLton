@@ -19,8 +19,9 @@ struct _TQNode {
 	TQNode *prev;
 };
 
-TQNode *RTThread_findThread(GC_thread t);
 TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority);
+TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority);
+
 int RTThread_addThreadToQueue(GC_thread t, int32_t priority);
 TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority);
 

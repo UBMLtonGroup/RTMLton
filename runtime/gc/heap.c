@@ -208,6 +208,7 @@ bool createHeap (GC_state s, GC_heap h,
              uintmaxToCommaString(minSize));
   if (desiredSize < minSize)
     desiredSize = minSize;
+  minSize = desiredSize; //XXX
   minSize = align (minSize, s->sysvals.pageSize);
   desiredSize = align (desiredSize, s->sysvals.pageSize);
   assert (isHeapInit (h) and NULL == h->start);

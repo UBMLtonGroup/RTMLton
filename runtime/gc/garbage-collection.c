@@ -99,6 +99,8 @@ void leaveGC (GC_state s) {
 pthread_mutex_t gclock;
 static volatile int sem;
 
+#define GCTHRDEBUG
+
 #ifdef GCTHRDEBUG
 # define DBG(X) fprintf X
 #else
@@ -165,7 +167,7 @@ void performGC (GC_state s,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
-
+return;
 
     /* In our two-thread formulation of realtime MLton, the zeroth thread runs
      * ML code, which will sometimes call the performGC function (this
@@ -311,14 +313,16 @@ void performGC_helper (GC_state s,
 }
 
 void ensureInvariantForMutator (GC_state s, bool force) {
+  int x;
+
   if (force
       or not (invariantForMutatorFrontier(s))
       or not (invariantForMutatorStack(s))) {
     /* This GC will grow the stack, if necessary. */
     performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
   }
-  assert (invariantForMutatorFrontier(s));
-  assert (invariantForMutatorStack(s));
+  x = invariantForMutatorFrontier(s); assert(x);
+  x = invariantForMutatorStack(s); fprintf(stderr, "invariantForMutatorStack=%x\n", x); assert(x);
 }
 
 /* ensureHasHeapBytesFree (s, oldGen, nursery) 
@@ -334,6 +338,7 @@ void ensureHasHeapBytesFree (GC_state s,
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+	fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM); return;
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.

@@ -105,9 +105,19 @@ bool invariantForMutatorFrontier (GC_state s) {
 }
 
 bool invariantForMutatorStack (GC_state s) {
+  pointer top, limit;
+  uint16_t framesize;
+
   GC_stack stack = getStackCurrent(s);
-  return (getStackTop (s, stack) 
-          <= getStackLimit (s, stack) + getStackTopFrameSize (s, stack));
+
+  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
+
+  if (top <= (limit + framesize))
+	  growStackCurrent (s); // XXX bc we disabled the GC
+
+  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
+
+  return (top >= (limit + framesize));
 }
 
 #if ASSERT
