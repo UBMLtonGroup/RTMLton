@@ -1,4 +1,4 @@
-(* Copyright (C) 2009,2012 Matthew Fluet.
+(* Copyright (C) 2009,2012,2015 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -54,6 +54,7 @@ signature AST_CORE =
                            pat: t,
                            var: Var.t}
              | List of t vector
+             | Or of t vector
              | Record of {flexible: bool,
                           items: (Record.Field.t * Item.t) vector}
              | Tuple of t vector
@@ -81,7 +82,7 @@ signature AST_CORE =
          sig
             structure ImportExportAttribute:
                sig
-                  datatype t = Cdecl | External | Impure | Private | Public | Pure | Runtime | Stdcall
+                  datatype t = Cdecl | External | Impure | Private | Public | Pure | Reentrant | Runtime | Stdcall
 
                   val layout: t -> Layout.t
                end
@@ -197,6 +198,7 @@ signature AST_CORE =
                Abstype of {datBind: DatBind.t,
                            body: t}
              | Datatype of DatatypeRhs.t
+             | DoDec of Exp.t
              | Exception of (Con.t * EbRhs.t) vector
              | Fix of {fixity: Fixity.t,
                        ops: Vid.t vector}

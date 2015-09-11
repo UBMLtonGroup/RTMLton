@@ -1,4 +1,4 @@
-(* Copyright (C) 2009-2012,2014 Matthew Fluet.
+(* Copyright (C) 2009-2012,2014-2015 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -97,6 +97,14 @@ signature CONTROL_FLAGS =
             val allowConstant: (bool,bool) t
             val allowFFI: (bool,bool) t
             val allowOverload: (bool,bool) t
+            val allowOptBar: (bool,bool) t
+            val allowOptSemicolon: (bool,bool) t
+            val allowLineComments: (bool,bool) t
+            val allowDoDecls: (bool,bool) t
+            val allowOrPats: (bool,bool) t
+            val allowRecPunning: (bool,bool) t
+            val allowExtendedLiterals: (bool,bool) t
+            val allowSigWithtype: (bool,bool) t
             val allowPrim: (bool,bool) t
             val allowRebindEquals: (bool,bool) t
             val deadCode: (bool,bool) t
@@ -107,6 +115,7 @@ signature CONTROL_FLAGS =
             val redundantMatch: (DiagEIW.t,DiagEIW.t) t
             val resolveScope: (ResolveScope.t,ResolveScope.t) t
             val sequenceNonUnit: (DiagEIW.t,DiagEIW.t) t
+            val valrecConstr: (DiagEIW.t,DiagEIW.t) t
             val warnUnused: (bool,bool) t
 
             val current: ('args, 'st) t -> 'st
@@ -195,6 +204,8 @@ signature CONTROL_FLAGS =
       (* List of pass names to save the input/output. *)
       val keepPasses: Regexp.Compiled.t list ref
 
+      (* Save the AST to a file. *)
+      val keepAST: bool ref
       (* Save the final CoreML to a file. *)
       val keepCoreML: bool ref
       (* Save the final Machine to a file. *)
