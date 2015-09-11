@@ -313,16 +313,14 @@ void performGC_helper (GC_state s,
 }
 
 void ensureInvariantForMutator (GC_state s, bool force) {
-  int x;
-
   if (force
       or not (invariantForMutatorFrontier(s))
       or not (invariantForMutatorStack(s))) {
     /* This GC will grow the stack, if necessary. */
     performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
   }
-  x = invariantForMutatorFrontier(s); assert(x);
-  x = invariantForMutatorStack(s); fprintf(stderr, "invariantForMutatorStack=%x\n", x); assert(x);
+  assert(invariantForMutatorFrontier(s));
+  assert(invariantForMutatorStack(s));
 }
 
 /* ensureHasHeapBytesFree (s, oldGen, nursery) 
@@ -338,7 +336,8 @@ void ensureHasHeapBytesFree (GC_state s,
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-	fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM); return;
+	//fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
+	return;
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.

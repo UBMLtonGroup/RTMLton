@@ -153,14 +153,17 @@ TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority) {
 	TQNode *n = NULL;
 	int i;
 
-	for (i = 0 ; i < MAXPRI ; i++)
-		for (n = thread_queue[i].head ; n != NULL ; n = n->next)
-			if (n && n->t == t) {
+	if (priority == NULL) return NULL;
+
+	for (i = 0 ; i < MAXPRI ; i++) {
+		for (n = thread_queue[i].head ; n != NULL ; n = n->next) {
+			if (n->t == t) {
 				*priority = i;
 				i = MAXPRI;
 				break;
 			}
-
+		}
+	}
 
 	return n;
 }
