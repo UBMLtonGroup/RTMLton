@@ -19,7 +19,7 @@ local
 
         (* val _ = let in print "\nQueue after setting priority:\n"; displayThreadQueue(0) end *)
         val p = getPriority(sp)
-        val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
+        val _ = print ("Child priority is: " ^ Int.toString(p) ^ "\n")
         (* val r = setRunnable(sp)
         val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
         *)
@@ -38,6 +38,7 @@ in
 					NONE => 
 	            let
 	              val _ = print "in parent thread \n"
+	              val _ = print ("My Priority is  : " ^ Int.toString(MLton.PrimThread.myPriority()) ^ "\n")
 	              val () = a := SOME e;
 	            in
 	              setRunnable(sp)

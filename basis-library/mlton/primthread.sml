@@ -21,6 +21,8 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
+
+    fun myPriority () : int = Primitive.MLton.Thread.myPriority(Primitive.MLton.GCState.gcState)
 		
     fun setPriority (pt : PThread.preThread, prio' : int) : int = Primitive.MLton.Thread.setPriority(Primitive.MLton.GCState.gcState, pt, prio')
     fun getPriority (pt : PThread.preThread) : int = Primitive.MLton.Thread.getPriority(Primitive.MLton.GCState.gcState, pt)

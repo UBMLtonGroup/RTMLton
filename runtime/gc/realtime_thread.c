@@ -108,6 +108,10 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	return prio;
 }
 
+int32_t GC_myPriority(GC_state s)
+{
+	return PTHREAD_NUM;
+}
 
 /* TODO
  * lookup thread,
@@ -330,9 +334,9 @@ void* realtimeRunner(void* paramsPtr) {
 
 
 			while(1){
-				printf("%lx] pri %d trampolining\n", pthread_self(), tNum);fflush(stdout);
+				printf("%lx] pri %d trampolining\n", pthread_self(), PTHREAD_NUM);fflush(stdout);
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				printf("...\n");fflush(stdout);
+				printf("after first cont...\n");fflush(stdout);
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();

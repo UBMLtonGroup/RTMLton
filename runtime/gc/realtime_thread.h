@@ -19,6 +19,7 @@ struct _TQNode {
 	TQNode *prev;
 };
 
+int32_t GC_myPriority(GC_state s);
 TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority);
 TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority);
 

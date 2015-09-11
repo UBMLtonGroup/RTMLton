@@ -1,4 +1,4 @@
-#define PTHREAD_NUM 0
+#define PTHREAD_NUM get_pthread_num()
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
