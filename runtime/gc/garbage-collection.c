@@ -285,7 +285,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
 
         if ((s->umheap.fl_chunks <= 2000) or
-            (s->umarheap.fl_array_chunks <= 2000))
+            (s->umarheap.fl_array_chunks <= 2000)) {
             force = true;
 
 #ifdef PROFILE_UMGC
@@ -303,6 +303,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
                 s->umheap.fl_chunks,
                 s->umarheap.fl_array_chunks);
 #endif
+        }
 
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
