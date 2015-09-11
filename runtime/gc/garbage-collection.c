@@ -134,7 +134,6 @@ void performUMGC(GC_state s) {
     step = sizeof(struct GC_UM_Array_Chunk);
     end = s->umarheap.start + s->umarheap.size - step;
 
-    //    if (s->umarheap.fl_array_chunks <= 2000) {
     for (pchunk=s->umarheap.start;
          pchunk < end;
          pchunk += step) {
@@ -149,7 +148,6 @@ void performUMGC(GC_state s) {
             insertArrayFreeChunk(s, &(s->umarheap), pchunk);
         }
     }
-    //    }
 
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
     foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);

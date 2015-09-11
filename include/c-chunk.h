@@ -177,7 +177,6 @@
 
 #define Return()                                                                \
         do {                                                                    \
-                GC_collect(GCState, 0, 0);                          \
                 l_nextFun = *(uintptr_t*)(StackTop - sizeof(void*));            \
                 if (DEBUG_CCODEGEN)                                             \
                         fprintf (stderr, "%s:%d: Return()  l_nextFun = %d\n",   \
