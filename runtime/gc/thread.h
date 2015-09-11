@@ -35,7 +35,6 @@ typedef struct GC_thread {
   size_t bytesNeeded;
   size_t exnStack;
   objptr stack;
-  int32_t prio;
 } __attribute__ ((packed)) *GC_thread;
 
 COMPILE_TIME_ASSERT(GC_thread__packed,
@@ -43,7 +42,7 @@ COMPILE_TIME_ASSERT(GC_thread__packed,
                     sizeof(size_t)
                     + sizeof(size_t)
                     + sizeof(objptr)
-					+ sizeof(uint32_t));
+					+ sizeof(size_t));
 
 #define BOGUS_EXN_STACK ((size_t)(-1))
 

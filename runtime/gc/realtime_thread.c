@@ -75,6 +75,7 @@ int32_t GC_getThreadPriority(GC_state s, pointer p) {
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	GC_thread gct;
 	TQNode *n;
+	int old_pri = 0;
 
 	if (DEBUG)
 		fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", (uintptr_t)p, prio);
@@ -83,11 +84,10 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 
 	LOCK(thread_queue_lock);
 
-	n = RTThread_findThreadInQueue(gct, gct->prio);
+	n = RTThread_findThreadAndQueue(gct, &old_pri);
 
 	if (n) {
-		RTThread_unlinkThreadFromQueue(gct, gct->prio);
-		gct->prio = prio;
+		RTThread_unlinkThreadFromQueue(gct, old_pri);
 		RTThread_addThreadToQueue_nolock(gct, prio);
 	}
 
@@ -149,6 +149,19 @@ TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority) {
 	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
 	return n;
 }
+
+TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority) {
+	TQNode *n = NULL;
+	int i;
+
+	for (i = 0 ; i < MAXPRI ; i++)
+		for (n = thread_queue[i].head ; n != NULL && n->t != t ; n = n->next);
+
+	if (n) *priority = i;
+
+	return n;
+}
+
 
 TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
 	TQNode *n = NULL;
@@ -306,13 +319,18 @@ void* realtimeRunner(void* paramsPtr) {
 
 			struct cont cont = realtimeThreadConts[tNum];
 
-			nextFun = *(uintptr_t*)(node->t->stack - GC_RETURNADDRESS_SIZE);
+			switchToThread (state,
+					pointerToObjptr((pointer)(node->t) - offsetofThread (state),
+							state->heap.start));
+
+			nextFun = *(uintptr_t*)(state->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);
 			cont.nextChunk = nextChunks[nextFun];
-			displayStack(state, (GC_stack)node->t->stack, stderr);
+
 
 			if (cont.nextChunk != NULL) {
 				printf("%lx] pri %d trampolining\n", pthread_self(), tNum);
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
+				printf("...\n");
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();

@@ -1,51 +1,47 @@
 open MLton.PrimThread
 
-val _ = print "primthread2 starts\n"
+local 
+        fun e() = print "In function e()\n"
+        val a = ref NONE
 
-fun die (s: string): 'a = let in print s ; raise Fail "child failed" end
+        val () = MLton.PrimThread.PThread.copyCurrent()
+        val sp = MLton.PrimThread.PThread.savedPre()
+				
+        (* this should show the thread is in queue #0 *)
 
-local
-    val func: (unit -> unit) option ref = ref NONE
-    val base: PThread.preThread =
-       let
-          val () = MLton.PrimThread.PThread.copyCurrent ()
-       in
-          case !func of
-             NONE => let val _ = print "in parent-thread\n" in MLton.PrimThread.PThread.savedPre () end
-           | SOME x =>
-                (* This branch never returns. *)
-              let
-                 (* Atomic 1 *)
-                 val () = func := NONE
-                 (* Atomic 0 *)
-              in
-                 print "in sub-thread: calling X\n"
-                 ; x () 
-                 ; die "Thread didn't exit properly.\n"
-              end
-       end
+        val _ = let in print "Queue before setting priority:\n" ; displayThreadQueue(0) end
+        val p = setPriority(sp, 5)
+
+        (* this should show the thread moved to queue #5 *)
+
+        val _ = let in print "\nQueue after setting priority:\n"; displayThreadQueue(0) end
+        val p = getPriority(sp)
+        val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
+        (*val r = setRunnable(sp)
+        val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
+        *)
+
 in
-    fun newThread (f: unit -> unit) : PThread.thread =
-       let
-          (* Atomic 2 *)
-          val () = func := SOME f
-       in
-          print "in newThread\n" ;
-          MLton.PrimThread.PThread.copy base
-       end
+	(*
+	so.. parent and child get a copy of the above stack
+	then come down here, and initially !a is NONE, and only
+	parent is running (bc child threads are created in a 
+	suspended state until u call setRUnnable... 
+	then we expect parent to set 'a' to the func ref
+	and tell child to start running, then parent goes and
+	does other stuff
+	child comes alive, and sees 'a' is SOME, so it calls it
+	
+	case !a in 
+	NONE :
+		a := !e
+		setRunnable(sp)
+	SOME : 
+		a ; die "..."
+		*)
+		
+	(* if we are in the thread, then call !a() otherwise dont *)
 end
-
-
-fun e () = print "In function e()\n"
-
-val _ = print "calling newThread\n"
-
-val T  = newThread e
-val _ = setPriority2(T, 5)
-val _ = setRunnable2(T)
-
-
-(* delay the parent for 5s or so *)
 
 val rec delay =
    fn 0 => ()
