@@ -344,7 +344,9 @@ in
    ../mlton/cont.sig
    ../mlton/cont.sml
    ../mlton/primthread.sig
-   ../mlton/primthread.sml
+   ann "allowFFI true" in
+	   ../mlton/primthread.sml
+   end
    ../mlton/random.sig
    ../mlton/random.sml
    ../mlton/io.sig

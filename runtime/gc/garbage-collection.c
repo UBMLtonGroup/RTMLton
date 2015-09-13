@@ -99,7 +99,7 @@ void leaveGC (GC_state s) {
 pthread_mutex_t gclock;
 static volatile int sem;
 
-#define GCTHRDEBUG
+#undef GCTHRDEBUG
 
 #ifdef GCTHRDEBUG
 # define DBG(X) fprintf X
@@ -167,7 +167,7 @@ void performGC (GC_state s,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
-return;
+//return;
 
     /* In our two-thread formulation of realtime MLton, the zeroth thread runs
      * ML code, which will sometimes call the performGC function (this
@@ -337,7 +337,7 @@ void ensureHasHeapBytesFree (GC_state s,
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
 	//fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
-	return;
+	//return;
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.

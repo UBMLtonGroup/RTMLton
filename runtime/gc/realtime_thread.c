@@ -64,11 +64,13 @@ int32_t GC_getThreadPriority(GC_state s, pointer p) {
 	if (DEBUG)
 		fprintf(stderr, "GC_getThreadPriority("FMTPTR")\n", (uintptr_t)p);
 
-	gct = (GC_thread)(p + offsetofThread (s));
+	if (p) {
+		gct = (GC_thread)(p + offsetofThread (s));
 
-	n = RTThread_findThreadAndQueue(gct, &pri);
+		n = RTThread_findThreadAndQueue(gct, &pri);
 
-	if (n) return pri;
+		if (n) return pri;
+	}
 
 	return -1;
 }
@@ -87,22 +89,27 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	if (DEBUG)
 		fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", (uintptr_t)p, prio);
 
-	gct = (GC_thread)(p + offsetofThread (s));
+	if (p) {
+		gct = (GC_thread)(p + offsetofThread (s));
 
-	LOCK(thread_queue_lock);
+		LOCK(thread_queue_lock);
 
-	n = RTThread_findThreadAndQueue(gct, &old_pri);
+		n = RTThread_findThreadAndQueue(gct, &old_pri);
 
-	if (n) {
-		RTThread_unlinkThreadFromQueue(gct, old_pri);
-		RTThread_addThreadToQueue_nolock(gct, prio);
+		if (n) {
+			RTThread_unlinkThreadFromQueue(gct, old_pri);
+			RTThread_addThreadToQueue_nolock(gct, prio);
+		}
+
+		UNLOCK(thread_queue_lock);
+
+		if (DEBUG) {
+			displayThread(s, gct, stderr);
+			displayStack(s, (GC_stack)(gct->stack), stderr);
+		}
 	}
-
-	UNLOCK(thread_queue_lock);
-
-	if (DEBUG) {
-		displayThread(s, gct, stderr);
-		displayStack(s, (GC_stack)(gct->stack), stderr);
+	else {
+		fprintf(stderr, "warning null thread pointer passed to setThreadPriority\n");
 	}
 
 	return prio;
@@ -125,16 +132,22 @@ int32_t GC_setThreadRunnable(GC_state s, pointer p) {
 	if (DEBUG)
 		fprintf(stderr, "GC_setThreadRunnable("FMTPTR")\n", (uintptr_t)p);
 
-	gct = (GC_thread)(p + offsetofThread (s));
+	if (p) {
+		gct = (GC_thread)(p + offsetofThread (s));
 
-	LOCK(thread_queue_lock);
-	n = RTThread_findThreadAndQueue(gct, &pri);
-	UNLOCK(thread_queue_lock);
+		LOCK(thread_queue_lock);
+		n = RTThread_findThreadAndQueue(gct, &pri);
+		UNLOCK(thread_queue_lock);
 
-	if (n)
-		n->runnable = TRUE;
-	else
-		return 0;
+		if (n)
+			n->runnable = TRUE;
+		else
+			return 0;
+	}
+	else {
+		fprintf(stderr, "warning null thread pointer passed to setThreadRunnable\n");
+	}
+
 	return 1;
 }
 
@@ -175,7 +188,9 @@ TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority) {
 
 TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
 	TQNode *n = NULL;
-	fprintf(stderr, "unlinkThreadFromQueue(%x, %d)", t, priority);
+
+	if (DEBUG)
+		fprintf(stderr, "unlinkThreadFromQueue(%x, %d)", t, priority);
 
 	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
 	if (n) {
@@ -307,6 +322,8 @@ void* realtimeRunner(void* paramsPtr) {
         if (DEBUG)
         	printf("%lx] realtimeRunner[%d] running.\n", pthread_self(), tNum);
 
+        Parallel_run();
+
 	sleep(1); /* testing.. slow things down so output is readable */
 
 		if (tNum <= 1) continue;
@@ -340,12 +357,15 @@ void* realtimeRunner(void* paramsPtr) {
 
     		displayStack(state, (GC_stack)node->t->stack, stderr);
 
+#if 0
     		//GC_setSavedThread (state, thrp);
-			switchToThread (state, op);
+			//switchToThread (state, op);
+    		state->currentThread[PTHREAD_NUM] = state->currentThread[0];
+
+			GC_switchToThread (state, thrp, 0);
 
 			nextFun = *(uintptr_t*)(state->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);
 			cont.nextChunk = nextChunks[nextFun];
-
 
 			while(1){
 				printf("%lx] pri %d trampolining\n", pthread_self(), PTHREAD_NUM);fflush(stdout);
@@ -358,9 +378,8 @@ void* realtimeRunner(void* paramsPtr) {
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
 				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				
-				// copy local variable back to gcstate
 			}
+#endif
         }
         else {
         	if (DEBUG)

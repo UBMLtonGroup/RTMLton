@@ -21,6 +21,9 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
+		fun thread_main () = print "hihi\n"
+		
+	  val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
 
     fun myPriority () : int = Primitive.MLton.Thread.myPriority(Primitive.MLton.GCState.gcState)
 		

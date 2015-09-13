@@ -51,7 +51,7 @@ static void MLton_callFromC () {                                        \
 }
 
 #define MLtonMain(al, mg, mfs, mmc, pk, ps, mc, ml)                     \
-		extern pthread_mutex_t gclock; \
+extern pthread_mutex_t gclock;                                          \
 MLtonCallFromC                                                          \
 PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         struct cont cont;                                               \
