@@ -255,7 +255,7 @@ int processAtMLton (GC_state s, int start, int argc, char **argv,
 
 int GC_init (GC_state s, int argc, char **argv) {
   char *worldFile;
-  int res;
+  int res, __i;
 
   assert (s->alignment >= GC_MODEL_MINALIGN);
   assert (isAligned (sizeof (struct GC_stack), s->alignment));
@@ -310,16 +310,19 @@ int GC_init (GC_state s, int argc, char **argv) {
   rusageZero (&s->cumulativeStatistics.ru_gcCopying);
   rusageZero (&s->cumulativeStatistics.ru_gcMarkCompact);
   rusageZero (&s->cumulativeStatistics.ru_gcMinor);
-  s->currentThread[PTHREAD_NUM] = BOGUS_OBJPTR;
+  for (__i = 0 ; __i < MAXPRI ; __i++) {
+	  s->currentThread[__i] = BOGUS_OBJPTR;
+	  s->savedThread[__i] = BOGUS_OBJPTR;
+	  s->signalHandlerThread[__i] = BOGUS_OBJPTR;
+  }
+
   s->hashConsDuringGC = FALSE;
   initHeap (s, &s->heap);
   s->lastMajorStatistics.bytesHashConsed = 0;
   s->lastMajorStatistics.bytesLive = 0;
   s->lastMajorStatistics.kind = GC_COPYING;
   s->lastMajorStatistics.numMinorGCs = 0;
-  s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
   initHeap (s, &s->secondaryHeap);
-  s->signalHandlerThread[PTHREAD_NUM] = BOGUS_OBJPTR;
   s->signalsInfo.amInSignalHandler = FALSE;
   s->signalsInfo.gcSignalHandled = FALSE;
   s->signalsInfo.gcSignalPending = FALSE;

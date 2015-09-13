@@ -37,7 +37,7 @@ size_t sizeofThread (GC_state s) {
                (uintmax_t)res, (uintmax_t)check);
     assert (check == res);
   }
-  //assert (isAligned (res, s->alignment));
+  assert (isAligned (res, s->alignment));
   return res;
 }
 

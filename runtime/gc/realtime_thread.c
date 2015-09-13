@@ -108,7 +108,7 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	return prio;
 }
 
-int32_t GC_myPriority(GC_state s)
+int32_t GC_myPriority(__attribute__ ((unused)) GC_state s)
 {
 	return PTHREAD_NUM;
 }
@@ -175,13 +175,27 @@ TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority) {
 
 TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
 	TQNode *n = NULL;
+	fprintf(stderr, "unlinkThreadFromQueue(%x, %d)", t, priority);
+
 	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
 	if (n) {
-		if (n != thread_queue[priority].head)
-			n->prev->next = n->next;
-		else
+		if (n == thread_queue[priority].head && n == thread_queue[priority].tail) {
+			thread_queue[priority].head = NULL;
+			thread_queue[priority].tail = NULL;
+		}
+		else if (n == thread_queue[priority].head) {
 			thread_queue[priority].head = n->next;
-		n->prev = n->next = NULL;
+		}
+		else if (n == thread_queue[priority].tail) {
+			thread_queue[priority].tail->prev->next = NULL;
+			thread_queue[priority].tail = n->prev;
+		}
+		else {
+			n->prev->next = n->next;
+		}
+
+		n->prev = NULL;
+		n->next = NULL;
 	}
 	return n;
 }
@@ -190,19 +204,23 @@ static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority) {
 	TQNode *node;
 
 	if (DEBUG)
-		fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
+		fprintf(stderr, "addThreadToQueue(%x, pri=%d)\n", t, priority);
 
     // priority 1 is reserved to the GC
 	if (t == NULL || priority < 0 || priority == 1 || priority > MAXPRI) return -1;
 
 	node = make_tqnode(t);
+
 	if (thread_queue[priority].head == NULL) {
-		thread_queue[priority].head = thread_queue[priority].tail = node;
+		fprintf(stderr, "add to head\n");
+		thread_queue[priority].head = node;
+		thread_queue[priority].tail = node;
 	}
 	else {
+		fprintf(stderr, "add to tail\n");
 		TQNode *_t = thread_queue[priority].tail;
-		thread_queue[priority].tail->next = node;
 		thread_queue[priority].tail = node;
+		_t->next = node;
 		node->prev = _t;
 	}
 
@@ -244,9 +262,6 @@ void realtimeThreadInit(struct GC_state *state) {
 			malloc(MAXPRI * sizeof(pthread_t));
 	MYASSERT(long, realtimeThreads, !=, NULL);
 
-	state->realtimeThreadConts =
-			malloc(MAXPRI * sizeof(struct cont));
-
 	//Initializing the locks for each realtime thread created,
 	state->realtimeThreadLocks= malloc(MAXPRI * sizeof(pthread_mutex_t));
 
@@ -260,8 +275,6 @@ void realtimeThreadInit(struct GC_state *state) {
 
 		params->tNum = tNum;
 		params->state = state;
-
-		state->realtimeThreadConts[tNum].nextChunk = NULL;
 
 		if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
 			fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
@@ -285,6 +298,8 @@ void* realtimeRunner(void* paramsPtr) {
     struct realtimeRunnerParameters *params = paramsPtr;
 
     set_pthread_num(params->tNum);
+
+    assert(params->tNum == PTHREAD_NUM);
 
     while (1) {
         // Trampoline
@@ -310,24 +325,23 @@ void* realtimeRunner(void* paramsPtr) {
 		UNLOCK(thread_queue_lock);
 
         if (node != NULL) {
+    		struct GC_state *state = params->state;
+			pointer thrp = (pointer)(node->t) - offsetofThread (state);
+			objptr op = pointerToObjptr(thrp, state->heap.start);
+        	struct cont cont;
+
         	if (DEBUG)
-        		printf("%lx] pri %d has work to do\n", pthread_self(), tNum);
+        		printf("%lx] pri %d has work to do\n", pthread_self(), PTHREAD_NUM);
 
         	/* run it, etc; steps 4-7
         	 *     node->t->stack
         	 *
         	 */
 
-			struct cont cont;
-
-    		struct GC_state *state = params->state;
     		displayStack(state, (GC_stack)node->t->stack, stderr);
 
-    		GC_setSavedThread (state, GC_getCurrentThread (state));
-
-			switchToThread (state,
-					pointerToObjptr((pointer)(node->t) - offsetofThread (state),
-							state->heap.start));
+    		//GC_setSavedThread (state, thrp);
+			switchToThread (state, op);
 
 			nextFun = *(uintptr_t*)(state->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);
 			cont.nextChunk = nextChunks[nextFun];

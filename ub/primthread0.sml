@@ -41,7 +41,7 @@ in
 	              val _ = print ("My Priority is  : " ^ Int.toString(MLton.PrimThread.myPriority()) ^ "\n")
 	              val () = a := SOME e;
 	            in
-	              setRunnable(sp)
+	              print "Telling child to run..\n" ; setRunnable(sp)
 	            end
 				| SOME x => 
 	            let
