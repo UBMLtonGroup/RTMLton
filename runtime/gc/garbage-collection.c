@@ -322,14 +322,7 @@ void ensureHasHeapBytesFree (GC_state s,
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
 }
 
-void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-  if (s->gc_module == GC_NONE) {
-      return;
-  }
-
-  if ((s->umheap.fl_chunks > 2000) &&
-      (s->umarheap.fl_array_chunks > 2000))
-      return;
+void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.
@@ -346,4 +339,16 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   if (DEBUG_MEM) {
       fprintf(stderr, "GC_collect done\n");
   }
+}
+
+inline void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+    if ((s->umheap.fl_chunks > 2000) &&
+        (s->umarheap.fl_array_chunks > 2000))
+        return;
+
+    if (s->gc_module == GC_NONE) {
+        return;
+    }
+
+    GC_collect_real(s, bytesRequested, force);
 }

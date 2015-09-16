@@ -81,8 +81,8 @@ WARNXCFLAGS += -Wnested-externs
 # WARNXCFLAGS += -Wunreachable-code
 
 XCFLAGS := -fno-common $(WARNXCFLAGS)
-OPTXCFLAGS := -Wdisabled-optimization -fomit-frame-pointer
-DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O2 
+OPTXCFLAGS := -Wdisabled-optimization
+DEBUGXCFLAGS := -DASSERT=1 -Wno-uninitialized -O2
 PICXCFLAGS :=
 
 # Win32&64 don't use PIC code, all other platforms do
@@ -170,7 +170,7 @@ endif
 
 
 XCFLAGS += -I. -Iplatform
-OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS)
+OPTCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(OPTXCFLAGS)
 DEBUGCFLAGS := $(CFLAGS) $(CPPFLAGS) $(XCFLAGS) $(DEBUGXCFLAGS)
 PICCFLAGS := $(OPTCFLAGS) $(PICXCFLAGS)
 
