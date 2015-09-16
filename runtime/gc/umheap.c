@@ -54,7 +54,7 @@ void insertFreeChunk(__attribute__ ((unused)) GC_state s,
                      GC_UM_heap h,
                      pointer c) {
     GC_UM_Chunk pc = (GC_UM_Chunk) c;
-    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
+    //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
     pc->next_chunk = h->fl_head;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
     pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
@@ -66,7 +66,7 @@ void insertArrayFreeChunk(__attribute__ ((unused)) GC_state s,
                           GC_UM_Array_heap h,
                           pointer c) {
     GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) c;
-    memset(pc->ml_array_payload.ml_object, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE);
+    //    memset(pc->ml_array_payload.ml_object, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE);
     pc->next_chunk = h->fl_array_head;
     pc->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
     h->fl_array_head = pc;
@@ -87,6 +87,7 @@ bool createUMHeap(GC_state s,
 
     h->start = newStart;
     h->size = desiredSize;
+    h->end = newStart + desiredSize;
 
     pointer pchunk;
     size_t step = sizeof(struct GC_UM_Chunk);

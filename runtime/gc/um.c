@@ -93,7 +93,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     if (DEBUG_MEM)
        DBG(p, o, s, "enter");
 
-    Pointer heap_end = (gc_stat->umheap).start + (gc_stat->umheap).size;
+    Pointer heap_end = (gc_stat->umheap).end;
 
     /* Not on our heap! */
     if (p < (gc_stat->umheap).start ||

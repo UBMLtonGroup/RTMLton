@@ -1,6 +1,6 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
-#define UM_CHUNK_PAYLOAD_SIZE            49
+#define UM_CHUNK_PAYLOAD_SIZE            34
 #define UM_CHUNK_ARRAY_INTERNAL_POINTERS 32
 #define UM_CHUNK_ARRAY_PAYLOAD_SIZE      128
 #define UM_CHUNK_SENTINEL_UNUSED         9999
@@ -19,6 +19,7 @@ typedef struct GC_UM_Chunk {
 
 typedef struct GC_UM_heap {
     pointer start;
+    pointer end;
     size_t size;
     int fl_chunks;
     GC_UM_Chunk fl_head;
