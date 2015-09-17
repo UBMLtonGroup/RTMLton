@@ -108,6 +108,8 @@ void initIntInfRes (GC_state s, __mpz_struct *res,
   GC_intInf bp;
   size_t nlimbs;
   pointer frontier = (pointer)allocNextArrayChunk(s, &(s->umarheap));
+  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
+  chunk->array_chunk_header = UM_CHUNK_IN_USE;
   bp = (GC_intInf)frontier;
   /* We have as much space for the limbs as there is to the end of the
    * heap.  Divide by (sizeof(mp_limb_t)) to get number of limbs.
@@ -300,7 +302,8 @@ objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
   size_t size;
 
   pointer frontier = (pointer) allocNextArrayChunk(s, &(s->umarheap));
-
+  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
+  chunk->array_chunk_header = UM_CHUNK_IN_USE;
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_strop ("FMTOBJPTR", %"PRId32", %"PRIuMAX")\n",
              arg, base, (uintmax_t)bytes);
