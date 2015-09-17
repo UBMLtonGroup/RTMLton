@@ -1,0 +1,10 @@
+local
+    $(SML_LIB)/basis/basis.mlb
+    microbench.sig
+    fib.sml
+    mandelbrot.sml
+    md5.sml
+    matrix-multiply.sml
+in
+    main.sml
+end
