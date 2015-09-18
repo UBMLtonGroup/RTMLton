@@ -17,10 +17,11 @@
 #include "export.h"
 
 struct cont {
+		uintptr_t nextFun;
         void *nextChunk;
 };
 
-PRIVATE extern uintptr_t nextFun;
+PRIVATE extern uintptr_t XXXnextFun[MAXPRI];
 PRIVATE extern int returnToC[MAXPRI];
 PRIVATE extern struct cont (*nextChunks []) (void);
 
@@ -34,7 +35,7 @@ PRIVATE extern struct cont (*nextChunks []) (void);
 #define PrepFarJump(n, l)                               \
         do {                                            \
                 cont.nextChunk = (void*)ChunkName(n);   \
-                nextFun = l;                            \
+                cont.nextFun = l;                       \
         } while (0)
 
 #endif /* #ifndef _C_COMMON_H_ */

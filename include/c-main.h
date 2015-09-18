@@ -23,7 +23,7 @@ static GC_frameIndex returnAddressToFrameIndex (GC_returnAddress ra) {
 
 #define MLtonCallFromC                                                  \
 /* Globals */                                                           \
-PRIVATE uintptr_t nextFun[MAXPRI];                                      \
+PRIVATE uintptr_t YYZnextFun[MAXPRI];                                      \
 PRIVATE int returnToC[MAXPRI];                                          \
 static void MLton_callFromC () {                                        \
 		fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
@@ -39,9 +39,9 @@ static void MLton_callFromC () {                                        \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
         GC_switchToThread (s, GC_getCallFromCHandlerThread (s), 0);     \
-        nextFun[PTHREAD_NUM] =                                          \
+        cont.nextFun =                                                  \
         		*(uintptr_t*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);   \
-        cont.nextChunk = nextChunks[nextFun];                           \
+        cont.nextChunk = nextChunks[cont.nextFun];                      \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
         fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
         do {                                                            \
@@ -71,8 +71,8 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 PrepFarJump(mc, ml);                                    \
         } else {                                                        \
                 /* Return to the saved world */                         \
-                nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
-                cont.nextChunk = nextChunks[nextFun];                   \
+                cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
+                cont.nextChunk = nextChunks[cont.nextFun];                   \
         }                                                               \
                                                                         \
                                                                         \
@@ -111,8 +111,8 @@ PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
                 PrepFarJump(mc, ml);                                    \
         } else {                                                        \
                 /* Return to the saved world */                         \
-                nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
-                cont.nextChunk = nextChunks[nextFun];                   \
+                cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
+                cont.nextChunk = nextChunks[cont.nextFun];                   \
         }                                                               \
         /* Trampoline */                                                \
         returnToC = FALSE;                                              \
@@ -122,8 +122,8 @@ PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
 }                                                                       \
 PUBLIC void LIB_CLOSE(LIBNAME) () {                                     \
         struct cont cont;                                               \
-        nextFun = *(uintptr_t*)(gcState.stackTop - GC_RETURNADDRESS_SIZE); \
-        cont.nextChunk = nextChunks[nextFun];                           \
+        cont.nextFun = *(uintptr_t*)(gcState.stackTop - GC_RETURNADDRESS_SIZE); \
+        cont.nextChunk = nextChunks[cont.nextFun];                           \
         returnToC = FALSE;                                              \
         do {                                                            \
                 cont=(*(struct cont(*)(void))cont.nextChunk)();         \

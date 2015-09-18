@@ -101,14 +101,14 @@
         DeclareChunk(n) {                                       \
                 struct cont cont;                               \
                 register unsigned int frontier asm("g5");       \
-                uintptr_t l_nextFun = nextFun;                  \
+                uintptr_t l_nextFun = cont.nextFun;                  \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
         DeclareChunk(n) {                       \
                 struct cont cont;               \
                 Pointer frontier;               \
-                uintptr_t l_nextFun = nextFun;  \
+                uintptr_t l_nextFun = cont.nextFun;  \
                 Pointer stackTop;
 #endif
 
@@ -125,8 +125,8 @@
 #define EndChunk                                                        \
                 default:                                                \
                         /* interchunk return */                         \
-                        nextFun = l_nextFun;                            \
-                        cont.nextChunk = (void*)nextChunks[nextFun];    \
+                        cont.nextFun = l_nextFun;                            \
+                        cont.nextChunk = (void*)nextChunks[cont.nextFun];    \
                         leaveChunk:                                     \
                                 FlushFrontier();                        \
                                 FlushStackTop();                        \
