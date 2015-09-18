@@ -11,6 +11,10 @@
 
 #include <stdio.h>
 
+#ifndef PTHREAD_NUM
+# define PTHREAD_NUM get_pthread_num()
+#endif
+
 #include "ml-types.h"
 #include "c-types.h"
 #include "c-common.h"
@@ -140,7 +144,7 @@
                 if (DEBUG_CCODEGEN)                                     \
                         fprintf (stderr, "%s:%d: Thread_returnToC()\n", \
                                         __FILE__, __LINE__);            \
-                returnToC = TRUE;                                       \
+                returnToC[get_pthread_num()] = TRUE;                          \
                 return cont;                                            \
         } while (0)
 

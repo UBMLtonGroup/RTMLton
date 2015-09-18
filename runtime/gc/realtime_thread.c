@@ -227,12 +227,14 @@ static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority) {
 	node = make_tqnode(t);
 
 	if (thread_queue[priority].head == NULL) {
-		fprintf(stderr, "add to head\n");
+		if (DEBUG)
+			fprintf(stderr, "add to head\n");
 		thread_queue[priority].head = node;
 		thread_queue[priority].tail = node;
 	}
 	else {
-		fprintf(stderr, "add to tail\n");
+		if (DEBUG)
+			fprintf(stderr, "add to tail\n");
 		TQNode *_t = thread_queue[priority].tail;
 		thread_queue[priority].tail = node;
 		_t->next = node;
@@ -311,80 +313,32 @@ __attribute__ ((noreturn))
 void* realtimeRunner(void* paramsPtr) {
 
     struct realtimeRunnerParameters *params = paramsPtr;
+	struct GC_state *state = params->state;
+    int tNum = params->tNum;
 
     set_pthread_num(params->tNum);
 
     assert(params->tNum == PTHREAD_NUM);
 
+	if (params->tNum <= 1) pthread_exit(NULL);
+
+	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
+		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread != 1]..\n", tNum);
+	}
+
+	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
+
     while (1) {
         // Trampoline
-        int tNum = params->tNum;
         if (DEBUG)
-        	printf("%lx] realtimeRunner[%d] running.\n", pthread_self(), tNum);
+        	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
 
+		state->currentThread[PTHREAD_NUM] = state->currentThread[0];
+        if (DEBUG)
+        	fprintf(stderr, "%d] calling Parallel_run..\n", tNum);
         Parallel_run();
-
-	sleep(1); /* testing.. slow things down so output is readable */
-
-		if (tNum <= 1) continue;
-
-		/* 1. lock the queue
-		 * 2. find a runnable thread
-		 * 3. unlock the queue
-		 * 4. run it until it completes or yields
-		 * 5. lock the queue
-		 * 6. move it to the back of the queue
-		 * 7. unlock the queue
-		 * 8. repeat
-		 */
-        LOCK(thread_queue_lock);
-        TQNode *node = find_runnable(thread_queue[params->tNum]);
-		UNLOCK(thread_queue_lock);
-
-        if (node != NULL) {
-    		struct GC_state *state = params->state;
-			pointer thrp = (pointer)(node->t) - offsetofThread (state);
-			objptr op = pointerToObjptr(thrp, state->heap.start);
-        	struct cont cont;
-
-        	if (DEBUG)
-        		printf("%lx] pri %d has work to do\n", pthread_self(), PTHREAD_NUM);
-
-        	/* run it, etc; steps 4-7
-        	 *     node->t->stack
-        	 *
-        	 */
-
-    		displayStack(state, (GC_stack)node->t->stack, stderr);
-
-#if 0
-    		//GC_setSavedThread (state, thrp);
-			//switchToThread (state, op);
-    		state->currentThread[PTHREAD_NUM] = state->currentThread[0];
-
-			GC_switchToThread (state, thrp, 0);
-
-			nextFun = *(uintptr_t*)(state->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);
-			cont.nextChunk = nextChunks[nextFun];
-
-			while(1){
-				printf("%lx] pri %d trampolining\n", pthread_self(), PTHREAD_NUM);fflush(stdout);
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				printf("after first cont...\n");fflush(stdout);
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-			}
-#endif
-        }
-        else {
-        	if (DEBUG)
-        		printf("%lx] pri %d has nothing to do\n", pthread_self(), tNum);
-		}
+        fprintf(stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
+        exit(-1);
     }
 }
 

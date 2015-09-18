@@ -12,7 +12,7 @@ local
         (* this should show the thread is in queue #0 *)
 
         (* val _ = let in print "Queue before setting priority:\n" ; displayThreadQueue(0) end *)
-        val p = setPriority(sp, 5)
+        val p = setPriority(sp, 2)
 
 
         (* this should show the thread moved to queue #5 *)

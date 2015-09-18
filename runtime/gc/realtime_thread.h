@@ -1,7 +1,7 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
-#define MAXPRI 10 /* 0 .. 10 */
+#define MAXPRI 4 /* 0 = main, 1 = GC, */
 
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
