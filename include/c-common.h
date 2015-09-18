@@ -9,6 +9,7 @@
 #ifndef _C_COMMON_H_
 #define _C_COMMON_H_
 
+#define MAXPRI 4 /* XXX dup'd in runtime/realtime_thread.h */
 #ifndef DEBUG_CCODEGEN
 #define DEBUG_CCODEGEN FALSE
 #endif
@@ -20,7 +21,7 @@ struct cont {
 };
 
 PRIVATE extern uintptr_t nextFun;
-PRIVATE extern int returnToC;
+PRIVATE extern int returnToC[MAXPRI];
 PRIVATE extern struct cont (*nextChunks []) (void);
 
 #define ChunkName(n) Chunk ## n
