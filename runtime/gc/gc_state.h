@@ -31,8 +31,7 @@ struct GC_state {
 
   pthread_t *realtimeThreads;
   bool      *realtimeThreadAllocated;
-  struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */
-  pthread_mutex_t *realtimeThreadLocks;
+
   /* Begin inter-thread GC communication data */
   pthread_mutex_t gc_mutex;
   volatile bool GCrunnerRunning;

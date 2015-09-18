@@ -279,9 +279,6 @@ void realtimeThreadInit(struct GC_state *state) {
 			malloc(MAXPRI * sizeof(pthread_t));
 	MYASSERT(long, realtimeThreads, !=, NULL);
 
-	//Initializing the locks for each realtime thread created,
-	state->realtimeThreadLocks= malloc(MAXPRI * sizeof(pthread_mutex_t));
-
 	int tNum;
 	for (tNum = 0; tNum < MAXPRI; tNum++) {
 		if (DEBUG)
