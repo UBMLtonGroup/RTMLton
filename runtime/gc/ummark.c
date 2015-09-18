@@ -123,7 +123,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
             (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
         if (DEBUG_MEM) {
             fprintf(stderr, "umDfsMarkObjects: marking array: %x, markmode: %d, "
-                    "magic: %d\n", fst_leaf, m, fst_leaf->array_chunk_magic);
+                    "magic: %d, length: %d\n", fst_leaf, m,
+                    fst_leaf->array_chunk_magic, fst_leaf->array_chunk_length);
         }
 
         if (fst_leaf->array_num_chunks > 1 &&

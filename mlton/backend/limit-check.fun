@@ -264,7 +264,7 @@ fun insertFunction (f: Function.t,
                        | Control.Limit =>
                             (dontCollect, Vector.new0 (), Operand.bool false)
                        | Control.Every =>
-                            (collect, Vector.new0 (), Operand.bool true)
+                            (collect, Vector.new0 (), Operand.bool false)
                    val func = CFunction.gc {maySwitchThreads = handlesSignals}
                    val _ =
                       newBlocks :=
@@ -293,7 +293,7 @@ fun insertFunction (f: Function.t,
                       :: !newBlocks
                 in
                    {collect = collect,
-                    dontCollect = dontCollect'}
+                    dontCollect = collect } (* dontCollect'} *)
                 end
              fun newBlock (isFirst, statements, transfer) =
                 let
@@ -328,7 +328,7 @@ fun insertFunction (f: Function.t,
                    val transfer =
                       Transfer.ifBool
                       (Operand.Var {var = res, ty = Type.bool},
-                       {falsee = dontCollect,
+                       {falsee = collect,
                         truee = collect})
                 in
                    (Vector.new1 s, transfer)

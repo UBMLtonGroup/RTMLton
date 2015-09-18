@@ -33,7 +33,6 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_Array_heap h) {
     if (h->fl_array_chunks <= 3) {
-//        GC_collect(s, 0, true);
         die("allocNextArrayChunk: No more memory available\n");
     }
 
@@ -100,6 +99,10 @@ bool createUMHeap(GC_state s,
         insertFreeChunk(s, h, pchunk);
     }
 
+#ifdef PROFILE_UMGC
+    fprintf(stderr, "[GC] Created heap of %d chunks\n", h->fl_chunks);
+#endif
+
     if (DEBUG or s->controls.messages) {
         fprintf (stderr,
                  "[GC: Created heap at "FMTPTR" of size %s bytes\n",
@@ -124,6 +127,8 @@ bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
         return FALSE;
     }
 
+
+
     h->start = newStart;
     h->size = desiredSize;
 
@@ -136,6 +141,10 @@ bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
          pchunk+=step) {
         insertArrayFreeChunk(s, h, pchunk);
     }
+
+#ifdef PROFILE_UMGC
+    fprintf(stderr, "[GC] Created array heap of %d chunks\n", h->fl_array_chunks);
+#endif
 
     return TRUE;
 }

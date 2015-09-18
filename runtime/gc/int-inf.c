@@ -107,9 +107,8 @@ void initIntInfRes (GC_state s, __mpz_struct *res,
                     ARG_USED_FOR_ASSERT size_t bytes) {
   GC_intInf bp;
   size_t nlimbs;
-  pointer frontier = (pointer)allocNextArrayChunk(s, &(s->umarheap));
-  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
-  chunk->array_chunk_header = UM_CHUNK_IN_USE;
+  pointer frontier = s->infFrontier; //(pointer)allocNextArrayChunk(s, &(s->umarheap));
+  //  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
   bp = (GC_intInf)frontier;
   /* We have as much space for the limbs as there is to the end of the
    * heap.  Divide by (sizeof(mp_limb_t)) to get number of limbs.
@@ -210,6 +209,7 @@ objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes) {
         return (ans<<1 | 1);
     }
   }
+  s->infFrontier = (pointer)(&bp->obj.limbs[size]);
   //  setFrontier (s, (pointer)(&bp->obj.limbs[size]), bytes);
   bp->counter = (GC_arrayCounter)0;
   bp->length = (GC_arrayLength)(size + 1); /* +1 for isneg field */
@@ -301,9 +301,8 @@ objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
   char *str;
   size_t size;
 
-  pointer frontier = (pointer) allocNextArrayChunk(s, &(s->umarheap));
-  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
-  chunk->array_chunk_header = UM_CHUNK_IN_USE;
+  pointer frontier = s->infFrontier; //(pointer) allocNextArrayChunk(s, &(s->umarheap));
+  //  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_strop ("FMTOBJPTR", %"PRId32", %"PRIuMAX")\n",
              arg, base, (uintmax_t)bytes);
@@ -315,6 +314,7 @@ objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
   size = strlen(str);
   if (sp->obj.chars[0] == '-')
     sp->obj.chars[0] = '~';
+  s->infFrontier = (pointer)&sp->obj + size;
   //  setFrontier (s, (pointer)&sp->obj + size, bytes);
   sp->counter = (GC_arrayCounter)0;
   sp->length = (GC_arrayLength)size;

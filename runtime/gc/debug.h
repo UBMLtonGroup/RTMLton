@@ -10,7 +10,7 @@
 #define DEBUG FALSE
 #endif
 
-//#define PROFILE_UMGC
+#define PROFILE_UMGC
 
 enum {
   DEBUG_ARRAY = FALSE,

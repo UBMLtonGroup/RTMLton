@@ -107,10 +107,11 @@ void initWorld (GC_state s) {
 #define MEM_AVAILABLE 1024
   createUMHeap (s, &s->umheap, MEM_AVAILABLE*MEGABYTES, MEM_AVAILABLE*MEGABYTES);
 
-  createUMArrayHeap (s, &s->umarheap, 512*MEGABYTES, 512*MEGABYTES);
+  createUMArrayHeap (s, &s->umarheap, MEM_AVAILABLE*MEGABYTES, MEM_AVAILABLE*MEGABYTES);
 
   createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
 
+  createHeap (s, &s->infHeap, 100*MEGABYTES, 100*MEGABYTES);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //               s->lastMajorStatistics.bytesLive);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
@@ -120,6 +121,7 @@ void initWorld (GC_state s) {
   start = alignFrontier (s, s->heap.start);
   s->umarfrontier = s->umarheap.start;
   s->frontier = start;
+  s->infFrontier = s->infHeap.start;
   s->limitPlusSlop = s->heap.start + s->heap.size;
   s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
   initVectors (s);

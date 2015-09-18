@@ -282,8 +282,8 @@ void ensureInvariantForMutator (GC_state s, bool force) {
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
 
-        if ((s->umheap.fl_chunks <= 2000) or
-            (s->umarheap.fl_array_chunks <= 2000)) {
+        /* if ((s->umheap.fl_chunks <= 2000) or */
+        /*     (s->umarheap.fl_array_chunks <= 2000)) { */
             force = true;
 
 #ifdef PROFILE_UMGC
@@ -301,7 +301,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
                 s->umheap.fl_chunks,
                 s->umarheap.fl_array_chunks);
 #endif
-        }
+        //        }
 
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
@@ -341,10 +341,12 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   }
 }
 
-inline void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-    if ((s->umheap.fl_chunks > 2000) &&
-        (s->umarheap.fl_array_chunks > 2000))
-        return;
+void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+    if (!force) {
+        if ((s->umheap.fl_chunks > 2000) &&
+            (s->umarheap.fl_array_chunks > 1000000))
+            return;
+    }
 
     if (s->gc_module == GC_NONE) {
         return;
