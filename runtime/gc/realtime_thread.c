@@ -320,7 +320,9 @@ void* realtimeRunner(void* paramsPtr) {
 
     assert(params->tNum == PTHREAD_NUM);
 
-	if (params->tNum <= 1) pthread_exit(NULL);
+	if (params->tNum <= 1) {
+		while(1) sleep(10000); //pthread_exit(NULL);
+	}
 
 	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
 		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread != 1]..\n", tNum);
@@ -329,7 +331,6 @@ void* realtimeRunner(void* paramsPtr) {
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
     while (1) {
-        // Trampoline
         if (DEBUG)
         	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
 
@@ -342,29 +343,3 @@ void* realtimeRunner(void* paramsPtr) {
     }
 }
 
-int allocate_pthread(struct GC_state *state, struct cont *cont) {
-
-	//grab a lock for accessing the allocated threads structure
-
-	pthread_mutex_lock(&AllocatedThreadLock);
-	
-	//Loop through allocate thread structure to find free spot
-	for(int i = 0 ; i < MAXPRI ; i++)
-	{
-		if(!state->realtimeThreadAllocated[i])
-		  {	
-			pthread_mutex_lock(&state->realtimeThreadLocks[i]);
-			state->realtimeThreadConts[i] = *cont;
-			pthread_mutex_unlock(&state->realtimeThreadLocks[i]);
-			
-			//Mark thread as allocated
-			state->realtimeThreadAllocated[i] = true;
-			pthread_mutex_unlock(&AllocatedThreadLock);
-			return i;
-		  }	
-	}
-	
-	pthread_mutex_unlock(&AllocatedThreadLock);
-	return -1;
-
-}
