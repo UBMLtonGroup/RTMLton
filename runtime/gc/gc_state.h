@@ -41,12 +41,12 @@ struct GC_state {
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
-  bool amInGC;
+  volatile bool amInGC;
   bool amOriginal;
   char **atMLtons; /* Initial @MLton args, processed before command line. */
   int atMLtonsLength;
-  uint32_t atomicState;
-  objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
+  volatile uint32_t atomicState;
+  volatile objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
   struct GC_callStackState callStackState;
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;

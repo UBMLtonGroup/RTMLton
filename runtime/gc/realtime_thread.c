@@ -322,7 +322,7 @@ void* realtimeRunner(void* paramsPtr) {
 	}
 
 	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread != 1]..\n", tNum);
+		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread == 1] %x ..\n", tNum, params->state);
 	}
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);

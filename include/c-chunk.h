@@ -31,13 +31,16 @@
 #define DEBUG_CCODEGEN FALSE
 #endif
 
+#define WORDWIDTH 8 /* use gcState->alignment */
+
 #define GCState ((Pointer)&gcState)
-#define ExnStack *(size_t*)(GCState + ExnStackOffset)
+#define ExnStack *(size_t*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define Frontier frontier
-#define StackBottom *(Pointer*)(GCState + StackBottomOffset)
-#define StackTopMem *(Pointer*)(GCState + StackTopOffset)
+#define StackBottom *(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH) )
+#define StackTopMem *(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define StackTop stackTop
+
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
@@ -101,14 +104,12 @@
         DeclareChunk(n) {                                       \
                 struct cont cont;                               \
                 register unsigned int frontier asm("g5");       \
-                uintptr_t XXl_nextFun = cont.nextFun;                  \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
         DeclareChunk(n) {                       \
                 struct cont cont;               \
                 Pointer frontier;               \
-                uintptr_t XXl_nextFun = cont.nextFun;  \
                 Pointer stackTop;
 #endif
 
