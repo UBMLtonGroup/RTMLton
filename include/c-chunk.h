@@ -101,14 +101,14 @@
         DeclareChunk(n) {                                       \
                 struct cont cont;                               \
                 register unsigned int frontier asm("g5");       \
-                uintptr_t l_nextFun = cont.nextFun;                  \
+                uintptr_t XXl_nextFun = cont.nextFun;                  \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
         DeclareChunk(n) {                       \
                 struct cont cont;               \
                 Pointer frontier;               \
-                uintptr_t l_nextFun = cont.nextFun;  \
+                uintptr_t XXl_nextFun = cont.nextFun;  \
                 Pointer stackTop;
 #endif
 
@@ -126,7 +126,7 @@
                 default:                                                \
                         /* interchunk return */                         \
                         cont.nextFun = l_nextFun;                            \
-                        cont.nextChunk = (void*)nextChunks[cont.nextFun];    \
+                        cont.nextChunk = (void*)nextChunks[l_nextFun];    \
                         leaveChunk:                                     \
                                 FlushFrontier();                        \
                                 FlushStackTop();                        \
@@ -154,7 +154,7 @@
 
 #define FarJump(n, l)                           \
         do {                                    \
-                PrepFarJump(n, l);              \
+                PrepFarJump(cont, n, l);              \
                 goto leaveChunk;                \
         } while (0)
 

@@ -17,8 +17,8 @@
 #include "export.h"
 
 struct cont {
-		uintptr_t nextFun;
         void *nextChunk;
+		uintptr_t nextFun;
 };
 
 PRIVATE extern uintptr_t XXXnextFun[MAXPRI];
@@ -28,11 +28,11 @@ PRIVATE extern struct cont (*nextChunks []) (void);
 #define ChunkName(n) Chunk ## n
 
 #define DeclareChunk(n)                         \
-        PRIVATE struct cont ChunkName(n)(void)
+        PRIVATE struct cont ChunkName(n)(uintptr_t l_nextFun)
 
 #define Chunkp(n) &(ChunkName(n))
 
-#define PrepFarJump(n, l)                               \
+#define PrepFarJump(cont, n, l)                               \
         do {                                            \
                 cont.nextChunk = (void*)ChunkName(n);   \
                 cont.nextFun = l;                       \
