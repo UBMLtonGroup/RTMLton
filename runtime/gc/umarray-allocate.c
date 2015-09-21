@@ -16,6 +16,11 @@ pointer GC_arrayAllocate (GC_state s,
 
     size_t chunkNumObjs = UM_CHUNK_ARRAY_PAYLOAD_SIZE / bytesPerElement;
     size_t numChunks = numElements / chunkNumObjs + (numElements % chunkNumObjs != 0);
+    if (s->umarheap.fl_array_chunks < numChunks * 2) {
+        enter(s);
+        performUMGC(s, 0, numChunks * 2, false);
+        leave(s);
+    }
 
     if (DEBUG_MEM) {
         fprintf(stderr, "numElements: %d, chunkNumObjs: %d, numChunks: %d\n",

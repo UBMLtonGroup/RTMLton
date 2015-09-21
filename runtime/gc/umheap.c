@@ -32,7 +32,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_Array_heap h) {
-    if (h->fl_array_chunks <= 3) {
+    if (h->fl_array_chunks <= 0) {
         die("allocNextArrayChunk: No more memory available\n");
     }
 
