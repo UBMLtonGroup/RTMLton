@@ -7,6 +7,7 @@
 
 #define MLTON_GC_INTERNAL_TYPES
 #include "platform.h"
+#include "gc/um_constants.h"
 struct GC_state gcState;
 
 int main (__attribute__ ((unused)) int argc,
@@ -23,6 +24,7 @@ int main (__attribute__ ((unused)) int argc,
   fprintf (sizesFd, "mplimb = %"PRIuMAX"\n",   (uintmax_t)sizeof(C_MPLimb_t));
   fprintf (sizesFd, "objptr = %"PRIuMAX"\n",   (uintmax_t)sizeof(objptr));
   fprintf (sizesFd, "seqIndex = %"PRIuMAX"\n", (uintmax_t)sizeof(GC_arrayLength));
+  fprintf (sizesFd, "objChunkSize = %"PRIuMAX"\n", (uintmax_t)UM_CHUNK_PAYLOAD_SIZE);
 
   fclose_safe(sizesFd);
 

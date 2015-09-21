@@ -25,6 +25,8 @@ typedef GC_state GCState_t;
 
 #include "gc/debug.h"
 
+#include "gc/um_constants.h"
+
 #include "gc/align.h"
 #include "gc/model.h"
 #include "gc/pointer.h"
