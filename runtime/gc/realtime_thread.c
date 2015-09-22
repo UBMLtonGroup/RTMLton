@@ -332,7 +332,7 @@ void* realtimeRunner(void* paramsPtr) {
 	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc, state->heap.start);
 
     while (1) {
-        if (not DEBUG) {
+        if (DEBUG) {
         	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
         	fprintf(stderr, "%d] calling Parallel_run..\n", tNum);
         }
