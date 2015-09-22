@@ -82,7 +82,6 @@ PRIVATE Pointer gcStateAddress;
         gcState.GCrunnerRunning = FALSE;                                \
         MLton_init (argc, argv, &gcState);                              \
 
-        
 
 #define LIB_PASTE(x,y) x ## y
 #define LIB_OPEN(x) LIB_PASTE(x, _open)
