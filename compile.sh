@@ -12,7 +12,7 @@ make $arch_flags constants
 
 cat <<EOF
 Try:
-./build/bin/mlton -codegen c -keep g -verbose 3 ub/primthread0.sml 
+./build/bin/mlton -codegen c -keep g -verbose 3 -debug true ub/primthread0.sml
 ./ub/primthread0
 EOF
 

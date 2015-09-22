@@ -1,18 +1,6 @@
-examine to determine if changes needed
-
-structure CallStack =
-basis-library/primitive/prim-mlton.sml
-	GC_callStack
-	GC_numStackFrames
-
-GC_numStackFrames   in call-stack.c
-
-
-
-GC_copyCurrentThread
-GC_copyThread
-	convert SML code, remove prio param replace with pthread param
 
 ssa-to-rssa.fun
 	why did i not have to add setPriority, etc? why does it still work?
+
 	
+s->atomicState is almost certainly going to need to be per-thread.

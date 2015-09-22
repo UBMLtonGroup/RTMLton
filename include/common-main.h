@@ -29,7 +29,7 @@
 #define LoadArray(a, f) if (fread (a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
 #define SaveArray(a, f) if (fwrite(a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
 
-//#define GCTHRDEBUG
+#undef GCTHRDEBUG
 
 #ifdef GCTHRDEBUG
 # define DBG(X) fprintf X
@@ -81,6 +81,7 @@ PRIVATE Pointer gcStateAddress;
         gcState.profiling.stack = ps;                                   \
         gcState.GCrunnerRunning = FALSE;                                \
         MLton_init (argc, argv, &gcState);                              \
+
 
 #define LIB_PASTE(x,y) x ## y
 #define LIB_OPEN(x) LIB_PASTE(x, _open)

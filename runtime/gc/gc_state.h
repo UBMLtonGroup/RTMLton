@@ -16,23 +16,22 @@ struct GC_state {
    */
   pointer frontier; /* heap.start <= frontier < limit */
   pointer limit; /* limit = heap.start + heap.size */
-  pointer stackTop[100]; /* Top of stack in current thread. */
-  pointer stackLimit[100]; /* stackBottom + stackSize - maxFrameSize */
-  pointer stackBottom[100]; /* Bottom of stack in current thread. */
-  size_t exnStack[100];
-  objptr currentThread[100]; /* Currently executing thread (in heap). */
-  objptr savedThread[100]; /* Result of GC_copyCurrentThread.
+  pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
+  pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
+  size_t exnStack[MAXPRI];
+  objptr currentThread[MAXPRI]; /* Currently executing thread (in heap). */
+  objptr savedThread[MAXPRI]; /* Result of GC_copyCurrentThread.
                        	    * Thread interrupted by arrival of signal.
                        	    */
-  objptr signalHandlerThread[100]; /* Handler for signals (in heap). */
+  objptr signalHandlerThread[MAXPRI]; /* Handler for signals (in heap). */
 
 
   /* added for rt-threading */
 
   pthread_t *realtimeThreads;
   bool      *realtimeThreadAllocated;
-  struct cont *realtimeThreadConts; /* The ith RT thread should trampoline on the ith cont. */
-  pthread_mutex_t *realtimeThreadLocks;
+
   /* Begin inter-thread GC communication data */
   pthread_mutex_t gc_mutex;
   volatile bool GCrunnerRunning;
@@ -42,12 +41,12 @@ struct GC_state {
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
-  bool amInGC;
+  volatile bool amInGC;
   bool amOriginal;
   char **atMLtons; /* Initial @MLton args, processed before command line. */
   int atMLtonsLength;
-  uint32_t atomicState;
-  objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
+  volatile uint32_t atomicState;
+  volatile objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
   struct GC_callStackState callStackState;
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;

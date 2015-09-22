@@ -1,0 +1,61 @@
+#0  0x0000000000413de5 in setGCStateCurrentThreadAndStack (s=0x638720 <gcState>) at gc/gc_state.c:43
+#1  0x000000000041f2fa in switchToThread (s=0x638720 <gcState>, op=1) at gc/switch-thread.c:23
+#2  0x000000000041f3a3 in GC_switchToThread (s=0x638720 <gcState>, p=0x1 <error: Cannot access memory at address 0x1>, ensureBytesFree=0)
+    at gc/switch-thread.c:52
+#3  0x000000000040ce53 in MLton_callFromC () at ub/primthread0.0.c:1019
+#4  Parallel_run () at ub/primthread0.0.c:165
+#5  0x000000000041398b in realtimeRunner (paramsPtr=0x63a200) at gc/realtime_thread.c:325
+#6  0x00007ffff7bc4182 in start_thread (arg=0x7ffff6ff5700) at pthread_create.c:312
+#7  0x00007ffff78f147d in clone () at ../sysdeps/unix/sysv/linux/x86_64/clone.S:111
+
+
+
+PUBLIC void Parallel_run () {
+        Pointer localOpArgsRes[1];
+        MLton_FFI_opArgsResPtr = (Pointer)(localOpArgsRes);
+        Int32 localOp = 0;
+        localOpArgsRes[0] = (Pointer)(&localOp);
+        MLton_callFromC ();
+}
+
+#define S(ty, i) *(ty*)(StackTop + (i))
+
+case 41:
+        Push (-120);
+        S(Objptr, 88) = S(Objptr, 120);
+        {
+        Objptr tmp0 = S(Objptr, 88);
+        CPointer tmp1 = S(CPointer, 32);
+        S(CPointer, 112) = 42;
+        Push (120);
+        FlushFrontier();
+        FlushStackTop();
+        GC_setCallFromCHandlerThread (tmp1, tmp0);
+        }
+        CacheFrontier();
+        CacheStackTop();
+        goto L_201;
+        
+void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
+  objptr op = pointerToObjptr (p, s->heap.start);
+  s->callFromCHandlerThread = op;
+}
+
+
+case 37:
+        Push (-176);
+        S(Objptr, 16) = S_RB(Objptr, 176);
+        {
+        Objptr tmp0 = S_RB(Objptr, 16);
+        CPointer tmp1 = S(CPointer, 48);
+        S(Word64, 168) = 38;
+        Push (176);
+        FlushFrontier();
+        FlushStackTop();
+        GC_setCallFromCHandlerThread (tmp1, tmp0);
+        }
+        CacheFrontier();
+        CacheStackTop();
+        goto L_179;
+        
+        

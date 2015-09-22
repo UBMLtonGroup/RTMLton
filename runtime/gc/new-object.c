@@ -86,12 +86,11 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
-  thread->prio = 0; // default to lowest priority
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
              (uintptr_t)thread, (uintmax_t)reserved);
 
-  if (RTThread_addThreadToQueue(thread, thread->prio) != 0) {
+  if (RTThread_addThreadToQueue(thread, 0) != 0) {
 	fprintf(stderr, "failed to addThreadToQueue\n");
 	exit(-1);
   }

@@ -1,24 +1,25 @@
 open MLton.PrimThread
 
 fun die (s: string): 'a = let in print s ; raise Fail "child failed" end
-local 
-        fun e() = print "In function e()\n"
-        val a = ref NONE
+
+ 
+local
+        val a: (unit -> unit) option ref = ref NONE
 
         val () = MLton.PrimThread.PThread.copyCurrent()
         val sp = MLton.PrimThread.PThread.savedPre()
 				
         (* this should show the thread is in queue #0 *)
 
-        val _ = let in print "Queue before setting priority:\n" ; displayThreadQueue(0) end
-        val p = setPriority(sp, 5)
+        (* val _ = let in print "Queue before setting priority:\n" ; displayThreadQueue(0) end *)
+        val p = setPriority(sp, 2)
 
 
         (* this should show the thread moved to queue #5 *)
 
-        val _ = let in print "\nQueue after setting priority:\n"; displayThreadQueue(0) end
+        (* val _ = let in print "\nQueue after setting priority:\n"; displayThreadQueue(0) end *)
         val p = getPriority(sp)
-        val _ = print ("Priority is: " ^ Int.toString(p) ^ "\n")
+        val _ = print ("Child priority is: " ^ Int.toString(p) ^ "\n")
         (* val r = setRunnable(sp)
         val _ = print ("Runnable said: " ^ Int.toString(r) ^ "\n")
         *)
@@ -33,31 +34,31 @@ in
 	does other stuff
 	child comes alive, and sees 'a' is SOME, so it calls it
         *)
-        val () = case !a of 
-	NONE => 
-              let
-                val _ = print "in parent thread \n"
-                val r =setRunnable(sp) (* set to 1 to pause child *)
-              in
-		(*a := !e
-		setRunnable(sp)*)
-                a := SOME e;
-                print("Runnable said: " ^ Int.toString(r) ^ "\n")
-              end
-	|SOME x => 
-	(*	a ; die "..."*)
-              let
-                 (* Atomic 1 *)
-                 val () = a := NONE
-                 (* Atomic 0 *)
-              in
-                 print "in child: going to blow it up X\n"
-                 ; x () 
-                 ; die "Thread didn't exit properly.\n"
-              end
-		
-	(* if we are in the thread, then call !a() otherwise dont *)
+        fun newThread (e: unit -> unit)  = case !a of 
+					NONE => 
+	            let
+	              val _ = print "in parent thread \n"
+	              val _ = print ("My Priority is  : " ^ Int.toString(MLton.PrimThread.myPriority()) ^ "\n")
+	              val () = a := SOME e;
+	            in
+	              print "Telling child to run..\n" ; setRunnable(sp)
+	            end
+				| SOME x => 
+	            let
+	               (* Atomic 1 *)
+	               val () = a := NONE
+	               (* Atomic 0 *)
+	            in
+	               print "in child: going to blow it up X\n"
+	               ; x () 
+	               ; die "Thread didn't exit properly.\n"
+	            end		
 end
+
+fun e () = print "In function e()\n"
+
+val _ = newThread e
+
 
 val rec delay =
    fn 0 => ()

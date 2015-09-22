@@ -11,8 +11,7 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
   GC_thread to;
 
   if (DEBUG_THREADS)
-    fprintf (stderr, "copyThread ("FMTPTR") copy_prio=%u my_pthread=%u\n", (uintptr_t)from, from->prio, PTHREAD_NUM);
-  // TODO.. assert from-prio == PTHREAD_NUM ?
+    fprintf (stderr, "copyThread ("FMTPTR") my_pthread=%u\n", (uintptr_t)from, PTHREAD_NUM);
 
   /* newThread may do a GC, which invalidates from.
    * Hence we need to stash from someplace that the GC can find it.
@@ -31,7 +30,6 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
              (GC_stack)(objptrToPointer(to->stack, s->heap.start)));
   to->bytesNeeded = from->bytesNeeded;
   to->exnStack = from->exnStack;
-  to->prio = from->prio;
 
   return to;
 }

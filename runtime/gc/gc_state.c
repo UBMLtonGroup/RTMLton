@@ -30,6 +30,8 @@ void displayGCState (GC_state s, FILE *stream) {
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
+//	fprintf(stderr, "thread %d top %x bottom %x\n", PTHREAD_NUM,s->stackTop[PTHREAD_NUM], s->stackBottom[PTHREAD_NUM]);
+
   return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
 

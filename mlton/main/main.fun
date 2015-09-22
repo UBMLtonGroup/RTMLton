@@ -1,4 +1,4 @@
-(* Copyright (C) 2010-2011,2013-2014 Matthew Fluet.
+(* Copyright (C) 2010-2011,2013-2015 Matthew Fluet.
  * Copyright (C) 1999-2009 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -193,6 +193,7 @@ fun defaultAlignIs8 () =
          Alpha => true
        | AMD64 => true
        | ARM => true
+       | ARM64 => true
        | HPPA => true
        | IA64 => true
        | MIPS => true
@@ -500,7 +501,8 @@ fun makeOptions {usage} =
        (Normal, "keep", " {g|o}", "save intermediate files",
         SpaceString (fn s =>
                      case s of
-                        "core-ml" => keepCoreML := true
+                        "ast" => keepAST := true
+                      | "core-ml" => keepCoreML := true
                       | "dot" => keepDot := true
                       | "g" => keepGenerated := true
                       | "machine" => keepMachine := true
@@ -1271,7 +1273,7 @@ fun commandLine (args: string list): unit =
                      val _ =
                         atMLtons :=
                         Vector.fromList
-                        (maybeOut "" :: tokenize (rev ("--" :: (!runtimeArgs))))
+                        (tokenize (rev ("--" :: (!runtimeArgs))))
                      (* The -Wa,--gstabs says to pass the --gstabs option to the
                       * assembler. This tells the assembler to generate stabs
                       * debugging information for each assembler line.

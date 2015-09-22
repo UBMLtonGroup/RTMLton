@@ -5,8 +5,6 @@
 #define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
 
-#define MAXPRI 10 /* 0 .. 10 */
-
 static pthread_mutex_t thread_queue_lock;
 
 static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority);
@@ -60,12 +58,21 @@ static TQNode* make_tqnode(GC_thread t) {
 
 int32_t GC_getThreadPriority(GC_state s, pointer p) {
 	GC_thread gct;
+	TQNode *n;
+	int pri = 0;
+
 	if (DEBUG)
 		fprintf(stderr, "GC_getThreadPriority("FMTPTR")\n", (uintptr_t)p);
 
-	gct = (GC_thread)(p + offsetofThread (s));
+	if (p) {
+		gct = (GC_thread)(p + offsetofThread (s));
 
-	return gct->prio;
+		n = RTThread_findThreadAndQueue(gct, &pri);
+
+		if (n) return pri;
+	}
+
+	return -1;
 }
 
 /* TODO
@@ -77,32 +84,41 @@ int32_t GC_getThreadPriority(GC_state s, pointer p) {
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	GC_thread gct;
 	TQNode *n;
+	int old_pri = 0;
 
 	if (DEBUG)
 		fprintf(stderr, "GC_setThreadPriority("FMTPTR", %d)\n", (uintptr_t)p, prio);
 
-	gct = (GC_thread)(p + offsetofThread (s));
+	if (p) {
+		gct = (GC_thread)(p + offsetofThread (s));
 
-	LOCK(thread_queue_lock);
+		LOCK(thread_queue_lock);
 
-	n = RTThread_findThreadInQueue(gct, gct->prio);
+		n = RTThread_findThreadAndQueue(gct, &old_pri);
 
-	if (n) {
-		RTThread_unlinkThreadFromQueue(gct, gct->prio);
-		gct->prio = prio;
-		RTThread_addThreadToQueue_nolock(gct, prio);
+		if (n) {
+			RTThread_unlinkThreadFromQueue(gct, old_pri);
+			RTThread_addThreadToQueue_nolock(gct, prio);
+		}
+
+		UNLOCK(thread_queue_lock);
+
+		if (DEBUG) {
+			displayThread(s, gct, stderr);
+			displayStack(s, (GC_stack)(gct->stack), stderr);
+		}
 	}
-
-	UNLOCK(thread_queue_lock);
-
-	if (DEBUG) {
-		displayThread(s, gct, stderr);
-		displayStack(s, (GC_stack)(gct->stack), stderr);
+	else {
+		fprintf(stderr, "warning null thread pointer passed to setThreadPriority\n");
 	}
 
 	return prio;
 }
 
+int32_t GC_myPriority(__attribute__ ((unused)) GC_state s)
+{
+	return PTHREAD_NUM;
+}
 
 /* TODO
  * lookup thread,
@@ -111,20 +127,27 @@ int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 int32_t GC_setThreadRunnable(GC_state s, pointer p) {
 	GC_thread gct;
 	TQNode *n = NULL;
+	int pri;
 
 	if (DEBUG)
 		fprintf(stderr, "GC_setThreadRunnable("FMTPTR")\n", (uintptr_t)p);
 
-	gct = (GC_thread)(p + offsetofThread (s));
+	if (p) {
+		gct = (GC_thread)(p + offsetofThread (s));
 
-	LOCK(thread_queue_lock);
-	n = RTThread_findThread(gct);
-	UNLOCK(thread_queue_lock);
+		LOCK(thread_queue_lock);
+		n = RTThread_findThreadAndQueue(gct, &pri);
+		UNLOCK(thread_queue_lock);
 
-	if (n)
-		n->runnable = TRUE;
-	else
-		return 0;
+		if (n)
+			n->runnable = TRUE;
+		else
+			return 0;
+	}
+	else {
+		fprintf(stderr, "warning null thread pointer passed to setThreadRunnable\n");
+	}
+
 	return 1;
 }
 
@@ -137,30 +160,57 @@ int32_t GC_threadYield(__attribute__ ((unused)) GC_state s) {
 	return 0;
 }
 
-TQNode *RTThread_findThread(GC_thread t) {
-	int i;
-	for (i = 0 ; i < MAXPRI ; i++) {
-		TQNode *n = RTThread_findThreadInQueue(t, t->prio);
-		if (n) return n;
-	}
-	return NULL;
-}
-
 TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority) {
 	TQNode *n = NULL;
 	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
 	return n;
 }
 
+TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority) {
+	TQNode *n = NULL;
+	int i;
+
+	if (priority == NULL) return NULL;
+
+	for (i = 0 ; i < MAXPRI ; i++) {
+		for (n = thread_queue[i].head ; n != NULL ; n = n->next) {
+			if (n->t == t) {
+				*priority = i;
+				i = MAXPRI;
+				break;
+			}
+		}
+	}
+
+	return n;
+}
+
+
 TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {
 	TQNode *n = NULL;
+
+	if (DEBUG)
+		fprintf(stderr, "unlinkThreadFromQueue(%x, %d)", t, priority);
+
 	for (n = thread_queue[priority].head ; n != NULL && n->t != t ; n = n->next);
 	if (n) {
-		if (n != thread_queue[priority].head)
-			n->prev->next = n->next;
-		else
+		if (n == thread_queue[priority].head && n == thread_queue[priority].tail) {
+			thread_queue[priority].head = NULL;
+			thread_queue[priority].tail = NULL;
+		}
+		else if (n == thread_queue[priority].head) {
 			thread_queue[priority].head = n->next;
-		n->prev = n->next = NULL;
+		}
+		else if (n == thread_queue[priority].tail) {
+			thread_queue[priority].tail->prev->next = NULL;
+			thread_queue[priority].tail = n->prev;
+		}
+		else {
+			n->prev->next = n->next;
+		}
+
+		n->prev = NULL;
+		n->next = NULL;
 	}
 	return n;
 }
@@ -169,19 +219,25 @@ static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority) {
 	TQNode *node;
 
 	if (DEBUG)
-		fprintf(stderr, "addThreadToQueue(pri=%d)\n", priority);
+		fprintf(stderr, "addThreadToQueue(%x, pri=%d)\n", t, priority);
 
     // priority 1 is reserved to the GC
 	if (t == NULL || priority < 0 || priority == 1 || priority > MAXPRI) return -1;
 
 	node = make_tqnode(t);
+
 	if (thread_queue[priority].head == NULL) {
-		thread_queue[priority].head = thread_queue[priority].tail = node;
+		if (DEBUG)
+			fprintf(stderr, "add to head\n");
+		thread_queue[priority].head = node;
+		thread_queue[priority].tail = node;
 	}
 	else {
+		if (DEBUG)
+			fprintf(stderr, "add to tail\n");
 		TQNode *_t = thread_queue[priority].tail;
-		thread_queue[priority].tail->next = node;
 		thread_queue[priority].tail = node;
+		_t->next = node;
 		node->prev = _t;
 	}
 
@@ -223,12 +279,6 @@ void realtimeThreadInit(struct GC_state *state) {
 			malloc(MAXPRI * sizeof(pthread_t));
 	MYASSERT(long, realtimeThreads, !=, NULL);
 
-	state->realtimeThreadConts =
-			malloc(MAXPRI * sizeof(struct cont));
-
-	//Initializing the locks for each realtime thread created,
-	state->realtimeThreadLocks= malloc(MAXPRI * sizeof(pthread_mutex_t));
-
 	int tNum;
 	for (tNum = 0; tNum < MAXPRI; tNum++) {
 		if (DEBUG)
@@ -239,8 +289,6 @@ void realtimeThreadInit(struct GC_state *state) {
 
 		params->tNum = tNum;
 		params->state = state;
-
-		state->realtimeThreadConts[tNum].nextChunk = NULL;
 
 		if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
 			fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
@@ -260,120 +308,37 @@ void realtimeThreadInit(struct GC_state *state) {
 
 __attribute__ ((noreturn))
 void* realtimeRunner(void* paramsPtr) {
-
     struct realtimeRunnerParameters *params = paramsPtr;
+	struct GC_state *state = params->state;
+    int tNum = params->tNum;
 
     set_pthread_num(params->tNum);
 
+    assert(params->tNum == PTHREAD_NUM);
+
+	if (params->tNum <= 1) {
+		while(1) sleep(10000); //pthread_exit(NULL);
+	}
+
+	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
+		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread == 1] %x ..\n", tNum, params->state);
+	}
+
+	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
+
+	GC_thread curct = (GC_thread)(state->currentThread[0] + offsetofThread(state));
+	GC_stack curstk = (GC_stack)(objptrToPointer(curct->stack, state->heap.start));
+	GC_thread tc = copyThread(state, curct, curstk->used);
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc, state->heap.start);
+
     while (1) {
-        // Trampoline
-        int tNum = params->tNum;
-        if (DEBUG)
-        	printf("%lx] realtimeRunner[%d] running.\n", pthread_self(), tNum);
-
-	sleep(1); /* testing.. slow things down so output is readable */
-
-		if (tNum <= 1) continue;
-
-		/* 1. lock the queue
-		 * 2. find a runnable thread
-		 * 3. unlock the queue
-		 * 4. run it until it completes or yields
-		 * 5. lock the queue
-		 * 6. move it to the back of the queue
-		 * 7. unlock the queue
-		 * 8. repeat
-		 */
-        LOCK(thread_queue_lock);
-        TQNode *node = find_runnable(thread_queue[params->tNum]);
-		UNLOCK(thread_queue_lock);
-
-        if (node != NULL) {
-        	//if (DEBUG)
-        		printf("%lx] pri %d has work to do\n", pthread_self(), tNum);
-
-        	/* run it, etc; steps 4-7
-        	 *     node->t->stack
-        	 *
-        	 */
-
-		/*
-		 *
-		 * changes keeping array of conts structure
-			// copy the cont struct to this local variable
-			struct GC_state *state = params->state;
-
-			// TODO lock lock[tNum]
-			//Acquiring lock associated with pThread from GC state
-			pthread_mutex_lock(&state->realtimeThreadLocks[tNum]);
-			
-			struct cont* realtimeThreadConts = state->realtimeThreadConts;
-
-			struct cont cont = realtimeThreadConts[tNum];
-		*/	
-			struct GC_state *state = params->state;
-			displayStack(state, (GC_stack)node->t->stack, stderr);
-
-			struct cont cont;
-			//since each thread has a different stack, The nextFun will be the stack top
-                	nextFun = *(uintptr_t*)(node->t->stack - GC_RETURNADDRESS_SIZE); 
-                	cont.nextChunk = nextChunks[nextFun];                   
-			
-			if(node->t == NULL)
-				printf("Thread is non existent. Cannot trampoline.\n");
-			if(node->t->stack == NULL)
-				printf("Thread Stack is empty, cannot trampoline.\n");
-			
-			//if (cont.nextChunk != NULL) {
-			while(1){
-				printf("%lx] pri %d trampolining\n", pthread_self(), tNum);
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				cont=(*(struct cont(*)(void))cont.nextChunk)();
-				
-				// copy local variable back to gcstate
-				//params->state->realtimeThreadConts[tNum] = cont;
-
-			}
-
-			// TODO unlock lock[tNum]
-			//pthread_mutex_unlock(&state->realtimeThreadLocks[tNum]);
+        if (not DEBUG) {
+        	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
+        	fprintf(stderr, "%d] calling Parallel_run..\n", tNum);
         }
-        else {
-        	if (DEBUG)
-        		printf("%lx] pri %d has nothing to do\n", pthread_self(), tNum);
-		}
+        Parallel_run();
+        fprintf(stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
+        exit(-1);
     }
 }
 
-int allocate_pthread(struct GC_state *state, struct cont *cont) {
-
-	//grab a lock for accessing the allocated threads structure
-
-	pthread_mutex_lock(&AllocatedThreadLock);
-	
-	//Loop through allocate thread structure to find free spot
-	for(int i = 0 ; i < MAXPRI ; i++)
-	{
-		if(!state->realtimeThreadAllocated[i])
-		  {	
-			pthread_mutex_lock(&state->realtimeThreadLocks[i]);
-			state->realtimeThreadConts[i] = *cont;
-			pthread_mutex_unlock(&state->realtimeThreadLocks[i]);
-			
-			//Mark thread as allocated
-			state->realtimeThreadAllocated[i] = true;
-			pthread_mutex_unlock(&AllocatedThreadLock);
-			return i;
-		  }	
-	}
-	
-	pthread_mutex_unlock(&AllocatedThreadLock);
-	return -1;
-
-}

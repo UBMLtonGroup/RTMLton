@@ -11,6 +11,10 @@
 
 #include <stdio.h>
 
+#ifndef PTHREAD_NUM
+# define PTHREAD_NUM get_pthread_num()
+#endif
+
 #include "ml-types.h"
 #include "c-types.h"
 #include "c-common.h"
@@ -27,13 +31,16 @@
 #define DEBUG_CCODEGEN FALSE
 #endif
 
+#define WORDWIDTH 8 /* use gcState->alignment */
+
 #define GCState ((Pointer)&gcState)
-#define ExnStack *(size_t*)(GCState + ExnStackOffset)
+#define ExnStack *(size_t*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define Frontier frontier
-#define StackBottom *(Pointer*)(GCState + StackBottomOffset)
-#define StackTopMem *(Pointer*)(GCState + StackTopOffset)
+#define StackBottom *(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH) )
+#define StackTopMem *(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define StackTop stackTop
+
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
@@ -97,14 +104,12 @@
         DeclareChunk(n) {                                       \
                 struct cont cont;                               \
                 register unsigned int frontier asm("g5");       \
-                uintptr_t l_nextFun = nextFun;                  \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
         DeclareChunk(n) {                       \
                 struct cont cont;               \
                 Pointer frontier;               \
-                uintptr_t l_nextFun = nextFun;  \
                 Pointer stackTop;
 #endif
 
@@ -121,8 +126,8 @@
 #define EndChunk                                                        \
                 default:                                                \
                         /* interchunk return */                         \
-                        nextFun = l_nextFun;                            \
-                        cont.nextChunk = (void*)nextChunks[nextFun];    \
+                        cont.nextFun = l_nextFun;                            \
+                        cont.nextChunk = (void*)nextChunks[l_nextFun];    \
                         leaveChunk:                                     \
                                 FlushFrontier();                        \
                                 FlushStackTop();                        \
@@ -140,7 +145,7 @@
                 if (DEBUG_CCODEGEN)                                     \
                         fprintf (stderr, "%s:%d: Thread_returnToC()\n", \
                                         __FILE__, __LINE__);            \
-                returnToC = TRUE;                                       \
+                returnToC[get_pthread_num()] = TRUE;                          \
                 return cont;                                            \
         } while (0)
 
@@ -150,7 +155,7 @@
 
 #define FarJump(n, l)                           \
         do {                                    \
-                PrepFarJump(n, l);              \
+                PrepFarJump(cont, n, l);              \
                 goto leaveChunk;                \
         } while (0)
 

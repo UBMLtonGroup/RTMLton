@@ -1,6 +1,9 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
+#define MAXPRI 3 /* 0 = main, 1 = GC, */
+
+
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 struct realtimeRunnerParameters {
     int tNum;
@@ -16,8 +19,10 @@ struct _TQNode {
 	TQNode *prev;
 };
 
-TQNode *RTThread_findThread(GC_thread t);
+int32_t GC_myPriority(GC_state s);
 TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority);
+TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority);
+
 int RTThread_addThreadToQueue(GC_thread t, int32_t priority);
 TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority);
 

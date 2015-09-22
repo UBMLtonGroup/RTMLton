@@ -343,8 +343,6 @@ in
    ../mlton/array.sig
    ../mlton/cont.sig
    ../mlton/cont.sml
-   ../mlton/primthread.sig
-   ../mlton/primthread.sml
    ../mlton/random.sig
    ../mlton/random.sml
    ../mlton/io.sig
@@ -358,6 +356,10 @@ in
       "ffiStr MLtonFFI" 
    in
       ../mlton/ffi.sml
+   end
+   ../mlton/primthread.sig
+   ann "allowFFI true" in
+	   ../mlton/primthread.sml
    end
    ../mlton/int-inf.sig
    ../mlton/proc-env.sig

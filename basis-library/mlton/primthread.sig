@@ -30,6 +30,7 @@ signature PRIM_THREAD =
 
      type 'a t
    
+   	 val myPriority: unit -> int
      val setPriority: PThread.preThread * int -> int 
      val getPriority: PThread.preThread -> int 
      val setPriority2: PThread.thread * int -> int 
