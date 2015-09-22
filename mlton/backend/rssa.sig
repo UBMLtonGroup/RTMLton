@@ -91,7 +91,8 @@ signature RSSA =
                            prim: Type.t Prim.t}
              | ChunkedObject of { dst: Var.t * Type.t
                                 , header: word
-                                , size: Bytes.t }
+                                , size: Bytes.t
+                                , numChunks: int }
              | Profile of ProfileExp.t
              | ProfileLabel of ProfileLabel.t
              | SetExnStackLocal

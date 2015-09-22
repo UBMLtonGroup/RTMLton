@@ -567,7 +567,7 @@ let
                   Vector.new1
                   (M.Statement.move {dst = translateOperand dst,
                                      src = translateOperand src})
-             | ChunkedObject {dst, header, size} =>
+             | ChunkedObject {dst, header, size, numChunks} =>
                M.Statement.chunkedObject { dst = varOperand (#1 dst)
                                          , header = header
                                          , size = size }

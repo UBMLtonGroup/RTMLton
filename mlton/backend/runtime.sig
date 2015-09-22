@@ -90,4 +90,5 @@ signature RUNTIME =
       val cpointerSize: unit -> Bytes.t
       val objptrSize: unit -> Bytes.t
       val typeIndexToHeader: int -> word
+      val objChunkSize: unit -> Bytes.t
    end

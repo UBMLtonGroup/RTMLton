@@ -103,6 +103,10 @@ structure Statement =
          case s of
             Object {size, ...} => size
           | _ => Bytes.zero
+      fun objChunksAllocated (s: t): int =
+        case s of
+           ChunkedObject {numChunks, ...} => numChunks
+         | _ => 0
    end
 
 structure Transfer =
@@ -151,6 +155,10 @@ structure Block =
           case Transfer.bytesAllocated transfer of
              Transfer.Big _ => Bytes.zero
            | Transfer.Small b => b)
+
+      fun objChunksAllocated (T {statements, transfer, ...}): int =
+        Vector.fold (statements, 0,
+                     fn (s, acc) => Statement.objChunksAllocated s + acc)
    end
 
 val extraGlobals: Var.t list ref = ref []

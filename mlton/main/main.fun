@@ -1014,7 +1014,8 @@ fun commandLine (args: string list): unit =
              header = lookup "header",
              mplimb = lookup "mplimb",
              objptr = lookup "objptr",
-             seqIndex = lookup "seqIndex"}
+             seqIndex = lookup "seqIndex",
+             objChunkSize = lookup "objChunkSize"}
          end
 
       fun tokenize l =

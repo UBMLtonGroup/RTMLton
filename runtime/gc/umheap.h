@@ -11,7 +11,6 @@ typedef struct GC_UM_heap {
     pointer start;
     pointer end;
     size_t size;
-    int fl_chunks;
     GC_UM_Chunk fl_head;
 } *GC_UM_heap;
 
@@ -47,7 +46,6 @@ typedef struct GC_UM_Array_Chunk {
 typedef struct GC_UM_Array_heap {
     pointer start;
     size_t size;
-    size_t fl_array_chunks;
     GC_UM_Array_Chunk fl_array_head;
 } *GC_UM_Array_heap;
 #endif /* MLTON_GC_INTERNAL_TYPES */

@@ -199,7 +199,8 @@ structure Statement =
                     size: Bytes.t}
        | ChunkedObject of { dst: Var.t * Type.t
                           , header: word
-                          , size: Bytes.t }
+                          , size: Bytes.t
+                          , numChunks: int }
        | PrimApp of {args: Operand.t vector,
                      dst: (Var.t * Type.t) option,
                      prim: Type.t Prim.t}
@@ -288,12 +289,13 @@ structure Statement =
                    seq [str "= Object ",
                         record [("header", seq [str "0x", Word.layout header]),
                                 ("size", Bytes.layout size)]]]
-             | ChunkedObject {dst = (dst, ty), header, size} =>
+             | ChunkedObject {dst = (dst, ty), header, size, numChunks} =>
                   mayAlign
                   [seq [Var.layout dst, constrain ty],
                    seq [str "= ChunkedObject ",
                         record [("header", seq [str "0x", Word.layout header]),
-                                ("size", Bytes.layout size)]]]
+                                ("size", Bytes.layout size),
+                                ("numChunks", Int.layout numChunks)]]]
              | PrimApp {dst, prim, args, ...} =>
                   let
                      val rest =

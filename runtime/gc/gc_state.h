@@ -28,6 +28,8 @@ struct GC_state {
   pointer stackTop; /* Top of stack in current thread. */
   pointer stackLimit; /* stackBottom + stackSize - maxFrameSize */
   size_t exnStack;
+  int fl_chunks;
+  int fl_array_chunks;
   /* Alphabetized fields follow. */
   size_t alignment; /* */
   bool amInGC;
