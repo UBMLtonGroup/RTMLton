@@ -1,8 +1,8 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
-#define UM_CHUNK_PAYLOAD_SIZE            64
-#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 64
-#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      256
+#define UM_CHUNK_PAYLOAD_SIZE            34
+#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 32
+#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      128
 #define UM_CHUNK_SENTINEL_UNUSED         9999
 #define UM_CHUNK_HEADER_CLEAN            0
 #define UM_CHUNK_HEADER_MASK             1
@@ -19,6 +19,7 @@ typedef struct GC_UM_Chunk {
 
 typedef struct GC_UM_heap {
     pointer start;
+    pointer end;
     size_t size;
     int fl_chunks;
     GC_UM_Chunk fl_head;
@@ -50,6 +51,7 @@ typedef struct GC_UM_Array_Chunk {
     Word32_t array_chunk_magic;             /* A magic value for debug          */
     struct GC_UM_Array_Chunk* parent;       /* Pointer to parent chunk for iter */
     struct GC_UM_Array_Chunk* next_chunk;   /* For free list maintainance       */
+    struct GC_UM_Array_Chunk* root;         /* For header to connect root       */
 } *GC_UM_Array_Chunk;
 
 typedef struct GC_UM_Array_heap {

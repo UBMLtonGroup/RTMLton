@@ -64,7 +64,7 @@ typedef GC_state GCState_t;
 #include "gc/garbage-collection.h"
 #include "gc/new-object.h"
 #include "gc/array-allocate.h"
-//#include "gc/umarray-allocate.h"
+#include "gc/umarray-allocate.h"
 #include "gc/sources.h"
 #include "gc/call-stack.h"
 #include "gc/profiling.h"
@@ -79,5 +79,7 @@ typedef GC_state GCState_t;
 #include "gc/size.h"
 #include "gc/share.h"
 #include "gc/um.h"
+#include "gc/um_profile.h"
+#include "gc/visualize.h"
 
 #endif /* _MLTON_GC_H_ */

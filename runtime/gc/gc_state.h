@@ -78,6 +78,8 @@ struct GC_state {
   uint32_t vectorInitsLength;
   GC_weak weaks; /* Linked list of (live) weak pointers */
   GC_moduleKind gc_module;
+  struct GC_heap infHeap;
+  pointer infFrontier;
 };
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */

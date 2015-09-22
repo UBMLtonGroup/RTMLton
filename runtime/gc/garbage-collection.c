@@ -96,10 +96,23 @@ void leaveGC (GC_state s) {
 
 
 
-void performUMGC(GC_state s) {
+void performUMGC(GC_state s,
+                 size_t ensureObjectChunksAvailable,
+                 size_t ensureArrayChunksAvailable,
+                 bool fullGC) {
 
-    if (DEBUG_MEM)
+    if (DEBUG_MEM) {
         fprintf(stderr, "PerformUMGC\n");
+        dumpUMHeap(s);
+    }
+
+
+#ifdef PROFILE_UMGC
+    long t_start = getCurrentTime();
+    fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
+            s->umheap.fl_chunks,
+            s->umarheap.fl_array_chunks);
+#endif
 
     GC_stack currentStack = getStackCurrent(s);
     foreachGlobalObjptr (s, umDfsMarkObjectsMark);
@@ -110,11 +123,13 @@ void performUMGC(GC_state s) {
 //    foreachObjptrInObject(s, currentStack,
 //                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
 
+
+
     pointer pchunk;
     size_t step = sizeof(struct GC_UM_Chunk);
     pointer end = s->umheap.start + s->umheap.size - step;
 
-
+    //    if (s->umheap.fl_chunks <= 2000) {
     for (pchunk=s->umheap.start;
          pchunk < end;
          pchunk+=step) {
@@ -127,7 +142,12 @@ void performUMGC(GC_state s) {
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
         }
+
+        if (!fullGC && s->umheap.fl_chunks >= ensureObjectChunksAvailable) {
+            break;
+        }
     }
+        //    }
 
     step = sizeof(struct GC_UM_Array_Chunk);
     end = s->umarheap.start + s->umarheap.size - step;
@@ -140,14 +160,32 @@ void performUMGC(GC_state s) {
             (!(pc->array_chunk_header & UM_CHUNK_HEADER_MASK))) {
             if (DEBUG_MEM) {
                 fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
-                        (uintptr_t)pc, pc->array_chunk_magic, pc->array_chunk_header);
+                        (uintptr_t)pc, pc->array_chunk_magic,
+                        pc->array_chunk_header);
             }
             insertArrayFreeChunk(s, &(s->umarheap), pchunk);
+        }
+
+        if (!fullGC &&
+            s->umarheap.fl_array_chunks >= ensureArrayChunksAvailable) {
+            fprintf(stderr, "Array chunk ensured\n");
+            break;
         }
     }
 
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
     foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
+
+#ifdef PROFILE_UMGC
+    long t_end = getCurrentTime();
+    fprintf(stderr, "[GC] Time: %ld, Free chunk: %d, Free array chunk: %d, "
+            "ensureArrayChunk: %d\n",
+            t_end - t_start,
+            s->umheap.fl_chunks,
+            s->umarheap.fl_array_chunks,
+            ensureArrayChunksAvailable);
+#endif
+
 }
 
 void performGC (GC_state s,
@@ -215,7 +253,7 @@ void performGC (GC_state s,
   if (forceMajor
       or totalBytesRequested > s->heap.size - s->heap.oldGenSize) {
 //    majorGC (s, totalBytesRequested, mayResize);
-      performUMGC(s);
+      performUMGC(s, 3000, 0, true);
   }
 
   setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,
@@ -278,10 +316,14 @@ void ensureInvariantForMutator (GC_state s, bool force) {
         /* This GC will grow the stack, if necessary. */
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
-        if ((s->umheap.fl_chunks <= 2000) or
-            (s->umarheap.fl_array_chunks <= 2000))
-            force = true;
+
+        /* if ((s->umheap.fl_chunks <= 2000) or */
+        /*     (s->umarheap.fl_array_chunks <= 2000)) { */
+        force = true;
         performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
+
+        //        }
+
 //        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
 //                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
     }
@@ -301,10 +343,7 @@ void ensureHasHeapBytesFree (GC_state s,
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
 }
 
-void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-  if (s->gc_module == GC_NONE) {
-      return;
-  }
+void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.
@@ -321,4 +360,18 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   if (DEBUG_MEM) {
       fprintf(stderr, "GC_collect done\n");
   }
+}
+
+void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+    if (!force) {
+        if ((s->umheap.fl_chunks > 2000) &&
+            (s->umarheap.fl_array_chunks > 1000000))
+            return;
+    }
+
+    if (s->gc_module == GC_NONE) {
+        return;
+    }
+
+    GC_collect_real(s, bytesRequested, force);
 }

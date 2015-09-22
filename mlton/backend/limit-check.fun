@@ -11,49 +11,49 @@
  * The goal of limit check insertion is to ensure that
  *      1. At any allocation of b bytes, frontier + b <= base + heapSize
  *      2. At entry to each function, stackTop <= stackLimit
- * 
+ *
  * It assumes that runtime provides several operands to help with this.
  *      Frontier
  *      Limit
  *      LimitPlusSlop
  *      StackLimit
  *      StackTop
- * 
+ *
  * There are three different kinds of checks inserted, depending on the
  * amount being allocated and whether or not the program uses signal
  * handlers.
- * 
+ *
  * 1. If b <= LIMIT_SLOP, then continue (don't GC) if
- * 
+ *
  *      frontier <= limit
- * 
+ *
  *    The reason this works is that if frontier <= limit and b <=
- *    LIMIT_SLOP, then 
- *      frontier + b <= limit + LIMIT_SLOP 
+ *    LIMIT_SLOP, then
+ *      frontier + b <= limit + LIMIT_SLOP
  *                       = limitPlusSlop
  *                       = base + heapSize
  *    This works even if the program uses signal handlers, which set
  *    limit to zero, since frontier <= 0 will always be false.
- * 
+ *
  * 2. If b > LIMIT_SLOP and if the program doesn't use signal handlers,
  *    then continue (don't GC) if
- * 
+ *
  *      b <= limitPlusSlop - frontier
- * 
+ *
  *    The reason this works is that the condition is equivalent to
- *      
+ *
  *      b + frontier <= limitPlusSlop = base + heapSize
- * 
+ *
  *    We write the condition the way we do instead of the more obvious way
  *    because "b + frontier" may overflow, while limitPlusSlop - frontier
  *    can not, unless the program uses signal handlers.
- * 
+ *
  * 3. If b > LIMIT_SLOP and if the program uses signal handlers, then
  *    continue (don't GC) if
- * 
+ *
  *      limit > 0
  *      and b <= limitPlusSlop - frontier
- * 
+ *
  *    This is like case (2), except that because the program uses signal
  *    handlers, the runtime may have set limit to zero to indicate that a
  *    signal needs to be handled.  So, we first check that this is not
@@ -70,7 +70,7 @@ open Rssa
 
 structure LimitCheck =
    struct
-      datatype t = 
+      datatype t =
          PerBlock
        | ExtBasicBlocks
        | LoopHeaders of {fullCFG: bool,
@@ -130,7 +130,7 @@ structure Transfer =
                                          val w = WordX.toIntInf w
                                       in
                                          (* 512 is small and arbitrary *)
-                                         if w <= 512 
+                                         if w <= 512
                                             then Small (Bytes.fromIntInf w)
                                          else Big z
                                       end
@@ -206,11 +206,11 @@ fun insertFunction (f: Function.t,
          Vector.foreachi
          (blocks, fn (i, Block.T {args, kind, label, statements, transfer}) =>
           let
-             val transfer = 
+             val transfer =
                 case transfer of
                    Transfer.CCall {args, func, return} =>
                       (if CFunction.ensuresBytesFree func
-                          then 
+                          then
                              Transfer.CCall
                              {args = (Vector.map
                                       (args, fn z =>
@@ -264,9 +264,9 @@ fun insertFunction (f: Function.t,
                        | Control.Limit =>
                             (dontCollect, Vector.new0 (), Operand.bool false)
                        | Control.Every =>
-                            (collect, Vector.new0 (), Operand.bool true)
+                            (collect, Vector.new0 (), Operand.bool false)
                    val func = CFunction.gc {maySwitchThreads = handlesSignals}
-                   val _ = 
+                   val _ =
                       newBlocks :=
                       Block.T {args = Vector.new0 (),
                                kind = Kind.Jump,
@@ -293,7 +293,7 @@ fun insertFunction (f: Function.t,
                       :: !newBlocks
                 in
                    {collect = collect,
-                    dontCollect = dontCollect'}
+                    dontCollect = collect } (* dontCollect'} *)
                 end
              fun newBlock (isFirst, statements, transfer) =
                 let
@@ -328,7 +328,7 @@ fun insertFunction (f: Function.t,
                    val transfer =
                       Transfer.ifBool
                       (Operand.Var {var = res, ty = Type.bool},
-                       {falsee = dontCollect,
+                       {falsee = collect,
                         truee = collect})
                 in
                    (Vector.new1 s, transfer)
@@ -494,7 +494,12 @@ fun insertFunction (f: Function.t,
           in
              case Transfer.bytesAllocated transfer of
                 Transfer.Big z => bigAllocation z
-              | Transfer.Small _ => smallAllocation ()
+              | Transfer.Small _ => bigAllocation
+                                        (Operand.Const
+                                             (Const.Word
+                                                  (WordX.fromIntInf
+                                                       (IntInf.fromInt 1, WordSize.word32))))
+                                                  (* smallAllocation () *)
           end)
    in
       Function.new {args = args,
@@ -577,20 +582,20 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
           setLabelIndex (label, i))
       (* Build the graph. *)
       val g = Graph.new ()
-      val nodes = 
+      val nodes =
          Vector.tabulate
-         (n, fn i => 
+         (n, fn i =>
           let
              val n = Graph.newNode g
              val _ = setNodeIndex (n, i)
-          in 
+          in
              n
           end)
       fun indexNode i = Vector.sub (nodes, i)
       val labelNode = indexNode o labelIndex
       val root = Graph.newNode g
       (* mayHaveCheck == E U D
-       *   E = set of entry nodes 
+       *   E = set of entry nodes
        *     = start, Cont, Handler,
        *         or CReturn that doesn't ensure bytesFree
        *         Jump that calls a cfunction with bytesneeded
@@ -618,7 +623,7 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
                           Transfer.CCall {args, func, ...} =>
                              (case CFunction.bytesNeeded func of
                                  NONE => true
-                               | SOME i => 
+                               | SOME i =>
                                     (case Vector.sub (args, i) of
                                         Operand.Const _ => false
                                       | _ => true))
@@ -630,7 +635,7 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
       (* Build cfg. *)
       val _ = Graph.addEdge (g, {from = root, to = labelNode start})
       datatype z = datatype Control.limitCheck
-      val fullCFG = 
+      val fullCFG =
          case !Control.limitCheck of
             ExtBasicBlocks => true
           | LoopHeaders {fullCFG, ...} => fullCFG
@@ -647,7 +652,7 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
                  val i' = labelIndex l
                  val to = indexNode i'
                  fun addEdge from =
-                    (ignore o Graph.addEdge) 
+                    (ignore o Graph.addEdge)
                     (g, {from = from, to = to})
               in
                  if fullCFG
@@ -663,11 +668,11 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
             val preds = Array.new (n, 0)
             fun incPred i =
                Array.update (preds, i, 1 + (Array.sub (preds, i)))
-            val _ = 
+            val _ =
                Vector.foreach
-               (nodes, fn node => 
+               (nodes, fn node =>
                 List.foreach
-                (Node.successors node, 
+                (Node.successors node,
                  incPred o nodeIndex o Edge.to))
             val _ =
                Array.foreachi
@@ -726,12 +731,12 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
                                  if (Bytes.<
                                      (Bytes.zero,
                                       Vector.sub (objectBytesAllocated, i)))
-                                    then Array.update (classDoesAllocate, 
-                                                       indexClass i, 
+                                    then Array.update (classDoesAllocate,
+                                                       indexClass i,
                                                        true)
                                  else ()
                               end)
-                          (* Mark nodes that are post-exits of non-allocating 
+                          (* Mark nodes that are post-exits of non-allocating
                            * loops as mayHaveCheck.
                            *)
                           val _ =
@@ -739,24 +744,24 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
                              (Graph.nodes g, fn n =>
                               if Node.equals (n, root)
                                  then ()
-                              else 
+                              else
                               let
                                  val i = nodeIndex n
                                  val c = indexClass i
                               in
                                 if Array.sub (classDoesAllocate, c)
                                    then ()
-                                else List.foreach 
+                                else List.foreach
                                      (Node.successors n, fn e =>
                                       let
                                          val i' = nodeIndex (Edge.to e)
                                       in
                                          if c <> indexClass i'
-                                            then Array.update 
+                                            then Array.update
                                                  (mayHaveCheck, i', true)
                                          else ()
                                       end)
-                              end)      
+                              end)
                        in
                          ()
                        end
@@ -765,7 +770,7 @@ fun insertCoalesce (f: Function.t, handlesSignals) =
             ()
          end
       datatype z = datatype Control.limitCheck
-      val _ = 
+      val _ =
          case !Control.limitCheck of
             ExtBasicBlocks => insertCoalesceExtBasicBlocks ()
           | LoopHeaders {loopExits, ...} => insertCoalesceLoopHeaders loopExits

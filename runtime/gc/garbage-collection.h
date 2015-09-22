@@ -19,7 +19,10 @@ static void performGC (GC_state s,
                        size_t nurseryBytesRequested,
                        bool forceMajor,
                        bool mayResize);
-static void performUMGC(GC_state s);
+static void performUMGC(GC_state s,
+                        size_t ensureObjectChunksAvailable,
+                        size_t ensureArrayChunksAvailable,
+                        bool fullGC);
 static inline void ensureInvariantForMutator (GC_state s, bool force);
 static inline void ensureHasHeapBytesFree (GC_state s,
                                            size_t oldGenBytesRequested,

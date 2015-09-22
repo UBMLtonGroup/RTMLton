@@ -83,7 +83,7 @@ void fillIntInfArg (GC_state s, objptr arg, __mpz_struct *res,
     }
   } else {
     bp = toBignum (s, arg);
-    /* The _mp_alloc field is declared as int.  
+    /* The _mp_alloc field is declared as int.
      * No possibility of an overflowing assignment, as all *huge*
      * intInfs must have come from some previous GnuMP evaluation.
      */
@@ -107,14 +107,14 @@ void initIntInfRes (GC_state s, __mpz_struct *res,
                     ARG_USED_FOR_ASSERT size_t bytes) {
   GC_intInf bp;
   size_t nlimbs;
-
-  assert (bytes <= (size_t)(s->limitPlusSlop - s->frontier));
-  bp = (GC_intInf)s->frontier;
+  pointer frontier = s->infFrontier; //(pointer)allocNextArrayChunk(s, &(s->umarheap));
+  //  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
+  bp = (GC_intInf)frontier;
   /* We have as much space for the limbs as there is to the end of the
    * heap.  Divide by (sizeof(mp_limb_t)) to get number of limbs.
    */
   nlimbs = ((size_t)(s->limitPlusSlop - (pointer)bp->obj.limbs)) / (sizeof(mp_limb_t));
-  /* The _mp_alloc field is declared as int. 
+  /* The _mp_alloc field is declared as int.
    * Avoid an overflowing assignment, which could happen with huge
    * heaps.
    */
@@ -209,7 +209,8 @@ objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes) {
         return (ans<<1 | 1);
     }
   }
-  setFrontier (s, (pointer)(&bp->obj.limbs[size]), bytes);
+  s->infFrontier = (pointer)(&bp->obj.limbs[size]);
+  //  setFrontier (s, (pointer)(&bp->obj.limbs[size]), bytes);
   bp->counter = (GC_arrayCounter)0;
   bp->length = (GC_arrayLength)(size + 1); /* +1 for isneg field */
   bp->header = GC_INTINF_HEADER;
@@ -300,19 +301,21 @@ objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,
   char *str;
   size_t size;
 
+  pointer frontier = s->infFrontier; //(pointer) allocNextArrayChunk(s, &(s->umarheap));
+  //  GC_UM_Array_Chunk chunk = (GC_UM_Array_Chunk)frontier;
   if (DEBUG_INT_INF)
     fprintf (stderr, "IntInf_strop ("FMTOBJPTR", %"PRId32", %"PRIuMAX")\n",
              arg, base, (uintmax_t)bytes);
   assert (base == 2 || base == 8 || base == 10 || base == 16);
   fillIntInfArg (s, arg, &argmpz, argspace);
-  assert (bytes <= (size_t)(s->limitPlusSlop - s->frontier));
-  sp = (GC_string8)s->frontier;
+  sp = (GC_string8)frontier;
   str = strop ((void*)&sp->obj, -base, &argmpz);
   assert (str == (char*)&sp->obj);
   size = strlen(str);
   if (sp->obj.chars[0] == '-')
     sp->obj.chars[0] = '~';
-  setFrontier (s, (pointer)&sp->obj + size, bytes);
+  s->infFrontier = (pointer)&sp->obj + size;
+  //  setFrontier (s, (pointer)&sp->obj + size, bytes);
   sp->counter = (GC_arrayCounter)0;
   sp->length = (GC_arrayLength)size;
   sp->header = GC_STRING8_HEADER;
@@ -324,7 +327,7 @@ static GC_state intInfMemoryFuncsState;
 
 static void * wrap_alloc_func(size_t size) {
   if (DEBUG_INT_INF)
-    fprintf (stderr, "alloc_func (size = %"PRIuMAX") = ", 
+    fprintf (stderr, "alloc_func (size = %"PRIuMAX") = ",
              (uintmax_t)size);
   void * res = (*alloc_func_ptr)(size);
   if (DEBUG_INT_INF)
@@ -335,7 +338,7 @@ static void * wrap_alloc_func(size_t size) {
 static void * wrap_realloc_func(void *ptr, size_t old_size, size_t new_size) {
   if (DEBUG_INT_INF)
     fprintf (stderr, "realloc_func (ptr = "FMTPTR", "
-             "old_size = %"PRIuMAX", new_size = %"PRIuMAX") = ", 
+             "old_size = %"PRIuMAX", new_size = %"PRIuMAX") = ",
              (uintptr_t)ptr, (uintmax_t)old_size, (uintmax_t)new_size);
   assert (! isPointerInHeap(intInfMemoryFuncsState, (pointer)ptr));
   void * res = (*realloc_func_ptr)(ptr, old_size, new_size);
@@ -346,7 +349,7 @@ static void * wrap_realloc_func(void *ptr, size_t old_size, size_t new_size) {
 
 static void wrap_free_func(void *ptr, size_t size) {
   if (DEBUG_INT_INF)
-    fprintf (stderr, "free_func (ptr = "FMTPTR", size = %"PRIuMAX")", 
+    fprintf (stderr, "free_func (ptr = "FMTPTR", size = %"PRIuMAX")",
              (uintptr_t)ptr, (uintmax_t)size);
   assert (! isPointerInHeap(intInfMemoryFuncsState, (pointer)ptr));
   (*free_func_ptr)(ptr, size);

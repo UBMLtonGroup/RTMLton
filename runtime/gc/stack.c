@@ -33,7 +33,8 @@ bool isStackReservedAligned (GC_state s, size_t reserved) {
  * the top of the stack and the end of the stack space.
  */
 size_t sizeofStackSlop (GC_state s) {
-  return (size_t)(2 * s->maxFrameSize);
+    //    return 100 * 1024 * 1024;
+    return (size_t)(2 * s->maxFrameSize);
 }
 
 
@@ -140,7 +141,7 @@ size_t sizeofStackInitialReserved (GC_state s) {
 size_t sizeofStackMinimumReserved (GC_state s, GC_stack stack) {
   size_t res;
 
-  res = alignStackReserved (s, 
+  res = alignStackReserved (s,
                             stack->used
                             + sizeofStackSlop (s)
                             - getStackTopFrameSize (s, stack));

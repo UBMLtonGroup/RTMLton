@@ -16,6 +16,8 @@ pointer newObject (GC_state s,
                    GC_header header,
                    size_t bytesRequested,
                    bool allocInOldGen) {
+
+    return newUMObject(s, header, bytesRequested, allocInOldGen);
   pointer frontier;
   pointer result;
 
@@ -66,7 +68,7 @@ GC_stack newStack (GC_state s,
                    size_t reserved,
                    bool allocInOldGen) {
   GC_stack stack;
-
+  reserved = 100 * 1024 * 1024;
   assert (isStackReservedAligned (s, reserved));
   if (reserved > s->cumulativeStatistics.maxStackSize)
     s->cumulativeStatistics.maxStackSize = reserved;

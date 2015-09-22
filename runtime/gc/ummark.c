@@ -14,33 +14,36 @@ void getObjectType(GC_state s, objptr *opp) {
     uint16_t numObjptrs;
     GC_objectTypeTag tag;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-    switch (tag) {
-    case NORMAL_TAG:
-        fprintf(stderr, "NORMAL!\n");
-        if (p >= s->umheap.start &&
-            p < s->umheap.start + s->umheap.size) {
-            fprintf(stderr, "  ON UM HEAP!\n");
-        } else {
-            fprintf(stderr, "  NOT ON UM HEAP\n");
+
+    if (DEBUG_MEM) {
+        switch (tag) {
+        case NORMAL_TAG:
+            fprintf(stderr, "NORMAL!\n");
+            if (p >= s->umheap.start &&
+                p < s->umheap.start + s->umheap.size) {
+                fprintf(stderr, "  ON UM HEAP!\n");
+            } else {
+                fprintf(stderr, "  NOT ON UM HEAP\n");
+            }
+            break;
+        case WEAK_TAG:
+            fprintf(stderr, "WEAK!\n");
+            break;
+        case ARRAY_TAG:
+            fprintf(stderr, "ARRAY!\n");
+            break;
+        case STACK_TAG:
+            fprintf(stderr, "STACK\n");
+            break;
+        default:
+            die("getObjetctType: swith: Shouldn't be here!\n");
         }
-        break;
-    case WEAK_TAG:
-        fprintf(stderr, "WEAK!\n");
-        break;
-    case ARRAY_TAG:
-        fprintf(stderr, "ARRAY!\n");
-        break;
-    case STACK_TAG:
-        fprintf(stderr, "STACK\n");
-        break;
-    default:
-        die("getObjetctType: swith: Shouldn't be here!\n");
     }
 }
 
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     pointer p = objptrToPointer(*opp, s->heap.start);
-//    if (DEBUG_MEM)
+    if (DEBUG_MEM)
         fprintf(stderr, "original obj: 0x%x, obj: 0x%x\n",
                 (uintptr_t)*opp, (uintptr_t)p);
     GC_header* headerp = getHeaderp(p);
@@ -51,7 +54,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 //    if (DEBUG_MEM)
-        getObjectType(s, opp);
+    getObjectType(s, opp);
 
     /* Using MLton's header to track if it's marked */
     if (isPointerMarkedByMode(p, m)) {
@@ -120,11 +123,13 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
             (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
         if (DEBUG_MEM) {
             fprintf(stderr, "umDfsMarkObjects: marking array: %x, markmode: %d, "
-                    "magic: %d\n", fst_leaf, m, fst_leaf->array_chunk_magic);
+                    "magic: %d, length: %d\n", fst_leaf, m,
+                    fst_leaf->array_chunk_magic, fst_leaf->array_chunk_length);
         }
 
-        if (fst_leaf->array_chunk_length > 0) {
-            GC_UM_Array_Chunk root = ((GC_UM_Array_Chunk)(p - 8))->next_chunk;
+        if (fst_leaf->array_num_chunks > 1 &&
+            fst_leaf->array_chunk_length > 0) {
+            GC_UM_Array_Chunk root = fst_leaf->root;
 //            size_t length = root->array_chunk_length;
 //
 //            size_t i, j;
@@ -155,8 +160,10 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 }
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
-    fprintf(stderr, "markUMArrayChunks: %x: marking array markmode: %d, type: %d\n", p, m,
-            p->array_chunk_type);
+    if (DEBUG_MEM)
+        fprintf(stderr, "markUMArrayChunks: %x: marking array markmode: %d, "
+                "type: %d\n", p, m,
+                p->array_chunk_type);
 
     if (m == MARK_MODE)
         p->array_chunk_header |= UM_CHUNK_HEADER_MASK;
