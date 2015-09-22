@@ -308,7 +308,6 @@ void realtimeThreadInit(struct GC_state *state) {
 
 __attribute__ ((noreturn))
 void* realtimeRunner(void* paramsPtr) {
-
     struct realtimeRunnerParameters *params = paramsPtr;
 	struct GC_state *state = params->state;
     int tNum = params->tNum;
@@ -327,13 +326,16 @@ void* realtimeRunner(void* paramsPtr) {
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
-    while (1) {
-        if (DEBUG)
-        	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
+	GC_thread curct = (GC_thread)(state->currentThread[0] + offsetofThread(state));
+	GC_stack curstk = (GC_stack)(objptrToPointer(curct->stack, state->heap.start));
+	GC_thread tc = copyThread(state, curct, curstk->used);
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc, state->heap.start);
 
-		state->currentThread[PTHREAD_NUM] = state->currentThread[0];
-        if (DEBUG)
+    while (1) {
+        if (not DEBUG) {
+        	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
         	fprintf(stderr, "%d] calling Parallel_run..\n", tNum);
+        }
         Parallel_run();
         fprintf(stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
         exit(-1);

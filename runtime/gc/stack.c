@@ -227,6 +227,7 @@ void copyStack (GC_state s, GC_stack from, GC_stack to) {
 
   fromBottom = getStackBottom (s, from);
   toBottom = getStackBottom (s, to);
+
   assert (from->used <= to->reserved);
   to->used = from->used;
   if (DEBUG_STACKS)
