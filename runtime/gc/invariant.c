@@ -9,6 +9,8 @@
 
 #if ASSERT
 void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
+	  fprintf(stderr, "****** %d %x\n", PTHREAD_NUM, *opp);
+	  displayHeapInfo(s);
   assert (isObjptrInFromSpace (s, *opp));
   unless (isObjptrInFromSpace (s, *opp))
     die ("gc.c: assertIsObjptrInFromSpace "
@@ -87,6 +89,7 @@ bool invariantForGC (GC_state s) {
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
+  fprintf(stderr, "****** %d %x == %x\n", PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack));
   assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
   assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);

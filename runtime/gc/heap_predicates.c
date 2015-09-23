@@ -6,6 +6,12 @@
  * See the file MLton-LICENSE for details.
  */
 
+void displayHeapInfo(GC_state s) {
+	fprintf(stderr, "start %x -> from-start %x  -> nursery %x -> frontier %x\n",
+			s->heap.start, s->heap.start+s->heap.oldGenSize,
+			s->heap.nursery, s->frontier);
+}
+
 bool isPointerInOldGen (GC_state s, pointer p) {
   return (not (isPointer (p))
           or (s->heap.start <= p 
@@ -37,6 +43,9 @@ bool isObjptrInNursery (GC_state s, objptr op) {
 
 #if ASSERT
 bool isObjptrInFromSpace (GC_state s, objptr op) {
+	fprintf(stderr, "isObjprtInFromSpace: isObjptr:%x op:%x p:%x\n",
+			isObjptr(op), op, isObjptr(op)? objptrToPointer (op, s->heap.start) : 0);
+
   return (isObjptrInOldGen (s, op) 
           or isObjptrInNursery (s, op));
 }

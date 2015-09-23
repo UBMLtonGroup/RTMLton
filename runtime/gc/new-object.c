@@ -53,8 +53,6 @@ GC_stack newStack (GC_state s,
                    bool allocInOldGen) {
   GC_stack stack;
 
-  reserved = 1024*1024;
-
   assert (isStackReservedAligned (s, reserved));
   if (reserved > s->cumulativeStatistics.maxStackSize)
     s->cumulativeStatistics.maxStackSize = reserved;

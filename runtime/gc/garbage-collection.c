@@ -7,13 +7,19 @@
  * See the file MLton-LICENSE for details.
  */
 
+#include <stdlib.h>
+
+#define CHECKDISABLEGC if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; }
+
 void minorGC (GC_state s) {
+	CHECKDISABLEGC
   minorCheneyCopyGC (s);
 }
 
 void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   uintmax_t numGCs;
   size_t desiredSize;
+	CHECKDISABLEGC
 
   s->lastMajorStatistics.numMinorGCs = 0;
   numGCs = 
@@ -167,7 +173,7 @@ void performGC (GC_state s,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
-//return;
+	CHECKDISABLEGC
 
     /* In our two-thread formulation of realtime MLton, the zeroth thread runs
      * ML code, which will sometimes call the performGC function (this
@@ -336,8 +342,8 @@ void ensureHasHeapBytesFree (GC_state s,
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-	//fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
-	//return;
+	fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
+	CHECKDISABLEGC
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.
