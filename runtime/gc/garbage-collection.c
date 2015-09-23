@@ -166,11 +166,11 @@ void performUMGC(GC_state s,
             insertArrayFreeChunk(s, &(s->umarheap), pchunk);
         }
 
-        if (!fullGC &&
-            s->fl_array_chunks >= ensureArrayChunksAvailable) {
-            fprintf(stderr, "Array chunk ensured\n");
-            break;
-        }
+        /* if (!fullGC && */
+        /*     s->fl_array_chunks >= ensureArrayChunksAvailable) { */
+        /*     fprintf(stderr, "Array chunk ensured\n"); */
+        /*     break; */
+        /* } */
     }
 
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);

@@ -93,13 +93,15 @@ fun insertChunkedAllocation (b as Block.T {args, kind, label, statements, transf
                        , transfer = Transfer.Goto { dst = collect
                                                   , args = Vector.new0 () }}
   in
-      [ startBlock ] @
-      gcAndJumpToBlock dontCollect @
-      [Block.T { args = Vector.new0 ()
-                , kind = Kind.Jump
-                , label = dontCollect
-                , statements = statements
-                , transfer = transfer }]
+      if Block.objChunksAllocated b = Word.fromInt 0
+      then [b]
+      else [ startBlock ] @
+           gcAndJumpToBlock dontCollect @
+           [Block.T { args = Vector.new0 ()
+                    , kind = Kind.Jump
+                    , label = dontCollect
+                    , statements = statements
+                    , transfer = transfer }]
   end
 
 fun handleFunction (f: Function.t): Function.t =
