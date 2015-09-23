@@ -33,18 +33,30 @@ fun insertChunkedAllocation (b as Block.T {args, kind, label, statements, transf
   let
       val dontCollect = Label.newNoname ()
       val collect = Label.newNoname ()
+      val func = CFunction.gc {maySwitchThreads = false}
+
       fun gcAndJumpToBlock (to) =
-        Block.T {args = Vector.new0 (),
-                 kind = Kind.Jump,
-                 label = collect,
-                 statements = Vector.new0 (),
-                 transfer = (Transfer.CCall
-                                 {args = Vector.new3 (Operand.GCState,
-                                                      (Operand.word
-                                                           (WordX.zero (WordSize.csize ()))),
-                                                      Operand.bool false),
-                                  func = CFunction.gc {maySwitchThreads = false},
-                                  return = SOME to})}
+        let
+            val collectReturn = Label.newNoname ()
+        in
+            [ Block.T {args = Vector.new0 (),
+                       kind = Kind.Jump,
+                       label = collect,
+                       statements = Vector.new0 (),
+                       transfer = (Transfer.CCall
+                                       {args = Vector.new3 (Operand.GCState,
+                                                            (Operand.word
+                                                                 (WordX.zero (WordSize.csize ()))),
+                                                            Operand.bool false),
+                                        func = func,
+                                        return = SOME collectReturn})}
+            , Block.T { args = Vector.new0 ()
+                      , kind = Kind.CReturn {func = func}
+                      , label = collectReturn
+                      , statements = Vector.new0 ()
+                      , transfer = Transfer.Goto { dst = to
+                                                 , args = Vector.new0 () }} ]
+        end
       fun primApp (prim, op1, op2, {collect, dontCollect}) =
         let
             val res = Var.newNoname ()
@@ -81,13 +93,13 @@ fun insertChunkedAllocation (b as Block.T {args, kind, label, statements, transf
                        , transfer = Transfer.Goto { dst = collect
                                                   , args = Vector.new0 () }}
   in
-      [ startBlock
-      , gcAndJumpToBlock dontCollect
-      , Block.T { args = Vector.new0 ()
+      [ startBlock ] @
+      gcAndJumpToBlock dontCollect @
+      [Block.T { args = Vector.new0 ()
                 , kind = Kind.Jump
                 , label = dontCollect
                 , statements = statements
-                , transfer = transfer } ]
+                , transfer = transfer }]
   end
 
 fun handleFunction (f: Function.t): Function.t =

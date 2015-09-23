@@ -301,7 +301,7 @@ fun insertFunction (f: Function.t,
                       :: !newBlocks
                 in
                    {collect = collect,
-                    dontCollect = collect } (* dontCollect'} *)
+                    dontCollect = dontCollect } (* dontCollect'} *)
                 end
              fun newBlock (isFirst, statements, transfer) =
                 let
