@@ -30,7 +30,6 @@ struct GC_state {
   /* added for rt-threading */
 
   pthread_t *realtimeThreads;
-  bool      *realtimeThreadAllocated;
 
   /* Begin inter-thread GC communication data */
   pthread_mutex_t gc_mutex;

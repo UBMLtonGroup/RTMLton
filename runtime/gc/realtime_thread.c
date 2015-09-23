@@ -276,7 +276,7 @@ void realtimeThreadInit(struct GC_state *state) {
 	memset(&thread_queue, 0, sizeof(struct _TQ)*(MAXPRI));
 
 	pthread_t *realtimeThreads =
-			malloc(MAXPRI * sizeof(pthread_t));
+			malloc((MAXPRI+1) * sizeof(pthread_t));
 	MYASSERT(long, realtimeThreads, !=, NULL);
 
 	int tNum;
@@ -298,12 +298,6 @@ void realtimeThreadInit(struct GC_state *state) {
 
 	state->realtimeThreads = realtimeThreads;
 
-	state->realtimeThreadAllocated =
-		malloc(MAXPRI * sizeof(bool));
-
-	for (tNum = 0; tNum < MAXPRI; tNum++) {
-		state->realtimeThreadAllocated[tNum] = false;
-	}
 }
 
 __attribute__ ((noreturn))
@@ -327,12 +321,11 @@ void* realtimeRunner(void* paramsPtr) {
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
 #if 1
-	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start)
-            				+ offsetofThread (state));
+	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start) + offsetofThread (state));
 	//GC_stack curstk = newStack(state, 128, FALSE);
 	GC_stack curstk = (GC_stack)(objptrToPointer(curct->stack, state->heap.start));
 	GC_thread tc = copyThread(state, curct, curstk->used);
-	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc - offsetofThread (state), state->heap.start);
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)(tc - offsetofThread (state)), state->heap.start);
 #else
 	state->currentThread[PTHREAD_NUM] = newThread(state, 128);
 #endif
