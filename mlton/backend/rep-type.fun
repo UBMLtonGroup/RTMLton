@@ -529,6 +529,7 @@ fun ofGCField (f: GCField.t): t =
        | StackBottom => cpointer ()
        | StackLimit => cpointer ()
        | StackTop => cpointer ()
+       | FLChunks => csize ()
    end
 
 fun castIsOk {from, to, tyconTy = _} =

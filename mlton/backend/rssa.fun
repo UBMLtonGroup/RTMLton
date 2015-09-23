@@ -63,6 +63,8 @@ structure Operand =
 
       fun zero s = word (WordX.fromIntInf (0, s))
 
+      fun constWord v s = word (WordX.fromIntInf (Word.toIntInf v, s))
+
       fun bool b =
          word (WordX.fromIntInf (if b then 1 else 0, WordSize.bool))
 
@@ -200,7 +202,7 @@ structure Statement =
        | ChunkedObject of { dst: Var.t * Type.t
                           , header: word
                           , size: Bytes.t
-                          , numChunks: int }
+                          , numChunks: word }
        | PrimApp of {args: Operand.t vector,
                      dst: (Var.t * Type.t) option,
                      prim: Type.t Prim.t}
@@ -295,7 +297,7 @@ structure Statement =
                    seq [str "= ChunkedObject ",
                         record [("header", seq [str "0x", Word.layout header]),
                                 ("size", Bytes.layout size),
-                                ("numChunks", Int.layout numChunks)]]]
+                                ("numChunks", Word.layout numChunks)]]]
              | PrimApp {dst, prim, args, ...} =>
                   let
                      val rest =

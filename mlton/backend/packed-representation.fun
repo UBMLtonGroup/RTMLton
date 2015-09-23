@@ -986,8 +986,8 @@ structure ObjptrRep =
               , header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon)
               , size = objSize
               , numChunks = if Bytes.> (objSize, Runtime.objChunkSize ())
-                            then 2
-                            else 1 }
+                            then Word.fromInt 2
+                            else Word.fromInt 1 }
             :: stores
          end
 
