@@ -55,6 +55,7 @@ structure ImplementHandlers = ImplementHandlers (structure Rssa = Rssa)
 structure ImplementProfiling = ImplementProfiling (structure Machine = Machine
                                                    structure Rssa = Rssa)
 structure LimitCheck = LimitCheck (structure Rssa = Rssa)
+structure ChunkedAllocation = ChunkedAllocation (structure Rssa = Rssa)
 structure ParallelMove = ParallelMove ()
 structure SignalCheck = SignalCheck(structure Rssa = Rssa)
 structure SsaToRssa = SsaToRssa (structure Rssa = Rssa
@@ -189,6 +190,8 @@ fun toMachine (program: Ssa.Program.t, codegen) =
                else pass ({name = name, doit = doit}, p)
             val p = maybePass ({name = "rssaShrink1",
                                 doit = Program.shrink}, p)
+            val p = pass ({name = "chunkedAllocation",
+                                doit = ChunkedAllocation.transform}, p)
             val p = pass ({name = "insertLimitChecks",
                            doit = LimitCheck.transform}, p)
             val p = pass ({name = "insertSignalChecks",
