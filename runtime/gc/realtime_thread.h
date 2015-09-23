@@ -3,7 +3,6 @@
 
 #define MAXPRI 3 /* 0 = main, 1 = GC, */
 
-
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 struct realtimeRunnerParameters {
     int tNum;
@@ -50,6 +49,7 @@ bool Proc_executingInSection (__attribute__ ((unused)) GC_state s);
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 
 #if (defined (MLTON_GC_INTERNAL_BASIS))
+pointer FFI_getOpArgsResPtr (GC_state s);
 
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio);
 int32_t GC_getThreadPriority(GC_state s, pointer p);

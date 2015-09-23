@@ -39,6 +39,8 @@ struct GC_state {
   /* end of rt-threading additions */
 
 
+  pointer ffiOpArgsResPtr[MAXPRI];
+
   /* Alphabetized fields follow. */
   size_t alignment; /* */
   volatile bool amInGC;

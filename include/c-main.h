@@ -23,9 +23,8 @@ static GC_frameIndex returnAddressToFrameIndex (GC_returnAddress ra) {
 
 #define MLtonCallFromC                                                  \
 /* Globals */                                                           \
-PRIVATE uintptr_t YYZnextFun[MAXPRI];                                      \
 PRIVATE int returnToC[MAXPRI];                                          \
-static void MLton_callFromC () {                                        \
+static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
 		fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
         struct cont cont;                                               \
         GC_state s;                                                     \
@@ -35,6 +34,7 @@ static void MLton_callFromC () {                                        \
         s = &gcState;                                                   \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
         s->atomicState += 3;                                            \
+        s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
         if (s->signalsInfo.signalIsPending)                             \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
@@ -125,7 +125,7 @@ PUBLIC void LIB_CLOSE(LIBNAME) () {                                     \
         returnToC[PTHREAD_NUM] = FALSE;                                              \
         do {                                                            \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-        } while (not returnToC)[PTHREAD_NUM];                                        \
+        } while (not returnToC[PTHREAD_NUM]);                                        \
         GC_done(&gcState);                                              \
 }
 

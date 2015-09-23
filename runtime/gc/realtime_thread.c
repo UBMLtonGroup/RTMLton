@@ -326,10 +326,16 @@ void* realtimeRunner(void* paramsPtr) {
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
-	GC_thread curct = (GC_thread)(state->currentThread[0] + offsetofThread(state));
+#if 1
+	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start)
+            				+ offsetofThread (state));
+	//GC_stack curstk = newStack(state, 128, FALSE);
 	GC_stack curstk = (GC_stack)(objptrToPointer(curct->stack, state->heap.start));
 	GC_thread tc = copyThread(state, curct, curstk->used);
-	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc, state->heap.start);
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc - offsetofThread (state), state->heap.start);
+#else
+	state->currentThread[PTHREAD_NUM] = newThread(state, 128);
+#endif
 
     while (1) {
         if (DEBUG) {
@@ -342,3 +348,6 @@ void* realtimeRunner(void* paramsPtr) {
     }
 }
 
+pointer FFI_getOpArgsResPtr (GC_state s) {
+  return s->ffiOpArgsResPtr[PTHREAD_NUM];
+}

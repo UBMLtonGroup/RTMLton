@@ -106,6 +106,21 @@ structure CFunction =
             symbolScope = Private,
             target = Direct "MLton_halt"}
 
+      val ffiGetOpArgsResPtr = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+										            ensuresBytesFree = false,
+										            mayGC = false,
+										            maySwitchThreads = false,
+										            modifiesFrontier = false,
+										            readsStackTop = false,
+																writesStackTop = false},
+            prototype = (Vector.new1 CType.gcState, SOME CType.cpointer),
+            return = Type.cpointer (),
+            symbolScope = Private,
+            target = Direct "FFI_getOpArgsResPtr"}
+            
       fun gcArrayAllocate {return} =
          T {args = Vector.new4 (Type.gcState (),
                                 Type.csize (),
@@ -1212,6 +1227,11 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | CPointer_setReal _ => cpointerSet ()
                                | CPointer_setWord _ => cpointerSet ()
                                | FFI f => simpleCCall f
+                                (* PERF spoons this not a very efficient way of
+                                getting this value (since we know its offset) *)
+                               | FFI_getOpArgsResPtr =>
+                                    simpleCCallWithGCState
+                                    (CFunction.ffiGetOpArgsResPtr ())
                                | GC_collect =>
                                     ccall
                                     {args = (Vector.new3

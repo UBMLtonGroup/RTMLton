@@ -59,6 +59,7 @@ datatype 'a t =
  | Exn_name (* implement exceptions *)
  | Exn_setExtendExtra (* implement exceptions *)
  | FFI of 'a CFunction.t (* ssa to rssa *)
+ | FFI_getOpArgsResPtr
  | FFI_Symbol of {name: string, 
                   cty: CType.t option, 
                   symbolScope: CFunction.SymbolScope.t } (* codegen *)
@@ -244,6 +245,7 @@ fun toString (n: 'a t): string =
        | Exn_name => "Exn_name"
        | Exn_setExtendExtra => "Exn_setExtendExtra"
        | FFI f => (CFunction.Target.toString o CFunction.target) f
+       | FFI_getOpArgsResPtr => "FFI_getOpArgsResPtr"
        | FFI_Symbol {name, ...} => name
        | GC_collect => "GC_collect"
        | IntInf_add => "IntInf_add"
@@ -384,6 +386,7 @@ val equals: 'a t * 'a t -> bool =
     | (Exn_name, Exn_name) => true
     | (Exn_setExtendExtra, Exn_setExtendExtra) => true
     | (FFI f, FFI f') => CFunction.equals (f, f')
+    | (FFI_getOpArgsResPtr, FFI_getOpArgsResPtr) => true
     | (FFI_Symbol {name = n, ...}, FFI_Symbol {name = n', ...}) => n = n'
     | (GC_collect, GC_collect) => true
     | (IntInf_add, IntInf_add) => true
@@ -546,6 +549,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Exn_name => Exn_name
     | Exn_setExtendExtra => Exn_setExtendExtra
     | FFI func => FFI (CFunction.map (func, f))
+    | FFI_getOpArgsResPtr => FFI_getOpArgsResPtr
     | FFI_Symbol {name, cty, symbolScope} => 
         FFI_Symbol {name = name, cty = cty, symbolScope = symbolScope}
     | GC_collect => GC_collect
@@ -796,6 +800,7 @@ val kind: 'a t -> Kind.t =
                                               CFunction.Kind.Impure => SideEffect
                                             | CFunction.Kind.Pure => Functional
                                             | CFunction.Kind.Runtime _ => SideEffect)
+       | FFI_getOpArgsResPtr => SideEffect
        | FFI_Symbol _ => Functional
        | GC_collect => SideEffect
        | IntInf_add => Functional
@@ -996,6 +1001,7 @@ in
        Exn_extra,
        Exn_name,
        Exn_setExtendExtra,
+       FFI_getOpArgsResPtr,
        GC_collect,
        IntInf_add,
        IntInf_andb,
@@ -1251,6 +1257,7 @@ fun 'a checkApp (prim: 'a t,
        | Exn_setExtendExtra => oneTarg (fn t => (oneArg (arrow (t, t)), unit))
        | FFI f =>
             noTargs (fn () => (nArgs (CFunction.args f), CFunction.return f))
+       | FFI_getOpArgsResPtr => noTargs (fn () => (noArgs, cpointer))
        | FFI_Symbol _ => noTargs (fn () => (noArgs, cpointer))
        | GC_collect => noTargs (fn () => (noArgs, unit))
        | IntInf_add => intInfBinary ()
