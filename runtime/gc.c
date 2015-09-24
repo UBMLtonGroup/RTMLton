@@ -40,6 +40,7 @@
 #include "gc/foreach.c"
 #include "gc/forward.c"
 #include "gc/frame.c"
+#include "gc/garbage-stw.c"
 #include "gc/garbage-collection.c"
 #include "gc/realtime_thread.c"
 #include "gc/gc_state.c"

@@ -50,7 +50,7 @@
 #define C(ty, x) (*(ty*)(x))
 #define G(ty, i) (global##ty [i])
 #define GPNR(i) G(ObjptrNonRoot, i)
-#define DEBUG_MEMORY
+#undef DEBUG_MEMORY
 #ifdef DEBUG_MEMORY
 
     #define O(ty, b, o) (*((fprintf (stderr, "%s:%d O: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \

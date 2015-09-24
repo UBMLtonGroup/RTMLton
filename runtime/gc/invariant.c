@@ -9,8 +9,10 @@
 
 #if ASSERT
 void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
+#if 0
 	  fprintf(stderr, "****** %d %x\n", PTHREAD_NUM, *opp);
 	  displayHeapInfo(s);
+#endif
   assert (isObjptrInFromSpace (s, *opp));
   unless (isObjptrInFromSpace (s, *opp))
     die ("gc.c: assertIsObjptrInFromSpace "

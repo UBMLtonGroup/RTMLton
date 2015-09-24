@@ -9,17 +9,19 @@
 
 #include <stdlib.h>
 
-#define CHECKDISABLEGC if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; }
+#ifndef CHECKDISABLEGC
+# define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
+#endif
 
 void minorGC (GC_state s) {
-	CHECKDISABLEGC
+  CHECKDISABLEGC;
   minorCheneyCopyGC (s);
 }
 
 void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   uintmax_t numGCs;
   size_t desiredSize;
-	CHECKDISABLEGC
+  CHECKDISABLEGC;
 
   s->lastMajorStatistics.numMinorGCs = 0;
   numGCs = 
@@ -102,8 +104,8 @@ void leaveGC (GC_state s) {
 
 #define THREADED
 
-pthread_mutex_t gclock;
-static volatile int sem;
+pthread_mutex_t gcflag_lock;
+static volatile int gcflag;
 
 #undef GCTHRDEBUG
 
@@ -122,45 +124,50 @@ static volatile int sem;
         }                                                        \
 }
 
-#define GCLOCK(X) { MYASSERT(int, pthread_mutex_lock(&gclock), ==, 0); }
-#define GCUNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&gclock), ==, 0); }
+#define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
+#define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
+#define REQUESTGC do { LOCKFLAG; gcflag = 1; UNLOCKFLAG; } while(0)
+#define COMPLETEGC do { LOCKFLAG; gcflag = 0; UNLOCKFLAG; } while(0)
 
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
 
-	DBG((stderr, "\t%x] GC_Runner Thread running.\n", pthread_self()));
+	set_pthread_num(1); // by definition
+
+	if (DEBUG)
+		fprintf(stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
 
 	s->GCrunnerRunning = TRUE;
-	sem = 0;
 
-	/* we create, and then immediately lock the mutex in Initialize
-	 * prior to starting this threads. The next GCLOCK should
-	 * hang this thread.
-	 */
 #ifdef THREADED
 	while (1) {
-		DBG((stderr, "\t%x] GCrunner: locking mutex %x\n",
-				pthread_self(), &gclock));
-		GCLOCK(s);
-		DBG((stderr, "\t%x] GCrunner: got lock\n", pthread_self()));
+		if (DEBUG)
+			fprintf(stderr, "%d] GCrunner: spinning\n", PTHREAD_NUM);
 
-		if (sem == 0) {
-			performGC_helper(s,
-					s->oldGenBytesRequested,
-					s->nurseryBytesRequested,
-					s->forceMajor,
-					s->mayResize);
-			sem = 1;
-		}
-		else {
-			DBG((stderr, "\t%x] GCrunner: skipping consecutive call to helper\n"));
+		while (gcflag == 0) {
+			pthread_yield();
 		}
 
-		DBG((stderr, "\t%x] GCrunner: unlocking mutex\n", pthread_self()));
-		GCUNLOCK(s);
-		DBG((stderr, "\t%x] GCrunner: unlocked (ML runs)\n", pthread_self()));
-	    pthread_yield();
+		if (DEBUG)
+			fprintf(stderr, "%d] GCrunner: requested. pausing threads.\n", PTHREAD_NUM);
+
+		quiesce_threads(s);
+
+		if (DEBUG)
+			fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
+
+		performGC_helper(s,
+				s->oldGenBytesRequested,
+				s->nurseryBytesRequested,
+				s->forceMajor,
+				s->mayResize);
+
+		if (DEBUG)
+			fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
+
+		resume_threads(s);
+		COMPLETEGC;
 	}
 #endif
 
@@ -173,16 +180,18 @@ void performGC (GC_state s,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
-	CHECKDISABLEGC
+	CHECKDISABLEGC;
 
-    /* In our two-thread formulation of realtime MLton, the zeroth thread runs
-     * ML code, which will sometimes call the performGC function (this
-     * function!). Meanwhile, the first thread repeatedly calls
-     * performGC_helper with the saved parameters. We use a mutex to synchronize
-     * the two threads.
-     *
-     * TODO When we support a 1-1 mapping between ML threads and pthreads, we
-     * must revisit this method of inter-thread communication.
+    /* In our MT formulation of realtime MLton, we move the
+     * GC into a separate pthread. In order to keep things
+     * orderly, we implement a STW approach to GC. The GC
+     * waits on mutex acquisition. When it acquires it, that
+     * indicates a GC was requested by one of the other threads.
+     * Before progressing, the GC must ask all of the threads to
+     * pause. We do this by calling quiesce_threads(s) which will
+     * signal the other threads and then wait for them to indicate
+     * they are paused. Once the GC finishes, it uses
+     * resume_threads(s) to let the threads know they can resume.
      */
 
 #ifdef THREADED
@@ -191,19 +200,11 @@ void performGC (GC_state s,
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
-    DBG((stderr, "%x] performGC: release mutex (GCrunner can run)\n", pthread_self()));
-    GCUNLOCK(s);
-    while (sem == 0) {
-    	DBG((stderr, "spin.."));
-    	pthread_yield();
-    }
+    if (DEBUG)
+    	fprintf(stderr, "%d] performGC: release mutex (GCrunner can run)\n", PTHREAD_NUM);
 
-    /* GCrunner should acquire the lock and proceed */
+    REQUESTGC;
 
-    DBG((stderr, "%x] performGC: locking mutex\n", pthread_self()));
-    GCLOCK(s);
-    DBG((stderr, "%x] performGC: mutex locked; ML resumes\n", pthread_self()));
-    sem = 0;
 
 #else
     DBG((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
@@ -222,7 +223,8 @@ void performGC_helper (GC_state s,
   struct rusage ru_start;
   size_t totalBytesRequested;
 
-  DBG((stderr, "\t\t%x] in performGC_helper\n", pthread_self()));
+  if (DEBUG)
+	  fprintf(stderr, "%c] in performGC_helper\n", PTHREAD_NUM);
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
@@ -342,8 +344,9 @@ void ensureHasHeapBytesFree (GC_state s,
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-	fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
-	CHECKDISABLEGC
+
+  if (DEBUG) fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
+  CHECKDISABLEGC;
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.

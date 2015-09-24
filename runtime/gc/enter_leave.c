@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-#define CHECKDISABLEGC if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; }
+#define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
 
 /* enter and leave should be called at the start and end of every GC
  * function that is exported to the outside world.  They make sure
@@ -14,7 +14,7 @@
  * invariant.
  */
 void enter (GC_state s) {
-	CHECKDISABLEGC
+  CHECKDISABLEGC;
 
   if (DEBUG)
     fprintf (stderr, "enter\n");
@@ -30,7 +30,7 @@ void enter (GC_state s) {
 }
 
 void leave (GC_state s) {
-	CHECKDISABLEGC
+  CHECKDISABLEGC;
 
   if (DEBUG)
     fprintf (stderr, "leave\n");

@@ -59,6 +59,7 @@ typedef GC_state GCState_t;
 #include "gc/signals.h"
 #include "gc/handler.h"
 #include "gc/switch-thread.h"
+#include "gc/garbage-stw.h"
 #include "gc/garbage-collection.h"
 #include "gc/realtime_thread.h"
 #include "gc/new-object.h"
