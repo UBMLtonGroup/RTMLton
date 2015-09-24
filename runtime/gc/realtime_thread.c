@@ -313,7 +313,7 @@ void* realtimeRunner(void* paramsPtr) {
 
 		stack = (GC_stack)objptrToPointer (thread->stack, s->heap.start))
 
-	   GC_thread from...
+	   from is a GC_thread in the following.
 	   (objptr) s->savedThread = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
 
 	   pointer GC_copyThread (GC_state s, pointer p) 
