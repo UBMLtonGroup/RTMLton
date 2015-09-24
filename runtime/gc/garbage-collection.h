@@ -8,6 +8,7 @@
  */
 
 void *GCrunner(void *);
+extern pthread_mutex_t gcflag_lock;
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 

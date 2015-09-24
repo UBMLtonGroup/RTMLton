@@ -201,7 +201,7 @@ void performGC (GC_state s,
     s->mayResize = mayResize;
 
     if (DEBUG)
-    	fprintf(stderr, "%d] performGC: release mutex (GCrunner can run)\n", PTHREAD_NUM);
+    	fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
 
     REQUESTGC;
 

@@ -75,7 +75,7 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         setvbuf(stderr, NULL, _IONBF, 0);                               \
-        install_signal_handler();                                       \
+        install_signal_handler(&gcState);                               \
 	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));             \
 	set_pthread_num(0);                                                 \
 	MYASSERT(GCrunner_thread, !=, NULL);                                \

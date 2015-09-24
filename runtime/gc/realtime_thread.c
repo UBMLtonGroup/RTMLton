@@ -289,8 +289,9 @@ void* realtimeRunner(void* paramsPtr) {
 
     assert(params->tNum == PTHREAD_NUM);
 
+    int junk;
 	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
+		if (DEBUG) if (junk++ % 1000 == 0) fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
 	}
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
