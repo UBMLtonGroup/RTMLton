@@ -150,7 +150,7 @@ void *GCrunner(void *_s) {
 		}
 
 		if (DEBUG)
-			fprintf(stderr, "%d] GCrunner: requested. pausing threads.\n", PTHREAD_NUM);
+			fprintf(stderr, "%d] GCrunner: GC requested. pausing threads.\n", PTHREAD_NUM);
 
 		quiesce_threads(s);
 
@@ -166,7 +166,11 @@ void *GCrunner(void *_s) {
 		if (DEBUG)
 			fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
 
-		resume_threads(s);
+		do {
+			fprintf(stderr, "%d] GCrunner: resuming %d threads.\n", paused_threads_count(s), PTHREAD_NUM);
+			resume_threads(s);
+		} while(paused_threads_count(s));
+
 		COMPLETEGC;
 	}
 #endif

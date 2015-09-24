@@ -91,7 +91,9 @@ bool invariantForGC (GC_state s) {
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
+#if 0
   fprintf(stderr, "****** %d %x == %x\n", PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack));
+#endif
   assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
   assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);

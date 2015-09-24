@@ -234,7 +234,7 @@ int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
 }
 
 
-void realtimeThreadWaitForInit()
+void realtimeThreadWaitForInit(void)
 {
 	while (initialized < MAXPRI) {
 		fprintf(stderr, "spin [thread boot: %d out of %d]..\n", initialized, MAXPRI);
@@ -262,10 +262,10 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 
 		params->tNum = tNum;
 		params->state = state;
-		state->threadPaused[params->tNum] = 1;
+		state->threadPaused[params->tNum] = 2; // 0 = running, 1 = paused, 2 = not-ready
 
-		pthread_t pt = malloc(sizeof(pthread_t));
-		memset(pt, 0, sizeof(pt));
+		pthread_t *pt = malloc(sizeof(pthread_t));
+		memset(pt, 0, sizeof(pthread_t));
 
 		if (pthread_create(pt, NULL, &realtimeRunner, (void*)params)) {
 			fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
@@ -289,9 +289,11 @@ void* realtimeRunner(void* paramsPtr) {
 
     assert(params->tNum == PTHREAD_NUM);
 
-    int junk;
 	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-		if (DEBUG) if (junk++ % 1000 == 0) fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
+		if (DEBUG) {
+			fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
+		}
+		sleep(1);
 	}
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
