@@ -321,13 +321,40 @@ void* realtimeRunner(void* paramsPtr) {
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
 #if 1
-	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start) + offsetofThread (state));
-	//GC_stack curstk = newStack(state, 128, FALSE);
-	GC_stack curstk = (GC_stack)(objptrToPointer(curct->stack, state->heap.start));
+	/* state->currentThread objptr
+	   curct->stack         objptr
+
+	   ref: https://github.com/UBMLtonGroup/MLton/blob/master/runtime/gc/switch-thread.c#L14-L16
+
+	   given an objptr, to get GC_thread 
+
+		thread = (GC_thread)(objptrToPointer (op, s->heap.start)
+                         + offsetofThread (s));
+
+	   given a pointer, to get objptr 
+
+		stack = (GC_stack)objptrToPointer (thread->stack, s->heap.start))
+
+	   GC_thread from...
+	   (objptr) s->savedThread = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
+
+	   pointer GC_copyThread (GC_state s, pointer p) 
+
+	 */
+
+	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start)
+				+ offsetofThread (state));
+	GC_stack curstk = (GC_stack)objptrToPointer(curct->stack, state->heap.start);
+
+	/* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
+
 	GC_thread tc = copyThread(state, curct, curstk->used);
+
 	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)(tc - offsetofThread (state)), state->heap.start);
 #else
-	state->currentThread[PTHREAD_NUM] = newThread(state, 128);
+	/* cant do this bc it requires state->currentThread to already be set */
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
+		state->currentThread[0], state->heap.start)), state->heap.start); 
 #endif
 
     while (1) {
