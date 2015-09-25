@@ -65,6 +65,7 @@ static void handle_suspend_signal(int signum)
 	sigdelset(&signal_set, SIGUSR2);
 	stashed->threadPaused[PTHREAD_NUM] = 1; // TODO probably a race, but can't use mutex inside a handler.
 	sigsuspend(&signal_set);
+	fprintf(stderr, "%d] back from sigsuspend\n", PTHREAD_NUM);
 }
 
 void install_signal_handler(GC_state s)

@@ -120,11 +120,15 @@ bool invariantForMutatorStack (GC_state s) {
   top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
 
 #if 0
-  if (top <= (limit + framesize))
+  if (top <= (limit + framesize)) {
+	  fprintf(stderr, "grow stack %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
 	  growStackCurrent (s); // XXX bc we disabled the GC
+  }
   top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
 #endif
 
+  if (DEBUG)
+	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
   return (top <= (limit + framesize));
 }
 
