@@ -17,8 +17,9 @@ void resume_threads(GC_state s)
 {
 	for(int i = 0 ; i < MAXPRI ; i++) {
 		if (i == 1) continue;
-		if (s->threadPaused[i] == 1)
-			s->threadPaused[i] = 0;
+		if (s->threadPaused[i] == 1) {
+			pthread_kill(*(s->realtimeThreads[i]), SIGUSR2);
+		}
 	}
 }
 
@@ -53,16 +54,17 @@ void quiesce_threads(GC_state s)
 static void handle_resume_signal(int signum)
 {
 	fprintf(stderr, "%d] caught signal(%d). resuming.\n", PTHREAD_NUM, signum);
+	stashed->threadPaused[PTHREAD_NUM] = 0; // TODO probably a race, but can't use mutex inside a handler.
 }
 
 static void handle_suspend_signal(int signum)
 {
+	sigset_t signal_set;
 	fprintf(stderr, "%d] caught signal(%d). pausing.\n", PTHREAD_NUM, signum);
+	sigfillset(&signal_set);
+	sigdelset(&signal_set, SIGUSR2);
 	stashed->threadPaused[PTHREAD_NUM] = 1; // TODO probably a race, but can't use mutex inside a handler.
-	while(stashed->threadPaused[PTHREAD_NUM] == 1) {
-		sched_yield();
-	}
-	fprintf(stderr, "%d] resuming\n", PTHREAD_NUM);
+	sigsuspend(&signal_set);
 }
 
 void install_signal_handler(GC_state s)
