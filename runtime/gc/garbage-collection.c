@@ -126,7 +126,7 @@ static volatile int gcflag;
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define REQUESTGC do { LOCKFLAG; gcflag = 1; UNLOCKFLAG; } while(0)
+#define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM; UNLOCKFLAG; } while(0)
 #define COMPLETEGC do { LOCKFLAG; gcflag = 0; UNLOCKFLAG; } while(0)
 
 __attribute__((noreturn))
@@ -157,6 +157,8 @@ void *GCrunner(void *_s) {
 		if (DEBUG)
 			fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
 
+		s->currentThread[1] = s->currentThread[gcflag];
+
 		performGC_helper(s,
 				s->oldGenBytesRequested,
 				s->nurseryBytesRequested,
@@ -178,6 +180,7 @@ void *GCrunner(void *_s) {
 	pthread_exit(NULL);
 	/*NOTREACHED*/
 }
+
 
 void performGC (GC_state s,
                 size_t oldGenBytesRequested,
@@ -203,6 +206,8 @@ void performGC (GC_state s,
     s->nurseryBytesRequested = nurseryBytesRequested;
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
+
+    while (gcflag) sched_yield();
 
     if (DEBUG)
     	fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
@@ -349,7 +354,7 @@ void ensureHasHeapBytesFree (GC_state s,
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
 
-  if (DEBUG) fprintf(stderr, "GC_collect called from %d\n", PTHREAD_NUM);
+  if (DEBUG) fprintf(stderr, "%d] GC_collect called\n", PTHREAD_NUM);
   CHECKDISABLEGC;
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as

@@ -32,7 +32,7 @@ void quiesce_threads(GC_state s)
 			pthread_kill(*(s->realtimeThreads[i]), SIGUSR1);
 		}
 		else {
-			fprintf(stderr, "%d] Thread %d is not ready, skipping.\n", PTHREAD_NUM, i);
+			fprintf(stderr, "%d] Thread %d is not ready(%d), skipping.\n", PTHREAD_NUM, i, s->threadPaused[i]);
 		}
 	}
 
@@ -44,7 +44,7 @@ void quiesce_threads(GC_state s)
 			fprintf(stderr, "quiesce_threads check %d (=%d)\n", i, s->threadPaused[i]);
 			if (s->threadPaused[i] == 0) fp = FALSE;
 			fprintf(stderr, "quiesce_threads fp = %d\n", fp);
-			sleep(1);
+			ssleep(1, 0); // TODO remove before collecting stats
 		}
 	} while (fp == FALSE);
 

@@ -293,7 +293,7 @@ void* realtimeRunner(void* paramsPtr) {
 		if (DEBUG) {
 			fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
 		}
-		sleep(1);
+		ssleep(1, 0);
 	}
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
