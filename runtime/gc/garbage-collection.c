@@ -146,7 +146,7 @@ void *GCrunner(void *_s) {
 			fprintf(stderr, "%d] GCrunner: spinning\n", PTHREAD_NUM);
 
 		while (gcflag == 0) {
-			pthread_yield();
+			sched_yield();
 		}
 
 		if (DEBUG)
@@ -228,7 +228,7 @@ void performGC_helper (GC_state s,
   size_t totalBytesRequested;
 
   if (DEBUG)
-	  fprintf(stderr, "%c] in performGC_helper\n", PTHREAD_NUM);
+	  fprintf(stderr, "%d] in performGC_helper\n", PTHREAD_NUM);
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;

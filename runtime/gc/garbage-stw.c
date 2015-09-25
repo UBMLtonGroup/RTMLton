@@ -2,14 +2,6 @@
 
 static GC_state stashed;
 
-void resume_threads(GC_state s)
-{
-	for(int i = 0 ; i < MAXPRI ; i++) {
-		if (i == 1) continue;
-		if (s->threadPaused[i] == 1)
-			s->threadPaused[i] = 0;
-	}
-}
 
 int paused_threads_count(GC_state s)
 {
@@ -19,6 +11,15 @@ int paused_threads_count(GC_state s)
 		if (s->threadPaused[i] == 1) c++;
 	}
 	return c;
+}
+
+void resume_threads(GC_state s)
+{
+	for(int i = 0 ; i < MAXPRI ; i++) {
+		if (i == 1) continue;
+		if (s->threadPaused[i] == 1)
+			s->threadPaused[i] = 0;
+	}
 }
 
 void quiesce_threads(GC_state s)
@@ -38,33 +39,50 @@ void quiesce_threads(GC_state s)
 	do {
 		fp = TRUE;
 		for(uint32_t i = 0 ; i < MAXPRI ; i++) {
-			fprintf(stderr, "check %d\n", i);
 			if (i == PTHREAD_NUM) continue;
+			fprintf(stderr, "quiesce_threads check %d (=%d)\n", i, s->threadPaused[i]);
 			if (s->threadPaused[i] == 0) fp = FALSE;
-			fprintf(stderr, "fp = %d\n", fp);
+			fprintf(stderr, "quiesce_threads fp = %d\n", fp);
+			sleep(1);
 		}
 	} while (fp == FALSE);
 
 	fprintf(stderr, "%d] all threads are paused\n", PTHREAD_NUM);
 }
 
-static void handle_sigusr1(int signum)
+static void handle_resume_signal(int signum)
+{
+	fprintf(stderr, "%d] caught signal(%d). resuming.\n", PTHREAD_NUM, signum);
+}
+
+static void handle_suspend_signal(int signum)
 {
 	fprintf(stderr, "%d] caught signal(%d). pausing.\n", PTHREAD_NUM, signum);
 	stashed->threadPaused[PTHREAD_NUM] = 1; // TODO probably a race, but can't use mutex inside a handler.
 	while(stashed->threadPaused[PTHREAD_NUM] == 1) {
-		pthread_yield();
+		sched_yield();
 	}
 	fprintf(stderr, "%d] resuming\n", PTHREAD_NUM);
 }
 
 void install_signal_handler(GC_state s)
 {
-	struct sigaction new_action;
-	stashed = s;
+	struct sigaction sigusr1, sigusr2;
+	if (s) stashed = s;
+
 	fprintf(stderr, "installing SIGUSR1 handler\n");
-	new_action.sa_handler = handle_sigusr1;
-	sigemptyset (&new_action.sa_mask);
-	new_action.sa_flags = 0;
-	sigaction (SIGUSR1, &new_action, NULL);
+	sigusr1.sa_handler = handle_suspend_signal;
+	sigemptyset (&sigusr1.sa_mask);
+	sigusr1.sa_flags = 0;
+	sigaddset (&sigusr1.sa_mask, SIGUSR2);
+	if (sigaction (SIGUSR1, &sigusr1, NULL) == -1) {
+		fprintf(stderr, "failed to install SIGUSR1 handler\n");
+		exit(-1);
+	}
+
+	fprintf(stderr, "installing SIGUSR2 handler\n");
+	sigusr2.sa_handler = handle_resume_signal;
+	sigemptyset (&sigusr2.sa_mask);
+	sigusr2.sa_flags = 0;
+	sigaction (SIGUSR2, &sigusr2, NULL);
 }

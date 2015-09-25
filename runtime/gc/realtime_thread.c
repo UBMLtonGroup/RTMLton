@@ -137,7 +137,7 @@ int32_t GC_setThreadRunnable(GC_state s, pointer p) {
 
 int32_t GC_threadYield(__attribute__ ((unused)) GC_state s) {
 	fprintf(stderr, "GC_threadYield()\n");
-	pthread_yield();
+	sched_yield();
 	return 0;
 }
 
