@@ -46,7 +46,7 @@ val ssaPassesDefault =
    {name = "inlineLeaf2", doit = fn p =>
     Inline.inlineLeaf (p, !Control.inlineLeafB)} ::
    {name = "contify1", doit = Contify.transform} ::
-(*   {name = "localFlatten1", doit = LocalFlatten.transform} :: *)
+  {name = "localFlatten1", doit = LocalFlatten.transform} ::
    {name = "constantPropagation", doit = ConstantPropagation.transform} ::
    (* useless should run
     *   - after constant propagation because constant propagation makes
@@ -70,14 +70,14 @@ val ssaPassesDefault =
    {name = "contify2", doit = Contify.transform} ::
    {name = "inlineNonRecursive", doit = fn p =>
     Inline.inlineNonRecursive (p, !Control.inlineNonRec)} ::
-(*   {name = "localFlatten2", doit = LocalFlatten.transform} :: *)
+  {name = "localFlatten2", doit = LocalFlatten.transform} ::
    {name = "removeUnused3", doit = RemoveUnused.transform} ::
    {name = "contify3", doit = Contify.transform} ::
    {name = "introduceLoops3", doit = IntroduceLoops.transform} ::
    {name = "loopInvariant3", doit = LoopInvariant.transform} ::
    {name = "localRef", doit = LocalRef.transform} ::
-(*   {name = "flatten", doit = Flatten.transform} :: *)
-(*   {name = "localFlatten3", doit = LocalFlatten.transform} :: *)
+  {name = "flatten", doit = Flatten.transform} ::
+  {name = "localFlatten3", doit = LocalFlatten.transform} ::
    {name = "combineConversions", doit = CombineConversions.transform} ::
    {name = "commonArg", doit = CommonArg.transform} ::
    {name = "commonSubexp", doit = CommonSubexp.transform} ::
@@ -192,10 +192,10 @@ local
                  ("constantPropagation", ConstantPropagation.transform),
                  ("contify", Contify.transform),
                  ("dropProfile", Profile.dropProfile),
-(*                 ("flatten", Flatten.transform), *)
+                ("flatten", Flatten.transform),
                  ("introduceLoops", IntroduceLoops.transform),
                  ("knownCase", KnownCase.transform),
-(*                 ("localFlatten", LocalFlatten.transform), *)
+                ("localFlatten", LocalFlatten.transform),
                  ("localRef", LocalRef.transform),
                  ("loopInvariant", LoopInvariant.transform),
                  ("polyEqual", PolyEqual.transform),

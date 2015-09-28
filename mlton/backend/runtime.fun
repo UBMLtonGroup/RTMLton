@@ -28,6 +28,7 @@ structure GCField =
        | StackBottom
        | StackLimit
        | StackTop
+       | FLChunks
 
       val atomicStateOffset: Bytes.t ref = ref Bytes.zero
       val cardMapAbsoluteOffset: Bytes.t ref = ref Bytes.zero
@@ -43,10 +44,11 @@ structure GCField =
       val stackLimitOffset: Bytes.t ref = ref Bytes.zero
       val stackTopOffset: Bytes.t ref = ref Bytes.zero
       val umfrontierOffset: Bytes.t ref = ref Bytes.zero
+      val flChunksOffset: Bytes.t ref = ref Bytes.zero
 
-      fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex, 
-                      exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize, 
-                      signalIsPending, stackBottom, stackLimit, stackTop} =
+      fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
+                      exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
+                      signalIsPending, stackBottom, stackLimit, stackTop, flChunks} =
          (atomicStateOffset := atomicState
           ; cardMapAbsoluteOffset := cardMapAbsolute
           ; currentThreadOffset := currentThread
@@ -60,7 +62,8 @@ structure GCField =
           ; signalIsPendingOffset := signalIsPending
           ; stackBottomOffset := stackBottom
           ; stackLimitOffset := stackLimit
-          ; stackTopOffset := stackTop)
+          ; stackTopOffset := stackTop
+          ; flChunksOffset := flChunks)
 
       val offset =
          fn AtomicState => !atomicStateOffset
@@ -77,6 +80,7 @@ structure GCField =
           | StackBottom => !stackBottomOffset
           | StackLimit => !stackLimitOffset
           | StackTop => !stackTopOffset
+          | FLChunks => !flChunksOffset
 
       val atomicStateSize: Bytes.t ref = ref Bytes.zero
       val cardMapAbsoluteSize: Bytes.t ref = ref Bytes.zero
@@ -91,10 +95,11 @@ structure GCField =
       val stackBottomSize: Bytes.t ref = ref Bytes.zero
       val stackLimitSize: Bytes.t ref = ref Bytes.zero
       val stackTopSize: Bytes.t ref = ref Bytes.zero
+      val flChunksSize: Bytes.t ref = ref Bytes.zero
 
-      fun setSizes {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex, 
-                    exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize, 
-                    signalIsPending, stackBottom, stackLimit, stackTop} =
+      fun setSizes {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
+                    exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
+                    signalIsPending, stackBottom, stackLimit, stackTop, flChunks} =
          (atomicStateSize := atomicState
           ; cardMapAbsoluteSize := cardMapAbsolute
           ; currentThreadSize := currentThread
@@ -107,7 +112,8 @@ structure GCField =
           ; signalIsPendingSize := signalIsPending
           ; stackBottomSize := stackBottom
           ; stackLimitSize := stackLimit
-          ; stackTopSize := stackTop)
+          ; stackTopSize := stackTop
+          ; flChunksSize := flChunks)
 
       val size =
          fn AtomicState => !atomicStateSize
@@ -124,6 +130,7 @@ structure GCField =
           | StackBottom => !stackBottomSize
           | StackLimit => !stackLimitSize
           | StackTop => !stackTopSize
+          | FLChunks => !flChunksSize
 
       val toString =
          fn AtomicState => "AtomicState"
@@ -140,6 +147,7 @@ structure GCField =
           | StackBottom => "StackBottom"
           | StackLimit => "StackLimit"
           | StackTop => "StackTop"
+          | FLChunks => "FLChunks"
 
       val layout = Layout.str o toString
    end
@@ -172,7 +180,7 @@ structure RObjectType =
                                ("bytesNonObjptrs", Bytes.layout bytesNonObjptrs),
                                ("numObjptrs", Int.layout numObjptrs)]]
              | Stack => str "Stack"
-             | Weak {gone} => 
+             | Weak {gone} =>
                   seq [str "Weak",
                        record [("gone", Bool.layout gone)]]
          end
@@ -189,7 +197,7 @@ in
                       0 <= typeIndex
                       andalso typeIndex < maxTypeIndex)
        ; Word.orb (0w1, Word.<< (Word.fromInt typeIndex, 0w1)))
-      
+
    fun headerToTypeIndex w = Word.toInt (Word.>> (w, 0w1))
 end
 
@@ -200,7 +208,7 @@ val objptrSize : unit -> Bytes.t =
 (* see gc/object.h *)
 val headerSize : unit -> Bytes.t =
    Promise.lazy (Bits.toBytes o Control.Target.Size.header)
-val headerOffset : unit -> Bytes.t = 
+val headerOffset : unit -> Bytes.t =
    Promise.lazy (Bytes.~ o headerSize)
 
 (* see gc/array.h *)
@@ -214,10 +222,17 @@ val cpointerSize : unit -> Bytes.t =
    Promise.lazy (Bits.toBytes o Control.Target.Size.cpointer)
 val labelSize = cpointerSize
 
+val objChunkSize : unit -> Bytes.t =
+    Promise.lazy (Bits.toBytes o Control.Target.Size.objChunkSize)
+
 (* See gc/heap.h. *)
 val limitSlop = Bytes.fromInt 512
 
+val objChunkSlop = Word.fromInt 500
+
 (* See gc/frame.h. *)
 val maxFrameSize = Bytes.fromInt (Int.pow (2, 16))
+
+
 
 end

@@ -47,6 +47,7 @@ rssa-transform.sig
 implement-handlers.fun
 implement-profiling.sig
 implement-profiling.fun
+chunked-allocation.fun
 limit-check.fun
 signal-check.fun
 live.sig

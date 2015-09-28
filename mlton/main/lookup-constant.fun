@@ -64,7 +64,8 @@ val gcFields =
     "signalsInfo.signalIsPending",
     "stackBottom",
     "stackLimit",
-    "stackTop"
+    "stackTop",
+    "fl_chunks"
     ]
 
 val gcFieldsOffsets =

@@ -72,6 +72,7 @@ signature RSSA =
             val ty: t -> Type.t
             val word: WordX.t -> t
             val zero: WordSize.t -> t
+            val constWord: Word.t -> WordSize.t -> t
          end
       sharing Operand = Switch.Use
 
@@ -91,7 +92,8 @@ signature RSSA =
                            prim: Type.t Prim.t}
              | ChunkedObject of { dst: Var.t * Type.t
                                 , header: word
-                                , size: Bytes.t }
+                                , size: Bytes.t
+                                , numChunks: word }
              | Profile of ProfileExp.t
              | ProfileLabel of ProfileLabel.t
              | SetExnStackLocal

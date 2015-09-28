@@ -103,6 +103,10 @@ structure Statement =
          case s of
             Object {size, ...} => size
           | _ => Bytes.zero
+      fun objChunksAllocated (s: t): word =
+        case s of
+           ChunkedObject {numChunks, ...} => numChunks
+         | _ => Word.fromInt 0
    end
 
 structure Transfer =
@@ -151,6 +155,10 @@ structure Block =
           case Transfer.bytesAllocated transfer of
              Transfer.Big _ => Bytes.zero
            | Transfer.Small b => b)
+
+      fun objChunksAllocated (T {statements, transfer, ...}): word =
+        Vector.fold (statements, Word.fromInt 0,
+                     fn (s, acc) => Word.+ (Statement.objChunksAllocated s, acc))
    end
 
 val extraGlobals: Var.t list ref = ref []
@@ -293,7 +301,7 @@ fun insertFunction (f: Function.t,
                       :: !newBlocks
                 in
                    {collect = collect,
-                    dontCollect = collect } (* dontCollect'} *)
+                    dontCollect = dontCollect } (* dontCollect'} *)
                 end
              fun newBlock (isFirst, statements, transfer) =
                 let
@@ -328,7 +336,7 @@ fun insertFunction (f: Function.t,
                    val transfer =
                       Transfer.ifBool
                       (Operand.Var {var = res, ty = Type.bool},
-                       {falsee = collect,
+                       {falsee = dontCollect,
                         truee = collect})
                 in
                    (Vector.new1 s, transfer)
@@ -494,12 +502,12 @@ fun insertFunction (f: Function.t,
           in
              case Transfer.bytesAllocated transfer of
                 Transfer.Big z => bigAllocation z
-              | Transfer.Small _ => bigAllocation
-                                        (Operand.Const
-                                             (Const.Word
-                                                  (WordX.fromIntInf
-                                                       (IntInf.fromInt 1, WordSize.word32))))
-                                                  (* smallAllocation () *)
+              | Transfer.Small _ => smallAllocation () (* bigAllocation *)
+                                    (*     (Operand.Const *)
+                                    (*          (Const.Word *)
+                                    (*               (WordX.fromIntInf *)
+                                    (*                    (IntInf.fromInt 1, WordSize.word32)))) *)
+                (* smallAllocation () *)
           end)
    in
       Function.new {args = args,

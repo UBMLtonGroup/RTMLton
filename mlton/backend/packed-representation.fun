@@ -979,11 +979,15 @@ structure ObjptrRep =
                            , src = Var {ty = tmpTy, var = tmpVar} }
                       :: ac)
                 end)
+            val objSize = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ())
          in
             ChunkedObject {
                 dst = (dst, ty)
               , header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon)
-              , size = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ()) }
+              , size = objSize
+              , numChunks = if Bytes.> (objSize, Runtime.objChunkSize ())
+                            then Word.fromInt 2
+                            else Word.fromInt 1 }
             :: stores
          end
 

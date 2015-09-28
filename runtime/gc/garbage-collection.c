@@ -110,8 +110,8 @@ void performUMGC(GC_state s,
 #ifdef PROFILE_UMGC
     long t_start = getCurrentTime();
     fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
-            s->umheap.fl_chunks,
-            s->umarheap.fl_array_chunks);
+            s->fl_chunks,
+            s->fl_array_chunks);
 #endif
 
     GC_stack currentStack = getStackCurrent(s);
@@ -143,7 +143,7 @@ void performUMGC(GC_state s,
             insertFreeChunk(s, &(s->umheap), pchunk);
         }
 
-        if (!fullGC && s->umheap.fl_chunks >= ensureObjectChunksAvailable) {
+        if (!fullGC && s->fl_chunks >= ensureObjectChunksAvailable) {
             break;
         }
     }
@@ -166,11 +166,11 @@ void performUMGC(GC_state s,
             insertArrayFreeChunk(s, &(s->umarheap), pchunk);
         }
 
-        if (!fullGC &&
-            s->umarheap.fl_array_chunks >= ensureArrayChunksAvailable) {
-            fprintf(stderr, "Array chunk ensured\n");
-            break;
-        }
+        /* if (!fullGC && */
+        /*     s->fl_array_chunks >= ensureArrayChunksAvailable) { */
+        /*     fprintf(stderr, "Array chunk ensured\n"); */
+        /*     break; */
+        /* } */
     }
 
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
@@ -181,8 +181,8 @@ void performUMGC(GC_state s,
     fprintf(stderr, "[GC] Time: %ld, Free chunk: %d, Free array chunk: %d, "
             "ensureArrayChunk: %d\n",
             t_end - t_start,
-            s->umheap.fl_chunks,
-            s->umarheap.fl_array_chunks,
+            s->fl_chunks,
+            s->fl_array_chunks,
             ensureArrayChunksAvailable);
 #endif
 
@@ -307,26 +307,9 @@ void performGC (GC_state s,
 
 
 void ensureInvariantForMutator (GC_state s, bool force) {
-    if (force
-        or not (invariantForMutatorFrontier(s))
-        or not (invariantForMutatorStack(s))
-        or (s->umheap.fl_chunks <= 2000)
-        or (s->umarheap.fl_array_chunks <= 2000))
-    {
-        /* This GC will grow the stack, if necessary. */
-//        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
-//                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
+    force = true;
+    performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
 
-        /* if ((s->umheap.fl_chunks <= 2000) or */
-        /*     (s->umarheap.fl_array_chunks <= 2000)) { */
-        force = true;
-        performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
-
-        //        }
-
-//        fprintf(stderr, "PeformGC fl_chunks: %d, fl_array_chunks: %d\n",
-//                s->umheap.fl_chunks, s->umarheap.fl_array_chunks);
-    }
     assert (invariantForMutatorFrontier(s));
     assert (invariantForMutatorStack(s));
 }
@@ -364,8 +347,8 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
     if (!force) {
-        if ((s->umheap.fl_chunks > 2000) &&
-            (s->umarheap.fl_array_chunks > 1000000))
+        if ((s->fl_chunks > 2000) &&
+            (s->fl_array_chunks > 1000000))
             return;
     }
 
@@ -373,5 +356,5 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
         return;
     }
 
-    GC_collect_real(s, bytesRequested, force);
+    GC_collect_real(s, bytesRequested, true);
 }
