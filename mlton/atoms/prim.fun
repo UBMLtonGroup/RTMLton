@@ -43,6 +43,7 @@ datatype 'a t =
  | UM_CPointer_offset (* not optimized away *)
  | UM_Payload_alloc (* not optimized away *)
  | UM_Header_alloc (* not optimized away *)
+ | UM_Object_alloc (* not optimized away *)
  | CPointer_add (* codegen *)
  | CPointer_diff (* codegen *)
  | CPointer_equal (* codegen *)
@@ -231,6 +232,7 @@ fun toString (n: 'a t): string =
        | UM_CPointer_offset => "UM_CPointer_offset"
        | UM_Payload_alloc => "UM_Payload_alloc"
        | UM_Header_alloc => "UM_Header_alloc"
+       | UM_Object_alloc => "UM_Object_alloc"
        | CPointer_add => "CPointer_add"
        | CPointer_diff => "CPointer_diff"
        | CPointer_equal => "CPointer_equal"
@@ -374,6 +376,7 @@ val equals: 'a t * 'a t -> bool =
     | (UM_CPointer_offset, UM_CPointer_offset) => true
     | (UM_Payload_alloc, UM_Payload_alloc) => true
     | (UM_Header_alloc, UM_Header_alloc) => true
+    | (UM_Object_alloc, UM_Object_alloc) => true
     | (CPointer_add, CPointer_add) => true
     | (CPointer_diff, CPointer_diff) => true
     | (CPointer_equal, CPointer_equal) => true
@@ -539,6 +542,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | UM_CPointer_offset => UM_CPointer_offset
     | UM_Payload_alloc  => UM_Payload_alloc
     | UM_Header_alloc => UM_Header_alloc
+    | UM_Object_alloc => UM_Object_alloc
     | CPointer_add => CPointer_add
     | CPointer_diff => CPointer_diff
     | CPointer_equal => CPointer_equal
@@ -679,6 +683,7 @@ val bogus = MLton_bogus
 val bug = MLton_bug
 val umPayloadAlloc = UM_Payload_alloc
 val umHeaderAlloc = UM_Header_alloc
+val umObjectAlloc = UM_Object_alloc
 val umcPointerOffset = UM_CPointer_offset
 val cpointerAdd = CPointer_add
 val cpointerDiff = CPointer_diff
@@ -792,6 +797,7 @@ val kind: 'a t -> Kind.t =
        | UM_CPointer_offset => Functional
        | UM_Payload_alloc => Functional
        | UM_Header_alloc  => Functional
+       | UM_Object_alloc  => Functional
        | CPointer_add => Functional
        | CPointer_diff => Functional
        | CPointer_equal => Functional
@@ -1003,6 +1009,7 @@ in
        UM_CPointer_offset,
        UM_Payload_alloc,
        UM_Header_alloc,
+       UM_Object_alloc,
        CPointer_add,
        CPointer_diff,
        CPointer_equal,
@@ -1242,6 +1249,9 @@ fun 'a checkApp (prim: 'a t,
             noTargs (fn () => (threeArgs (cpointer, cpointer, cptrdiff), cpointer))
        | UM_Payload_alloc =>
             noTargs (fn () => (threeArgs (cpointer, cpointer, cptrdiff), cpointer))
+       | UM_Object_alloc =>
+            noTargs (fn () => (nArgs (Vector.new4(cpointer, csize, word32, csize)),
+                               cpointer))
        | UM_CPointer_offset =>
             noTargs (fn () => (nArgs (Vector.new4(cpointer, cpointer,
                                                   cptrdiff, cptrdiff)), cpointer))

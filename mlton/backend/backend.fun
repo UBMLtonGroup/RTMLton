@@ -573,7 +573,8 @@ let
              | ChunkedObject {dst, header, size, numChunks} =>
                M.Statement.chunkedObject { dst = varOperand (#1 dst)
                                          , header = header
-                                         , size = size }
+                                         , size = size
+                                         , numChunks = numChunks }
              | Object {dst, header, size} =>
                   M.Statement.object {dst = varOperand (#1 dst),
                                       header = header,

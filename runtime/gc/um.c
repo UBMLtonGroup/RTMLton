@@ -35,6 +35,17 @@ UM_Header_alloc(GC_state gc_stat,
 }
 
 Pointer
+UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
+{
+    GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
+    chunk->chunk_header = UM_CHUNK_IN_USE;
+    *((uint32_t*) chunk->ml_object) = header;
+    if (num_chunks > 1)
+        chunk->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
+    return (Pointer)(chunk->ml_object + s);
+}
+
+Pointer
 UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
     if (DEBUG_MEM)

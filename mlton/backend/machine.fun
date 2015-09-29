@@ -462,27 +462,26 @@ structure Statement =
 
 
 
-      fun chunkedObject {dst, header, size} =
+      fun chunkedObject {dst, header, size, numChunks} =
          let
             datatype z = datatype Operand.t
             fun bytes (b: Bytes.t): Operand.t =
                Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize ()))
             val temp = Register (Register.new (Type.cpointer (), NONE))
+            val gcHeader = Word (WordX.fromIntInf (Word.toIntInf header,
+                                                 WordSize.objptrHeader ()))
+            fun wordOp (w: word): Operand.t =
+                Word (WordX.fromIntInf (Word.toIntInf w, WordSize.csize ()))
          in
-            Vector.new4
-            (Move {dst = Contents {oper = UMFrontier,
-                                   ty = Type.objptrHeader ()},
-                   src = Word (WordX.fromIntInf (Word.toIntInf header,
-                                                 WordSize.objptrHeader ()))},
-             PrimApp {args = Vector.new3 (GCState, UMFrontier,
+            Vector.new2
+            (PrimApp {args = Vector.new4 (GCState,
+                                          wordOp numChunks,
+                                          gcHeader,
                                           bytes (Runtime.headerSize ())),
                       dst = SOME temp,
-                      prim = Prim.umHeaderAlloc},
+                      prim = Prim.umObjectAlloc},
              (* CHECK; if objptr <> cpointer, need non-trivial coercion here. *)
-             Move {dst = dst, src = Cast (temp, Operand.ty dst)},
-             PrimApp {args = Vector.new3 (GCState, UMFrontier, bytes size),
-                      dst = SOME UMFrontier,
-                      prim = Prim.umPayloadAlloc})
+             Move {dst = dst, src = Cast (temp, Operand.ty dst)})
          end
 
       fun foldOperands (s, ac, f) =
