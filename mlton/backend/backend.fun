@@ -527,15 +527,23 @@ let
                   end
              | ChunkedOffset {base, offset, ty} =>
                   let
+                     val needsChunked =
+                         let val pos = foldl Bytes.+ offset
+                           [Type.bytes ty, Runtime.headerSize()]
+                         in Bytes.> (pos, Runtime.objChunkSize ())
+                         end
                      val base = translateOperand base
                   in
-                     if M.Operand.isLocation base
-                        then M.Operand.ChunkedOffset {base = base,
-                                                      offset = offset,
-                                                      ty = ty,
-                                                      size = Type.bytes ty
-                                                     }
-                     else bogusOp ty
+                      if M.Operand.isLocation base
+                      then if needsChunked
+                           then M.Operand.ChunkedOffset { base = base
+                                                        , offset = offset
+                                                        , ty = ty
+                                                        , size = Type.bytes ty }
+                           else M.Operand.Offset { base = base
+                                                 , offset = offset
+                                                 , ty = ty}
+                      else bogusOp ty
                   end
              | ObjptrTycon opt =>
                   M.Operand.Word
