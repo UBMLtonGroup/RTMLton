@@ -95,6 +95,13 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
     return (Pointer) next_chunk_next->ml_object;
 }
 
+Pointer
+UM_Chunk_Next_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
+{
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
+    return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
+                     UM_CHUNK_PAYLOAD_SIZE);
+}
 
 /*
  * calculate which chunk we need to look at
