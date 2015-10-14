@@ -1,7 +1,8 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
 typedef struct GC_UM_Chunk {
-    unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE];
+    unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
+    //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
     Word32_t chunk_header;
     size_t sentinel;
     struct GC_UM_Chunk* next_chunk;

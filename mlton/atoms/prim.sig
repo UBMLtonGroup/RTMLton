@@ -35,6 +35,7 @@ signature PRIM =
              | UM_CPointer_offset (* not optimized *)
              | UM_Payload_alloc (* not optimized *)
              | UM_Header_alloc (* not optimized *)
+             | UM_Object_alloc (* not optimized *)
              | CPointer_add (* not optimized *)
              | CPointer_diff (* codegen *)
              | CPointer_equal (* codegen *)
@@ -240,6 +241,7 @@ signature PRIM =
                                       word: WordSize.t -> 'a}} -> bool
       val umPayloadAlloc: 'a t
       val umHeaderAlloc: 'a t
+      val umObjectAlloc: 'a t
       val umcPointerOffset: 'a t
       val cpointerAdd: 'a t
       val cpointerDiff: 'a t

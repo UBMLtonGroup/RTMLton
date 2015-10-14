@@ -35,6 +35,19 @@ UM_Header_alloc(GC_state gc_stat,
 }
 
 Pointer
+UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
+{
+    GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
+    chunk->chunk_header = UM_CHUNK_IN_USE;
+    *((uint32_t*) chunk->ml_object) = header;
+    if (num_chunks > 1) {
+        chunk->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
+        chunk->next_chunk->chunk_header = UM_CHUNK_IN_USE;
+    }
+    return (Pointer)(chunk->ml_object + s);
+}
+
+Pointer
 UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
     if (DEBUG_MEM)
@@ -82,6 +95,13 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
     return (Pointer) next_chunk_next->ml_object;
 }
 
+Pointer
+UM_Chunk_Next_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
+{
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
+    return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
+                     UM_CHUNK_PAYLOAD_SIZE);
+}
 
 /*
  * calculate which chunk we need to look at
@@ -121,32 +141,8 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 
     if (DEBUG_MEM)
        DBG(p, o, s, "go to next chunk");
-
-    /* On next chunk */
-    if (current_chunk->sentinel == UM_CHUNK_SENTINEL_UNUSED) {
-        current_chunk->sentinel = o + 4;
-
-        if (DEBUG_MEM) {
-            fprintf(stderr, "Returning next chunk: "FMTPTR"\n",
-                    (uintptr_t) current_chunk->next_chunk);
-            fprintf(stderr, "Returning next chunk mlobject: "FMTPTR"\n",
-                    (uintptr_t) current_chunk->next_chunk->ml_object);
-        }
-
-        if (current_chunk->next_chunk->chunk_header == UM_CHUNK_HEADER_CLEAN) {
-            die("Next chunk on free list!\n");
-        }
-
-        return (Pointer)(current_chunk->next_chunk->ml_object);
-    }
-
-    if (DEBUG_MEM) {
-        fprintf(stderr, "Multi-chunk: Go to next chunk: "FMTPTR", sentinel: %d\n",
-                (uintptr_t) current_chunk->next_chunk,
-                current_chunk->sentinel);
-    }
-    return (Pointer)(current_chunk->next_chunk + (o + 4) -
-                     current_chunk->sentinel);
+    return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
+                     UM_CHUNK_PAYLOAD_SIZE);
 }
 
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
