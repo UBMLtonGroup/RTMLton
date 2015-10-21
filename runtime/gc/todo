@@ -4,3 +4,15 @@ ssa-to-rssa.fun
 
 	
 s->atomicState is almost certainly going to need to be per-thread.
+
+
+
+to complete paper:
+
+- what needed to change to make threading work
+- background on mlton threads
+- implement coop sched or timeslice with models, but only single core, but can be adopted to multicore (cite multimlton) further details can be found here: cite mlton url/doc
+- how do you get priorities into mlton
+- how do we interface with the pthreads
+- do we want 1:1 or many:1 
+

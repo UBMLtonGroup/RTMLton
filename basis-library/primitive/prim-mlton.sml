@@ -107,7 +107,8 @@ structure Exn =
 
 structure FFI =
    struct
-      val getOpArgsResPtr = #1 _symbol "MLton_FFI_opArgsResPtr" private: Pointer.t GetSet.t;
+      (*val getOpArgsResPtr = #1 _symbol "MLton_FFI_opArgsResPtr" private: Pointer.t GetSet.t;*)
+      val getOpArgsResPtr = _prim "FFI_getOpArgsResPtr" : unit -> Pointer.t;
       val numExports = _build_const "MLton_FFI_numExports": Int32.int;
    end
 

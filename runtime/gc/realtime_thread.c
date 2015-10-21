@@ -6,6 +6,7 @@
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
 
 static pthread_mutex_t thread_queue_lock;
+static volatile int initialized = 0;
 
 static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority);
 
@@ -13,13 +14,6 @@ static struct _TQ {
 	TQNode *head;
 	TQNode *tail;
 } thread_queue[MAXPRI];
-
-volatile bool RTThreads_beginInit = FALSE;
-volatile int32_t RTThreads_initialized= 0;
-volatile int32_t Proc_criticalCount;
-volatile int32_t Proc_criticalTicket;
-
-pthread_mutex_t AllocatedThreadLock;
 
 int GC_displayThreadQueue(__attribute__ ((unused)) GC_state s, __attribute__ ((unused)) int unused) {
 	LOCK(thread_queue_lock);
@@ -75,12 +69,6 @@ int32_t GC_getThreadPriority(GC_state s, pointer p) {
 	return -1;
 }
 
-/* TODO
- * lookup thread,
- * change prio in GC_thread struct,
- * move thread to new queue if nec'y
- * change the posix priority
- */
 int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {
 	GC_thread gct;
 	TQNode *n;
@@ -120,10 +108,6 @@ int32_t GC_myPriority(__attribute__ ((unused)) GC_state s)
 	return PTHREAD_NUM;
 }
 
-/* TODO
- * lookup thread,
- * change runnable to true,
- */
 int32_t GC_setThreadRunnable(GC_state s, pointer p) {
 	GC_thread gct;
 	TQNode *n = NULL;
@@ -151,12 +135,9 @@ int32_t GC_setThreadRunnable(GC_state s, pointer p) {
 	return 1;
 }
 
-/* TODO
- * move thread to back of queue
- * pthread_yield
- */
 int32_t GC_threadYield(__attribute__ ((unused)) GC_state s) {
 	fprintf(stderr, "GC_threadYield()\n");
+	sched_yield();
 	return 0;
 }
 
@@ -252,35 +233,27 @@ int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {
 	return rv;
 }
 
-void RTThread_waitForInitialization (GC_state s) {
-	__attribute__ ((unused)) int32_t unused;
 
-  while (!RTThreads_beginInit) { }
-
-  unused = __sync_fetch_and_add (&RTThreads_initialized, 1);
-
-  while (!RTThread_isInitialized(s)) { }
-  initProfiling (s);
+void realtimeThreadWaitForInit(void)
+{
+	while (initialized < MAXPRI) {
+		fprintf(stderr, "spin [thread boot: %d out of %d]..\n", initialized, MAXPRI);
+	}
 }
 
-
-bool RTThread_isInitialized (__attribute__ ((unused)) GC_state s) {
-  return RTThreads_initialized == MAXPRI;
-}
-
-void realtimeThreadInit(struct GC_state *state) {
+void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) {
 	int rv = 0;
 
 	rv = pthread_mutex_init(&thread_queue_lock, NULL);
 	MYASSERT(int, rv, ==, 0);
 	memset(&thread_queue, 0, sizeof(struct _TQ)*(MAXPRI));
 
-	pthread_t *realtimeThreads =
-			malloc(MAXPRI * sizeof(pthread_t));
-	MYASSERT(long, realtimeThreads, !=, NULL);
+	state->realtimeThreads[0] = main;
+	state->realtimeThreads[1] = gc;
+	initialized += 2;
 
 	int tNum;
-	for (tNum = 0; tNum < MAXPRI; tNum++) {
+	for (tNum = 2; tNum < MAXPRI; tNum++) {
 		if (DEBUG)
 			fprintf(stderr, "spawning thread %d\n", tNum);
 
@@ -289,21 +262,21 @@ void realtimeThreadInit(struct GC_state *state) {
 
 		params->tNum = tNum;
 		params->state = state;
+		state->threadPaused[params->tNum] = 2; // 0 = running, 1 = paused, 2 = not-ready
 
-		if (pthread_create(&realtimeThreads[tNum], NULL, &realtimeRunner, (void*)params)) {
+		pthread_t *pt = malloc(sizeof(pthread_t));
+		memset(pt, 0, sizeof(pthread_t));
+
+		if (pthread_create(pt, NULL, &realtimeRunner, (void*)params)) {
 			fprintf(stderr, "pthread_create failed: %s\n", strerror (errno));
 			exit (-1);
 		}
+		else {
+			state->realtimeThreads[tNum] = pt;
+			initialized++;
+		}
 	}
 
-	state->realtimeThreads = realtimeThreads;
-
-	state->realtimeThreadAllocated =
-		malloc(MAXPRI * sizeof(bool));
-
-	for (tNum = 0; tNum < MAXPRI; tNum++) {
-		state->realtimeThreadAllocated[tNum] = false;
-	}
 }
 
 __attribute__ ((noreturn))
@@ -316,23 +289,56 @@ void* realtimeRunner(void* paramsPtr) {
 
     assert(params->tNum == PTHREAD_NUM);
 
-	if (params->tNum <= 1) {
-		while(1) sleep(10000); //pthread_exit(NULL);
-	}
-
 	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-		if (DEBUG) fprintf(stderr, "%d] spin [callFromCHandlerThread == 1] %x ..\n", tNum, params->state);
+		if (DEBUG) {
+			fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
+		}
+		ssleep(1, 0);
 	}
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
-	GC_thread curct = (GC_thread)(state->currentThread[0] + offsetofThread(state));
-	GC_stack curstk = (GC_stack)(objptrToPointer(curct->stack, state->heap.start));
+#if 1
+	/* state->currentThread objptr
+	   curct->stack         objptr
+
+	   ref: https://github.com/UBMLtonGroup/MLton/blob/master/runtime/gc/switch-thread.c#L14-L16
+
+	   given an objptr, to get GC_thread 
+
+		thread = (GC_thread)(objptrToPointer (op, s->heap.start)
+                         + offsetofThread (s));
+
+	   given a pointer, to get objptr 
+
+		stack = (GC_stack)objptrToPointer (thread->stack, s->heap.start))
+
+	   from is a GC_thread in the following.
+	   (objptr) s->savedThread = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
+
+	   pointer GC_copyThread (GC_state s, pointer p) 
+
+	 */
+
+	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start)
+				+ offsetofThread (state));
+	GC_stack curstk = (GC_stack)objptrToPointer(curct->stack, state->heap.start);
+
+	/* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
+
 	GC_thread tc = copyThread(state, curct, curstk->used);
-	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)tc, state->heap.start);
+
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)(tc - offsetofThread (state)), state->heap.start);
+#else
+	/* cant do this bc it requires state->currentThread to already be set */
+	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
+		state->currentThread[0], state->heap.start)), state->heap.start); 
+#endif
+
+	state->threadPaused[params->tNum] = 0;
 
     while (1) {
-        if (not DEBUG) {
+        if (DEBUG) {
         	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
         	fprintf(stderr, "%d] calling Parallel_run..\n", tNum);
         }
@@ -342,3 +348,6 @@ void* realtimeRunner(void* paramsPtr) {
     }
 }
 
+pointer FFI_getOpArgsResPtr (GC_state s) {
+  return s->ffiOpArgsResPtr[PTHREAD_NUM];
+}

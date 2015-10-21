@@ -29,8 +29,8 @@ struct GC_state {
 
   /* added for rt-threading */
 
-  pthread_t *realtimeThreads;
-  bool      *realtimeThreadAllocated;
+  pthread_t *realtimeThreads[MAXPRI];
+  bool threadPaused[MAXPRI];
 
   /* Begin inter-thread GC communication data */
   pthread_mutex_t gc_mutex;
@@ -38,6 +38,8 @@ struct GC_state {
 
   /* end of rt-threading additions */
 
+
+  pointer ffiOpArgsResPtr[MAXPRI];
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */

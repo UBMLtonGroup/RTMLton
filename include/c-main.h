@@ -23,9 +23,8 @@ static GC_frameIndex returnAddressToFrameIndex (GC_returnAddress ra) {
 
 #define MLtonCallFromC                                                  \
 /* Globals */                                                           \
-PRIVATE uintptr_t YYZnextFun[MAXPRI];                                      \
 PRIVATE int returnToC[MAXPRI];                                          \
-static void MLton_callFromC () {                                        \
+static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
 		fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
         struct cont cont;                                               \
         GC_state s;                                                     \
@@ -35,6 +34,7 @@ static void MLton_callFromC () {                                        \
         s = &gcState;                                                   \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
         s->atomicState += 3;                                            \
+        s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
         if (s->signalsInfo.signalIsPending)                             \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
@@ -68,23 +68,23 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
         Initialize (al, mg, mfs, mmc, pk, ps);                          \
         if (gcState.amOriginal) {                                       \
                 real_Init();                                            \
-                PrepFarJump(cont, mc, ml);                                    \
+                PrepFarJump(cont, mc, ml);                              \
         } else {                                                        \
                 /* Return to the saved world */                         \
                 cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
-                cont.nextChunk = nextChunks[cont.nextFun];                   \
+                cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         setvbuf(stderr, NULL, _IONBF, 0);                               \
-	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
-	assert(GCrunner_thread != NULL);                                \
-	MYASSERT(pthread_mutex_init(&gclock, NULL), ==, 0);             \
-	MYASSERT(pthread_mutex_lock(&gclock), ==, 0);                   \
-	DBG((stderr, "%x] main thread locking %x\n", pthread_self(), &gclock));             \
+        install_signal_handler(&gcState);                               \
+	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));             \
+	set_pthread_num(0);                                                 \
+	MYASSERT(GCrunner_thread, !=, NULL);                                \
+	MYASSERT(pthread_mutex_init(&gcflag_lock, NULL), ==, 0);            \
 	MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
-    	DBG((stderr, "%d] waiting on GC runner", PTHREAD_NUM));         \
-	while (!gcState.GCrunnerRunning){DBG((stderr, "spin.."));}      \
-	realtimeThreadInit(&gcState);					\
-       									\
+	while (!gcState.GCrunnerRunning){fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
+	realtimeThreadInit(&gcState, pthread_self(), GCrunner_thread);      \
+	realtimeThreadWaitForInit();                                        \
+       									                                \
         /* Trampoline */                                                \
 		while (1) {                                                     \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
@@ -106,26 +106,26 @@ PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
         Initialize (al, mg, mfs, mmc, pk, ps);                          \
         if (gcState.amOriginal) {                                       \
                 real_Init();                                            \
-                PrepFarJump(cont, mc, ml);                                    \
+                PrepFarJump(cont, mc, ml);                              \
         } else {                                                        \
                 /* Return to the saved world */                         \
                 cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
-                cont.nextChunk = nextChunks[cont.nextFun];                   \
+                cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         /* Trampoline */                                                \
-        returnToC[PTHREAD_NUM] = FALSE;                                              \
+        returnToC[PTHREAD_NUM] = FALSE;                                 \
         do {                                                            \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-        } while (not returnToC[PTHREAD_NUM]);                                        \
+        } while (not returnToC[PTHREAD_NUM]);                           \
 }                                                                       \
 PUBLIC void LIB_CLOSE(LIBNAME) () {                                     \
         struct cont cont;                                               \
         cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
-        cont.nextChunk = nextChunks[cont.nextFun];                           \
-        returnToC[PTHREAD_NUM] = FALSE;                                              \
+        cont.nextChunk = nextChunks[cont.nextFun];                      \
+        returnToC[PTHREAD_NUM] = FALSE;                                 \
         do {                                                            \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-        } while (not returnToC)[PTHREAD_NUM];                                        \
+        } while (not returnToC[PTHREAD_NUM]);                           \
         GC_done(&gcState);                                              \
 }
 

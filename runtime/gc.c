@@ -26,6 +26,8 @@
 #include "gc/align.c"
 #include "gc/read_write.c"
 
+#include "gc/ssleep.c"
+
 #include "gc/array-allocate.c"
 #include "gc/array.c"
 #include "gc/atomic.c"
@@ -40,6 +42,7 @@
 #include "gc/foreach.c"
 #include "gc/forward.c"
 #include "gc/frame.c"
+#include "gc/garbage-stw.c"
 #include "gc/garbage-collection.c"
 #include "gc/realtime_thread.c"
 #include "gc/gc_state.c"

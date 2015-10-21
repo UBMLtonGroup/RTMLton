@@ -6,12 +6,16 @@
  * See the file MLton-LICENSE for details.
  */
 
+#define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
+
 /* enter and leave should be called at the start and end of every GC
  * function that is exported to the outside world.  They make sure
  * that the function is run in a critical section and check the GC
  * invariant.
  */
 void enter (GC_state s) {
+  CHECKDISABLEGC;
+
   if (DEBUG)
     fprintf (stderr, "enter\n");
   /* used needs to be set because the mutator has changed s->stackTop. */
@@ -26,6 +30,8 @@ void enter (GC_state s) {
 }
 
 void leave (GC_state s) {
+  CHECKDISABLEGC;
+
   if (DEBUG)
     fprintf (stderr, "leave\n");
   /* The mutator frontier invariant may not hold
