@@ -25,6 +25,7 @@ void resume_threads(GC_state s)
 
 void quiesce_threads(GC_state s)
 {
+	fprintf(stderr,"%d]Inside quiesce_threads\n",PTHREAD_NUM);
 	for(uint32_t i = 0; i < MAXPRI ; i++) {
 		if (i == PTHREAD_NUM) continue; // skip ourself
 		if (s->threadPaused[i] == 0) {
