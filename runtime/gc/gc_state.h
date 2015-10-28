@@ -35,7 +35,7 @@ struct GC_state {
   /* Begin inter-thread GC communication data */
   pthread_mutex_t gc_mutex;
   volatile bool GCrunnerRunning;
-
+  volatile bool isRealTimeThreadInitialized;
   /* end of rt-threading additions */
 
 

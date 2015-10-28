@@ -127,7 +127,7 @@ static volatile int gcflag;
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
 #define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM; UNLOCKFLAG; } while(0)
-#define COMPLETEGC do { LOCKFLAG; gcflag = 0; UNLOCKFLAG; } while(0)
+#define COMPLETEGC do { LOCKFLAG; gcflag = -1; UNLOCKFLAG; } while(0)
 
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
@@ -145,18 +145,24 @@ void *GCrunner(void *_s) {
 		if (DEBUG)
 			fprintf(stderr, "%d] GCrunner: spinning\n", PTHREAD_NUM);
 
-		while (gcflag == 0) {
+		while (gcflag == -1) {
 			sched_yield();
 		}
 
 		if (DEBUG)
 			fprintf(stderr, "%d] GCrunner: GC requested. pausing threads.\n", PTHREAD_NUM);
+			
+		/* if GC collect is called even before the realtime threads are initialized, then the GC runner will try to 
+		 * pause threads that dont exist. Hence the quiesce_threads should be called only once the RT threads 
+		 * are intiliazed (//TODO reasoning)
+		 */
+		if(s->isRealTimeThreadInitialized)
+		{
+			quiesce_threads(s);
 
-		quiesce_threads(s);
-
-		if (DEBUG)
+			if (DEBUG)
 			fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
-
+	
 		s->currentThread[1] = s->currentThread[gcflag];
 
 		performGC_helper(s,
@@ -164,15 +170,15 @@ void *GCrunner(void *_s) {
 				s->nurseryBytesRequested,
 				s->forceMajor,
 				s->mayResize);
-
+		
 		if (DEBUG)
 			fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
 
-		do {
+			do {
 			fprintf(stderr, "%d] GCrunner: resuming %d threads.\n", paused_threads_count(s), PTHREAD_NUM);
 			resume_threads(s);
-		} while(paused_threads_count(s));
-
+			} while(paused_threads_count(s));
+		}
 		COMPLETEGC;
 	}
 #endif

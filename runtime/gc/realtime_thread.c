@@ -276,6 +276,7 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 			initialized++;
 		}
 	}
+	state->isRealTimeThreadInitialized = TRUE;
 
 }
 
