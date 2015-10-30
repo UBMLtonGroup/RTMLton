@@ -37,5 +37,6 @@ static inline void ensureHasHeapBytesFree (GC_state s,
 #if (defined (MLTON_GC_INTERNAL_BASIS))
 
 PRIVATE void GC_collect (GC_state s, size_t bytesRequested, bool force);
+void maybe_growstack(GC_state s);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */

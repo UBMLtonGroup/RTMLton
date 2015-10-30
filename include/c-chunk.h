@@ -74,7 +74,7 @@
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
-#define S(ty, i) *(ty*)(StackTop + (i))
+#define S(ty, i) (*(maybe_growstack(GCState), (ty*)(StackTop + (i))))
 
 #endif
 

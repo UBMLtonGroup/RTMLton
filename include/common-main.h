@@ -80,7 +80,7 @@ PRIVATE Pointer gcStateAddress;
         gcState.profiling.kind = pk;                                    \
         gcState.profiling.stack = ps;                                   \
         gcState.GCrunnerRunning = FALSE;                                \
-	gcState.isRealTimeThreadInitiliazed=FALSE;			\
+	    gcState.isRealTimeThreadInitialized = FALSE;           			\
         MLton_init (argc, argv, &gcState);                              \
 
 
