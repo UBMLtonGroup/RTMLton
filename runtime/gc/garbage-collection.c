@@ -76,6 +76,19 @@ void growStackCurrent (GC_state s) {
   markCard (s, objptrToPointer (getThreadCurrentObjptr(s), s->heap.start));
 }
 
+void maybe_growstack(GC_state s) {
+	bool stackTopOk;
+	size_t stackBytesRequested;
+	if (isStackEmpty (getStackCurrent(s))) return;
+    stackTopOk = invariantForMutatorStack (s);
+    stackBytesRequested =
+      stackTopOk
+      ? 0
+      : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
+    unless (stackTopOk)
+      growStackCurrent (s);
+}
+
 void enterGC (GC_state s) {
   if (s->profiling.isOn) {
     /* We don't need to profileEnter for count profiling because it
@@ -234,7 +247,7 @@ void performGC_helper (GC_state s,
                 bool mayResize) {
   uintmax_t gcTime;
   bool stackTopOk;
-  size_t stackBytesRequested;
+  size_t stackBytesRequested = 0;
   struct rusage ru_start;
   size_t totalBytesRequested;
 
@@ -274,11 +287,15 @@ void performGC_helper (GC_state s,
   if (needGCTime (s))
     startTiming (&ru_start);
   minorGC (s);
+
+#if 0
   stackTopOk = invariantForMutatorStack (s);
   stackBytesRequested = 
     stackTopOk 
     ? 0 
     : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
+#endif
+
   totalBytesRequested = 
     oldGenBytesRequested 
     + nurseryBytesRequested
@@ -290,8 +307,10 @@ void performGC_helper (GC_state s,
                          nurseryBytesRequested);
   assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
                             nurseryBytesRequested));
+#if 0
   unless (stackTopOk)
     growStackCurrent (s);
+#endif
   setGCStateCurrentThreadAndStack (s);
   if (needGCTime (s)) {
     gcTime = stopTiming (&ru_start, &s->cumulativeStatistics.ru_gc);
