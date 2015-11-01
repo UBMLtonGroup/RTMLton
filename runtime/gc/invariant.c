@@ -124,7 +124,8 @@ bool invariantForMutatorStack (GC_state s) {
   top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
   bool invariant = (top <= (limit + framesize));
   if (DEBUG)
-	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x) invariant=%d\n", top, (limit+framesize), limit, framesize, invariant);
+	  fprintf(stderr, "%d] invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x) invariant=%d\n", PTHREAD_NUM,
+			  top, (limit+framesize), limit, framesize, invariant);
   return invariant;
 }
 

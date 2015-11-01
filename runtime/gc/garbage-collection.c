@@ -376,14 +376,17 @@ void performGC_helper (GC_state s,
 }
 
 void ensureInvariantForMutator (GC_state s, bool force) {
-  if (force
-      or not (invariantForMutatorFrontier(s))
-      or not (invariantForMutatorStack(s))) {
-    /* This GC will grow the stack, if necessary. */
-    performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
-  }
-  assert(invariantForMutatorFrontier(s));
-  assert(invariantForMutatorStack(s));
+	fprintf(stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
+
+	if (force or not (invariantForMutatorFrontier(s))) {
+		performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
+	}
+
+	if (not (invariantForMutatorStack(s))) maybe_growstack(s);
+
+	assert(invariantForMutatorFrontier(s));
+	fprintf(stderr, "%d] ensureInvariantForMutatorStack 2nd call\n", PTHREAD_NUM);
+	assert(invariantForMutatorStack(s));
 }
 
 /* ensureHasHeapBytesFree (s, oldGen, nursery) 
