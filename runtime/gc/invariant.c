@@ -87,19 +87,23 @@ bool invariantForGC (GC_state s) {
     fprintf (stderr, "Checking nursery.\n");
   foreachObjptrInRange (s, s->heap.nursery, &s->frontier, 
                         assertIsObjptrInFromSpace, FALSE);
+#if 0
+  /* jm disabled stack invariants.. the GC is in a sep pthread,
+   * so these checks dont make sense as part of the GC invariants.
+   */
   /* Current thread. */
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
-  fprintf(stderr, "\t****** SB %d %x == %x\n", PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack));
-  assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
-#if 1
   fprintf(stderr, "\t****** ST %d %x == %x\n", PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack));
-#endif
+  fprintf(stderr, "\t****** SB %d %x == %x\n", PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack));
+  fprintf(stderr, "\t****** SL %d %x == %x\n", PTHREAD_NUM, s->stackLimit[PTHREAD_NUM], getStackLimit (s, stack));
+  assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
   assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
   assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
   assert (stack->used == sizeofGCStateCurrentStackUsed (s));
   assert (stack->used <= stack->reserved);
+#endif
   if (DEBUG)
     fprintf (stderr, "invariantForGC passed\n");
   return TRUE;
