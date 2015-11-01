@@ -250,7 +250,7 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 
 	state->realtimeThreads[0] = main;
 	state->realtimeThreads[1] = gc;
-	initialized += 2;
+	initialized = 2;
 
 	int tNum;
 	for (tNum = 2; tNum < MAXPRI; tNum++) {

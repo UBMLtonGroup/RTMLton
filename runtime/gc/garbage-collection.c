@@ -167,30 +167,42 @@ void *GCrunner(void *_s) {
 			
 		/* if GC collect is called even before the realtime threads are initialized, then the GC runner will try to 
 		 * pause threads that dont exist. Hence the quiesce_threads should be called only once the RT threads 
-		 * are intiliazed (//TODO reasoning)
+		 * are initialized (//TODO reasoning)
+		 *
+		 * but.. c-main.h does the following:
+		 * 1. initialize structures
+		 * 2. create gc runner
+		 * 3. initialize rt threads
+		 * 4. wait for rt threads to initialize
+		 * 5. continue with main (thread 0)
+		 *
+		 * so... we already wait for threads to initialize, so this is redundant. jm
 		 */
 		if(s->isRealTimeThreadInitialized)
 		{
 			quiesce_threads(s);
 
 			if (DEBUG)
-			fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
+				fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
+
+			s->currentThread[1] = s->currentThread[gcflag];
+
+			performGC_helper(s,
+					s->oldGenBytesRequested,
+					s->nurseryBytesRequested,
+					s->forceMajor,
+					s->mayResize);
+
+			if (DEBUG)
+				fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
 	
-		s->currentThread[1] = s->currentThread[gcflag];
-
-		performGC_helper(s,
-				s->oldGenBytesRequested,
-				s->nurseryBytesRequested,
-				s->forceMajor,
-				s->mayResize);
-		
-		if (DEBUG)
-			fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
-
-			do {
-			fprintf(stderr, "%d] GCrunner: resuming %d threads.\n", paused_threads_count(s), PTHREAD_NUM);
-			resume_threads(s);
-			} while(paused_threads_count(s));
+				do {
+					fprintf(stderr, "%d] GCrunner: resuming %d threads.\n", paused_threads_count(s), PTHREAD_NUM);
+					resume_threads(s);
+				} while(paused_threads_count(s));
+		}
+		else {
+			fprintf(stderr, "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n", PTHREAD_NUM);
 		}
 		COMPLETEGC;
 	}
@@ -206,7 +218,10 @@ void performGC (GC_state s,
                 size_t nurseryBytesRequested,
                 bool forceMajor,
                 bool mayResize) {
-	CHECKDISABLEGC;
+    if (DEBUG)
+    	fprintf(stderr, "%d] performGC: starting..\n", PTHREAD_NUM);
+
+    CHECKDISABLEGC;
 
     /* In our MT formulation of realtime MLton, we move the
      * GC into a separate pthread. In order to keep things
@@ -226,7 +241,13 @@ void performGC (GC_state s,
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
-    while (gcflag) sched_yield();
+    while (s->isRealTimeThreadInitialized == FALSE) {
+    	if (DEBUG) {
+    		fprintf(stderr, "%d] spin [can't performGC yet] ..\n", PTHREAD_NUM);
+    	}
+    	ssleep(1, 0);
+    }
+    while (gcflag > -1) sched_yield();
 
     if (DEBUG)
     	fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);

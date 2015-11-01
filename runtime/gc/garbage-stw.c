@@ -25,11 +25,11 @@ void resume_threads(GC_state s)
 
 void quiesce_threads(GC_state s)
 {
-	fprintf(stderr,"%d]Inside quiesce_threads\n",PTHREAD_NUM);
+	fprintf(stderr,"%d]Inside quiesce_threads (total=%d)\n", PTHREAD_NUM, (MAXPRI-1));
 	for(uint32_t i = 0; i < MAXPRI ; i++) {
-		if (i == PTHREAD_NUM) continue; // skip ourself
+		if (i == PTHREAD_NUM) continue; // skip ourself (we are only called by the GC thread)
 		if (s->threadPaused[i] == 0) {
-			fprintf(stderr, "%d] Telling thread %d to pause.\n", PTHREAD_NUM, i);
+			fprintf(stderr, "%d] Telling thread %d of %d to pause.\n", PTHREAD_NUM, i, MAXPRI-1);
 			pthread_kill(*(s->realtimeThreads[i]), SIGUSR1);
 		}
 		else {
@@ -41,7 +41,7 @@ void quiesce_threads(GC_state s)
 	do {
 		fp = TRUE;
 		for(uint32_t i = 0 ; i < MAXPRI ; i++) {
-			if (i == PTHREAD_NUM) continue;
+			if (i == PTHREAD_NUM) continue; // skip ourself (we are only called by the GC thread)
 			fprintf(stderr, "quiesce_threads check %d (=%d)\n", i, s->threadPaused[i]);
 			if (s->threadPaused[i] == 0) fp = FALSE;
 			fprintf(stderr, "quiesce_threads fp = %d\n", fp);
