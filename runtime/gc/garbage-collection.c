@@ -118,7 +118,7 @@ void leaveGC (GC_state s) {
 #define THREADED
 
 pthread_mutex_t gcflag_lock;
-static volatile int gcflag;
+static volatile int gcflag=-1;
 
 #undef GCTHRDEBUG
 
