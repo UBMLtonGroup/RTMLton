@@ -69,6 +69,9 @@ void growStackCurrent (GC_state s) {
              uintmaxToCommaString(getStackCurrent(s)->reserved),
              uintmaxToCommaString(reserved),
              uintmaxToCommaString(getStackCurrent(s)->used));
+  /* TODO insufficient heap will cause grow to fail since we've now separated
+   * stack ops from heap ops
+   */
   assert (hasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0));
   stack = newStack (s, reserved, TRUE);
   copyStack (s, getStackCurrent(s), stack);
@@ -118,7 +121,7 @@ void leaveGC (GC_state s) {
 #define THREADED
 
 pthread_mutex_t gcflag_lock;
-static volatile int gcflag;
+static volatile int gcflag = -1;
 
 #undef GCTHRDEBUG
 

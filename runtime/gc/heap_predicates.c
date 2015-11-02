@@ -56,14 +56,15 @@ bool isObjptrInFromSpace (GC_state s, objptr op) {
 bool hasHeapBytesFree (GC_state s, size_t oldGen, size_t nursery) {
   size_t total;
   bool res;
-
+  displayHeap(s, &(s->heap), stderr);
+  displayHeapInfo(s);
   total =
     s->heap.oldGenSize + oldGen 
     + (s->canMinor ? 2 : 1) * (size_t)(s->limitPlusSlop - s->heap.nursery);
   res = 
     (total <= s->heap.size) 
     and (nursery <= (size_t)(s->limitPlusSlop - s->frontier));
-  if (DEBUG_DETAILED)
+  //if (DEBUG_DETAILED)
     fprintf (stderr, "%s = hasBytesFree (%s, %s)\n",
              boolToString (res),
              uintmaxToCommaString(oldGen),

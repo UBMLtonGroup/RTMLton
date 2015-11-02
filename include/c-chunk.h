@@ -33,6 +33,9 @@
 
 #define WORDWIDTH 8 /* use gcState->alignment */
 
+#define BeginCriticalSection
+#define EndCriticalSection
+
 #define GCState ((Pointer)&gcState)
 #define ExnStack *(size_t*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)

@@ -251,6 +251,9 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 	state->realtimeThreads[0] = main;
 	state->realtimeThreads[1] = gc;
 	initialized = 2;
+	// 0 = running, 1 = paused, 2 = not-ready
+	state->threadPaused[0] = 0; // main is implicitly already running
+	state->threadPaused[1] = 0; // GC we can set to running but is moot because we will never pause it
 
 	int tNum;
 	for (tNum = 2; tNum < MAXPRI; tNum++) {
@@ -262,7 +265,6 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 
 		params->tNum = tNum;
 		params->state = state;
-		state->threadPaused[params->tNum] = 2; // 0 = running, 1 = paused, 2 = not-ready
 
 		pthread_t *pt = malloc(sizeof(pthread_t));
 		memset(pt, 0, sizeof(pthread_t));
