@@ -58,9 +58,13 @@ bool hasHeapBytesFree (GC_state s, size_t oldGen, size_t nursery) {
   bool res;
   displayHeap(s, &(s->heap), stderr);
   displayHeapInfo(s);
+  if(DEBUG)
+  fprintf(stderr,"%d]in hasHeapBytesFree. OldGenSize = %d\n", PTHREAD_NUM,s->heap.oldGenSize);
   total =
     s->heap.oldGenSize + oldGen 
     + (s->canMinor ? 2 : 1) * (size_t)(s->limitPlusSlop - s->heap.nursery);
+ if(DEBUG)
+  fprintf(stderr,"%d] total =%d\n", PTHREAD_NUM,total);
   res = 
     (total <= s->heap.size) 
     and (nursery <= (size_t)(s->limitPlusSlop - s->frontier));

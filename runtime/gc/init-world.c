@@ -109,6 +109,9 @@ void initWorld (GC_state s) {
   s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
+//fixing oldgen to 500000 initially
+//s->frontier = alignFrontier(s,s->frontier+0x7A120); 
+
   s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 

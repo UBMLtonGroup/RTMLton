@@ -72,7 +72,16 @@ void growStackCurrent (GC_state s) {
   /* TODO insufficient heap will cause grow to fail since we've now separated
    * stack ops from heap ops
    */
-  assert (hasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0));
+
+  if (not hasHeapBytesFree (s, sizeofStackWithHeader(s,reserved),0))
+  {
+	fprintf(stderr,"%d]No heap bytes free hence calling GC\n", PTHREAD_NUM);
+  //		 resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
+		 ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
+  }
+
+
+//  assert (hasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0));
   stack = newStack (s, reserved, TRUE);
   copyStack (s, getStackCurrent(s), stack);
   getThreadCurrent(s)->stack = pointerToObjptr ((pointer)stack, s->heap.start);
@@ -142,9 +151,11 @@ static volatile int gcflag = -1;
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM; UNLOCKFLAG; } while(0)
+#define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM; UNLOCKFLAG;pthread_kill(pthread_self(), SIGUSR1); } while(0)
 #define COMPLETEGC do { LOCKFLAG; gcflag = -1; UNLOCKFLAG; } while(0)
-
+/*
+ * pthread_signal(pthread_self(), SIGUSR1);
+ */
 __attribute__((noreturn))
 void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
@@ -200,7 +211,7 @@ void *GCrunner(void *_s) {
 				fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
 	
 				do {
-					fprintf(stderr, "%d] GCrunner: resuming %d threads.\n", paused_threads_count(s), PTHREAD_NUM);
+					fprintf(stderr, "%d] GCrunner: resuming %d threads.\n",PTHREAD_NUM, paused_threads_count(s));
 					resume_threads(s);
 				} while(paused_threads_count(s));
 		}
@@ -399,8 +410,15 @@ void ensureHasHeapBytesFree (GC_state s,
                              size_t nurseryBytesRequested) {
   assert (s->heap.nursery <= s->limitPlusSlop);
   assert (s->frontier <= s->limitPlusSlop);
+  
+  displayHeap(s, &(s->heap), stderr);
+   displayHeapInfo(s);
+
   if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested))
     performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE, TRUE);
+	
+  fprintf(stderr, "%d] Back after GCin and going to check assert. oldgen size=%d\n", PTHREAD_NUM,s->heap.oldGenSize);
+	displayHeap(s, &(s->heap), stderr);
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
 }
 
@@ -418,7 +436,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
   ensureInvariantForMutator (s, force);
   assert (invariantForMutatorFrontier(s));
-  assert (invariantForMutatorStack(s));
+assert (invariantForMutatorStack(s));
   leave (s);
 }
 
