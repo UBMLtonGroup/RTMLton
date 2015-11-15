@@ -295,6 +295,18 @@ void* realtimeRunner(void* paramsPtr) {
 	while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
 		if (DEBUG) {
 			fprintf(stderr, "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
+		
+		}
+
+		/*If any thread has already requested a GC, the current thread can reach a GC safe point by calling perform GC itself,
+		 * since it is only spinning and waiting to be linked to an SML computation. Calling the performGC function
+		 * allows the current thread to systematically pause itself, although it doesnt need to GC and can be paused at any instant. */
+		if(state->GCRequested)
+		{
+			
+			fprintf(stderr, "%d] Other thread requested GC. Moving to safe point. \n", tNum);
+			//call performGC with the state of prev executing thread as current thread has no computation
+			performGC(state,state->oldGenBytesRequested,state->nurseryBytesRequested,state->forceMajor,state->mayResize); 
 		}
 		ssleep(1, 0);
 	}

@@ -268,6 +268,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->amOriginal = TRUE;
   s->atomicState = 0;
   s->callFromCHandlerThread = BOGUS_OBJPTR;
+  s->GCRequested=FALSE;
   s->controls.fixedHeap = 0;
   s->controls.maxHeap = 0;
   s->controls.mayLoadWorld = TRUE;

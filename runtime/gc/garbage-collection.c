@@ -151,8 +151,9 @@ static volatile int gcflag = -1;
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM; UNLOCKFLAG;pthread_kill(pthread_self(), SIGUSR1); } while(0)
-#define COMPLETEGC do { LOCKFLAG; gcflag = -1; UNLOCKFLAG; } while(0)
+#define PAUSESELF do {s->threadPaused[PTHREAD_NUM] =1;s->GCRequested=TRUE; pthread_kill(pthread_self(),SIGUSR1);} while(0)
+#define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM; UNLOCKFLAG;PAUSESELF; } while(0)
+#define COMPLETEGC do { LOCKFLAG; gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
 /*
  * pthread_signal(pthread_self(), SIGUSR1);
  */
@@ -194,7 +195,9 @@ void *GCrunner(void *_s) {
 		 */
 		if(s->isRealTimeThreadInitialized)
 		{
-			quiesce_threads(s);
+			/* we wont be quiescing threads as in the new implementation, each individual thread will pause itself */ 
+
+			//quiesce_threads(s);
 
 			if (DEBUG)
 				fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
@@ -227,6 +230,22 @@ void *GCrunner(void *_s) {
 }
 
 
+bool checkAllPaused(GC_state s)
+{
+	bool res = true;
+	for(uint32_t i=0;i<MAXPRI;i++)
+	{
+		if(i == PTHREAD_NUM) continue; //skip ourselves as we must be the last unpaused thread
+		if(i == 1) continue; //we dont need to see if GC thread is paused
+		if(!s->threadPaused[i])
+			res=false;
+	}
+	return res;
+
+}
+
+
+
 void performGC (GC_state s,
                 size_t oldGenBytesRequested,
                 size_t nurseryBytesRequested,
@@ -249,6 +268,16 @@ void performGC (GC_state s,
      * resume_threads(s) to let the threads know they can resume.
      */
 
+    /* EDIT: above method of GC pausing all other threads may cause 
+     * the thread to be paused where it isn't safe to be paused. Thus
+     * we allow the current executing thread to continue execution till
+     * it reaches a GC safepoint. Once it is safe, the thread can pause itself 
+     * and yield control to another thread (not GC) which will do the same
+     * until the last thread is reached. The las thread, pauses itself and 
+     * tells the GC thread that it can now GC and all other threads are
+     * paused. 
+     * */
+
 #ifdef THREADED
     s->oldGenBytesRequested = oldGenBytesRequested;
     s->nurseryBytesRequested = nurseryBytesRequested;
@@ -263,10 +292,19 @@ void performGC (GC_state s,
     }
     while (gcflag > -1) sched_yield();
 
-    if (DEBUG)
-    	fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
-
-    REQUESTGC;
+    //TODO handle race when RT thread has computation.
+    if(checkAllPaused(s))
+    {
+    	if (DEBUG)
+    		fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
+	 REQUESTGC;
+    }
+    else
+    {
+	    if(DEBUG)
+		    fprintf(stderr,"%d] performGC: all threads not paused so pausing self\n",PTHREAD_NUM);
+	   PAUSESELF;
+    }
 
 
 #else

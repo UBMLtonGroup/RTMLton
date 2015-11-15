@@ -33,7 +33,7 @@ struct GC_state {
   bool threadPaused[MAXPRI];
 
   /* Begin inter-thread GC communication data */
-  pthread_mutex_t gc_mutex;
+  volatile bool GCRequested;
   volatile bool GCrunnerRunning;
   volatile bool isRealTimeThreadInitialized;
   /* end of rt-threading additions */
