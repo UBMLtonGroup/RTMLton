@@ -202,8 +202,14 @@ void *GCrunner(void *_s) {
 			if (DEBUG)
 				fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
 
-			s->currentThread[1] = s->currentThread[gcflag];
+			//TODO need to uncomment this line and delete next line once the 
+			//spinning RT thread has computation
+	
+			//s->currentThread[1] = s->currentThread[gcflag];
 
+			//Always set to main thread since thread doesnt have computation yet. 
+			s->currentThread[1] = s->currentThread[0];
+	
 			performGC_helper(s,
 					s->oldGenBytesRequested,
 					s->nurseryBytesRequested,

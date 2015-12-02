@@ -275,6 +275,7 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 		}
 		else {
 			state->realtimeThreads[tNum] = pt;
+			state->threadPaused[tNum]=0; // thread not paused, spinning.
 			initialized++;
 		}
 	}
