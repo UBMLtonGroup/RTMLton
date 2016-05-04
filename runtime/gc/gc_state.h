@@ -18,28 +18,10 @@ struct GC_state {
   pointer limit; /* limit = heap.start + heap.size */
   pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
   pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
-  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
   size_t exnStack[MAXPRI];
-  objptr currentThread[MAXPRI]; /* Currently executing thread (in heap). */
-  objptr savedThread[MAXPRI]; /* Result of GC_copyCurrentThread.
-                       	    * Thread interrupted by arrival of signal.
-                       	    */
-  objptr signalHandlerThread[MAXPRI]; /* Handler for signals (in heap). */
 
 
-  /* added for rt-threading */
 
-  pthread_t *realtimeThreads[MAXPRI];
-  bool threadPaused[MAXPRI];
-
-  /* Begin inter-thread GC communication data */
-  volatile bool GCRequested;
-  volatile bool GCrunnerRunning;
-  volatile bool isRealTimeThreadInitialized;
-  /* end of rt-threading additions */
-
-
-  pointer ffiOpArgsResPtr[MAXPRI];
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
@@ -53,12 +35,8 @@ struct GC_state {
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;
   struct GC_cumulativeStatistics cumulativeStatistics;
+  objptr currentThread[MAXPRI]; /* Currently executing thread (in heap). */
 
-  size_t oldGenBytesRequested;
-  size_t nurseryBytesRequested;
-  bool forceMajor;
-  bool mayResize;
-  /* -------------------------- */
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
   uint32_t frameLayoutsLength; /* Cardinality of frameLayouts array. */
@@ -78,10 +56,13 @@ struct GC_state {
   uint32_t objectTypesLength; /* Cardinality of objectTypes array. */
   struct GC_profiling profiling;
   GC_frameIndex (*returnAddressToFrameIndex) (GC_returnAddress ra);
-
+  objptr savedThread[MAXPRI]; /* Result of GC_copyCurrentThread.
+                       	    * Thread interrupted by arrival of signal.
+                       	    */
   int (*saveGlobals)(FILE *f); /* saves the globals to the file. */
   bool saveWorldStatus; /* */
   struct GC_heap secondaryHeap; /* Used for major copying collection. */
+  objptr signalHandlerThread[MAXPRI]; /* Handler for signals (in heap). */
   struct GC_signalsInfo signalsInfo;
   struct GC_sourceMaps sourceMaps;
   struct GC_sysvals sysvals;
@@ -89,6 +70,28 @@ struct GC_state {
   struct GC_vectorInit *vectorInits;
   uint32_t vectorInitsLength;
   GC_weak weaks; /* Linked list of (live) weak pointers */
+  
+  /*New additions for RTMLton*/
+  
+  size_t oldGenBytesRequested;
+  size_t nurseryBytesRequested;
+  bool forceMajor;
+  bool mayResize;
+  /* -------------------------- */
+  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
+ 
+  /* added for rt-threading */
+
+  pthread_t *realtimeThreads[MAXPRI];
+  bool threadPaused[MAXPRI];
+
+  /* Begin inter-thread GC communication data */
+  volatile bool GCRequested;
+  volatile bool GCrunnerRunning;
+  volatile bool isRealTimeThreadInitialized;
+  /* end of rt-threading additions */
+
+  pointer ffiOpArgsResPtr[MAXPRI];
 };
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */
