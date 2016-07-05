@@ -1,3 +1,4 @@
+
 /* Copyright (C) 2011-2012 Matthew Fluet.
  * Copyright (C) 1999-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
@@ -87,23 +88,31 @@ bool invariantForGC (GC_state s) {
     fprintf (stderr, "Checking nursery.\n");
   foreachObjptrInRange (s, s->heap.nursery, &s->frontier, 
                         assertIsObjptrInFromSpace, FALSE);
-#if 0
-  /* jm disabled stack invariants.. the GC is in a sep pthread,
-   * so these checks dont make sense as part of the GC invariants.
-   */
   /* Current thread. */
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
-  fprintf(stderr, "\t****** ST %d %x == %x\n", PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack));
-  fprintf(stderr, "\t****** SB %d %x == %x\n", PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack));
-  fprintf(stderr, "\t****** SL %d %x == %x\n", PTHREAD_NUM, s->stackLimit[PTHREAD_NUM], getStackLimit (s, stack));
+#if 1
+  { int d = s->stackBottom[PTHREAD_NUM] - getStackBottom (s, stack);
+  fprintf(stderr, "stackBottom[%d] = %x ?= %x (getStackBottom %x %d)\n", 
+	PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack),
+        d, d
+	);
+  }
+#endif
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
+#if 1
+  { int d = s->stackTop[PTHREAD_NUM] - getStackTop (s, stack);
+  fprintf(stderr, "stackTop[%d] = %x ?= %x (getStackTop %x %d)\n", 
+	PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack),
+	d,d
+	);
+  }
+#endif
   assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
   assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
   assert (stack->used == sizeofGCStateCurrentStackUsed (s));
   assert (stack->used <= stack->reserved);
-#endif
   if (DEBUG)
     fprintf (stderr, "invariantForGC passed\n");
   return TRUE;
@@ -121,12 +130,20 @@ bool invariantForMutatorStack (GC_state s) {
   uint16_t framesize;
 
   GC_stack stack = getStackCurrent(s);
+
   top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
-  bool invariant = (top <= (limit + framesize));
+
+#if 0
+  if (top <= (limit + framesize)) {
+	  fprintf(stderr, "grow stack %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
+	  growStackCurrent (s); // XXX bc we disabled the GC
+  }
+  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
+#endif
+
   if (DEBUG)
-	  fprintf(stderr, "%d] invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x) invariant=%d\n", PTHREAD_NUM,
-			  top, (limit+framesize), limit, framesize, invariant);
-  return invariant;
+	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
+  return (top <= (limit + framesize));
 }
 
 #if ASSERT
