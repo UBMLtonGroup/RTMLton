@@ -20,8 +20,8 @@ pointer GC_arrayAllocate (GC_state s,
 
   splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
   if (DEBUG)
-    fprintf (stderr, "GC_arrayAllocate (%"PRIuMAX", "FMTARRLEN", "FMTHDR")\n",
-             (uintmax_t)ensureBytesFree, numElements, header);
+    fprintf (stderr, "%d] GC_arrayAllocate (%"PRIuMAX", "FMTARRLEN", "FMTHDR")\n",
+		    PTHREAD_NUM,(uintmax_t)ensureBytesFree, numElements, header);
   bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
   /* Check for overflow when computing arraySize.
    * Note: bytesPerElement > 0

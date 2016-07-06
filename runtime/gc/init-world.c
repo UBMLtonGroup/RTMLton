@@ -112,7 +112,7 @@ void initWorld (GC_state s) {
 //fixing oldgen to 500000 initially
 //s->frontier = alignFrontier(s,s->frontier+0x7A120); 
 
-  s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
+s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
   thread = newThread (s, sizeofStackInitialReserved (s)); // defaults to pri 0

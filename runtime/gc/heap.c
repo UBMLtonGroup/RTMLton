@@ -202,7 +202,7 @@ bool createHeap (GC_state s, GC_heap h,
   size_t newSize;
   size_t newWithMapsSize;
 /* allocting heap size of 1.2 gigs initially */
-  desiredSize = 122880000;
+  //desiredSize = 122880000;
   if (DEBUG_MEM)
     fprintf (stderr, "createHeap  desired size = %s  min size = %s\n",
              uintmaxToCommaString(desiredSize),

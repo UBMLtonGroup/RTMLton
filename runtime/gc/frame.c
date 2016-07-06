@@ -20,8 +20,8 @@ GC_frameLayout getFrameLayoutFromFrameIndex (GC_state s, GC_frameIndex findex) {
   GC_frameLayout layout;
 
   if (DEBUG_DETAILED)
-    fprintf (stderr, "findex = "FMTFI"  frameLayoutsLength = %"PRIu32"\n",
-            findex, s->frameLayoutsLength);
+    fprintf (stderr,"Thread num= %d findex = "FMTFI"  frameLayoutsLength = %"PRIu32"\n",
+            PTHREAD_NUM,findex, s->frameLayoutsLength);
   assert (findex < s->frameLayoutsLength);
   layout = &(s->frameLayouts[findex]);
   assert (layout->size > 0);

@@ -64,21 +64,22 @@ void splitHeader(GC_state s, GC_header header,
   hasIdentity = objectType->hasIdentity; 
   bytesNonObjptrs = objectType->bytesNonObjptrs; 
   numObjptrs = objectType->numObjptrs; 
-
+/*
   if (DEBUG_DETAILED) 
     fprintf (stderr, 
-             "splitHeader ("FMTHDR")" 
+             "%d] splitHeader ("FMTHDR")" 
              "  objectTypeIndex = %u"
              "  tag = %s" 
              "  hasIdentity = %s" 
              "  bytesNonObjptrs = %"PRIu16 
-             "  numObjptrs = %"PRIu16"\n", 
+             "  numObjptrs = %"PRIu16"\n",
+	    PTHREAD_NUM, 
              header, 
              objectTypeIndex,
              objectTypeTagToString(tag), 
              boolToString(hasIdentity), 
              bytesNonObjptrs, numObjptrs); 
-
+*/
   if (tagRet != NULL)
     *tagRet = tag;
   if (hasIdentityRet != NULL)

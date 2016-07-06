@@ -23,6 +23,8 @@ void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   size_t desiredSize;
   CHECKDISABLEGC;
 
+  fprintf("%d] [GC: Starting Major GC...]\n",PTHREAD_NUM);
+
   s->lastMajorStatistics.numMinorGCs = 0;
   numGCs = 
     s->cumulativeStatistics.numCopyingGCs 
@@ -86,6 +88,12 @@ void growStackCurrent (GC_state s) {
   copyStack (s, getStackCurrent(s), stack);
   getThreadCurrent(s)->stack = pointerToObjptr ((pointer)stack, s->heap.start);
   markCard (s, objptrToPointer (getThreadCurrentObjptr(s), s->heap.start));
+	
+  	s->stackBottom[PTHREAD_NUM] = getStackBottom(s,stack);
+	s->stackTop[PTHREAD_NUM] = getStackTop(s, stack); 
+	s->stackLimit[PTHREAD_NUM] = getStackLimit(s, stack);
+  
+	
 }
 
 void maybe_growstack(GC_state s) {
@@ -503,10 +511,14 @@ void ensureHasHeapBytesFree (GC_state s,
    displayHeapInfo(s);
 
   if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested))
+  {
     performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE, TRUE);
 	
-  fprintf(stderr, "%d] Back after GCin and going to check assert. oldgen size=%d\n", PTHREAD_NUM,s->heap.oldGenSize);
+	fprintf(stderr, "%d] Back after GCin and going to check assert. oldgen size=%d\n", PTHREAD_NUM,s->heap.oldGenSize);
 	displayHeap(s, &(s->heap), stderr);
+  	assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, getStackCurrent(s)));
+	
+  }
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
 }
 

@@ -86,7 +86,8 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
 	realtimeThreadWaitForInit();                                        \
        									                                \
         /* Trampoline */                                                \
-		while (1) {                                                     \
+		while (1) {     \
+		fprintf(stderr,"%d] I am starting to trampoline...\n ",PTHREAD_NUM);			\
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
