@@ -139,6 +139,7 @@ void leaveGC (GC_state s) {
 
 pthread_mutex_t gcflag_lock;
 static volatile int gcflag = -1;
+static volatile int GCRequestedBy = -1;
 
 #undef GCTHRDEBUG
 
@@ -157,9 +158,9 @@ static volatile int gcflag = -1;
         }                                                        \
 }
 
-#define COPYIN(EL) s->EL[1] = s->EL[0]
-#define COPYOUT(EL) s->EL[0] = s->EL[1]
-#define SANITY(EL) if (s->EL[0] == s->EL[1]) fprintf(stderr, #EL " changed!\n");
+#define COPYIN(EL) s->EL[1] = s->EL[GCRequestedBy]
+#define COPYOUT(EL) s->EL[GCRequestedBy] = s->EL[1]
+#define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr, #EL " changed!\n");
 
 static void setup_for_gc(GC_state s) {
     assert(gcflag != -1 && gcflag != 1);
@@ -203,7 +204,7 @@ sanity_check_array(s);
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define PAUSESELF do {s->threadPaused[PTHREAD_NUM] =1;s->GCRequested=TRUE; pthread_kill(pthread_self(),SIGUSR1);} while(0)
+#define PAUSESELF do {s->threadPaused[PTHREAD_NUM] =1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM; pthread_kill(pthread_self(),SIGUSR1);} while(0)
 #define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM;setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
 #define COMPLETEGC do { LOCKFLAG;finish_for_gc(s); gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
 /*
@@ -256,12 +257,15 @@ void *GCrunner(void *_s) {
 
 			//TODO need to uncomment this line and delete next line once the 
 			//spinning RT thread has computation
-	
-			//s->currentThread[1] = s->currentThread[gcflag];
 
+			if(s->isRealTimeThreadRunning)	
+			s->currentThread[1] = s->currentThread[gcflag];
+			else
+			{
 			//Always set to main thread since thread doesnt have computation yet. 
 			s->currentThread[1] = s->currentThread[0];
-	
+			}
+
 			performGC_helper(s,
 					s->oldGenBytesRequested,
 					s->nurseryBytesRequested,

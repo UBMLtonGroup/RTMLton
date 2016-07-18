@@ -353,6 +353,8 @@ void* realtimeRunner(void* paramsPtr) {
 
 	state->threadPaused[params->tNum] = 0;
 
+	state->isRealTimeThreadRunning =TRUE;
+
     while (1) {
         if (DEBUG) {
         	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);

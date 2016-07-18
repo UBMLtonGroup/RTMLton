@@ -89,6 +89,7 @@ struct GC_state {
   volatile bool GCRequested;
   volatile bool GCrunnerRunning;
   volatile bool isRealTimeThreadInitialized;
+  volatile bool isRealTimeThreadRunning;
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];
