@@ -163,7 +163,7 @@ static volatile int GCRequestedBy = -1;
 #define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr, #EL " changed!\n");
 
 static void setup_for_gc(GC_state s) {
-    assert(gcflag != -1 && gcflag != 1);
+    assert(gcflag != 1);
     COPYIN(stackTop);
     fprintf(stderr,"%d] before copy stackBottom = %x \n",PTHREAD_NUM,s->stackBottom[1]);
     COPYIN(stackBottom);
@@ -174,6 +174,7 @@ static void setup_for_gc(GC_state s) {
     COPYIN(savedThread);
     COPYIN(signalHandlerThread);
     COPYIN(ffiOpArgsResPtr);
+    gcflag=PTHREAD_NUM;
 }
 
 static void sanity_check_array(GC_state s) {
@@ -205,7 +206,7 @@ sanity_check_array(s);
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
 #define PAUSESELF do {s->threadPaused[PTHREAD_NUM] =1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM; pthread_kill(pthread_self(),SIGUSR1);} while(0)
-#define REQUESTGC do { LOCKFLAG; gcflag = PTHREAD_NUM;setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
+#define REQUESTGC do { LOCKFLAG; setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
 #define COMPLETEGC do { LOCKFLAG;finish_for_gc(s); gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
 /*
  * pthread_signal(pthread_self(), SIGUSR1);
