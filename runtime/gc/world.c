@@ -18,6 +18,7 @@ void loadWorldFromFILE (GC_state s, FILE *f) {
     die ("Invalid world: wrong magic number.");
   start = readPointer (f);
   s->heap.oldGenSize = readSize (f);
+  /* this is only set during initial restoration of the 'world' so no lock is needed */
   s->atomicState = readUint32 (f);
   s->callFromCHandlerThread = readObjptr (f);
   s->currentThread[PTHREAD_NUM] = readObjptr (f);
@@ -58,7 +59,7 @@ int saveWorldToFILE (GC_state s, FILE *f) {
   if (DEBUG_WORLD)
     fprintf (stderr, "saveWorldToFILE\n");
   /* Compact the heap. */
-  performGC (s, 0, 0, TRUE, TRUE);
+  performGC (s, 0, 0, 0, TRUE, TRUE);
   snprintf (buf, cardof(buf),
             "Heap file created by MLton.\nheap.start = "FMTPTR"\nbytesLive = %"PRIuMAX"\n",
             (uintptr_t)s->heap.start,

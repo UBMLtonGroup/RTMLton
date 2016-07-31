@@ -33,14 +33,14 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
                 fprintf (stderr, "MLton_callFromC() starting\n");       \
         s = &gcState;                                                   \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
-        s->atomicState += 3;                                            \
+        incAtomicBy(s, 3); /*s->atomicState += 3;*/                     \
         s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
         if (s->signalsInfo.signalIsPending)                             \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
         GC_switchToThread (s, GC_getCallFromCHandlerThread (s), 0);     \
         cont.nextFun =                                                  \
-        		*(uintptr_t*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);   \
+       	   *(uintptr_t*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);   \
         cont.nextChunk = nextChunks[cont.nextFun];                      \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
         fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
@@ -48,10 +48,10 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
         } while (not returnToC[PTHREAD_NUM]);                           \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
-        s->atomicState += 1;                                            \
+        incAtomic(s); /*s->atomicState += 1; */                         \
         fprintf(stderr, "%d] back from C->SML call\n", PTHREAD_NUM);    \
         GC_switchToThread (s, GC_getSavedThread (s), 0);                \
-        s->atomicState -= 1;                                            \
+        decAtomic(s); /*s->atomicState -= 1;*/                          \
         if (0 == s->atomicState                                         \
             && s->signalsInfo.signalIsPending)                          \
                 s->limit = 0;                                           \
