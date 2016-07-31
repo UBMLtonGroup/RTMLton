@@ -59,7 +59,7 @@ int saveWorldToFILE (GC_state s, FILE *f) {
   if (DEBUG_WORLD)
     fprintf (stderr, "saveWorldToFILE\n");
   /* Compact the heap. */
-  performGC (s, 0, 0, 0, TRUE, TRUE);
+  performGC (s, 0, 0, TRUE, TRUE);
   snprintf (buf, cardof(buf),
             "Heap file created by MLton.\nheap.start = "FMTPTR"\nbytesLive = %"PRIuMAX"\n",
             (uintptr_t)s->heap.start,
