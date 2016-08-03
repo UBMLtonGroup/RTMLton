@@ -18,6 +18,7 @@ void loadWorldFromFILE (GC_state s, FILE *f) {
     die ("Invalid world: wrong magic number.");
   start = readPointer (f);
   s->heap.oldGenSize = readSize (f);
+  /* this is only set during initial restoration of the 'world' so no lock is needed */
   s->atomicState = readUint32 (f);
   s->callFromCHandlerThread = readObjptr (f);
   s->currentThread[PTHREAD_NUM] = readObjptr (f);

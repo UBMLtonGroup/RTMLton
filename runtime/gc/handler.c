@@ -32,7 +32,7 @@ void GC_startSignalHandler (GC_state s) {
    * switching to the thread to continue with, which will decrement
    * s->atomicState to 0.
    */
-  s->atomicState = 2;
+  setAtomic(s, 2); /*s->atomicState = 2; */
 }
 
 void GC_finishSignalHandler (GC_state s) {

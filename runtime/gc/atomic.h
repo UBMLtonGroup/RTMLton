@@ -10,5 +10,14 @@
 
 static inline void beginAtomic (GC_state s);
 static inline void endAtomic (GC_state s);
+static inline void setAtomic (GC_state s, uint32_t v);
+static inline void decAtomicBy (GC_state s, uint32_t v);
 
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
+
+inline void incAtomic (GC_state s);
+inline void decAtomic (GC_state s);
+inline void incAtomicBy (GC_state s, uint32_t v);
+
+
+
