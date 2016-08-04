@@ -62,7 +62,7 @@
 
 
 #define C(ty, x) (*(ty*)(x))
-#define G(ty, i) (global##ty [i])
+#define G(ty, i) (global##ty [PTHREAD_NUM][i])
 #define GPNR(i) G(ObjptrNonRoot, i)
 #undef DEBUG_MEMORY
 #ifdef DEBUG_MEMORY

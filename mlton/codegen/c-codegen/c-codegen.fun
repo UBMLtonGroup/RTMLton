@@ -257,7 +257,7 @@ fun declareGlobals (prefix: string, print) =
              val s = CType.toString t
           in
              print (concat [prefix, s, " global", s,
-                            " [", C.int (Global.numberOfType t), "];\n"])
+                            " [MAXPRI][", C.int (Global.numberOfType t), "];\n"])
              ; print (concat [prefix, s, " CReturn", CType.name t, ";\n"])
           end)
       val _ =
