@@ -29,10 +29,6 @@ void realtimeThreadWaitForInit(void)
 void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) {
 	int rv = 0;
 
-	rv = pthread_mutex_init(&thread_queue_lock, NULL);
-	MYASSERT(int, rv, ==, 0);
-	memset(&thread_queue, 0, sizeof(struct _TQ)*(MAXPRI));
-
 	state->realtimeThreads[0] = main;
 	state->realtimeThreads[1] = gc;
 	initialized = 2;
