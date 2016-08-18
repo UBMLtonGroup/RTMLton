@@ -17,6 +17,7 @@ void resume_threads(GC_state s)
 {
 	for(int i = 0 ; i < MAXPRI ; i++) {
 		if (i == 1) continue;
+		fprintf(stderr,"%d] Unpausing thread %d of %d\n",PTHREAD_NUM,i,paused_threads_count(s));
 		if (s->threadPaused[i] == 1) {
 			pthread_kill(*(s->realtimeThreads[i]), SIGUSR2);
 		}

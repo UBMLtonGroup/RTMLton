@@ -77,7 +77,7 @@ void growStackCurrent (GC_state s) {
 
   if (not hasHeapBytesFree (s, sizeofStackWithHeader(s,reserved),0))
   {
-	fprintf(stderr,"%d]No heap bytes free hence calling GC\n", PTHREAD_NUM);
+	fprintf(stderr,"%d]No heap bytes free to grow stack hence calling GC\n", PTHREAD_NUM);
   //		 resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
 		 ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
   }
@@ -160,14 +160,14 @@ static volatile int GCRequestedBy = -1;
 
 #define COPYIN(EL) s->EL[1] = s->EL[GCRequestedBy]
 #define COPYOUT(EL) s->EL[GCRequestedBy] = s->EL[1]
-#define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr, #EL " changed!\n");
+#define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr,"%d] " #EL " changed!\n",PTHREAD_NUM);
 
 static void setup_for_gc(GC_state s) {
     assert(gcflag != 1);
     COPYIN(stackTop);
-    fprintf(stderr,"%d] before copy stackBottom = %x \n",PTHREAD_NUM,s->stackBottom[1]);
+    fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %x , should become = %x , actually =%x \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
     COPYIN(stackBottom);
-    fprintf(stderr,"%d] after copy StackBottom = %x \n",PTHREAD_NUM,s->stackBottom[1]);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %x \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
     COPYIN(stackLimit);
     COPYIN(exnStack);
     COPYIN(currentThread);
@@ -205,7 +205,7 @@ sanity_check_array(s);
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define PAUSESELF do {s->threadPaused[PTHREAD_NUM] =1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM; pthread_kill(pthread_self(),SIGUSR1);} while(0)
+#define PAUSESELF do {s->threadPaused[PTHREAD_NUM]=1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM; pthread_kill(pthread_self(),SIGUSR1);} while(0)
 #define REQUESTGC do { LOCKFLAG; setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
 #define COMPLETEGC do { LOCKFLAG;finish_for_gc(s); gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
 /*
@@ -273,18 +273,24 @@ void *GCrunner(void *_s) {
 					s->forceMajor,
 					s->mayResize);
 
+			COMPLETEGC;
 			if (DEBUG)
 				fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
-	
+			/*	
 				do {
 					fprintf(stderr, "%d] GCrunner: resuming %d threads.\n",PTHREAD_NUM, paused_threads_count(s));
 					resume_threads(s);
 				} while(paused_threads_count(s));
+			*/
+			for(uint32_t i=0; i<MAXPRI;i++)
+			{
+				if(i == 1) continue; //Don't need to unpause GC
+				resume_threads(s);
+			}
 		}
 		else {
 			fprintf(stderr, "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n", PTHREAD_NUM);
 		}
-		COMPLETEGC;
 	}
 #endif
 
@@ -298,7 +304,6 @@ bool checkAllPaused(GC_state s)
 	bool res = true;
 	for(uint32_t i=0;i<MAXPRI;i++)
 	{
-		if(i == PTHREAD_NUM) continue; //skip ourselves as we must be the last unpaused thread
 		if(i == 1) continue; //we dont need to see if GC thread is paused
 		if(!s->threadPaused[i])
 			res=false;
@@ -355,18 +360,32 @@ void performGC (GC_state s,
     }
     while (gcflag > -1) sched_yield();
 
-    //TODO handle race when RT thread has computation.
-    if(checkAllPaused(s))
+    if(MAXPRI <=2)
     {
-    	if (DEBUG)
-    		fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
-	 REQUESTGC;
+	    if(DEBUG)
+		    fprintf(stderr,"%d] performGC: pausing main thread and calling GC\n",PTHREAD_NUM);
+	    GCRequestedBy=0;
+	    s->GCRequested =TRUE;
+	    REQUESTGC;
+	   	
     }
     else
     {
-	    if(DEBUG)
-		    fprintf(stderr,"%d] performGC: all threads not paused so pausing self\n",PTHREAD_NUM);
-	   PAUSESELF;
+
+  	  //TODO handle race when RT thread has computation.
+    	//TODO race when you run on multicore. GC flag is set before thread 0 is paused
+    	if(checkAllPaused(s))
+    	{
+    		if (DEBUG)
+	    		fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
+		REQUESTGC;
+    	}
+    	else
+	{
+	 	   if(DEBUG)
+        		   fprintf(stderr,"%d] performGC: all threads not paused so pausing self\n",PTHREAD_NUM);
+		   PAUSESELF;
+	}
     }
 
 
