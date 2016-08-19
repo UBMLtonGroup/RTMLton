@@ -13,15 +13,12 @@ int paused_threads_count(GC_state s)
 	return c;
 }
 
-void resume_threads(GC_state s)
+void resume_threads(GC_state s,int i)
 {
-	for(int i = 0 ; i < MAXPRI ; i++) {
-		if (i == 1) continue;
 		fprintf(stderr,"%d] Unpausing thread %d of %d\n",PTHREAD_NUM,i,paused_threads_count(s));
 		if (s->threadPaused[i] == 1) {
 			pthread_kill(*(s->realtimeThreads[i]), SIGUSR2);
 		}
-	}
 }
 
 void quiesce_threads(GC_state s)
@@ -57,6 +54,13 @@ static void handle_resume_signal(int signum)
 {
 	fprintf(stderr, "%d] caught signal(%d). resuming.\n", PTHREAD_NUM, signum);
 	stashed->threadPaused[PTHREAD_NUM] = 0; // TODO probably a race, but can't use mutex inside a handler.
+        if(paused_threads_count != 0)
+        {
+            fprintf(stderr,"%d] paused_thread_count = %d\n",PTHREAD_NUM,paused_threads_count(stashed));
+            resume_threads(stashed,0);
+            sched_yield();
+        }
+
 }
 
 static void handle_suspend_signal(int signum)

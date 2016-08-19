@@ -282,11 +282,7 @@ void *GCrunner(void *_s) {
 					resume_threads(s);
 				} while(paused_threads_count(s));
 			*/
-			for(uint32_t i=0; i<MAXPRI;i++)
-			{
-				if(i == 1) continue; //Don't need to unpause GC
-				resume_threads(s);
-			}
+				resume_threads(s,2);
 		}
 		else {
 			fprintf(stderr, "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n", PTHREAD_NUM);
@@ -298,16 +294,36 @@ void *GCrunner(void *_s) {
 	/*NOTREACHED*/
 }
 
-
-bool checkAllPaused(GC_state s)
+bool lastUnpausedThread(GC_state s)
 {
-	bool res = true;
+
+	bool res = false;
+        int cnt=0;
 	for(uint32_t i=0;i<MAXPRI;i++)
 	{
 		if(i == 1) continue; //we dont need to see if GC thread is paused
 		if(!s->threadPaused[i])
-			res=false;
+			cnt++;
 	}
+        if(cnt == 1)
+            res=true;
+    
+	return res;
+}
+
+
+bool checkAllPaused(GC_state s)
+{
+	bool res = true;
+        if(!lastUnpausedThread(s))
+        {
+            for(uint32_t i=0;i<MAXPRI;i++)
+        	{
+        		if(i == 1) continue; //we dont need to see if GC thread is paused
+        		if(!s->threadPaused[i])
+        			res=false;
+        	}
+        }
 	return res;
 
 }

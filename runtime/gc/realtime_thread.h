@@ -1,7 +1,7 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
-#define MAXPRI 2 /* 0 = main, 1 = GC, also in include/c-common.h */
+#define MAXPRI 3 /* 0 = main, 1 = GC, also in include/c-common.h */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 struct realtimeRunnerParameters {
