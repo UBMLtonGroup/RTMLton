@@ -7,7 +7,11 @@
  */
 
 objptr getThreadCurrentObjptr (GC_state s) {
-  return s->currentThread[PTHREAD_NUM];
+#if 0
+    if(DEBUG)
+        fprintf(stderr,"pthread num = %d, currentThread - %x\n",PTHREAD_NUM,s->currentThread[PTHREAD_NUM]);
+#endif 
+    return s->currentThread[PTHREAD_NUM];
 }
 
 GC_thread getThreadCurrent (GC_state s) {
@@ -17,6 +21,10 @@ GC_thread getThreadCurrent (GC_state s) {
 
 objptr getStackCurrentObjptr (GC_state s) {
   GC_thread thread = getThreadCurrent(s);
+#if 0
+  if(DEBUG)
+        fprintf(stderr,"%d]currenThread= %x\n",PTHREAD_NUM,thread);
+#endif
   return thread->stack;
 }
 

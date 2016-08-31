@@ -64,6 +64,8 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 
 }
 
+#define COPYIN(s,EL) s->EL[2] = s->EL[0]
+
 __attribute__ ((noreturn))
 void* realtimeRunner(void* paramsPtr) {
     struct realtimeRunnerParameters *params = paramsPtr;
@@ -128,11 +130,27 @@ void* realtimeRunner(void* paramsPtr) {
 	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)(tc - offsetofThread (state)), state->heap.start);
 #else
 	/* cant do this bc it requires state->currentThread to already be set */
-	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
-		state->currentThread[0], state->heap.start)), state->heap.start); 
+//	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
+//		state->currentThread[0], state->heap.start)), state->heap.start); 
 #endif
+        
 
 	state->threadPaused[params->tNum] = 0;
+       
+        GC_stack stack = getStackCurrent(state);
+
+  	state->stackBottom[PTHREAD_NUM] = getStackBottom(state,stack);
+	state->stackTop[PTHREAD_NUM] = getStackTop(state, stack); 
+	state->stackLimit[PTHREAD_NUM] = getStackLimit(state, stack);
+        state->exnStack[PTHREAD_NUM] = tc->exnStack;
+    //COPYIN(state,stackTop);
+    //COPYIN(state,stackBottom);
+    //COPYIN(state,stackLimit);
+   // COPYIN(state,exnStack);
+    //COPYIN(state,currentThread);
+    COPYIN(state,savedThread);
+    COPYIN(state,signalHandlerThread);
+    COPYIN(state,ffiOpArgsResPtr);
 
 	state->isRealTimeThreadRunning =TRUE;
 

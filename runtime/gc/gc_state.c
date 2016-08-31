@@ -163,6 +163,18 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
+  fprintf(stderr,"%d] call handler set, pausing main thread\n",PTHREAD_NUM);
+  while(1)
+  {
+ if(s->GCRequested)
+		{
+			
+			fprintf(stderr, "%d] Other thread requested GC. Moving to safe point. \n", PTHREAD_NUM);
+			//call performGC with the state of prev executing thread as current thread has no computation
+			performGC(s,s->oldGenBytesRequested,s->nurseryBytesRequested,s->forceMajor,s->mayResize); 
+		}
+		ssleep(1, 0);
+  }
 }
 
 pointer GC_getCurrentThread (GC_state s) {
@@ -172,7 +184,6 @@ pointer GC_getCurrentThread (GC_state s) {
 
 pointer GC_getSavedThread (GC_state s) {
   pointer p;
-
   assert(s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR);
   p = objptrToPointer (s->savedThread[PTHREAD_NUM], s->heap.start);
   s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
@@ -214,4 +225,34 @@ bool GC_getGCSignalPending (GC_state s) {
 
 void GC_setGCSignalPending (GC_state s, bool b) {
   s->signalsInfo.gcSignalPending = b;
+}
+
+void push(GC_state s, int n)
+{
+    //TODO worry about concurrent access to s->gcCallSeq
+    int cnt =0;
+    while(cnt < MAXPRI)
+    {
+        if(s->gcCallSeq[cnt] ==-1)
+        {
+            s->gcCallSeq[cnt]=n;
+            return;
+        }
+        cnt++;
+    }
+}
+
+int pop(GC_state s)
+{
+    int cnt = MAXPRI-1;
+    while(cnt >=0)
+    {
+        if(s->gcCallSeq[cnt] != -1)
+        {
+            int tmp = s->gcCallSeq[cnt];
+            s->gcCallSeq[cnt]=-1;
+            return tmp;
+        }
+        cnt--;
+    }
 }

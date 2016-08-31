@@ -54,10 +54,10 @@ static void handle_resume_signal(int signum)
 {
 	fprintf(stderr, "%d] caught signal(%d). resuming.\n", PTHREAD_NUM, signum);
 	stashed->threadPaused[PTHREAD_NUM] = 0; // TODO probably a race, but can't use mutex inside a handler.
-        if(paused_threads_count != 0)
+        if(paused_threads_count(stashed) != 0)
         {
             fprintf(stderr,"%d] paused_thread_count = %d\n",PTHREAD_NUM,paused_threads_count(stashed));
-            resume_threads(stashed,0);
+            resume_threads(stashed,pop(stashed));
             sched_yield();
         }
 

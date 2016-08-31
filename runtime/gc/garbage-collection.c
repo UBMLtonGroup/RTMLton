@@ -170,8 +170,11 @@ static void setup_for_gc(GC_state s) {
     fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %x \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
     COPYIN(stackLimit);
     COPYIN(exnStack);
+    fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , actually =%x \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1],s->currentThread[GCRequestedBy],s->currentThread[0]);
     COPYIN(currentThread);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %x \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
     COPYIN(savedThread);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %x \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
     COPYIN(signalHandlerThread);
     COPYIN(ffiOpArgsResPtr);
     gcflag=PTHREAD_NUM;
@@ -205,7 +208,7 @@ sanity_check_array(s);
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define PAUSESELF do {s->threadPaused[PTHREAD_NUM]=1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM; pthread_kill(pthread_self(),SIGUSR1);} while(0)
+#define PAUSESELF do {s->threadPaused[PTHREAD_NUM]=1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM;push(s,PTHREAD_NUM); pthread_kill(pthread_self(),SIGUSR1);} while(0)
 #define REQUESTGC do { LOCKFLAG; setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
 #define COMPLETEGC do { LOCKFLAG;finish_for_gc(s); gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
 /*
@@ -258,7 +261,7 @@ void *GCrunner(void *_s) {
 
 			//TODO need to uncomment this line and delete next line once the 
 			//spinning RT thread has computation
-
+                    /*
 			if(s->isRealTimeThreadRunning)	
 			s->currentThread[1] = s->currentThread[gcflag];
 			else
@@ -266,7 +269,7 @@ void *GCrunner(void *_s) {
 			//Always set to main thread since thread doesnt have computation yet. 
 			s->currentThread[1] = s->currentThread[0];
 			}
-
+                    */
 			performGC_helper(s,
 					s->oldGenBytesRequested,
 					s->nurseryBytesRequested,
@@ -282,7 +285,7 @@ void *GCrunner(void *_s) {
 					resume_threads(s);
 				} while(paused_threads_count(s));
 			*/
-				resume_threads(s,2);
+				resume_threads(s,pop(s));
 		}
 		else {
 			fprintf(stderr, "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n", PTHREAD_NUM);
@@ -423,7 +426,7 @@ void performGC_helper (GC_state s,
   size_t totalBytesRequested;
 
   if (DEBUG)
-	  fprintf(stderr, "%d] in performGC_helper\n", PTHREAD_NUM);
+	  fprintf(stderr, "%d] in performGC_helper\n", PTHREAD_NUM,s->currentThread[1]);
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;

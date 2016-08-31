@@ -90,6 +90,7 @@ struct GC_state {
   volatile bool GCrunnerRunning;
   volatile bool isRealTimeThreadInitialized;
   volatile bool isRealTimeThreadRunning;
+  int gcCallSeq[MAXPRI];
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];
@@ -140,3 +141,5 @@ PRIVATE sigset_t* GC_getSignalsPendingAddr (GC_state s);
 PRIVATE void GC_setGCSignalHandled (GC_state s, bool b);
 PRIVATE bool GC_getGCSignalPending (GC_state s);
 PRIVATE void GC_setGCSignalPending (GC_state s, bool b);
+PRIVATE void push(GC_state s,int n);
+PRIVATE int pop(GC_state s);
