@@ -37,7 +37,7 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
 
 bool invariantForGC (GC_state s) {
   if (DEBUG)
-    fprintf (stderr, "invariantForGC\n");
+    fprintf (stderr, "%d] invariantForGC\n", PTHREAD_NUM);
   /* Frame layouts */
   for (unsigned int i = 0; i < s->frameLayoutsLength; ++i) {
     GC_frameLayout layout;

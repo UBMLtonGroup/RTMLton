@@ -9,21 +9,21 @@
 
 void displayGCState (GC_state s, FILE *stream) {
   fprintf (stream,
-           "GC state\n");
-  fprintf (stream, "\tcurrentThread = "FMTOBJPTR"\n", s->currentThread[PTHREAD_NUM]);
+           "%d] GC state\n", PTHREAD_NUM);
+  fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
                  stream);
-  fprintf (stream, "\tgenerational\n");
+  fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
   displayGenerationalMaps (s, &s->generationalMaps, 
                            stream);
-  fprintf (stream, "\theap\n");
+  fprintf (stream, "%d] \theap\n", PTHREAD_NUM);
   displayHeap (s, &s->heap, 
                stream);
   fprintf (stream,
-           "\tlimit = "FMTPTR"\n"
+           "%d] \tlimit = "FMTPTR"\n"
            "\tstackBottom = "FMTPTR"\n"
-           "\tstackTop = "FMTPTR"\n",
+           "\tstackTop = "FMTPTR"\n", PTHREAD_NUM,
            (uintptr_t)s->limit,
            (uintptr_t)s->stackBottom[PTHREAD_NUM],
            (uintptr_t)s->stackTop[PTHREAD_NUM]);
