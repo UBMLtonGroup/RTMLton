@@ -130,6 +130,7 @@ void* realtimeRunner(void* paramsPtr) {
 	/* cant do this bc it requires state->currentThread to already be set */
 //	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
 //		state->currentThread[0], state->heap.start)), state->heap.start); 
+      fprintf(stderr, "%d] copyThread from 0 \n", PTHREAD_NUM);
       state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
               state->currentThread[0], state->heap.start)), state->heap.start);         
 
