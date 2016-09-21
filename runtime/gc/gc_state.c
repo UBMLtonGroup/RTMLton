@@ -160,13 +160,14 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
   return p;
 }
 
+__attribute__((noreturn))
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
   fprintf(stderr,"%d] call handler set, pausing main thread\n",PTHREAD_NUM);
   while(1)
   {
- if(s->GCRequested)
+	if(s->GCRequested)
 		{
 			
 			fprintf(stderr, "%d] Other thread requested GC. Moving to safe point. \n", PTHREAD_NUM);
@@ -255,4 +256,5 @@ int pop(GC_state s)
         }
         cnt--;
     }
+    return -1;
 }

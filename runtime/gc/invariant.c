@@ -93,7 +93,7 @@ bool invariantForGC (GC_state s) {
   assert (isStackReservedAligned (s, stack->reserved));
 #if 1
   { int d = s->stackBottom[PTHREAD_NUM] - getStackBottom (s, stack);
-  fprintf(stderr, "stackBottom[%d] = %x ?= %x (getStackBottom %x %d)\n", 
+  fprintf(stderr, "stackBottom[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackBottom %"PRIuMAX" %d)\n", 
 	PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack),
         d, d
 	);
@@ -102,7 +102,7 @@ bool invariantForGC (GC_state s) {
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
 #if 1
   { int d = s->stackTop[PTHREAD_NUM] - getStackTop (s, stack);
-  fprintf(stderr, "stackTop[%d] = %x ?= %x (getStackTop %x %d)\n", 
+  fprintf(stderr, "stackTop[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackTop %"PRIuMAX" %d)\n", 
 	PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack),
 	d,d
 	);
@@ -142,7 +142,7 @@ bool invariantForMutatorStack (GC_state s) {
 #endif
 
   if (DEBUG)
-	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
+	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %"PRIuMAX" <= %"PRIuMAX" (%"PRIuMAX" + %"PRIuMAX")\n", top, (limit+framesize), limit, framesize);
   return (top <= (limit + framesize));
 }
 

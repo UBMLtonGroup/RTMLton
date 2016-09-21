@@ -5,7 +5,6 @@
 #define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
 
-static pthread_mutex_t thread_queue_lock;
 static volatile int initialized = 0;
 
 int32_t GC_myPriority(__attribute__ ((unused)) GC_state s)
@@ -66,7 +65,6 @@ void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) 
 
 #define COPYIN(s,EL) s->EL[2] = s->EL[0]
 
-__attribute__ ((noreturn))
 void* realtimeRunner(void* paramsPtr) {
     struct realtimeRunnerParameters *params = paramsPtr;
 	struct GC_state *state = params->state;
@@ -97,7 +95,6 @@ void* realtimeRunner(void* paramsPtr) {
 
 	fprintf(stderr, "%d] callFromCHandlerThread %x is ready\n", tNum, state->callFromCHandlerThread);
 
-#if 1
 	/* state->currentThread objptr
 	   curct->stack         objptr
 
@@ -127,14 +124,16 @@ void* realtimeRunner(void* paramsPtr) {
 
 	GC_thread tc = copyThread(state, curct, curstk->used);
 
+#if 0
 	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)(tc - offsetofThread (state)), state->heap.start);
 #else
 	/* cant do this bc it requires state->currentThread to already be set */
 //	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
 //		state->currentThread[0], state->heap.start)), state->heap.start); 
-#endif
-        
+      state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
+              state->currentThread[0], state->heap.start)), state->heap.start);         
 
+#endif
 	state->threadPaused[params->tNum] = 0;
        
         GC_stack stack = getStackCurrent(state);

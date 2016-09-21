@@ -90,13 +90,6 @@ GC_thread newThread (GC_state s, size_t reserved) {
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
              (uintptr_t)thread, (uintmax_t)reserved);
 
-#if 0
-  if (RTThread_addThreadToQueue(thread, 0) != 0) {
-	fprintf(stderr, "failed to addThreadToQueue\n");
-	exit(-1);
-  }
-#endif
-
   return thread;
 }
 

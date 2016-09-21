@@ -10,7 +10,7 @@ struct realtimeRunnerParameters {
 };
 
 void realtimeThreadInit(struct GC_state *state, pthread_t *, pthread_t *);
-void *realtimeRunner(void* paramsPtr);
+void *realtimeRunner(void* paramsPtr) __attribute__((noreturn));
 void realtimeThreadWaitForInit(void);
 
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */

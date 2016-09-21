@@ -23,7 +23,7 @@ void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   size_t desiredSize;
   CHECKDISABLEGC;
 
-  fprintf("%d] [GC: Starting Major GC...]\n",PTHREAD_NUM);
+  fprintf(stderr, "%d] [GC: Starting Major GC...]\n",PTHREAD_NUM);
 
   s->lastMajorStatistics.numMinorGCs = 0;
   numGCs = 
@@ -165,16 +165,16 @@ static volatile int GCRequestedBy = -1;
 static void setup_for_gc(GC_state s) {
     assert(gcflag != 1);
     COPYIN(stackTop);
-    fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %x , should become = %x , actually =%x \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
+    fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
     COPYIN(stackBottom);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %x \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
     COPYIN(stackLimit);
     COPYIN(exnStack);
-    fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , actually =%x \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1],s->currentThread[GCRequestedBy],s->currentThread[0]);
+    fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1],s->currentThread[GCRequestedBy],s->currentThread[0]);
     COPYIN(currentThread);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %x \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
     COPYIN(savedThread);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %x \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
     COPYIN(signalHandlerThread);
     COPYIN(ffiOpArgsResPtr);
     gcflag=PTHREAD_NUM;
