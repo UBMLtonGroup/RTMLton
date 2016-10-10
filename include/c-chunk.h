@@ -88,7 +88,12 @@
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
-#define S(ty, i) *(ty*)(StackTop + (i))
+#define xxS(ty, i) *(ty*)(StackTop + (i))
+
+#define S(ty, i) (*((fprintf (stderr, "%s:%d S: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
+                               (void*)(StackTop + (i)), \
+                               *(ty*)(StackTop + (i)))) , \
+                        (ty*)(StackTop + (i))))
 
 #endif
 
