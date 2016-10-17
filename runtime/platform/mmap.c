@@ -1,7 +1,7 @@
 static inline void *mmapAnon (void *start, size_t length) {
         void *m =  mmap (start, length, PROT_READ | PROT_WRITE, 
                         MAP_PRIVATE | MAP_ANON, -1, 0);
-        memset(m, 0xAB, length); /**/
+//        memset(m, 0xAB, length); /**/
         return m;
 }
 

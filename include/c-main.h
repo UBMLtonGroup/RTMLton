@@ -35,6 +35,7 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
         incAtomicBy(s, 3); /*s->atomicState += 3;*/                     \
         s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
+            fprintf(stderr,"%d] ffiOpArgsResPtr = %x\n",PTHREAD_NUM,ffiOpArgsResPtr); \
         if (s->signalsInfo.signalIsPending)                             \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \

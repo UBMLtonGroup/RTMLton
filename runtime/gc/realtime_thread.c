@@ -130,12 +130,12 @@ void* realtimeRunner(void* paramsPtr) {
 	/* cant do this bc it requires state->currentThread to already be set */
 //	state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
 //		state->currentThread[0], state->heap.start)), state->heap.start); 
-      fprintf(stderr, "%d] copyThread from 0 \n", PTHREAD_NUM);
-      state->currentThread[PTHREAD_NUM] = pointerToObjptr(GC_copyThread (state, objptrToPointer(
-              state->currentThread[0], state->heap.start)), state->heap.start);         
 
 #endif
-	state->threadPaused[params->tNum] = 0;
+        //current thread on for RT thread is taken from tc which is copied from main thread in previous line
+        state->currentThread[PTHREAD_NUM]= ((pointer)tc - offsetofThread (state));
+	
+        state->threadPaused[params->tNum] = 0;
        
         GC_stack stack = getStackCurrent(state);
 

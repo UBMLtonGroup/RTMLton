@@ -43,7 +43,7 @@ bool isObjptrInNursery (GC_state s, objptr op) {
 
 #if ASSERT
 bool isObjptrInFromSpace (GC_state s, objptr op) {
-#if 0
+#if 0 
 	fprintf(stderr, "%d] isObjprtInFromSpace: isObjptr:%x op:%x p:%x\n",PTHREAD_NUM,
 			isObjptr(op), op, isObjptr(op)? objptrToPointer (op, s->heap.start) : 0);
 #endif
