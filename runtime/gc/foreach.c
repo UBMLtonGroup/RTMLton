@@ -131,6 +131,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     stack = (GC_stack)p;
     bottom = getStackBottom (s, stack); 
     top = getStackTop (s, stack);
+    if(DEBUG)
+    fprintf(stderr,"%d] Checking Stack "FMTPTR" \n",PTHREAD_NUM,(uintptr_t)stack);
     if (DEBUG) {
       fprintf (stderr, "%d]  bottom = "FMTPTR"  top = "FMTPTR"\n",
                PTHREAD_NUM,

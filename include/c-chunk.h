@@ -65,7 +65,7 @@
 #define G(ty, i) (global##ty [PTHREAD_NUM][i])
 #define GPNR(i) G(ObjptrNonRoot, i)
 #undef DEBUG_MEMORY
-#ifdef DEBUG_MEMORY
+#if 0
 
     #define O(ty, b, o) (*((fprintf (stderr, "%s:%d O: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
                                            (void*)((b) + (o)), \
@@ -83,19 +83,13 @@
                         (ty*)(StackTop + (i))))
 
 
-
-#else
+#endif
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
-#define xxS(ty, i) *(ty*)(StackTop + (i))
+#define S(ty, i) *(ty*)(StackTop + (i))
 
-#define S(ty, i) (*((fprintf (stderr, "%s:%d S: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
-                               (void*)(StackTop + (i)), \
-                               *(ty*)(StackTop + (i)))) , \
-                        (ty*)(StackTop + (i))))
 
-#endif
 
 /* ------------------------------------------------- */
 /*                       Tests                       */

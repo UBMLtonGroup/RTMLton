@@ -170,11 +170,10 @@ static void setup_for_gc(GC_state s) {
     fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
     COPYIN(stackLimit);
     COPYIN(exnStack);
-    fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1],s->currentThread[GCRequestedBy],s->currentThread[0]);
+    fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"FMTPTR" , should become = %"FMTPTR" , main thread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start),objptrToPointer(s->currentThread[GCRequestedBy],s->heap.start),objptrToPointer(s->currentThread[0],s->heap.start));
     COPYIN(currentThread);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
+    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start));
     COPYIN(savedThread);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->currentThread[1]);
     COPYIN(signalHandlerThread);
     COPYIN(ffiOpArgsResPtr);
     gcflag=PTHREAD_NUM;

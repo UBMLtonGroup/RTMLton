@@ -115,14 +115,20 @@ void* realtimeRunner(void* paramsPtr) {
 	   pointer GC_copyThread (GC_state s, pointer p) 
 
 	 */
-
-	GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start)
+        
+        /* set currentThread of new RT thread to that of main thread until copied thread is setup */
+	state->currentThread[PTHREAD_NUM] = state->currentThread[0];
+        setGCStateCurrentThreadAndStack (state);
+        
+        GC_thread curct = (GC_thread)(objptrToPointer(state->currentThread[0], state->heap.start)
 				+ offsetofThread (state));
 	GC_stack curstk = (GC_stack)objptrToPointer(curct->stack, state->heap.start);
 
 	/* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
 
-	GC_thread tc = copyThread(state, curct, curstk->used);
+        pointer copiedTh = GC_copyThread(state,objptrToPointer(state->currentThread[0],state->heap.start));
+
+	GC_thread tc = (GC_thread) (copiedTh + offsetofThread(state));
 
 #if 0
 	state->currentThread[PTHREAD_NUM] = pointerToObjptr((pointer)(tc - offsetofThread (state)), state->heap.start);
@@ -133,21 +139,10 @@ void* realtimeRunner(void* paramsPtr) {
 
 #endif
         //current thread on for RT thread is taken from tc which is copied from main thread in previous line
-        state->currentThread[PTHREAD_NUM]= ((pointer)tc - offsetofThread (state));
-	
+        GC_switchToThread(state,tc,0);        
+
         state->threadPaused[params->tNum] = 0;
        
-        GC_stack stack = getStackCurrent(state);
-
-  	state->stackBottom[PTHREAD_NUM] = getStackBottom(state,stack);
-	state->stackTop[PTHREAD_NUM] = getStackTop(state, stack); 
-	state->stackLimit[PTHREAD_NUM] = getStackLimit(state, stack);
-        state->exnStack[PTHREAD_NUM] = tc->exnStack;
-    //COPYIN(state,stackTop);
-    //COPYIN(state,stackBottom);
-    //COPYIN(state,stackLimit);
-   // COPYIN(state,exnStack);
-    //COPYIN(state,currentThread);
     COPYIN(state,savedThread);
     COPYIN(state,signalHandlerThread);
     COPYIN(state,ffiOpArgsResPtr);
