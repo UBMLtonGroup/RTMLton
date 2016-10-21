@@ -7,6 +7,9 @@
 
 static volatile int initialized = 0;
 
+extern void Copy_globalObjptrs(int f, int t);
+
+
 int32_t GC_myPriority(__attribute__ ((unused)) GC_state s)
 {
 	return PTHREAD_NUM;
@@ -154,6 +157,7 @@ void* realtimeRunner(void* paramsPtr) {
         	fprintf(stderr, "%d] realtimeRunner running.\n", tNum);
         	fprintf(stderr, "%d] calling Parallel_run..\n", tNum);
         }
+        Copy_globalObjptrs(0, params->tNum);
         Parallel_run();
         fprintf(stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
         exit(-1);

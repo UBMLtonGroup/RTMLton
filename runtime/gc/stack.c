@@ -231,7 +231,8 @@ void copyStack (GC_state s, GC_stack from, GC_stack to) {
   assert (from->used <= to->reserved);
   to->used = from->used;
   if (DEBUG_STACKS)
-    fprintf (stderr, "stackCopy from "FMTPTR" to "FMTPTR" of length %"PRIuMAX"\n",
+    fprintf (stderr, "%d] stackCopy from "FMTPTR" to "FMTPTR" of length %"PRIuMAX"\n",
+             PTHREAD_NUM,
              (uintptr_t)fromBottom,
              (uintptr_t)toBottom,
              (uintmax_t)from->used);

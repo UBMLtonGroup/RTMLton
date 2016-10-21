@@ -35,7 +35,7 @@ EXE :=
 
 # These flags can be overridden by the user
 CPPFLAGS :=
-CFLAGS := -D_GNU_SOURCE -D_USE_GNU
+CFLAGS := -D_GNU_SOURCE -D_USE_GNU -DDEBUG
 
 WARNXCFLAGS :=
 WARNXCFLAGS += -pedantic -Wall

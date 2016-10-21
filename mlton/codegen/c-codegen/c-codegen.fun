@@ -261,7 +261,7 @@ fun declareGlobals (prefix: string, print) =
              ; print (concat [prefix, s, " CReturn", CType.name t, ";\n"])
           end)
       val _ =
-         print (concat [prefix, "Pointer globalObjptrNonRoot [",
+         print (concat [prefix, "Pointer globalObjptrNonRoot [MAXPRI][",
                         C.int (Global.numberOfNonRoot ()),
                         "];\n"])
    in
@@ -282,6 +282,8 @@ fun outputDeclarations
          Ffi.declareExports {print = print}
       fun declareLoadSaveGlobals () =
          let
+            val _ = 
+               print "void Copy_globalObjptrs(int f, int t) { memcpy(globalObjptr[t], globalObjptr[f], sizeof(globalObjptr[t])); }\n"
             val _ =
                (print "static int saveGlobals (FILE *f) {\n"
                 ; (List.foreach
