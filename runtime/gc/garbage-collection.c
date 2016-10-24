@@ -77,9 +77,10 @@ void growStackCurrent (GC_state s) {
 
   if (not hasHeapBytesFree (s, sizeofStackWithHeader(s,reserved),0))
   {
-	fprintf(stderr,"%d]No heap bytes free to grow stack hence calling GC\n", PTHREAD_NUM);
+        if (DEBUG_STACKS or s->controls.messages)
+	    fprintf(stderr,"%d]No heap bytes free to grow stack hence calling GC\n", PTHREAD_NUM);
   //		 resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
-		 ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
+	ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
   }
 
 
@@ -165,14 +166,18 @@ static volatile int GCRequestedBy = -1;
 static void setup_for_gc(GC_state s) {
     assert(gcflag != 1);
     COPYIN(stackTop);
-    fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
     COPYIN(stackBottom);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
     COPYIN(stackLimit);
     COPYIN(exnStack);
-    fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"FMTPTR" , should become = %"FMTPTR" , main thread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start),objptrToPointer(s->currentThread[GCRequestedBy],s->heap.start),objptrToPointer(s->currentThread[0],s->heap.start));
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"FMTPTR" , should become = %"FMTPTR" , main thread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start),objptrToPointer(s->currentThread[GCRequestedBy],s->heap.start),objptrToPointer(s->currentThread[0],s->heap.start));
     COPYIN(currentThread);
-    fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start));
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start));
     COPYIN(savedThread);
     COPYIN(signalHandlerThread);
     COPYIN(ffiOpArgsResPtr);
@@ -193,7 +198,7 @@ static void sanity_check_array(GC_state s) {
 
 static void finish_for_gc(GC_state s) {
     assert(gcflag != -1 && gcflag != 1);
-sanity_check_array(s);
+    sanity_check_array(s);
     COPYOUT(stackTop);
     COPYOUT(stackBottom);
     COPYOUT(stackLimit);
@@ -528,7 +533,7 @@ void performGC_helper (GC_state s,
 }
 
 void ensureInvariantForMutator (GC_state s, bool force) {
-	fprintf(stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
+	if (DEBUG) fprintf(stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
 
 	if (force or not (invariantForMutatorFrontier(s))) {
 		performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
@@ -537,7 +542,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
 	if (not (invariantForMutatorStack(s))) maybe_growstack(s);
 
 	assert(invariantForMutatorFrontier(s));
-	fprintf(stderr, "%d] ensureInvariantForMutatorStack 2nd call\n", PTHREAD_NUM);
+	if (DEBUG) fprintf(stderr, "%d] ensureInvariantForMutatorStack 2nd call\n", PTHREAD_NUM);
 	assert(invariantForMutatorStack(s));
 }
 
@@ -549,17 +554,19 @@ void ensureHasHeapBytesFree (GC_state s,
   assert (s->heap.nursery <= s->limitPlusSlop);
   assert (s->frontier <= s->limitPlusSlop);
   
-  displayHeap(s, &(s->heap), stderr);
-   displayHeapInfo(s);
+  if (DEBUG) {
+     displayHeap(s, &(s->heap), stderr);
+     displayHeapInfo(s);
+  }
 
   if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested))
   {
     performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE, TRUE);
-	
+    if (DEBUG) {
 	fprintf(stderr, "%d] Back after GCin and going to check assert. oldgen size=%d\n", PTHREAD_NUM,s->heap.oldGenSize);
 	displayHeap(s, &(s->heap), stderr);
   	assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, getStackCurrent(s)));
-	
+    }
   }
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
 }

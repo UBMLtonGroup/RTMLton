@@ -10,10 +10,6 @@
 
 #if ASSERT
 void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
-#if 0
-	  fprintf(stderr, "****** %d %x\n", PTHREAD_NUM, *opp);
-	  displayHeapInfo(s);
-#endif
   assert (isObjptrInFromSpace (s, *opp));
   unless (isObjptrInFromSpace (s, *opp))
     die ("gc.c: assertIsObjptrInFromSpace "
@@ -91,23 +87,21 @@ bool invariantForGC (GC_state s) {
   /* Current thread. */
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
-#if 1
+  if (DEBUG)
   { int d = s->stackBottom[PTHREAD_NUM] - getStackBottom (s, stack);
   fprintf(stderr, "stackBottom[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackBottom %"PRIuMAX" %d)\n", 
 	PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack),
         d, d
 	);
   }
-#endif
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
-#if 1
+  if (DEBUG)
   { int d = s->stackTop[PTHREAD_NUM] - getStackTop (s, stack);
   fprintf(stderr, "stackTop[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackTop %"PRIuMAX" %d)\n", 
 	PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack),
 	d,d
 	);
   }
-#endif
   assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
   assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
