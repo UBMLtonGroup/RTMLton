@@ -164,7 +164,7 @@ void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
   fprintf(stderr,"%d] call handler set, pausing main thread\n",PTHREAD_NUM);
-  while(1) // TODO this needs to be reworked see comments in ub/test2.sml
+ /* while(1) // TODO this needs to be reworked see comments in ub/test2.sml
   {
 	if(s->GCRequested) {
                 if (DEBUG)
@@ -173,7 +173,8 @@ void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
 		performGC(s,s->oldGenBytesRequested,s->nurseryBytesRequested,s->forceMajor,s->mayResize); 
 	}
 	ssleep(1, 0);
-  }
+  }*/
+  s->threadPaused[PTHREAD_NUM] = 1;
 }
 
 pointer GC_getCurrentThread (GC_state s) {
