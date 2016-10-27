@@ -10,8 +10,10 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 /* s->atomicState is modified in other places, eg switch-thread.c */
 
+#define DECVARS         int __attribute__((unused))lockop, __attribute__((unused))unlockop
+
 void incAtomicBy (GC_state s, uint32_t v) {
-        int lockop, unlockop;
+        DECVARS;
         lockop = pthread_mutex_lock(&lock);
         assert(lockop == 0);
         s->atomicState += v;
@@ -20,7 +22,7 @@ void incAtomicBy (GC_state s, uint32_t v) {
 }
 
 void decAtomicBy (GC_state s, uint32_t v) {
-        int lockop, unlockop;
+        DECVARS;
         lockop = pthread_mutex_lock(&lock);
         assert(lockop == 0);
         s->atomicState -= v;
@@ -29,7 +31,7 @@ void decAtomicBy (GC_state s, uint32_t v) {
 }
 
 void setAtomic (GC_state s, uint32_t v) {
-        int lockop, unlockop;
+        DECVARS;
         lockop = pthread_mutex_lock(&lock);
         assert(lockop == 0);
         s->atomicState = v;
@@ -38,7 +40,7 @@ void setAtomic (GC_state s, uint32_t v) {
 }
 
 void incAtomic (GC_state s) {
-        int lockop, unlockop;
+	DECVARS;
         lockop = pthread_mutex_lock(&lock);
         assert(lockop == 0);
         s->atomicState++;
@@ -47,7 +49,7 @@ void incAtomic (GC_state s) {
 }
 
 void decAtomic (GC_state s) {
-        int lockop, unlockop;
+	DECVARS;
         lockop = pthread_mutex_lock(&lock);
         assert(lockop == 0);
         s->atomicState--;
@@ -56,7 +58,7 @@ void decAtomic (GC_state s) {
 }
 
 void beginAtomic (GC_state s) {
-	int lockop, unlockop;
+	DECVARS;
 
 	lockop = pthread_mutex_lock(&lock);
 	assert(lockop == 0);
@@ -69,7 +71,7 @@ void beginAtomic (GC_state s) {
 }
 
 void endAtomic (GC_state s) {
-	int lockop, unlockop;
+	DECVARS;
 
 	lockop = pthread_mutex_lock(&lock);
 	assert(lockop == 0);

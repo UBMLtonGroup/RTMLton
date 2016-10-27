@@ -9,7 +9,7 @@
 #ifndef _C_COMMON_H_
 #define _C_COMMON_H_
 
-#define MAXPRI 2 /* XXX dup'd in runtime/realtime_thread.h */
+#define MAXPRI 3 /* XXX dup'd in runtime/realtime_thread.h */
 #ifndef DEBUG_CCODEGEN
 #define DEBUG_CCODEGEN FALSE
 #endif

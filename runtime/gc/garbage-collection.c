@@ -23,7 +23,7 @@ void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
   size_t desiredSize;
   CHECKDISABLEGC;
 
-  fprintf("%d] [GC: Starting Major GC...]\n",PTHREAD_NUM);
+  fprintf(stderr, "%d] [GC: Starting Major GC...]\n",PTHREAD_NUM);
 
   s->lastMajorStatistics.numMinorGCs = 0;
   numGCs = 
@@ -77,9 +77,10 @@ void growStackCurrent (GC_state s) {
 
   if (not hasHeapBytesFree (s, sizeofStackWithHeader(s,reserved),0))
   {
-	fprintf(stderr,"%d]No heap bytes free hence calling GC\n", PTHREAD_NUM);
+        if (DEBUG_STACKS or s->controls.messages)
+	    fprintf(stderr,"%d]No heap bytes free to grow stack hence calling GC\n", PTHREAD_NUM);
   //		 resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
-		 ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
+	ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
   }
 
 
@@ -160,17 +161,23 @@ static volatile int GCRequestedBy = -1;
 
 #define COPYIN(EL) s->EL[1] = s->EL[GCRequestedBy]
 #define COPYOUT(EL) s->EL[GCRequestedBy] = s->EL[1]
-#define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr, #EL " changed!\n");
+#define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr,"%d] " #EL " changed!\n",PTHREAD_NUM);
 
 static void setup_for_gc(GC_state s) {
     assert(gcflag != 1);
     COPYIN(stackTop);
-    fprintf(stderr,"%d] before copy stackBottom = %x \n",PTHREAD_NUM,s->stackBottom[1]);
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
     COPYIN(stackBottom);
-    fprintf(stderr,"%d] after copy StackBottom = %x \n",PTHREAD_NUM,s->stackBottom[1]);
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
     COPYIN(stackLimit);
     COPYIN(exnStack);
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"FMTPTR" , should become = %"FMTPTR" , main thread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start),objptrToPointer(s->currentThread[GCRequestedBy],s->heap.start),objptrToPointer(s->currentThread[0],s->heap.start));
     COPYIN(currentThread);
+    if (DEBUG) 
+        fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start));
     COPYIN(savedThread);
     COPYIN(signalHandlerThread);
     COPYIN(ffiOpArgsResPtr);
@@ -191,7 +198,7 @@ static void sanity_check_array(GC_state s) {
 
 static void finish_for_gc(GC_state s) {
     assert(gcflag != -1 && gcflag != 1);
-sanity_check_array(s);
+    sanity_check_array(s);
     COPYOUT(stackTop);
     COPYOUT(stackBottom);
     COPYOUT(stackLimit);
@@ -205,7 +212,7 @@ sanity_check_array(s);
 
 #define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
 #define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define PAUSESELF do {s->threadPaused[PTHREAD_NUM] =1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM; pthread_kill(pthread_self(),SIGUSR1);} while(0)
+#define PAUSESELF do {s->threadPaused[PTHREAD_NUM]=1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM;push(s,PTHREAD_NUM); pthread_kill(pthread_self(),SIGUSR1);} while(0)
 #define REQUESTGC do { LOCKFLAG; setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
 #define COMPLETEGC do { LOCKFLAG;finish_for_gc(s); gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
 /*
@@ -258,7 +265,7 @@ void *GCrunner(void *_s) {
 
 			//TODO need to uncomment this line and delete next line once the 
 			//spinning RT thread has computation
-
+                    /*
 			if(s->isRealTimeThreadRunning)	
 			s->currentThread[1] = s->currentThread[gcflag];
 			else
@@ -266,25 +273,27 @@ void *GCrunner(void *_s) {
 			//Always set to main thread since thread doesnt have computation yet. 
 			s->currentThread[1] = s->currentThread[0];
 			}
-
+                    */
 			performGC_helper(s,
 					s->oldGenBytesRequested,
 					s->nurseryBytesRequested,
 					s->forceMajor,
 					s->mayResize);
 
+			COMPLETEGC;
 			if (DEBUG)
 				fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
-	
+			/*	
 				do {
 					fprintf(stderr, "%d] GCrunner: resuming %d threads.\n",PTHREAD_NUM, paused_threads_count(s));
 					resume_threads(s);
 				} while(paused_threads_count(s));
+			*/
+				resume_threads(s,pop(s));
 		}
 		else {
 			fprintf(stderr, "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n", PTHREAD_NUM);
 		}
-		COMPLETEGC;
 	}
 #endif
 
@@ -292,17 +301,36 @@ void *GCrunner(void *_s) {
 	/*NOTREACHED*/
 }
 
+bool lastUnpausedThread(GC_state s)
+{
+
+	bool res = false;
+        int cnt=0;
+	for(uint32_t i=0;i<MAXPRI;i++)
+	{
+		if(i == 1) continue; //we dont need to see if GC thread is paused
+		if(!s->threadPaused[i])
+			cnt++;
+	}
+        if(cnt == 1)
+            res=true;
+    
+	return res;
+}
+
 
 bool checkAllPaused(GC_state s)
 {
 	bool res = true;
-	for(uint32_t i=0;i<MAXPRI;i++)
-	{
-		if(i == PTHREAD_NUM) continue; //skip ourselves as we must be the last unpaused thread
-		if(i == 1) continue; //we dont need to see if GC thread is paused
-		if(!s->threadPaused[i])
-			res=false;
-	}
+        if(!lastUnpausedThread(s))
+        {
+            for(uint32_t i=0;i<MAXPRI;i++)
+        	{
+        		if(i == 1) continue; //we dont need to see if GC thread is paused
+        		if(!s->threadPaused[i])
+        			res=false;
+        	}
+        }
 	return res;
 
 }
@@ -355,18 +383,32 @@ void performGC (GC_state s,
     }
     while (gcflag > -1) sched_yield();
 
-    //TODO handle race when RT thread has computation.
-    if(checkAllPaused(s))
+    if(MAXPRI <=2)
     {
-    	if (DEBUG)
-    		fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
-	 REQUESTGC;
+	    if(DEBUG)
+		    fprintf(stderr,"%d] performGC: pausing main thread and calling GC\n",PTHREAD_NUM);
+	    GCRequestedBy=0;
+	    s->GCRequested =TRUE;
+	    REQUESTGC;
+	   	
     }
     else
     {
-	    if(DEBUG)
-		    fprintf(stderr,"%d] performGC: all threads not paused so pausing self\n",PTHREAD_NUM);
-	   PAUSESELF;
+
+  	  //TODO handle race when RT thread has computation.
+    	//TODO race when you run on multicore. GC flag is set before thread 0 is paused
+    	if(checkAllPaused(s))
+    	{
+    		if (DEBUG)
+	    		fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
+		REQUESTGC;
+    	}
+    	else
+	{
+	 	   if(DEBUG)
+        		   fprintf(stderr,"%d] performGC: all threads not paused so pausing self\n",PTHREAD_NUM);
+		   PAUSESELF;
+	}
     }
 
 
@@ -388,7 +430,7 @@ void performGC_helper (GC_state s,
   size_t totalBytesRequested;
 
   if (DEBUG)
-	  fprintf(stderr, "%d] in performGC_helper\n", PTHREAD_NUM);
+	  fprintf(stderr, "%d] in performGC_helper\n", PTHREAD_NUM,s->currentThread[1]);
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
@@ -491,7 +533,7 @@ void performGC_helper (GC_state s,
 }
 
 void ensureInvariantForMutator (GC_state s, bool force) {
-	fprintf(stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
+	if (DEBUG) fprintf(stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
 
 	if (force or not (invariantForMutatorFrontier(s))) {
 		performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
@@ -500,7 +542,7 @@ void ensureInvariantForMutator (GC_state s, bool force) {
 	if (not (invariantForMutatorStack(s))) maybe_growstack(s);
 
 	assert(invariantForMutatorFrontier(s));
-	fprintf(stderr, "%d] ensureInvariantForMutatorStack 2nd call\n", PTHREAD_NUM);
+	if (DEBUG) fprintf(stderr, "%d] ensureInvariantForMutatorStack 2nd call\n", PTHREAD_NUM);
 	assert(invariantForMutatorStack(s));
 }
 
@@ -512,17 +554,19 @@ void ensureHasHeapBytesFree (GC_state s,
   assert (s->heap.nursery <= s->limitPlusSlop);
   assert (s->frontier <= s->limitPlusSlop);
   
-  displayHeap(s, &(s->heap), stderr);
-   displayHeapInfo(s);
+  if (DEBUG) {
+     displayHeap(s, &(s->heap), stderr);
+     displayHeapInfo(s);
+  }
 
   if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested))
   {
     performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE, TRUE);
-	
+    if (DEBUG) {
 	fprintf(stderr, "%d] Back after GCin and going to check assert. oldgen size=%d\n", PTHREAD_NUM,s->heap.oldGenSize);
 	displayHeap(s, &(s->heap), stderr);
   	assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, getStackCurrent(s)));
-	
+    }
   }
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
 }

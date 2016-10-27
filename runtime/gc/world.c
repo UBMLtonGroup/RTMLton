@@ -76,7 +76,7 @@ int saveWorldToFILE (GC_state s, FILE *f) {
    * be in the same context when it is restored.
    */
   if (fwrite (&s->atomicState, sizeof(uint32_t), 1, f) != 1) return -1;
-  if (fwrite (&s->callFromCHandlerThread, sizeof(objptr), 1, f) != 1) return -1;
+  if (fwrite ((const void *)(&s->callFromCHandlerThread), sizeof(objptr), 1, f) != 1) return -1;
   if (fwrite (&s->currentThread, sizeof(objptr), 1, f) != 1) return -1;
   if (fwrite (&s->signalHandlerThread[PTHREAD_NUM], sizeof(objptr), 1, f) != 1) return -1;
 

@@ -316,6 +316,7 @@ int GC_init (GC_state s, int argc, char **argv) {
 	  s->currentThread[__i] = BOGUS_OBJPTR;
 	  s->savedThread[__i] = BOGUS_OBJPTR;
 	  s->signalHandlerThread[__i] = BOGUS_OBJPTR;
+          s->gcCallSeq[__i] = -1;
   }
 
   s->hashConsDuringGC = FALSE;

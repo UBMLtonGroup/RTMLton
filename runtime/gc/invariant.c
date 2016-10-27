@@ -10,10 +10,6 @@
 
 #if ASSERT
 void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
-#if 0
-	  fprintf(stderr, "****** %d %x\n", PTHREAD_NUM, *opp);
-	  displayHeapInfo(s);
-#endif
   assert (isObjptrInFromSpace (s, *opp));
   unless (isObjptrInFromSpace (s, *opp))
     die ("gc.c: assertIsObjptrInFromSpace "
@@ -37,7 +33,7 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
 
 bool invariantForGC (GC_state s) {
   if (DEBUG)
-    fprintf (stderr, "invariantForGC\n");
+    fprintf (stderr, "%d] invariantForGC\n", PTHREAD_NUM);
   /* Frame layouts */
   for (unsigned int i = 0; i < s->frameLayoutsLength; ++i) {
     GC_frameLayout layout;
@@ -91,23 +87,21 @@ bool invariantForGC (GC_state s) {
   /* Current thread. */
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
-#if 1
+  if (DEBUG)
   { int d = s->stackBottom[PTHREAD_NUM] - getStackBottom (s, stack);
-  fprintf(stderr, "stackBottom[%d] = %x ?= %x (getStackBottom %x %d)\n", 
+  fprintf(stderr, "stackBottom[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackBottom %"PRIuMAX" %d)\n", 
 	PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack),
         d, d
 	);
   }
-#endif
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
-#if 1
+  if (DEBUG)
   { int d = s->stackTop[PTHREAD_NUM] - getStackTop (s, stack);
-  fprintf(stderr, "stackTop[%d] = %x ?= %x (getStackTop %x %d)\n", 
+  fprintf(stderr, "stackTop[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackTop %"PRIuMAX" %d)\n", 
 	PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack),
 	d,d
 	);
   }
-#endif
   assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
   assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
@@ -142,7 +136,7 @@ bool invariantForMutatorStack (GC_state s) {
 #endif
 
   if (DEBUG)
-	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
+	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %"PRIuMAX" <= %"PRIuMAX" (%"PRIuMAX" + %"PRIuMAX")\n", top, (limit+framesize), limit, framesize);
   return (top <= (limit + framesize));
 }
 

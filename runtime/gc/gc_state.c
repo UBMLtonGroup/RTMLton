@@ -9,21 +9,21 @@
 
 void displayGCState (GC_state s, FILE *stream) {
   fprintf (stream,
-           "GC state\n");
-  fprintf (stream, "\tcurrentThread = "FMTOBJPTR"\n", s->currentThread[PTHREAD_NUM]);
+           "%d] GC state\n", PTHREAD_NUM);
+  fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
                  stream);
-  fprintf (stream, "\tgenerational\n");
+  fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
   displayGenerationalMaps (s, &s->generationalMaps, 
                            stream);
-  fprintf (stream, "\theap\n");
+  fprintf (stream, "%d] \theap\n", PTHREAD_NUM);
   displayHeap (s, &s->heap, 
                stream);
   fprintf (stream,
-           "\tlimit = "FMTPTR"\n"
+           "%d] \tlimit = "FMTPTR"\n"
            "\tstackBottom = "FMTPTR"\n"
-           "\tstackTop = "FMTPTR"\n",
+           "\tstackTop = "FMTPTR"\n", PTHREAD_NUM,
            (uintptr_t)s->limit,
            (uintptr_t)s->stackBottom[PTHREAD_NUM],
            (uintptr_t)s->stackTop[PTHREAD_NUM]);
@@ -163,6 +163,18 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
+  fprintf(stderr,"%d] call handler set, pausing main thread\n",PTHREAD_NUM);
+ /* while(1) // TODO this needs to be reworked see comments in ub/test2.sml
+  {
+	if(s->GCRequested) {
+                if (DEBUG)
+		    fprintf(stderr, "%d] Other thread requested GC. Moving to safe point. \n", PTHREAD_NUM);
+		//call performGC with the state of prev executing thread as current thread has no computation
+		performGC(s,s->oldGenBytesRequested,s->nurseryBytesRequested,s->forceMajor,s->mayResize); 
+	}
+	ssleep(1, 0);
+  }*/
+  s->threadPaused[PTHREAD_NUM] = 1;
 }
 
 pointer GC_getCurrentThread (GC_state s) {
@@ -172,7 +184,6 @@ pointer GC_getCurrentThread (GC_state s) {
 
 pointer GC_getSavedThread (GC_state s) {
   pointer p;
-
   assert(s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR);
   p = objptrToPointer (s->savedThread[PTHREAD_NUM], s->heap.start);
   s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
@@ -214,4 +225,35 @@ bool GC_getGCSignalPending (GC_state s) {
 
 void GC_setGCSignalPending (GC_state s, bool b) {
   s->signalsInfo.gcSignalPending = b;
+}
+
+void push(GC_state s, int n)
+{
+    //TODO worry about concurrent access to s->gcCallSeq
+    int cnt =0;
+    while(cnt < MAXPRI)
+    {
+        if(s->gcCallSeq[cnt] ==-1)
+        {
+            s->gcCallSeq[cnt]=n;
+            return;
+        }
+        cnt++;
+    }
+}
+
+int pop(GC_state s)
+{
+    int cnt = MAXPRI-1;
+    while(cnt >=0)
+    {
+        if(s->gcCallSeq[cnt] != -1)
+        {
+            int tmp = s->gcCallSeq[cnt];
+            s->gcCallSeq[cnt]=-1;
+            return tmp;
+        }
+        cnt--;
+    }
+    return -1;
 }
