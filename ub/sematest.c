@@ -53,21 +53,19 @@ void *gc(void *p) {
  * - Upon leaving the safe point, running_threads is incremented by one.
  *
  * ask_for_gc:
- *    if at_safepoint:
- *       lock(gc_needed = 1)
+ *    lock(gc_needed = 1)
  *
  * enter_safe_point:
  *    lock(running_threads --)
  *
  * leave_safe_point:
- *     spin while (gc_needed == 1)
- *     lock(running_threads ++)
+ *    spin while (gc_needed == 1)
+ *    lock(running_threads ++)
  *
  */
 
-#define pthread_yield sched_yield   // OSX
-// if we only call ASK_FOR_GC within a safe point, then we can
-// omit the 'if at_safepoint' test
+#define pthread_yield sched_yield 
+
 #define ASK_FOR_GC do { LOCK; gc_needed = 1; UNLOCK; } while(0)
 #define ENTER_SAFEPOINT do { LOCK; running_threads--; pthread_cond_signal(&cond); UNLOCK; } while(0)
 #define LEAVE_SAFEPOINT do { while (gc_needed) pthread_yield(); LOCK; running_threads++; UNLOCK; } while(0)
