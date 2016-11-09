@@ -585,7 +585,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
   switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
   ensureInvariantForMutator (s, force);
   assert (invariantForMutatorFrontier(s));
-assert (invariantForMutatorStack(s));
+  assert (invariantForMutatorStack(s));
   leave (s);
 }
 
