@@ -36,6 +36,8 @@ void *gc(void *p) {
             } while (running_threads);
         } while (!gc_needed);
 
+        // at this point the lock has been re-acquired and all threads are paused
+
         printf("GC running needed=%d threads=%d\n", gc_needed, running_threads);
         sleep(2);
         gc_needed = 0;
@@ -46,7 +48,6 @@ void *gc(void *p) {
 
 /*
  * - threads can ask for GC's by setting gc_needed to 1
- * - a GC can only be asked for at a safe point
  * - threads can enter safe point (for a GC) by decrementing
  *   running_threads by one.
  * - A thread may leave a safe point only if gc_needed is zero.
