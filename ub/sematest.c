@@ -90,7 +90,8 @@ void *comp(void *p) {
 
         // randomly enter safepoint
         // if a GC was requested (by any thread) then LEAVE_SAFEPOINT should
-        // block until the GC is completed.
+        // spin until the GC is completed. maybe use another sema so we dont have
+        // to spin and waste cpu
         if (rchk(.25)) {
             printf("%d] randomly entering safepoint with %d running threads. gc_needed=%d\n",
                    _p, running_threads, gc_needed);
