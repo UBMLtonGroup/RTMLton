@@ -8,6 +8,58 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sched.h>
+
+struct thrctrl {
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+    pthread_cond_t safepoint_cond; // "paused" threads will wait on this condition
+    pthread_mutex_t safepoint_lock;
+
+    int running_threads;
+    int gc_needed;
+    int requested_by;
+} TC;
+
+#define TC_LOCK pthread_mutex_lock(&TC.lock)
+#define TC_UNLOCK pthread_mutex_unlock(&TC.lock)
+#define TCSP_LOCK pthread_mutex_lock(&TC.safepoint_lock)
+#define TCSP_UNLOCK pthread_mutex_unlock(&TC.safepoint_lock)
+
+/*
+ * - threads can ask for GC's by setting gc_needed to 1
+ *   and requested_by to their threadid. in the current
+ *   model, only the most recent requester (eg the one 
+ *   right before running_threads hits zero) is noted.
+ * - threads can enter safe point (for a GC) by decrementing
+ *   running_threads by one.
+ * - A thread may leave a safe point only if gc_needed is zero.
+ * - Upon leaving the safe point, running_threads is incremented by one.
+ *
+ * ask_for_gc:
+ *    lock(gc_needed = 1)
+ *
+ * enter_safe_point:
+ *    lock(running_threads --)
+ *
+ * leave_safe_point:
+ *    spin while (gc_needed == 1)
+ *    lock(running_threads ++)
+ *
+ */
+
+#define pthread_yield sched_yield
+
+#define ASK_FOR_GC do { TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; TC_UNLOCK; } while(0)
+#define ENTER_SAFEPOINT do { TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; } while(0)
+#define LEAVE_SAFEPOINT do { TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; TC_LOCK; TC.running_threads++; TC_UNLOCK; } while(0)
+
+
+
 
 #ifndef CHECKDISABLEGC
 # define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
@@ -223,7 +275,10 @@ void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
 
 	set_pthread_num(1); // by definition
-
+    TC.running_threads = 0;
+    TC.gc_needed = 0;
+    TC.requested_by = 0;
+    
 	if (DEBUG)
 		fprintf(stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
 
