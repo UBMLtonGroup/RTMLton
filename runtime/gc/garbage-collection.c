@@ -55,7 +55,7 @@ struct thrctrl {
 #define pthread_yield sched_yield
 
 #define REQUESTGC do { TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; setup_for_gc(s); TC_UNLOCK; } while(0)
-#define COMPLETEGC do { TC_LOCK; finish_for_gc(s); s->GCRequested=FALSE; TC_UNLOCK; } while(0)
+#define COMPLETEGC do { TC_LOCK; finish_for_gc(s); TC_UNLOCK; } while(0)
 #define ENTER_SAFEPOINT do { TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; } while(0)
 #define LEAVE_SAFEPOINT do { TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; TC_LOCK; TC.running_threads++; TC_UNLOCK; } while(0)
 
@@ -211,7 +211,6 @@ void leaveGC (GC_state s) {
 #define SANITY(EL) if (s->EL[TC.requested_by] == s->EL[1]) fprintf(stderr,"%d] " #EL " changed!\n", PTHREAD_NUM);
 
 static void setup_for_gc(GC_state s) {
-    assert(gcflag != 1);
     COPYIN(stackTop);
     if (DEBUG) 
         fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",
@@ -225,7 +224,7 @@ static void setup_for_gc(GC_state s) {
     if (DEBUG) 
         fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"FMTPTR" , should become = %"FMTPTR" , main thread = %"FMTPTR" \n",
         	PTHREAD_NUM, TC.requested_by, objptrToPointer(s->currentThread[1],s->heap.start),
-        	objptrToPointer(s->currentThread[GCRequestedBy],s->heap.start),
+        	objptrToPointer(s->currentThread[TC.requested_by],s->heap.start),
         	objptrToPointer(s->currentThread[0], s->heap.start));
     COPYIN(currentThread);
     if (DEBUG) 
@@ -266,14 +265,14 @@ void *GCrunner(void *_s) {
 	GC_state s = (GC_state) _s;
 
 	set_pthread_num(1); // by definition
-    TC.running_threads = 0;
-    TC.gc_needed = 0;
-    TC.requested_by = 0;
+        TC.running_threads = 0;
+        TC.gc_needed = 0;
+        TC.requested_by = 0;
     
-    pthread_mutex_init(&TC.lock, NULL);
-    pthread_mutex_init(&TC.safepoint_lock, NULL);
-    pthread_cond_init(&TC.cond, NULL);
-    pthread_cond_init(&TC.safepoint_cond, NULL);
+        pthread_mutex_init(&TC.lock, NULL);
+        pthread_mutex_init(&TC.safepoint_lock, NULL);
+        pthread_cond_init(&TC.cond, NULL);
+        pthread_cond_init(&TC.safepoint_cond, NULL);
     
 	if (DEBUG)
 		fprintf(stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
@@ -282,8 +281,8 @@ void *GCrunner(void *_s) {
 
 #ifdef THREADED
 	while (1) {
-		if (DEBUG)
-			fprintf(stderr, "%d] GCrunner: waiting for GC request.\n", PTHREAD_NUM);
+	    if (DEBUG)
+		fprintf(stderr, "%d] GCrunner: waiting for GC request.\n", PTHREAD_NUM);
 
 	    TC_LOCK;
 	    do {

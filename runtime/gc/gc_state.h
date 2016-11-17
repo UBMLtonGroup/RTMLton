@@ -124,7 +124,7 @@ PRIVATE void GC_setHashConsDuringGC (GC_state s, bool b);
 PRIVATE size_t GC_getLastMajorStatisticsBytesLive (GC_state s);
 
 PRIVATE pointer GC_getCallFromCHandlerThread (GC_state s);
-PRIVATE void GC_setCallFromCHandlerThread (GC_state s, pointer p) __attribute__((noreturn));
+PRIVATE void GC_setCallFromCHandlerThread (GC_state s, pointer p); // __attribute__((noreturn));
 PRIVATE pointer GC_getCurrentThread (GC_state s);
 PRIVATE pointer GC_getSavedThread (GC_state s);
 PRIVATE void GC_setSavedThread (GC_state s, pointer p);
