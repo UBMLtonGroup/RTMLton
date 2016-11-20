@@ -54,12 +54,28 @@ struct thrctrl {
 
 #define pthread_yield sched_yield
 
-#define REQUESTGC do { TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; setup_for_gc(s); TC_UNLOCK; } while(0)
-#define COMPLETEGC do { TC_LOCK; finish_for_gc(s); s->GCRequested=FALSE; TC_UNLOCK; } while(0)
-#define ENTER_SAFEPOINT do { TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; } while(0)
-#define LEAVE_SAFEPOINT do { TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; TC_LOCK; TC.running_threads++; TC_UNLOCK; } while(0)
-
-
+#define REQUESTGC do { \
+        if (DEBUG) fprintf(stderr, "%d] REQUESTGC start %d\n", PTHREAD_NUM, TC.running_threads); \
+        TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; setup_for_gc(s); TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] REQUESTGC end %d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+#define COMPLETEGC do { \
+        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC start %d\n", PTHREAD_NUM, TC.running_threads); \
+        TC_LOCK; finish_for_gc(s); TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC end %d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+#define ENTER_SAFEPOINT do { \
+        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT start %d\n", PTHREAD_NUM, TC.running_threads); \
+        TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT end %d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+#define LEAVE_SAFEPOINT do { \
+        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT start %d\n", PTHREAD_NUM, TC.running_threads); \
+        TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; \
+        TC_LOCK; TC.running_threads++; TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT end %d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+        
 
 #ifndef CHECKDISABLEGC
 # define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)

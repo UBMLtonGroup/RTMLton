@@ -47,8 +47,7 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
     state->threadPaused[1] = 0;	// GC we can set to running but is moot because we will never pause it
 
     int tNum;
-    for (tNum = 2; tNum < MAXPRI; tNum++)
-      {
+    for (tNum = 2; tNum < MAXPRI; tNum++) {
 	  if (DEBUG)
 	      fprintf (stderr, "spawning thread %d\n", tNum);
 
@@ -61,21 +60,19 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 	  pthread_t *pt = malloc (sizeof (pthread_t));
 	  memset (pt, 0, sizeof (pthread_t));
 
-	  if (pthread_create (pt, NULL, &realtimeRunner, (void *) params))
-	    {
-		fprintf (stderr, "pthread_create failed: %s\n",
-			 strerror (errno));
+	  if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
+		fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
 		exit (-1);
-	    }
-	  else
-	    {
-		state->realtimeThreads[tNum] = pt;
-		state->threadPaused[tNum] = 0;	// thread not paused, spinning.
+	  }
+	  else {
+    	TC_LOCK;
+    	TC.running_threads ++;
+    	TC_UNLOCK;
+    	state->realtimeThreads[tNum] = pt;
 		initialized++;
-	    }
-      }
+	   }
+    }
     state->isRealTimeThreadInitialized = TRUE;
-
 }
 
 #define COPYIN(s,EL) s->EL[2] = s->EL[0]
