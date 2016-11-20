@@ -76,11 +76,9 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         setvbuf(stderr, NULL, _IONBF, 0);                               \
-        install_signal_handler(&gcState);                               \
 	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));             \
 	set_pthread_num(0);                                                 \
 	MYASSERT(GCrunner_thread, !=, NULL);                                \
-	MYASSERT(pthread_mutex_init(&gcflag_lock, NULL), ==, 0);            \
 	MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
 	while (!gcState.GCrunnerRunning){fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
 	realtimeThreadInit(&gcState, pthread_self(), GCrunner_thread);      \
