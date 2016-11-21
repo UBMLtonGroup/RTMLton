@@ -342,9 +342,9 @@ __attribute__ ((noreturn))
 	TC_LOCK;
 	do {
 	    do {
-                if (DEBUG) fprintf(stderr, "%d TC_UNLOCK (implied) thr:%d boot:%d\n",
-                                   PTHREAD_NUM, TC.running_threads, TC.booted);
-		pthread_cond_wait (&TC.cond, &TC.lock);	// implicit TC_UNLOCK
+            if (DEBUG) fprintf(stderr, "%d] TC_UNLOCK (implied) thr:%d boot:%d\n",
+                               PTHREAD_NUM, TC.running_threads, TC.booted);
+            pthread_cond_wait (&TC.cond, &TC.lock);	// implicit TC_UNLOCK
 	    }
 	    while (TC.booted && TC.running_threads);
 	}
