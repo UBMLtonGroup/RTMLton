@@ -8,7 +8,7 @@ val _ = print "test2 was running and is going to sleep\n"
 
 fun inf_sleep t= OS.Process.sleep t
 
-fun pause () = (print "sleep\n"; inf_sleep (Time.fromSeconds 2)
+fun pause () = (print "sleep\n"; inf_sleep (Time.fromSeconds 20)
                 ; pause ())
 
 val _ = pause ()
