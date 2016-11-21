@@ -49,7 +49,6 @@
 PRIVATE Pointer gcStateAddress;
 
 #define Initialize(al, mg, mfs, mmc, pk, ps)                            \
-		{int i; for(i = 0; i < MAXPRI ; i++) gcState.threadPaused[i] = 2;} \
         gcStateAddress = (pointer)&gcState;                             \
         gcState.alignment = al;                                         \
         gcState.atMLtons = atMLtons;                                    \
