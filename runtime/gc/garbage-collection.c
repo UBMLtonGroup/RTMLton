@@ -13,6 +13,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sched.h>
+#include <errno.h>
+
 
 struct thrctrl
 {
@@ -27,10 +29,12 @@ struct thrctrl
     int requested_by;
 } TC;
 
-#define TC_LOCK fprintf(stderr, "%d TC_LOCK %d\n", PTHREAD_NUM, TC.booted); pthread_mutex_lock(&TC.lock)
-#define TC_UNLOCK fprintf(stderr, "%d TC_UNLOCK %d\n", PTHREAD_NUM, TC.booted); pthread_mutex_unlock(&TC.lock)
-#define TCSP_LOCK pthread_mutex_lock(&TC.safepoint_lock)
-#define TCSP_UNLOCK pthread_mutex_unlock(&TC.safepoint_lock)
+#define IFED(X) do { if (X) { perror("perrro " #X); exit(-1); } } while(0)
+
+#define TC_LOCK fprintf(stderr, "%d TC_LOCK %d\n", PTHREAD_NUM, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
+#define TC_UNLOCK fprintf(stderr, "%d TC_UNLOCK %d\n", PTHREAD_NUM, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
+#define TCSP_LOCK IFED(pthread_mutex_lock(&TC.safepoint_lock))
+#define TCSP_UNLOCK IFED(pthread_mutex_unlock(&TC.safepoint_lock))
 
 /*
  * - threads can ask for GC's by setting gc_needed to 1
