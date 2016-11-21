@@ -28,8 +28,8 @@ void
 realtimeThreadWaitForInit (void)
 {
     while (initialized < MAXPRI) {
-	fprintf (stderr, "spin [thread boot: %d out of %d]..\n",
-		 initialized, MAXPRI);
+        fprintf (stderr, "spin [thread boot: %d out of %d]..\n",
+                 initialized, MAXPRI);
     }
 }
 
@@ -44,26 +44,26 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 
     int tNum;
     for (tNum = 2; tNum < MAXPRI; tNum++) {
-		if (DEBUG)
-		    fprintf (stderr, "spawning thread %d\n", tNum);
-	
-		struct realtimeRunnerParameters *params =
-		    malloc (sizeof (struct realtimeRunnerParameters));
-	
-		params->tNum = tNum;
-		params->state = state;
-	
-		pthread_t *pt = malloc (sizeof (pthread_t));
-		memset (pt, 0, sizeof (pthread_t));
-	
-		if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
-		    fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
-		    exit (-1);
-		}
-		else {
-		    state->realtimeThreads[tNum] = pt;
-		    initialized++;
-		}
+        if (DEBUG)
+            fprintf (stderr, "spawning thread %d\n", tNum);
+
+        struct realtimeRunnerParameters *params =
+            malloc (sizeof (struct realtimeRunnerParameters));
+
+        params->tNum = tNum;
+        params->state = state;
+
+        pthread_t *pt = malloc (sizeof (pthread_t));
+        memset (pt, 0, sizeof (pthread_t));
+
+        if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
+            fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
+            exit (-1);
+        }
+        else {
+            state->realtimeThreads[tNum] = pt;
+            initialized++;
+        }
     }
     state->isRealTimeThreadInitialized = TRUE;
 }
@@ -80,16 +80,16 @@ realtimeRunner (void *paramsPtr)
     set_pthread_num (params->tNum);
 
     while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-	if (DEBUG) {
-	    fprintf (stderr,
-		     "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
-	}
-	ssleep (0, 0.1);
+        if (DEBUG) {
+            fprintf (stderr,
+                     "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
+        }
+        ssleep (0, 0.1);
     }
 
     if (DEBUG)
         fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
-	     state->callFromCHandlerThread);
+                 state->callFromCHandlerThread);
 
     /* state->currentThread objptr
        curct->stack         objptr
@@ -117,23 +117,26 @@ realtimeRunner (void *paramsPtr)
     setGCStateCurrentThreadAndStack (state);
 
     GC_thread curct = (GC_thread) (objptrToPointer (state->currentThread[0],
-						    state->heap.start) +
-				   offsetofThread (state));
+                                                    state->heap.start) +
+                                   offsetofThread (state));
     GC_stack curstk =
-	(GC_stack) objptrToPointer (curct->stack, state->heap.start);
+        (GC_stack) objptrToPointer (curct->stack, state->heap.start);
 
     /* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
 
-    if (DEBUG) fprintf(stderr, "%d] copy thread\n", PTHREAD_NUM);
+    if (DEBUG)
+        fprintf (stderr, "%d] copy thread\n", PTHREAD_NUM);
     pointer copiedTh = GC_copyThread (state,
-				      objptrToPointer (state->currentThread[0],
-						       state->heap.start));
+                                      objptrToPointer (state->
+                                                       currentThread[0],
+                                                       state->heap.start));
 
     GC_thread tc = (GC_thread) (copiedTh + offsetofThread (state));
     tc->exnStack = -1;
 
     //current thread on for RT thread is taken from tc which is copied from main thread in previous line
-    if (DEBUG) fprintf(stderr, "%d] switch to copied thread\n", PTHREAD_NUM);
+    if (DEBUG)
+        fprintf (stderr, "%d] switch to copied thread\n", PTHREAD_NUM);
 
     GC_switchToThread (state, tc, 0);
 
@@ -144,22 +147,22 @@ realtimeRunner (void *paramsPtr)
     state->isRealTimeThreadRunning = TRUE;
 
     while (1) {
-	if (DEBUG) {
-	    fprintf (stderr, "%d] realtimeRunner running.\n", tNum);
-	    fprintf (stderr, "%d] calling Parallel_run..\n", tNum);
-	}
-	Copy_globalObjptrs (0, params->tNum);
+        if (DEBUG) {
+            fprintf (stderr, "%d] realtimeRunner running.\n", tNum);
+            fprintf (stderr, "%d] calling Parallel_run..\n", tNum);
+        }
+        Copy_globalObjptrs (0, params->tNum);
 
-	TC_LOCK;
-	TC.running_threads++;
-	TC_UNLOCK;
+        TC_LOCK;
+        TC.running_threads++;
+        TC_UNLOCK;
         TC.booted = 1;
 
-	Parallel_run ();
+        Parallel_run ();
 
-	fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
-		 tNum);
-	exit (-1);
+        fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
+                 tNum);
+        exit (-1);
     }
 }
 
