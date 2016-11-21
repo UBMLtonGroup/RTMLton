@@ -27,8 +27,8 @@ struct thrctrl
     int requested_by;
 } TC;
 
-#define TC_LOCK fprintf(stderr, "TC_LOCK\n"); pthread_mutex_lock(&TC.lock)
-#define TC_UNLOCK fprintf(stderr, "TC_UNLOCK\n"); pthread_mutex_unlock(&TC.lock)
+#define TC_LOCK fprintf(stderr, "%d TC_LOCK %d\n", PTHREAD_NUM, TC.booted); pthread_mutex_lock(&TC.lock)
+#define TC_UNLOCK fprintf(stderr, "%d TC_UNLOCK %d\n", PTHREAD_NUM, TC.booted); pthread_mutex_unlock(&TC.lock)
 #define TCSP_LOCK pthread_mutex_lock(&TC.safepoint_lock)
 #define TCSP_UNLOCK pthread_mutex_unlock(&TC.safepoint_lock)
 
@@ -317,7 +317,7 @@ __attribute__ ((noreturn))
     GC_state s = (GC_state) _s;
 
     set_pthread_num (1);	// by definition
-    TC.running_threads = 0;
+    TC.running_threads = 1;     // main thr
     TC.gc_needed = 0;
     TC.booted = 0;
     TC.requested_by = 0;
@@ -341,6 +341,8 @@ __attribute__ ((noreturn))
 	TC_LOCK;
 	do {
 	    do {
+                if (DEBUG) fprintf(stderr, "%d TC_UNLOCK (implied) thr:%d boot:%d\n",
+                                   PTHREAD_NUM, TC.running_threads, TC.booted);
 		pthread_cond_wait (&TC.cond, &TC.lock);	// implicit TC_UNLOCK
 	    }
 	    while (TC.booted && TC.running_threads);
