@@ -339,55 +339,56 @@ __attribute__ ((noreturn))
 
 #ifdef THREADED
     while (1) {
-	if (DEBUG)
-	    fprintf (stderr, "%d] GCrunner: waiting for GC request.\n",
-		     PTHREAD_NUM);
-
-	TC_LOCK;
-	do {
-	    do {
-            if (DEBUG) fprintf(stderr, "%d] TC_UNLOCK (implied) thr:%d boot:%d\n",
-                               PTHREAD_NUM, TC.running_threads, TC.booted);
-            pthread_cond_wait (&TC.cond, &TC.lock);	// implicit TC_UNLOCK
-	    }
-	    while (TC.booted && TC.running_threads);
-	}
-	while (!TC.gc_needed);
-
-	// TC_LOCK is re-acquired here as a result of cond_wait succeeding
+		if (DEBUG)
+		    fprintf (stderr, "%d] GCrunner: waiting for GC request.\n",
+			     PTHREAD_NUM);
 	
-	if (DEBUG)
-	    fprintf (stderr,
-		     "%d] GCrunner: GC requested. all threads should be paused.\n",
-		     PTHREAD_NUM);
-
-	// at this point, all threads should be paused and the GC can proceed    
-
-	if (s->isRealTimeThreadInitialized) {
-	    if (DEBUG) {
-			fprintf (stderr,
-				 "%d] GCrunner: threads paused. GC'ing\n",
-				 PTHREAD_NUM);
-			fprintf (stderr,
-				 "%d] GC running needed=%d threads=%d\n",
-				 PTHREAD_NUM, TC.gc_needed, TC.running_threads);
-	    }
-
-	    performGC_helper (s,
-			      s->oldGenBytesRequested,
-			      s->nurseryBytesRequested,
-			      s->forceMajor, s->mayResize);
-
-	    if (DEBUG) fprintf (stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
-
-	    TC.gc_needed = 0;
-	    pthread_cond_broadcast (&TC.safepoint_cond);	// unpause all threads
-	    TC_UNLOCK;
-	}
-	else {
-	    fprintf (stderr,
-		     "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n",
-		     PTHREAD_NUM);
+		TC_LOCK;
+		do {
+		    do {
+	            if (DEBUG) fprintf(stderr, "%d] TC_UNLOCK (implied) thr:%d boot:%d\n",
+	                               PTHREAD_NUM, TC.running_threads, TC.booted);
+	            pthread_cond_wait (&TC.cond, &TC.lock);	// implicit TC_UNLOCK
+		    }
+		    while (TC.booted && TC.running_threads);
+		}
+		while (!TC.gc_needed);
+	
+		// TC_LOCK is re-acquired here as a result of cond_wait succeeding
+		
+		if (DEBUG)
+		    fprintf (stderr,
+			     "%d] GCrunner: GC requested. all threads should be paused.\n",
+			     PTHREAD_NUM);
+	
+		// at this point, all threads should be paused and the GC can proceed    
+	
+		if (s->isRealTimeThreadInitialized) {
+		    if (DEBUG) {
+				fprintf (stderr,
+					 "%d] GCrunner: threads paused. GC'ing\n",
+					 PTHREAD_NUM);
+				fprintf (stderr,
+					 "%d] GC running needed=%d threads=%d\n",
+					 PTHREAD_NUM, TC.gc_needed, TC.running_threads);
+		    }
+	
+		    performGC_helper (s,
+				      s->oldGenBytesRequested,
+				      s->nurseryBytesRequested,
+				      s->forceMajor, s->mayResize);
+	
+		    if (DEBUG) fprintf (stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
+	
+		    TC.gc_needed = 0;
+		    pthread_cond_broadcast (&TC.safepoint_cond);	// unpause all threads
+		    TC_UNLOCK;
+		}
+		else {
+		    fprintf (stderr,
+			     "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n",
+			     PTHREAD_NUM);
+		}
 	}
 #endif
 
