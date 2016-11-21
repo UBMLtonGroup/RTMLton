@@ -1,4 +1,5 @@
 /* http://stackoverflow.com/questions/3649281/how-to-increase-thread-priority-in-pthreads */
+/* indent -nut -br -nce -cdw -i4  */
 
 #include "realtime_thread.h"
 
@@ -21,6 +22,13 @@ GC_threadYield ( __attribute__ ((unused)) GC_state s)
 {
     fprintf (stderr, "GC_threadYield()\n");
     sched_yield ();
+    return 0;
+}
+
+int32_t 
+GC_setThreadRunnable(GC_state s, int32_t thr_num) {
+    if (DEBUG) fprintf(stderr, "%d] setThreadRunnable thr=%d\n", PTHREAD_NUM, thr_num);
+    TC.booted = 1;
     return 0;
 }
 
