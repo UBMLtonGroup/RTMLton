@@ -29,12 +29,12 @@ struct thrctrl
     int requested_by;
 } TC;
 
-#define IFED(X) do { if (X) { perror("perrro " #X); exit(-1); } } while(0)
+#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
 
-#define TC_LOCK fprintf(stderr, "%d TC_LOCK %d\n", PTHREAD_NUM, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
-#define TC_UNLOCK fprintf(stderr, "%d TC_UNLOCK %d\n", PTHREAD_NUM, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
-#define TCSP_LOCK IFED(pthread_mutex_lock(&TC.safepoint_lock))
-#define TCSP_UNLOCK IFED(pthread_mutex_unlock(&TC.safepoint_lock))
+#define TC_LOCK fprintf(stderr, "%d] TC_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
+#define TC_UNLOCK fprintf(stderr, "%d] TC_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
+#define TCSP_LOCK fprintf(stderr, "%d] TCSP_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.safepoint_lock))
+#define TCSP_UNLOCK fprintf(stderr, "%d] TCSP_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.safepoint_lock))
 
 /*
  * - threads can ask for GC's by setting gc_needed to 1
@@ -61,25 +61,25 @@ struct thrctrl
 #define pthread_yield sched_yield
 
 #define REQUESTGC do { \
-        if (DEBUG) fprintf(stderr, "%d] REQUESTGC start %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] REQUESTGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; setup_for_gc(s); TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] REQUESTGC end %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] REQUESTGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 #define COMPLETEGC do { \
-        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC start %d\n", PTHREAD_NUM, TC.running_threads); \
-        TC_LOCK; finish_for_gc(s); TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC end %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        finish_for_gc(s); \
+        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 #define ENTER_SAFEPOINT do { \
-        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT start %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT end %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 #define LEAVE_SAFEPOINT do { \
-        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT start %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; \
         TC_LOCK; TC.running_threads++; TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT end %d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 
 
@@ -354,6 +354,8 @@ __attribute__ ((noreturn))
 	}
 	while (!TC.gc_needed);
 
+	// TC_LOCK is re-acquired here as a result of cond_wait succeeding
+	
 	if (DEBUG)
 	    fprintf (stderr,
 		     "%d] GCrunner: GC requested. all threads should be paused.\n",
@@ -363,12 +365,12 @@ __attribute__ ((noreturn))
 
 	if (s->isRealTimeThreadInitialized) {
 	    if (DEBUG) {
-		fprintf (stderr,
-			 "%d] GCrunner: threads paused. GC'ing\n",
-			 PTHREAD_NUM);
-		fprintf (stderr,
-			 "%d] GC running needed=%d threads=%d\n",
-			 PTHREAD_NUM, TC.gc_needed, TC.running_threads);
+			fprintf (stderr,
+				 "%d] GCrunner: threads paused. GC'ing\n",
+				 PTHREAD_NUM);
+			fprintf (stderr,
+				 "%d] GC running needed=%d threads=%d\n",
+				 PTHREAD_NUM, TC.gc_needed, TC.running_threads);
 	    }
 
 	    performGC_helper (s,
@@ -376,12 +378,7 @@ __attribute__ ((noreturn))
 			      s->nurseryBytesRequested,
 			      s->forceMajor, s->mayResize);
 
-	    COMPLETEGC;
-
-	    if (DEBUG)
-		fprintf (stderr,
-			 "%d] GCrunner: finished. unpausing threads.\n",
-			 PTHREAD_NUM);
+	    if (DEBUG) fprintf (stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
 
 	    TC.gc_needed = 0;
 	    pthread_cond_broadcast (&TC.safepoint_cond);	// unpause all threads
@@ -392,11 +389,11 @@ __attribute__ ((noreturn))
 		     "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n",
 		     PTHREAD_NUM);
 	}
-    }
 #endif
 
     pthread_exit (NULL);
- /*NOTREACHED*/}
+ /*NOTREACHED*/
+ }
 
 void
 performGC (GC_state s,
