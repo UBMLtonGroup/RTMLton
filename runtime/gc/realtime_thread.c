@@ -26,8 +26,8 @@ GC_threadYield ( __attribute__ ((unused)) GC_state s)
 }
 
 int32_t 
-GC_setThreadRunnable(GC_state s, int32_t thr_num) {
-    if (DEBUG) fprintf(stderr, "%d] setThreadRunnable thr=%d\n", PTHREAD_NUM, thr_num);
+GC_setBooted(int32_t thr_num) {
+    if (DEBUG) fprintf(stderr, "%d] setBooted thr=%d\n", PTHREAD_NUM, thr_num);
     TC.booted = 1;
     return 0;
 }
@@ -99,6 +99,11 @@ realtimeRunner (void *paramsPtr)
         fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
                  state->callFromCHandlerThread);
 
+    while (!TC.booted) {
+        if (DEBUG) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
+        ssleep (0, 0.1);
+    }
+
     /* state->currentThread objptr
        curct->stack         objptr
 
@@ -164,7 +169,6 @@ realtimeRunner (void *paramsPtr)
         TC_LOCK;
         TC.running_threads++;
         TC_UNLOCK;
-        TC.booted = 1;
 
         Parallel_run ();
 
