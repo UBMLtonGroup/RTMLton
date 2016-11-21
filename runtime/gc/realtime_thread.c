@@ -92,7 +92,7 @@ realtimeRunner (void *paramsPtr)
             fprintf (stderr,
                      "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
         }
-        ssleep (0, 1);
+        ssleep (1, 0);
     }
 
     if (DEBUG)
@@ -101,7 +101,7 @@ realtimeRunner (void *paramsPtr)
 
     while (!TC.booted) {
         if (DEBUG) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
-        ssleep (0, 1);
+        ssleep (1, 0);
     }
 
     /* state->currentThread objptr
