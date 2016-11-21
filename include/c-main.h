@@ -86,7 +86,7 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
        									                                \
         /* Trampoline */                                                \
 		while (1) {     \
-		fprintf(stderr,"%d] I am starting to trampoline...\n ",PTHREAD_NUM);			\
+		fprintf(stderr,"%d] I am starting to trampoline...\n",PTHREAD_NUM);			\
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
