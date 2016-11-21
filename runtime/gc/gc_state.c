@@ -8,8 +8,7 @@
  */
 
 void displayGCState (GC_state s, FILE *stream) {
-  fprintf (stream,
-           "%d] GC state\n", PTHREAD_NUM);
+  fprintf (stream, "%d] GC state\n", PTHREAD_NUM);
   fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
@@ -30,8 +29,6 @@ void displayGCState (GC_state s, FILE *stream) {
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
-//	fprintf(stderr, "thread %d top %x bottom %x\n", PTHREAD_NUM,s->stackTop[PTHREAD_NUM], s->stackBottom[PTHREAD_NUM]);
-
   return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
 
@@ -163,7 +160,7 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
-  fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
+  if (DEBUG) fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
 }
 
 pointer GC_getCurrentThread (GC_state s) {

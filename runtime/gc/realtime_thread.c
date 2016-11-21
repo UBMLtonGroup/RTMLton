@@ -87,7 +87,8 @@ realtimeRunner (void *paramsPtr)
 	ssleep (1, 0);
     }
 
-    fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
+    if (DEBUG)
+        fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
 	     state->callFromCHandlerThread);
 
     /* state->currentThread objptr
