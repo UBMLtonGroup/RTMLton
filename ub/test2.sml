@@ -16,7 +16,7 @@ val _ = inf_sleep (Time.fromSeconds 5)
 val _ = PrimThread.setBooted()
 
 fun pause () = (print "sleep\n"; inf_sleep (Time.fromSeconds 5)
-                ; pause ())
+                ;PrimThread.gcSafePoint(); pause ())
 
 val _ = pause ()
 

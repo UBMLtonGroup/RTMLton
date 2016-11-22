@@ -32,6 +32,17 @@ GC_setBooted(int32_t thr_num) {
     return 0;
 }
 
+int32_t 
+GC_safePoint(int32_t thr_num) {
+    if (DEBUG) fprintf(stderr, "%d] goto safepoint thr=%d\n", PTHREAD_NUM, thr_num);
+    ENTER_SAFEPOINT;
+    sched_yield ();
+    LEAVE_SAFEPOINT;
+
+
+    return 0;
+}
+
 void
 realtimeThreadWaitForInit (void)
 {

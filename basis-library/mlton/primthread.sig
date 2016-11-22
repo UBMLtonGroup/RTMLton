@@ -32,5 +32,6 @@ signature PRIM_THREAD =
    
      val myPriority: unit -> int
      val setBooted: unit -> int
+     val gcSafePoint: unit -> int
  
  end

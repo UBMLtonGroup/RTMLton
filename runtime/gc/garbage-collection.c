@@ -269,19 +269,12 @@ setup_for_gc (GC_state s)
     COPYIN (exnStack);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy currentThread = %" FMTPTR
-                 " , should become = %" FMTPTR " , main thread = %" FMTPTR
-                 " \n", PTHREAD_NUM, TC.requested_by,
-                 objptrToPointer (s->currentThread[1], s->heap.start),
-                 objptrToPointer (s->currentThread[TC.requested_by],
-                                  s->heap.start),
-                 objptrToPointer (s->currentThread[0], s->heap.start));
+                 "%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , main thread = %x \n", PTHREAD_NUM, TC.requested_by,
+                 s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);
     COPYIN (currentThread);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy currentThread = %" FMTPTR
-                 " \n", PTHREAD_NUM, TC.requested_by,
-                 objptrToPointer (s->currentThread[1], s->heap.start));
+                 "%d] GCReqBy= %d,  after copy currentThread = %x \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
     COPYIN (savedThread);
     COPYIN (signalHandlerThread);
     COPYIN (ffiOpArgsResPtr);

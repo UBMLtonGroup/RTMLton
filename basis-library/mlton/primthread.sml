@@ -27,6 +27,7 @@ struct
 
     fun myPriority () : int = Primitive.MLton.Thread.myPriority(Primitive.MLton.GCState.gcState)
     fun setBooted () : int = Primitive.MLton.Thread.setBooted(1)
+    fun gcSafePoint () : int = Primitive.MLton.Thread.gcSafePoint(1)
 
 end
 
