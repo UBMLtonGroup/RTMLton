@@ -26,7 +26,7 @@ struct
     val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
 
     fun myPriority () : int = Primitive.MLton.Thread.myPriority(Primitive.MLton.GCState.gcState)
-    fun setBooted () : int = Primitive.MLton.Thread.setBooted(1)
+    fun setBooted () : int = Primitive.MLton.Thread.setBooted(1,Primitive.MLton.GCState.gcState)
     fun gcSafePoint () : int = Primitive.MLton.Thread.gcSafePoint(1)
 
 end

@@ -26,9 +26,10 @@ GC_threadYield ( __attribute__ ((unused)) GC_state s)
 }
 
 int32_t 
-GC_setBooted(int32_t thr_num) {
+GC_setBooted(int32_t thr_num, GC_state s) {
     if (DEBUG) fprintf(stderr, "%d] setBooted thr=%d\n", PTHREAD_NUM, thr_num);
     TC.booted = 1;
+    s->mainBooted=TRUE;
     return 0;
 }
 
@@ -147,12 +148,13 @@ realtimeRunner (void *paramsPtr)
         (GC_stack) objptrToPointer (curct->stack, state->heap.start);
 
     /* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
+    /* copy the savedThread which is stored earlier on from the copied thread, when C Handler was set */
 
     if (DEBUG)
         fprintf (stderr, "%d] copy thread\n", PTHREAD_NUM);
     pointer copiedTh = GC_copyThread (state,
                                       objptrToPointer (state->
-                                                       currentThread[0],
+                                                       savedThread[0],
                                                        state->heap.start));
 
     GC_thread tc = (GC_thread) (copiedTh + offsetofThread (state));

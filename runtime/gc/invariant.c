@@ -125,6 +125,19 @@ bool invariantForMutatorStack (GC_state s) {
 
   GC_stack stack = getStackCurrent(s);
 
+  
+  if(s->mainBooted)
+    {
+        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
+        GC_thread th = (GC_thread)(p + offsetofThread (s));
+
+        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
+        
+        if (st == stack)
+            return true;
+
+    }
+
   top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
 
 #if 0

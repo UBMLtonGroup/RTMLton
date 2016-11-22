@@ -161,6 +161,7 @@ void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
   if (DEBUG) fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
+  GC_copyCurrentThread(s);
 }
 
 pointer GC_getCurrentThread (GC_state s) {
@@ -179,7 +180,7 @@ pointer GC_getSavedThread (GC_state s) {
 void GC_setSavedThread (GC_state s, pointer p) {
   objptr op;
 
-  assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+  //assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   op = pointerToObjptr (p, s->heap.start);
   s->savedThread[PTHREAD_NUM] = op;
 }

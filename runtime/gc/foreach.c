@@ -133,6 +133,21 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     top = getStackTop (s, stack);
     if(DEBUG)
     fprintf(stderr,"%d] Checking Stack "FMTPTR" \n",PTHREAD_NUM,(uintptr_t)stack);
+    /* we avoid checking the main thread's stack when the main calls into user code*/ 
+    bool doit = true;
+    if(s->mainBooted)
+    {
+        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
+        GC_thread th = (GC_thread)(p + offsetofThread (s));
+
+        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
+        
+        if (st == stack)
+            doit = false;
+
+    }
+    if(doit)
+    {
     if (DEBUG) {
       fprintf (stderr, "%d]  bottom = "FMTPTR"  top = "FMTPTR"\n",
                PTHREAD_NUM,
@@ -165,6 +180,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       }
     }
     assert(top == bottom);
+    }
     p += sizeof (struct GC_stack) + stack->reserved;
   }
   return p;

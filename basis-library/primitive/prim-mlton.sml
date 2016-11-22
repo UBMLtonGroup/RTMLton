@@ -341,7 +341,7 @@ structure Thread =
 
       val myPriority = _import "GC_myPriority": GCState.t -> Int32.int;      
       val yield = _import "GC_threadYield": GCState.t -> Int32.int;
-      val setBooted = _import "GC_setBooted" runtime private: Int32.int -> Int32.int;
+      val setBooted = _import "GC_setBooted" runtime private: Int32.int * GCState.t -> Int32.int;
       val gcSafePoint = _import "GC_safePoint" runtime private: Int32.int -> Int32.int;
       
       val finishSignalHandler = _import "GC_finishSignalHandler" runtime private: GCState.t -> unit;

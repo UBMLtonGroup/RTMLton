@@ -83,7 +83,7 @@ struct GC_state {
   /* added for rt-threading */
 
   pthread_t *realtimeThreads[MAXPRI];
-
+  volatile bool mainBooted;
   /* Begin inter-thread GC communication data */
   volatile bool GCrunnerRunning;
   volatile bool isRealTimeThreadInitialized;
