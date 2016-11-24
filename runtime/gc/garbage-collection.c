@@ -435,6 +435,7 @@ performGC (GC_state s,
     ENTER_SAFEPOINT;
     sched_yield ();
     LEAVE_SAFEPOINT;
+    COMPLETEGC;
 
 #else
     DBG ((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
