@@ -131,7 +131,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     stack = (GC_stack)p;
     bottom = getStackBottom (s, stack); 
     top = getStackTop (s, stack);
-    if(DEBUG)
+    if(DEBUG_STACKS)
     fprintf(stderr,"%d] Checking Stack "FMTPTR" \n",PTHREAD_NUM,(uintptr_t)stack);
     /* we avoid checking the main thread's stack when the main calls into user code*/ 
     bool doit = true;
@@ -148,7 +148,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     if(doit)
     {
-    if (DEBUG) {
+    if (DEBUG_STACKS) {
       fprintf (stderr, "%d]  bottom = "FMTPTR"  top = "FMTPTR"\n",
                PTHREAD_NUM,
                (uintptr_t)bottom, (uintptr_t)top);
@@ -157,7 +157,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     while (top > bottom) {
       /* Invariant: top points just past a "return address". */
       returnAddress = *((GC_returnAddress*)(top - GC_RETURNADDRESS_SIZE));
-      if (DEBUG) {
+      if (DEBUG_STACKS) {
         fprintf (stderr, "%d]  top = "FMTPTR"  return address = "FMTRA"\n",
                  PTHREAD_NUM,
                  (uintptr_t)top, returnAddress);
@@ -166,12 +166,12 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       frameOffsets = frameLayout->offsets;
       top -= frameLayout->size;
 
-      if (DEBUG)
+      if (DEBUG_STACKS)
            fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
                    PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
       for (i = 0 ; i < frameOffsets[0] ; ++i) {
-        if (DEBUG)
+        if (DEBUG_STACKS)
           fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR"\n",
                   PTHREAD_NUM,
                   frameOffsets[i + 1], 

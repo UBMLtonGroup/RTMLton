@@ -248,7 +248,7 @@ leaveGC (GC_state s)
 
 #define COPYIN(EL) s->EL[1] = s->EL[TC.requested_by]
 #define COPYOUT(EL) s->EL[TC.requested_by] = s->EL[1]
-#define SANITY(EL) if (s->EL[TC.requested_by] == s->EL[1]) fprintf(stderr,"%d] " #EL " changed!\n", PTHREAD_NUM);
+#define SANITY(EL) if (s->EL[TC.requested_by] == s->EL[1]) if (DEBUG) fprintf(stderr,"%d] " #EL " changed!\n", PTHREAD_NUM);
 
 static void
 setup_for_gc (GC_state s)

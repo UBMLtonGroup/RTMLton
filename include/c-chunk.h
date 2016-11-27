@@ -62,7 +62,7 @@
 
 
 #define C(ty, x) (*(ty*)(x))
-#define G(ty, i) (global##ty [PTHREAD_NUM][i])
+#define G(ty, i) (global##ty [i])
 #define GPNR(i) G(ObjptrNonRoot, i)
 #undef DEBUG_MEMORY
 #if 0
@@ -77,19 +77,21 @@
                                                  *(ty*)((b) + ((i) * (s)) + (o)))), \
                                        ((ty*)((b) + ((i) * (s)) + (o)))))
 
-    #define S(ty, i) (*((fprintf (stderr, "%s:%d S: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
+    #define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p Val=%018p\n", __FILE__, __LINE__,PTHREAD_NUM, \
+                                (void*) StackTop, \
                                (void*)(StackTop + (i)), \
                                *(ty*)(StackTop + (i)))) , \
                         (ty*)(StackTop + (i))))
 
 
 #endif
+#if 1
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define S(ty, i) *(ty*)(StackTop + (i))
 
-
+#endif
 
 /* ------------------------------------------------- */
 /*                       Tests                       */

@@ -26,8 +26,8 @@
 #define VectorInitElem(es, gi, l, w) { es, gi, l, w },
 #define EndVectorInits };
 
-#define LoadArray(a, f) {int i = 0; while(i<MAXPRI) { if (fread (a[i], sizeof(*a[i]), cardof(a[i]), f) != cardof(a[i])) return -1; else i++;}}
-#define SaveArray(a, f) {int i = 0; while(i<MAXPRI) { if (fwrite(a[i], sizeof(*a[i]), cardof(a[i]), f) != cardof(a[i])) return -1; else i++;}}
+#define LoadArray(a, f) {if (fread (a, sizeof(*a), cardof(a), f) != cardof(a)) return -1; }
+#define SaveArray(a, f) {if (fwrite(a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;}
 
 #undef GCTHRDEBUG
 

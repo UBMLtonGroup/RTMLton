@@ -177,7 +177,7 @@ realtimeRunner (void *paramsPtr)
             fprintf (stderr, "%d] realtimeRunner running.\n", tNum);
             fprintf (stderr, "%d] calling Parallel_run..\n", tNum);
         }
-        Copy_globalObjptrs (0, params->tNum);
+//        Copy_globalObjptrs (0, params->tNum);
 
         TC_LOCK;
         TC.running_threads++;

@@ -257,11 +257,11 @@ fun declareGlobals (prefix: string, print) =
              val s = CType.toString t
           in
              print (concat [prefix, s, " global", s,
-                            " [MAXPRI][", C.int (Global.numberOfType t), "];\n"])
+                            "[", C.int (Global.numberOfType t), "];\n"])
              ; print (concat [prefix, s, " CReturn", CType.name t, ";\n"])
           end)
       val _ =
-         print (concat [prefix, "Pointer globalObjptrNonRoot [MAXPRI][",
+         print (concat [prefix, "Pointer globalObjptrNonRoot [",
                         C.int (Global.numberOfNonRoot ()),
                         "];\n"])
    in
