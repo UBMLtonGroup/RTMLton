@@ -100,7 +100,8 @@ majorGC (GC_state s, size_t bytesRequested, bool mayResize)
     uintmax_t numGCs;
     size_t desiredSize;
     CHECKDISABLEGC;
-
+    
+    if(DEBUG)
     fprintf (stderr, "%d] [GC: Starting Major GC...]\n", PTHREAD_NUM);
 
     s->lastMajorStatistics.numMinorGCs = 0;
