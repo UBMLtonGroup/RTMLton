@@ -10,6 +10,7 @@ structure PrimThread : PRIM_THREAD =
 struct
     open Primitive
     open Primitive.MLton.Thread
+    open MLtonThread
 
     structure PThread =
     struct
@@ -21,7 +22,7 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
-    fun thread_main () = print "Parallel_run::thread_main running!"
+    fun thread_main () = (*MLtonThread.run ()*)print "Parallel_run::thread_main running!"
 		
     val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
 

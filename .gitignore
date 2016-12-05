@@ -6,3 +6,10 @@ core
 *.1.c
 *.2.c
 .project
+*.ssa
+*.ssa2
+*.xml
+*.core-ml
+*.machine
+*.sxml
+*.rssa
