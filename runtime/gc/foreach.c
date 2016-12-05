@@ -131,9 +131,24 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     stack = (GC_stack)p;
     bottom = getStackBottom (s, stack); 
     top = getStackTop (s, stack);
-    if(DEBUG)
+    if(DEBUG_STACKS)
     fprintf(stderr,"%d] Checking Stack "FMTPTR" \n",PTHREAD_NUM,(uintptr_t)stack);
-    if (DEBUG) {
+    /* we avoid checking the main thread's stack when the main calls into user code*/ 
+    bool doit = true;
+    if(s->mainBooted)
+    {
+        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
+        GC_thread th = (GC_thread)(p + offsetofThread (s));
+
+        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
+        
+        if (st == stack)
+            doit = false;
+
+    }
+    if(doit)
+    {
+    if (DEBUG_STACKS) {
       fprintf (stderr, "%d]  bottom = "FMTPTR"  top = "FMTPTR"\n",
                PTHREAD_NUM,
                (uintptr_t)bottom, (uintptr_t)top);
@@ -142,7 +157,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     while (top > bottom) {
       /* Invariant: top points just past a "return address". */
       returnAddress = *((GC_returnAddress*)(top - GC_RETURNADDRESS_SIZE));
-      if (DEBUG) {
+      if (DEBUG_STACKS) {
         fprintf (stderr, "%d]  top = "FMTPTR"  return address = "FMTRA"\n",
                  PTHREAD_NUM,
                  (uintptr_t)top, returnAddress);
@@ -151,12 +166,12 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       frameOffsets = frameLayout->offsets;
       top -= frameLayout->size;
 
-      if (DEBUG)
+      if (DEBUG_STACKS)
            fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
                    PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
       for (i = 0 ; i < frameOffsets[0] ; ++i) {
-        if (DEBUG)
+        if (DEBUG_STACKS)
           fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR"\n",
                   PTHREAD_NUM,
                   frameOffsets[i + 1], 
@@ -165,6 +180,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       }
     }
     assert(top == bottom);
+    }
     p += sizeof (struct GC_stack) + stack->reserved;
   }
   return p;

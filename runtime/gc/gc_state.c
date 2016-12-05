@@ -8,8 +8,7 @@
  */
 
 void displayGCState (GC_state s, FILE *stream) {
-  fprintf (stream,
-           "%d] GC state\n", PTHREAD_NUM);
+  fprintf (stream, "%d] GC state\n", PTHREAD_NUM);
   fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
@@ -30,8 +29,6 @@ void displayGCState (GC_state s, FILE *stream) {
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
-//	fprintf(stderr, "thread %d top %x bottom %x\n", PTHREAD_NUM,s->stackTop[PTHREAD_NUM], s->stackBottom[PTHREAD_NUM]);
-
   return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
 
@@ -163,18 +160,8 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
-  fprintf(stderr,"%d] call handler set, pausing main thread\n",PTHREAD_NUM);
- /* while(1) // TODO this needs to be reworked see comments in ub/test2.sml
-  {
-	if(s->GCRequested) {
-                if (DEBUG)
-		    fprintf(stderr, "%d] Other thread requested GC. Moving to safe point. \n", PTHREAD_NUM);
-		//call performGC with the state of prev executing thread as current thread has no computation
-		performGC(s,s->oldGenBytesRequested,s->nurseryBytesRequested,s->forceMajor,s->mayResize); 
-	}
-	ssleep(1, 0);
-  }*/
-  s->threadPaused[PTHREAD_NUM] = 1;
+  if (DEBUG) fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
+  GC_copyCurrentThread(s);
 }
 
 pointer GC_getCurrentThread (GC_state s) {
@@ -193,7 +180,7 @@ pointer GC_getSavedThread (GC_state s) {
 void GC_setSavedThread (GC_state s, pointer p) {
   objptr op;
 
-  assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+  //assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   op = pointerToObjptr (p, s->heap.start);
   s->savedThread[PTHREAD_NUM] = op;
 }

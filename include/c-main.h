@@ -25,7 +25,7 @@ static GC_frameIndex returnAddressToFrameIndex (GC_returnAddress ra) {
 /* Globals */                                                           \
 PRIVATE int returnToC[MAXPRI];                                          \
 static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
-		fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
+	if (DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
         struct cont cont;                                               \
         GC_state s;                                                     \
                                                                         \
@@ -35,7 +35,7 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
         incAtomicBy(s, 3); /*s->atomicState += 3;*/                     \
         s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
-            fprintf(stderr,"%d] ffiOpArgsResPtr = %x\n",PTHREAD_NUM,ffiOpArgsResPtr); \
+        if (DEBUG_CCODEGEN) fprintf(stderr,"%d] ffiOpArgsResPtr = %x\n",PTHREAD_NUM,ffiOpArgsResPtr); \
         if (s->signalsInfo.signalIsPending)                             \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
@@ -44,13 +44,13 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
        	   *(uintptr_t*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);   \
         cont.nextChunk = nextChunks[cont.nextFun];                      \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
-        fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
+        if (DEBUG_CCODEGEN) fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
         do {                                                            \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
         } while (not returnToC[PTHREAD_NUM]);                           \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
         incAtomic(s); /*s->atomicState += 1; */                         \
-        fprintf(stderr, "%d] back from C->SML call\n", PTHREAD_NUM);    \
+        if (DEBUG_CCODEGEN) fprintf(stderr, "%d] back from C->SML call\n", PTHREAD_NUM);    \
         GC_switchToThread (s, GC_getSavedThread (s), 0);                \
         decAtomic(s); /*s->atomicState -= 1;*/                          \
         if (0 == s->atomicState                                         \
@@ -76,19 +76,16 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         setvbuf(stderr, NULL, _IONBF, 0);                               \
-        install_signal_handler(&gcState);                               \
 	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));             \
 	set_pthread_num(0);                                                 \
 	MYASSERT(GCrunner_thread, !=, NULL);                                \
-	MYASSERT(pthread_mutex_init(&gcflag_lock, NULL), ==, 0);            \
 	MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
-	while (!gcState.GCrunnerRunning){fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
+	while (!gcState.GCrunnerRunning){if (DEBUG) fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
 	realtimeThreadInit(&gcState, pthread_self(), GCrunner_thread);      \
 	realtimeThreadWaitForInit();                                        \
        									                                \
         /* Trampoline */                                                \
 		while (1) {     \
-		fprintf(stderr,"%d] I am starting to trampoline...\n ",PTHREAD_NUM);			\
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \

@@ -8,146 +8,234 @@
  */
 
 #include <stdlib.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <unistd.h>
+#include <stdlib.h>
+#include <sched.h>
+#include <errno.h>
+
+
+struct thrctrl
+{
+    pthread_mutex_t lock;
+    pthread_cond_t cond;
+    pthread_cond_t safepoint_cond;      // "paused" threads will wait on this condition
+    pthread_mutex_t safepoint_lock;
+
+    int running_threads;
+    int booted;
+    int gc_needed;
+    int requested_by;
+} TC;
+
+#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+
+#define TC_LOCK if (DEBUG) fprintf(stderr, "%d] TC_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
+#define TC_UNLOCK if (DEBUG) fprintf(stderr, "%d] TC_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
+#define TCSP_LOCK if (DEBUG) fprintf(stderr, "%d] TCSP_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.safepoint_lock))
+#define TCSP_UNLOCK if (DEBUG) fprintf(stderr, "%d] TCSP_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.safepoint_lock))
+
+/*
+ * - threads can ask for GC's by setting gc_needed to 1
+ *   and requested_by to their threadid. in the current
+ *   model, only the most recent requester (eg the one 
+ *   right before running_threads hits zero) is noted.
+ * - threads can enter safe point (for a GC) by decrementing
+ *   running_threads by one.
+ * - A thread may leave a safe point only if gc_needed is zero.
+ * - Upon leaving the safe point, running_threads is incremented by one.
+ *
+ * ask_for_gc:
+ *    lock(gc_needed = 1)
+ *
+ * enter_safe_point:
+ *    lock(running_threads --)
+ *
+ * leave_safe_point:
+ *    spin while (gc_needed == 1)
+ *    lock(running_threads ++)
+ *
+ */
+
+#define pthread_yield sched_yield
+
+#define REQUESTGC do { \
+        if (DEBUG) fprintf(stderr, "%d] REQUESTGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; setup_for_gc(s); TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] REQUESTGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+#define COMPLETEGC do { \
+        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        finish_for_gc(s); \
+        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+#define ENTER_SAFEPOINT do { \
+        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+#define LEAVE_SAFEPOINT do { \
+        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; \
+        TC_LOCK; TC.running_threads++; TC_UNLOCK; \
+        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        } while(0)
+
 
 #ifndef CHECKDISABLEGC
-# define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
+#define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
 #endif
 
-void minorGC (GC_state s) {
-  CHECKDISABLEGC;
-  minorCheneyCopyGC (s);
+void
+minorGC (GC_state s)
+{
+    CHECKDISABLEGC;
+    minorCheneyCopyGC (s);
 }
 
-void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {
-  uintmax_t numGCs;
-  size_t desiredSize;
-  CHECKDISABLEGC;
+void
+majorGC (GC_state s, size_t bytesRequested, bool mayResize)
+{
+    uintmax_t numGCs;
+    size_t desiredSize;
+    CHECKDISABLEGC;
+    
+    if(DEBUG)
+    fprintf (stderr, "%d] [GC: Starting Major GC...]\n", PTHREAD_NUM);
 
-  fprintf(stderr, "%d] [GC: Starting Major GC...]\n",PTHREAD_NUM);
-
-  s->lastMajorStatistics.numMinorGCs = 0;
-  numGCs = 
-    s->cumulativeStatistics.numCopyingGCs 
-    + s->cumulativeStatistics.numMarkCompactGCs;
-  if (0 < numGCs
-      and ((float)(s->cumulativeStatistics.numHashConsGCs) / (float)(numGCs)
-           < s->controls.ratios.hashCons))
-    s->hashConsDuringGC = TRUE;
-  desiredSize = 
-    sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive + bytesRequested, 0);
-  if (not FORCE_MARK_COMPACT
-      and not s->hashConsDuringGC // only markCompact can hash cons
-      and s->heap.withMapsSize < s->sysvals.ram
-      and (not isHeapInit (&s->secondaryHeap)
-           or createHeapSecondary (s, desiredSize)))
-    majorCheneyCopyGC (s);
-  else
-    majorMarkCompactGC (s);
-  s->hashConsDuringGC = FALSE;
-  s->lastMajorStatistics.bytesLive = s->heap.oldGenSize;
-  if (s->lastMajorStatistics.bytesLive > s->cumulativeStatistics.maxBytesLive)
-    s->cumulativeStatistics.maxBytesLive = s->lastMajorStatistics.bytesLive;
-  /* Notice that the s->lastMajorStatistics.bytesLive below is
-   * different than the s->lastMajorStatistics.bytesLive used as an
-   * argument to createHeapSecondary above.  Above, it was an
-   * estimate.  Here, it is exactly how much was live after the GC.
-   */
-  if (mayResize) {
-    resizeHeap (s, s->lastMajorStatistics.bytesLive + bytesRequested);
-  }
-  setCardMapAndCrossMap (s);
-  resizeHeapSecondary (s);
-  assert (s->heap.oldGenSize + bytesRequested <= s->heap.size);
+    s->lastMajorStatistics.numMinorGCs = 0;
+    numGCs =
+        s->cumulativeStatistics.numCopyingGCs
+        + s->cumulativeStatistics.numMarkCompactGCs;
+    if (0 < numGCs
+        and ((float) (s->cumulativeStatistics.numHashConsGCs) /
+             (float) (numGCs) < s->controls.ratios.hashCons))
+        s->hashConsDuringGC = TRUE;
+    desiredSize =
+        sizeofHeapDesired (s,
+                           s->lastMajorStatistics.bytesLive + bytesRequested,
+                           0);
+    if (not FORCE_MARK_COMPACT and not s->hashConsDuringGC      // only markCompact can hash cons
+        and s->heap.withMapsSize < s->sysvals.ram
+        and (not isHeapInit (&s->secondaryHeap)
+             or createHeapSecondary (s, desiredSize)))
+        majorCheneyCopyGC (s);
+    else
+        majorMarkCompactGC (s);
+    s->hashConsDuringGC = FALSE;
+    s->lastMajorStatistics.bytesLive = s->heap.oldGenSize;
+    if (s->lastMajorStatistics.bytesLive >
+        s->cumulativeStatistics.maxBytesLive)
+        s->cumulativeStatistics.maxBytesLive =
+            s->lastMajorStatistics.bytesLive;
+    /* Notice that the s->lastMajorStatistics.bytesLive below is
+     * different than the s->lastMajorStatistics.bytesLive used as an
+     * argument to createHeapSecondary above.  Above, it was an
+     * estimate.  Here, it is exactly how much was live after the GC.
+     */
+    if (mayResize) {
+        resizeHeap (s, s->lastMajorStatistics.bytesLive + bytesRequested);
+    }
+    setCardMapAndCrossMap (s);
+    resizeHeapSecondary (s);
+    assert (s->heap.oldGenSize + bytesRequested <= s->heap.size);
 }
 
-void growStackCurrent (GC_state s) {
-  size_t reserved;
-  GC_stack stack;
+void
+growStackCurrent (GC_state s)
+{
+    size_t reserved;
+    GC_stack stack;
 
-  reserved = sizeofStackGrowReserved (s, getStackCurrent(s));
-  if (DEBUG_STACKS or s->controls.messages)
-    fprintf (stderr, 
-             "[GC: Growing stack of size %s bytes to size %s bytes, using %s bytes.]\n",
-             uintmaxToCommaString(getStackCurrent(s)->reserved),
-             uintmaxToCommaString(reserved),
-             uintmaxToCommaString(getStackCurrent(s)->used));
-  /* TODO insufficient heap will cause grow to fail since we've now separated
-   * stack ops from heap ops
-   */
+    reserved = sizeofStackGrowReserved (s, getStackCurrent (s));
+    if (DEBUG_STACKS or s->controls.messages)
+        fprintf (stderr,
+                 "[GC: Growing stack of size %s bytes to size %s bytes, using %s bytes.]\n",
+                 uintmaxToCommaString (getStackCurrent (s)->reserved),
+                 uintmaxToCommaString (reserved),
+                 uintmaxToCommaString (getStackCurrent (s)->used));
 
-  if (not hasHeapBytesFree (s, sizeofStackWithHeader(s,reserved),0))
-  {
+    /* TODO insufficient heap will cause grow to fail since we've now separated
+     * stack ops from heap ops
+     */
+
+    if (not hasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0)) {
         if (DEBUG_STACKS or s->controls.messages)
-	    fprintf(stderr,"%d]No heap bytes free to grow stack hence calling GC\n", PTHREAD_NUM);
-  //		 resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
-	ensureHasHeapBytesFree(s,sizeofStackWithHeader(s,reserved),0);
-  }
+            fprintf (stderr,
+                     "%d]No heap bytes free to grow stack hence calling GC\n",
+                     PTHREAD_NUM);
+        //             resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
+        ensureHasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0);
+    }
 
 
 //  assert (hasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0));
-  stack = newStack (s, reserved, TRUE);
-  copyStack (s, getStackCurrent(s), stack);
-  getThreadCurrent(s)->stack = pointerToObjptr ((pointer)stack, s->heap.start);
-  markCard (s, objptrToPointer (getThreadCurrentObjptr(s), s->heap.start));
-	
-  	s->stackBottom[PTHREAD_NUM] = getStackBottom(s,stack);
-	s->stackTop[PTHREAD_NUM] = getStackTop(s, stack); 
-	s->stackLimit[PTHREAD_NUM] = getStackLimit(s, stack);
-  
-	
+    stack = newStack (s, reserved, TRUE);
+    copyStack (s, getStackCurrent (s), stack);
+    getThreadCurrent (s)->stack =
+        pointerToObjptr ((pointer) stack, s->heap.start);
+    markCard (s, objptrToPointer (getThreadCurrentObjptr (s), s->heap.start));
+
+    s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
+    s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
+    s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
 }
 
-void maybe_growstack(GC_state s) {
-	bool stackTopOk;
-	size_t stackBytesRequested;
-	if (isStackEmpty (getStackCurrent(s))) return;
+void
+maybe_growstack (GC_state s)
+{
+    bool stackTopOk;
+    size_t stackBytesRequested;
+    if (isStackEmpty (getStackCurrent (s)))
+        return;
     stackTopOk = invariantForMutatorStack (s);
     stackBytesRequested =
-      stackTopOk
-      ? 0
-      : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
-    unless (stackTopOk)
-      growStackCurrent (s);
+        stackTopOk
+        ? 0
+        : sizeofStackWithHeader (s,
+                                 sizeofStackGrowReserved (s,
+                                                          getStackCurrent
+                                                          (s)));
+    unless (stackTopOk) growStackCurrent (s);
 }
 
-void enterGC (GC_state s) {
-  if (s->profiling.isOn) {
-    /* We don't need to profileEnter for count profiling because it
-     * has already bumped the counter.  If we did allow the bump, then
-     * the count would look like function(s) had run an extra time.
-     */  
-    if (s->profiling.stack
-        and not (PROFILE_COUNT == s->profiling.kind))
-      GC_profileEnter (s);
-  }
-  s->amInGC = TRUE;
+void
+enterGC (GC_state s)
+{
+    if (s->profiling.isOn) {
+        /* We don't need to profileEnter for count profiling because it
+         * has already bumped the counter.  If we did allow the bump, then
+         * the count would look like function(s) had run an extra time.
+         */
+        if (s->profiling.stack and not (PROFILE_COUNT == s->profiling.kind))
+            GC_profileEnter (s);
+    }
+    s->amInGC = TRUE;
 }
 
 /* TODO
  * define THREADED to enable threading (right now its linear just like
  * the original code)
  */
-void leaveGC (GC_state s) {
-  if (s->profiling.isOn) {
-    if (s->profiling.stack
-        and not (PROFILE_COUNT == s->profiling.kind))
-      GC_profileLeave (s);
-  }
-  s->amInGC = FALSE;
+void
+leaveGC (GC_state s)
+{
+    if (s->profiling.isOn) {
+        if (s->profiling.stack and not (PROFILE_COUNT == s->profiling.kind))
+            GC_profileLeave (s);
+    }
+    s->amInGC = FALSE;
 }
 
 #define THREADED
 
-pthread_mutex_t gcflag_lock;
-static volatile int gcflag = -1;
-static volatile int GCRequestedBy = -1;
-
 #undef GCTHRDEBUG
 
 #ifdef GCTHRDEBUG
-# define DBG(X) fprintf X
+#define DBG(X) fprintf X
 #else
-# define DBG(X)
+#define DBG(X)
 #endif
 
 #define MYASSERT(T, X, COMP, RV) {                               \
@@ -159,191 +247,160 @@ static volatile int GCRequestedBy = -1;
         }                                                        \
 }
 
-#define COPYIN(EL) s->EL[1] = s->EL[GCRequestedBy]
-#define COPYOUT(EL) s->EL[GCRequestedBy] = s->EL[1]
-#define SANITY(EL) if (s->EL[GCRequestedBy] == s->EL[1]) fprintf(stderr,"%d] " #EL " changed!\n",PTHREAD_NUM);
+#define COPYIN(EL) s->EL[1] = s->EL[TC.requested_by]
+#define COPYOUT(EL) s->EL[TC.requested_by] = s->EL[1]
+#define SANITY(EL) if (s->EL[TC.requested_by] == s->EL[1]) if (DEBUG) fprintf(stderr,"%d] " #EL " changed!\n", PTHREAD_NUM);
 
-static void setup_for_gc(GC_state s) {
-    assert(gcflag != 1);
-    COPYIN(stackTop);
-    if (DEBUG) 
-        fprintf(stderr,"%d] GCREqBy = %d , before copy stackBottom = %"PRIuMAX" , should become = %"PRIuMAX" , actually = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1],s->stackBottom[GCRequestedBy],s->stackBottom[0]);
-    COPYIN(stackBottom);
-    if (DEBUG) 
-        fprintf(stderr,"%d] GCReqBy= %d,  after copy StackBottom = %"PRIuMAX" \n",PTHREAD_NUM,GCRequestedBy,s->stackBottom[1]);
-    COPYIN(stackLimit);
-    COPYIN(exnStack);
-    if (DEBUG) 
-        fprintf(stderr,"%d] GCREqBy = %d , before copy currentThread = %"FMTPTR" , should become = %"FMTPTR" , main thread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start),objptrToPointer(s->currentThread[GCRequestedBy],s->heap.start),objptrToPointer(s->currentThread[0],s->heap.start));
-    COPYIN(currentThread);
-    if (DEBUG) 
-        fprintf(stderr,"%d] GCReqBy= %d,  after copy currentThread = %"FMTPTR" \n",PTHREAD_NUM,GCRequestedBy,objptrToPointer(s->currentThread[1],s->heap.start));
-    COPYIN(savedThread);
-    COPYIN(signalHandlerThread);
-    COPYIN(ffiOpArgsResPtr);
-    gcflag=PTHREAD_NUM;
+static void
+setup_for_gc (GC_state s)
+{
+    COPYIN (stackTop);
+    if (DEBUG)
+        fprintf (stderr,
+                 "%d] GCREqBy = %d , before copy stackBottom = %" PRIuMAX
+                 " , should become = %" PRIuMAX " , actually = %" PRIuMAX
+                 " \n", PTHREAD_NUM, TC.requested_by, s->stackBottom[1],
+                 s->stackBottom[TC.requested_by], s->stackBottom[0]);
+    COPYIN (stackBottom);
+    if (DEBUG)
+        fprintf (stderr,
+                 "%d] GCReqBy= %d,  after copy StackBottom = %" PRIuMAX " \n",
+                 PTHREAD_NUM, TC.requested_by, s->stackBottom[1]);
+    COPYIN (stackLimit);
+    COPYIN (exnStack);
+    if (DEBUG)
+        fprintf (stderr,
+                 "%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , main thread = %x \n", PTHREAD_NUM, TC.requested_by,
+                 s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);
+    COPYIN (currentThread);
+    if (DEBUG)
+        fprintf (stderr,
+                 "%d] GCReqBy= %d,  after copy currentThread = %x \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
+    COPYIN (savedThread);
+    COPYIN (signalHandlerThread);
+    COPYIN (ffiOpArgsResPtr);
 }
 
-static void sanity_check_array(GC_state s) {
-    assert(gcflag != -1 && gcflag != 1);
-    SANITY(stackTop);
-    SANITY(stackBottom);
-    SANITY(stackLimit);
-    SANITY(exnStack);
-    SANITY(currentThread);
-    SANITY(savedThread);
-    SANITY(signalHandlerThread);
-    SANITY(ffiOpArgsResPtr);
+static void
+sanity_check_array (GC_state s)
+{
+    SANITY (stackTop);
+    SANITY (stackBottom);
+    SANITY (stackLimit);
+    SANITY (exnStack);
+    SANITY (currentThread);
+    SANITY (savedThread);
+    SANITY (signalHandlerThread);
+    SANITY (ffiOpArgsResPtr);
 }
 
-static void finish_for_gc(GC_state s) {
-    assert(gcflag != -1 && gcflag != 1);
-    sanity_check_array(s);
-    COPYOUT(stackTop);
-    COPYOUT(stackBottom);
-    COPYOUT(stackLimit);
-    COPYOUT(exnStack);
-    COPYOUT(currentThread);
-    COPYOUT(savedThread);
-    COPYOUT(signalHandlerThread);
-    COPYOUT(ffiOpArgsResPtr);
+static void
+finish_for_gc (GC_state s)
+{
+    sanity_check_array (s);
+    COPYOUT (stackTop);
+    COPYOUT (stackBottom);
+    COPYOUT (stackLimit);
+    COPYOUT (exnStack);
+    COPYOUT (currentThread);
+    COPYOUT (savedThread);
+    COPYOUT (signalHandlerThread);
+    COPYOUT (ffiOpArgsResPtr);
 }
 
 
-#define LOCKFLAG MYASSERT(int, pthread_mutex_lock(&gcflag_lock), ==, 0)
-#define UNLOCKFLAG MYASSERT(int, pthread_mutex_unlock(&gcflag_lock), ==, 0)
-#define PAUSESELF do {s->threadPaused[PTHREAD_NUM]=1;s->GCRequested=TRUE;GCRequestedBy =PTHREAD_NUM;push(s,PTHREAD_NUM); pthread_kill(pthread_self(),SIGUSR1);} while(0)
-#define REQUESTGC do { LOCKFLAG; setup_for_gc(s); UNLOCKFLAG;PAUSESELF; } while(0)
-#define COMPLETEGC do { LOCKFLAG;finish_for_gc(s); gcflag = -1; UNLOCKFLAG;s->GCRequested=FALSE; } while(0)
-/*
- * pthread_signal(pthread_self(), SIGUSR1);
- */
-__attribute__((noreturn))
-void *GCrunner(void *_s) {
-	GC_state s = (GC_state) _s;
 
-	set_pthread_num(1); // by definition
+__attribute__ ((noreturn))
+     void *GCrunner (void *_s)
+{
+    GC_state s = (GC_state) _s;
 
-	if (DEBUG)
-		fprintf(stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
+    set_pthread_num (1);        // by definition
+    TC.running_threads = 1;     // main thr
+    TC.gc_needed = 0;
+    TC.booted = 0;
+    TC.requested_by = 0;
 
-	s->GCrunnerRunning = TRUE;
+    pthread_mutex_init (&TC.lock, NULL);
+    pthread_mutex_init (&TC.safepoint_lock, NULL);
+    pthread_cond_init (&TC.cond, NULL);
+    pthread_cond_init (&TC.safepoint_cond, NULL);
+
+    if (DEBUG)
+        fprintf (stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
+
+    s->GCrunnerRunning = TRUE;
 
 #ifdef THREADED
-	while (1) {
-		if (DEBUG)
-			fprintf(stderr, "%d] GCrunner: spinning\n", PTHREAD_NUM);
+    while (1) {
+        if (DEBUG)
+            fprintf (stderr, "%d] GCrunner: waiting for GC request.\n",
+                     PTHREAD_NUM);
 
-		while (gcflag == -1) {
-			sched_yield();
-		}
+        TC_LOCK;
+        do {
+            do {
+                if (DEBUG)
+                    fprintf (stderr,
+                             "%d] TC_UNLOCK (implied) thr:%d boot:%d\n",
+                             PTHREAD_NUM, TC.running_threads, TC.booted);
+                pthread_cond_wait (&TC.cond, &TC.lock); // implicit TC_UNLOCK
+            }
+            while (TC.booted && TC.running_threads);
+        }
+        while (!TC.gc_needed);
 
-		if (DEBUG)
-			fprintf(stderr, "%d] GCrunner: GC requested. pausing threads.\n", PTHREAD_NUM);
-			
-		/* if GC collect is called even before the realtime threads are initialized, then the GC runner will try to 
-		 * pause threads that dont exist. Hence the quiesce_threads should be called only once the RT threads 
-		 * are initialized (//TODO reasoning)
-		 *
-		 * but.. c-main.h does the following:
-		 * 1. initialize structures
-		 * 2. create gc runner
-		 * 3. initialize rt threads
-		 * 4. wait for rt threads to initialize
-		 * 5. continue with main (thread 0)
-		 *
-		 * so... we already wait for threads to initialize, so this is redundant. jm
-		 */
-		if(s->isRealTimeThreadInitialized)
-		{
-			/* we wont be quiescing threads as in the new implementation, each individual thread will pause itself */ 
+        // TC_LOCK is re-acquired here as a result of cond_wait succeeding
 
-			//quiesce_threads(s);
+        if (DEBUG)
+            fprintf (stderr,
+                     "%d] GCrunner: GC requested. all threads should be paused.\n",
+                     PTHREAD_NUM);
 
-			if (DEBUG)
-				fprintf(stderr, "%d] GCrunner: threads paused. GC'ing\n", PTHREAD_NUM);
+        // at this point, all threads should be paused and the GC can proceed    
 
-			//TODO need to uncomment this line and delete next line once the 
-			//spinning RT thread has computation
-                    /*
-			if(s->isRealTimeThreadRunning)	
-			s->currentThread[1] = s->currentThread[gcflag];
-			else
-			{
-			//Always set to main thread since thread doesnt have computation yet. 
-			s->currentThread[1] = s->currentThread[0];
-			}
-                    */
-			performGC_helper(s,
-					s->oldGenBytesRequested,
-					s->nurseryBytesRequested,
-					s->forceMajor,
-					s->mayResize);
+        if (s->isRealTimeThreadInitialized) {
+            if (DEBUG) {
+                fprintf (stderr,
+                         "%d] GCrunner: threads paused. GC'ing\n",
+                         PTHREAD_NUM);
+                fprintf (stderr,
+                         "%d] GC running needed=%d threads=%d\n",
+                         PTHREAD_NUM, TC.gc_needed, TC.running_threads);
+            }
 
-			COMPLETEGC;
-			if (DEBUG)
-				fprintf(stderr, "%d] GCrunner: finished. unpausing threads.\n", PTHREAD_NUM);
-			/*	
-				do {
-					fprintf(stderr, "%d] GCrunner: resuming %d threads.\n",PTHREAD_NUM, paused_threads_count(s));
-					resume_threads(s);
-				} while(paused_threads_count(s));
-			*/
-				resume_threads(s,pop(s));
-		}
-		else {
-			fprintf(stderr, "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n", PTHREAD_NUM);
-		}
-	}
+            performGC_helper (s,
+                              s->oldGenBytesRequested,
+                              s->nurseryBytesRequested,
+                              s->forceMajor, s->mayResize);
+
+            if (DEBUG)
+                fprintf (stderr,
+                         "%d] GCrunner: finished. unpausing threads.\n",
+                         PTHREAD_NUM);
+
+            TC.gc_needed = 0;
+            pthread_cond_broadcast (&TC.safepoint_cond);        // unpause all threads
+            TC_UNLOCK;
+        }
+        else {
+            fprintf (stderr,
+                     "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n",
+                     PTHREAD_NUM);
+        }
+    }
 #endif
 
-	pthread_exit(NULL);
-	/*NOTREACHED*/
-}
+    pthread_exit (NULL);
+ /*NOTREACHED*/}
 
-bool lastUnpausedThread(GC_state s)
+void
+performGC (GC_state s,
+           size_t oldGenBytesRequested,
+           size_t nurseryBytesRequested, bool forceMajor, bool mayResize)
 {
-
-	bool res = false;
-        int cnt=0;
-	for(uint32_t i=0;i<MAXPRI;i++)
-	{
-		if(i == 1) continue; //we dont need to see if GC thread is paused
-		if(!s->threadPaused[i])
-			cnt++;
-	}
-        if(cnt == 1)
-            res=true;
-    
-	return res;
-}
-
-
-bool checkAllPaused(GC_state s)
-{
-	bool res = true;
-        if(!lastUnpausedThread(s))
-        {
-            for(uint32_t i=0;i<MAXPRI;i++)
-        	{
-        		if(i == 1) continue; //we dont need to see if GC thread is paused
-        		if(!s->threadPaused[i])
-        			res=false;
-        	}
-        }
-	return res;
-
-}
-
-
-
-void performGC (GC_state s,
-                size_t oldGenBytesRequested,
-                size_t nurseryBytesRequested,
-                bool forceMajor,
-                bool mayResize) {
     if (DEBUG)
-    	fprintf(stderr, "%d] performGC: starting..\n", PTHREAD_NUM);
+        fprintf (stderr, "%d] performGC: starting..\n", PTHREAD_NUM);
 
     CHECKDISABLEGC;
 
@@ -353,21 +410,13 @@ void performGC (GC_state s,
      * waits on mutex acquisition. When it acquires it, that
      * indicates a GC was requested by one of the other threads.
      * Before progressing, the GC must ask all of the threads to
-     * pause. We do this by calling quiesce_threads(s) which will
-     * signal the other threads and then wait for them to indicate
-     * they are paused. Once the GC finishes, it uses
-     * resume_threads(s) to let the threads know they can resume.
+     * pause. We do this by using a condition variable that the 
+     * threads wait on when they are at a safe point.
+     * 
+     * Once all threads are paused on the condition, the GC can 
+     * proceed. Once the GC finishes, it signals all of the 
+     * threads waiting on the condition, causing them to wakeup.
      */
-
-    /* EDIT: above method of GC pausing all other threads may cause 
-     * the thread to be paused where it isn't safe to be paused. Thus
-     * we allow the current executing thread to continue execution till
-     * it reaches a GC safepoint. Once it is safe, the thread can pause itself 
-     * and yield control to another thread (not GC) which will do the same
-     * until the last thread is reached. The las thread, pauses itself and 
-     * tells the GC thread that it can now GC and all other threads are
-     * paused. 
-     * */
 
 #ifdef THREADED
     s->oldGenBytesRequested = oldGenBytesRequested;
@@ -376,217 +425,216 @@ void performGC (GC_state s,
     s->mayResize = mayResize;
 
     while (s->isRealTimeThreadInitialized == FALSE) {
-    	if (DEBUG) {
-    		fprintf(stderr, "%d] spin [can't performGC yet] ..\n", PTHREAD_NUM);
-    	}
-    	ssleep(1, 0);
-    }
-    while (gcflag > -1) sched_yield();
-
-    if(MAXPRI <=2)
-    {
-	    if(DEBUG)
-		    fprintf(stderr,"%d] performGC: pausing main thread and calling GC\n",PTHREAD_NUM);
-	    GCRequestedBy=0;
-	    s->GCRequested =TRUE;
-	    REQUESTGC;
-	   	
-    }
-    else
-    {
-
-  	  //TODO handle race when RT thread has computation.
-    	//TODO race when you run on multicore. GC flag is set before thread 0 is paused
-    	if(checkAllPaused(s))
-    	{
-    		if (DEBUG)
-	    		fprintf(stderr, "%d] performGC: requesting a GC\n", PTHREAD_NUM);
-		REQUESTGC;
-    	}
-    	else
-	{
-	 	   if(DEBUG)
-        		   fprintf(stderr,"%d] performGC: all threads not paused so pausing self\n",PTHREAD_NUM);
-		   PAUSESELF;
-	}
+        if (DEBUG) {
+            fprintf (stderr, "%d] spin [can't performGC yet] ..\n",
+                     PTHREAD_NUM);
+        }
+        ssleep (1, 0);
     }
 
+    REQUESTGC;
+    ENTER_SAFEPOINT;
+    sched_yield ();
+    LEAVE_SAFEPOINT;
+    COMPLETEGC;
 
 #else
-    DBG((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
-    performGC_helper(s, oldGenBytesRequested, nurseryBytesRequested, forceMajor, mayResize);
+    DBG ((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
+    performGC_helper (s, oldGenBytesRequested, nurseryBytesRequested,
+                      forceMajor, mayResize);
 #endif
 }
 
-void performGC_helper (GC_state s, 
-                size_t oldGenBytesRequested,
-                size_t nurseryBytesRequested, 
-                bool forceMajor,
-                bool mayResize) {
-  uintmax_t gcTime;
-  bool stackTopOk;
-  size_t stackBytesRequested = 0;
-  struct rusage ru_start;
-  size_t totalBytesRequested;
+void
+performGC_helper (GC_state s,
+                  size_t oldGenBytesRequested,
+                  size_t nurseryBytesRequested,
+                  bool forceMajor, bool mayResize)
+{
+    uintmax_t gcTime;
+    bool stackTopOk;
+    size_t stackBytesRequested = 0;
+    struct rusage ru_start;
+    size_t totalBytesRequested;
 
-  if (DEBUG)
-	  fprintf(stderr, "%d] in performGC_helper\n", PTHREAD_NUM,s->currentThread[1]);
+    if (DEBUG)
+        fprintf (stderr, "%d] in performGC_helper\n", PTHREAD_NUM);
 
-  enterGC (s);
-  s->cumulativeStatistics.numGCs++;
-  if (DEBUG or s->controls.messages) {
-    size_t nurserySize = s->heap.size - ((size_t)(s->heap.nursery - s->heap.start));
-    size_t nurseryUsed = (size_t)(s->frontier - s->heap.nursery);
-    fprintf (stderr, 
-             "[GC: Starting gc #%s; requesting %s nursery bytes and %s old-gen bytes,]\n",
-             uintmaxToCommaString(s->cumulativeStatistics.numGCs),
-             uintmaxToCommaString(nurseryBytesRequested),
-             uintmaxToCommaString(oldGenBytesRequested));
-    fprintf (stderr, 
-             "[GC:\theap at "FMTPTR" of size %s bytes (+ %s bytes card/cross map),]\n",
-             (uintptr_t)(s->heap.start),
-             uintmaxToCommaString(s->heap.size),
-             uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
-    fprintf (stderr, 
-             "[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
-             uintmaxToCommaString(s->heap.oldGenSize),
-             100.0 * ((double)(s->heap.oldGenSize) / (double)(s->heap.size)));
-    fprintf (stderr,
-             "[GC:\tand nursery of size %s bytes (%.1f%% of heap),]\n",
-             uintmaxToCommaString(nurserySize),
-             100.0 * ((double)(nurserySize) / (double)(s->heap.size)));
-    fprintf (stderr,
-             "[GC:\tand nursery using %s bytes (%.1f%% of heap, %.1f%% of nursery).]\n",
-             uintmaxToCommaString(nurseryUsed),
-             100.0 * ((double)(nurseryUsed) / (double)(s->heap.size)),
-             100.0 * ((double)(nurseryUsed) / (double)(nurserySize)));
-  }
-  assert (invariantForGC (s));
-  if (needGCTime (s))
-    startTiming (&ru_start);
-  minorGC (s);
+    enterGC (s);
+    s->cumulativeStatistics.numGCs++;
+    if (DEBUG or s->controls.messages) {
+        size_t nurserySize =
+            s->heap.size - ((size_t) (s->heap.nursery - s->heap.start));
+        size_t nurseryUsed = (size_t) (s->frontier - s->heap.nursery);
+        fprintf (stderr,
+                 "[GC: Starting gc #%s; requesting %s nursery bytes and %s old-gen bytes,]\n",
+                 uintmaxToCommaString (s->cumulativeStatistics.numGCs),
+                 uintmaxToCommaString (nurseryBytesRequested),
+                 uintmaxToCommaString (oldGenBytesRequested));
+        fprintf (stderr,
+                 "[GC:\theap at " FMTPTR
+                 " of size %s bytes (+ %s bytes card/cross map),]\n",
+                 (uintptr_t) (s->heap.start),
+                 uintmaxToCommaString (s->heap.size),
+                 uintmaxToCommaString (s->heap.withMapsSize - s->heap.size));
+        fprintf (stderr,
+                 "[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
+                 uintmaxToCommaString (s->heap.oldGenSize),
+                 100.0 * ((double) (s->heap.oldGenSize) /
+                          (double) (s->heap.size)));
+        fprintf (stderr,
+                 "[GC:\tand nursery of size %s bytes (%.1f%% of heap),]\n",
+                 uintmaxToCommaString (nurserySize),
+                 100.0 * ((double) (nurserySize) / (double) (s->heap.size)));
+        fprintf (stderr,
+                 "[GC:\tand nursery using %s bytes (%.1f%% of heap, %.1f%% of nursery).]\n",
+                 uintmaxToCommaString (nurseryUsed),
+                 100.0 * ((double) (nurseryUsed) / (double) (s->heap.size)),
+                 100.0 * ((double) (nurseryUsed) / (double) (nurserySize)));
+    }
+    assert (invariantForGC (s));
+    if (needGCTime (s))
+        startTiming (&ru_start);
+    minorGC (s);
 
-#if 0
-  stackTopOk = invariantForMutatorStack (s);
-  stackBytesRequested = 
-    stackTopOk 
-    ? 0 
-    : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
+#if 0                           /* XXX stack grow moved outside of gc */
+    stackTopOk = invariantForMutatorStack (s);
+    stackBytesRequested =
+        stackTopOk
+        ? 0
+        : sizeofStackWithHeader (s,
+                                 sizeofStackGrowReserved (s,
+                                                          getStackCurrent
+                                                          (s)));
 #endif
 
-  totalBytesRequested = 
-    oldGenBytesRequested 
-    + nurseryBytesRequested
-    + stackBytesRequested;
-  if (forceMajor 
-      or totalBytesRequested > s->heap.size - s->heap.oldGenSize)
-    majorGC (s, totalBytesRequested, mayResize);
-  setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested, 
-                         nurseryBytesRequested);
-  assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
-                            nurseryBytesRequested));
-#if 0
-  unless (stackTopOk)
-    growStackCurrent (s);
+    totalBytesRequested =
+        oldGenBytesRequested + nurseryBytesRequested + stackBytesRequested;
+    if (forceMajor or totalBytesRequested > s->heap.size - s->heap.oldGenSize)
+        majorGC (s, totalBytesRequested, mayResize);
+    setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,
+                           nurseryBytesRequested);
+    assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
+                              nurseryBytesRequested));
+#if 0                           /* XXX stack grow moved outside of gc */
+    unless (stackTopOk) growStackCurrent (s);
 #endif
-  setGCStateCurrentThreadAndStack (s);
-  if (needGCTime (s)) {
-    gcTime = stopTiming (&ru_start, &s->cumulativeStatistics.ru_gc);
-    s->cumulativeStatistics.maxPauseTime = 
-      max (s->cumulativeStatistics.maxPauseTime, gcTime);
-  } else
-    gcTime = 0;  /* Assign gcTime to quell gcc warning. */
-  if (DEBUG or s->controls.messages) {
-    size_t nurserySize = s->heap.size - (size_t)(s->heap.nursery - s->heap.start);
-    fprintf (stderr, 
-             "[GC: Finished gc #%s; time %s ms,]\n",
-             uintmaxToCommaString(s->cumulativeStatistics.numGCs),
-             uintmaxToCommaString(gcTime));
-    fprintf (stderr, 
-             "[GC:\theap at "FMTPTR" of size %s bytes (+ %s bytes card/cross map),]\n",
-             (uintptr_t)(s->heap.start),
-             uintmaxToCommaString(s->heap.size),
-             uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
-    fprintf (stderr, 
-             "[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
-             uintmaxToCommaString(s->heap.oldGenSize),
-             100.0 * ((double)(s->heap.oldGenSize) / (double)(s->heap.size)));
-    fprintf (stderr,
-             "[GC:\tand nursery of size %s bytes (%.1f%% of heap).]\n",
-             uintmaxToCommaString(nurserySize),
-             100.0 * ((double)(nurserySize) / (double)(s->heap.size)));
-  }
-  /* Send a GC signal. */
-  if (s->signalsInfo.gcSignalHandled
-      and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
-    if (DEBUG_SIGNALS)
-      fprintf (stderr, "GC Signal pending.\n");
-    s->signalsInfo.gcSignalPending = TRUE;
-    unless (s->signalsInfo.amInSignalHandler) 
-      s->signalsInfo.signalIsPending = TRUE;
-  }
-  if (DEBUG) 
-    displayGCState (s, stderr);
-  assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
-  assert (invariantForGC (s));
-  leaveGC (s);
+
+    setGCStateCurrentThreadAndStack (s);
+    if (needGCTime (s)) {
+        gcTime = stopTiming (&ru_start, &s->cumulativeStatistics.ru_gc);
+        s->cumulativeStatistics.maxPauseTime =
+            max (s->cumulativeStatistics.maxPauseTime, gcTime);
+    }
+    else
+        gcTime = 0;             /* Assign gcTime to quell gcc warning. */
+    if (DEBUG or s->controls.messages) {
+        size_t nurserySize =
+            s->heap.size - (size_t) (s->heap.nursery - s->heap.start);
+        fprintf (stderr, "[GC: Finished gc #%s; time %s ms,]\n",
+                 uintmaxToCommaString (s->cumulativeStatistics.numGCs),
+                 uintmaxToCommaString (gcTime));
+        fprintf (stderr,
+                 "[GC:\theap at " FMTPTR
+                 " of size %s bytes (+ %s bytes card/cross map),]\n",
+                 (uintptr_t) (s->heap.start),
+                 uintmaxToCommaString (s->heap.size),
+                 uintmaxToCommaString (s->heap.withMapsSize - s->heap.size));
+        fprintf (stderr,
+                 "[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
+                 uintmaxToCommaString (s->heap.oldGenSize),
+                 100.0 * ((double) (s->heap.oldGenSize) /
+                          (double) (s->heap.size)));
+        fprintf (stderr,
+                 "[GC:\tand nursery of size %s bytes (%.1f%% of heap).]\n",
+                 uintmaxToCommaString (nurserySize),
+                 100.0 * ((double) (nurserySize) / (double) (s->heap.size)));
+    }
+    /* Send a GC signal. */
+    if (s->signalsInfo.gcSignalHandled
+        and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
+        if (DEBUG_SIGNALS)
+            fprintf (stderr, "GC Signal pending.\n");
+        s->signalsInfo.gcSignalPending = TRUE;
+        unless (s->signalsInfo.amInSignalHandler)
+            s->signalsInfo.signalIsPending = TRUE;
+    }
+    if (DEBUG)
+        displayGCState (s, stderr);
+    assert (hasHeapBytesFree
+            (s, oldGenBytesRequested, nurseryBytesRequested));
+    assert (invariantForGC (s));
+    leaveGC (s);
 }
 
-void ensureInvariantForMutator (GC_state s, bool force) {
-	if (DEBUG) fprintf(stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
+void
+ensureInvariantForMutator (GC_state s, bool force)
+{
+    if (DEBUG)
+        fprintf (stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
 
-	if (force or not (invariantForMutatorFrontier(s))) {
-		performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
-	}
+    if (force or not (invariantForMutatorFrontier (s))) {
+        performGC (s, 0, getThreadCurrent (s)->bytesNeeded, force, TRUE);
+    }
 
-	if (not (invariantForMutatorStack(s))) maybe_growstack(s);
+    if (not (invariantForMutatorStack (s)))
+        maybe_growstack (s);
 
-	assert(invariantForMutatorFrontier(s));
-	if (DEBUG) fprintf(stderr, "%d] ensureInvariantForMutatorStack 2nd call\n", PTHREAD_NUM);
-	assert(invariantForMutatorStack(s));
+    assert (invariantForMutatorFrontier (s));
+    if (DEBUG)
+        fprintf (stderr, "%d] ensureInvariantForMutatorStack 2nd call\n",
+                 PTHREAD_NUM);
+    assert (invariantForMutatorStack (s));
 }
 
 /* ensureHasHeapBytesFree (s, oldGen, nursery) 
  */
-void ensureHasHeapBytesFree (GC_state s, 
-                             size_t oldGenBytesRequested,
-                             size_t nurseryBytesRequested) {
-  assert (s->heap.nursery <= s->limitPlusSlop);
-  assert (s->frontier <= s->limitPlusSlop);
-  
-  if (DEBUG) {
-     displayHeap(s, &(s->heap), stderr);
-     displayHeapInfo(s);
-  }
+void
+ensureHasHeapBytesFree (GC_state s,
+                        size_t oldGenBytesRequested,
+                        size_t nurseryBytesRequested)
+{
+    assert (s->heap.nursery <= s->limitPlusSlop);
+    assert (s->frontier <= s->limitPlusSlop);
 
-  if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested))
-  {
-    performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE, TRUE);
     if (DEBUG) {
-	fprintf(stderr, "%d] Back after GCin and going to check assert. oldgen size=%d\n", PTHREAD_NUM,s->heap.oldGenSize);
-	displayHeap(s, &(s->heap), stderr);
-  	assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, getStackCurrent(s)));
+        displayHeap (s, &(s->heap), stderr);
+        displayHeapInfo (s);
     }
-  }
-  assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
+
+    if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested)) {
+        performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE,
+                   TRUE);
+        if (DEBUG) {
+            fprintf (stderr,
+                     "%d] Back after GCin and going to check assert. oldgen size=%d\n",
+                     PTHREAD_NUM, s->heap.oldGenSize);
+            displayHeap (s, &(s->heap), stderr);
+            assert (s->stackBottom[PTHREAD_NUM] ==
+                    getStackBottom (s, getStackCurrent (s)));
+        }
+    }
+    assert (hasHeapBytesFree
+            (s, oldGenBytesRequested, nurseryBytesRequested));
 }
 
-void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+void
+GC_collect (GC_state s, size_t bytesRequested, bool force)
+{
 
-  if (DEBUG) fprintf(stderr, "%d] GC_collect called\n", PTHREAD_NUM);
-  CHECKDISABLEGC;
-  enter (s);
-  /* When the mutator requests zero bytes, it may actually need as
-   * much as GC_HEAP_LIMIT_SLOP.
-   */
-  if (0 == bytesRequested)
-    bytesRequested = GC_HEAP_LIMIT_SLOP;
-  getThreadCurrent(s)->bytesNeeded = bytesRequested;
-  switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
-  ensureInvariantForMutator (s, force);
-  assert (invariantForMutatorFrontier(s));
-assert (invariantForMutatorStack(s));
-  leave (s);
+    if (DEBUG)
+        fprintf (stderr, "%d] GC_collect called\n", PTHREAD_NUM);
+    CHECKDISABLEGC;
+    enter (s);
+    /* When the mutator requests zero bytes, it may actually need as
+     * much as GC_HEAP_LIMIT_SLOP.
+     */
+    if (0 == bytesRequested)
+        bytesRequested = GC_HEAP_LIMIT_SLOP;
+    getThreadCurrent (s)->bytesNeeded = bytesRequested;
+    switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
+    ensureInvariantForMutator (s, force);
+    assert (invariantForMutatorFrontier (s));
+    assert (invariantForMutatorStack (s));
+    leave (s);
 }
-
-
