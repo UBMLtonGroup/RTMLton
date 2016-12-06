@@ -57,8 +57,8 @@ typedef struct GC_stack {
 
 static void displayStack (GC_state s, GC_stack stack, FILE *stream);
 
-#if ASSERT
 static inline bool isStackEmpty (GC_stack stack);
+#if ASSERT
 static inline bool isStackReservedAligned (GC_state s, size_t reserved);
 #endif
 

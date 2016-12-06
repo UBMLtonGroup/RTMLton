@@ -282,5 +282,49 @@ in
          fn (i, f) => Array.update (exports, i, f)
       end
 end
+structure Queue =
+   struct
+      datatype 'a t = T of {front: 'a list ref, back: 'a list ref}
 
+      fun new () = T {front = ref [], back = ref []}
+
+      fun enque (T {back, ...}, x) = back := x :: !back
+
+      fun deque (T {front, back}) =
+         case !front of
+            [] => (case !back of
+                      [] => NONE
+                    | l => let val l = rev l
+                           in case l of
+                              [] => raise Fail "deque"
+                            | x :: l => (back := []; front := l; SOME x)
+                           end)
+          | x :: l => (front := l; SOME x)
+   end
+   
+    val topLevel: Runnable.t option ref = ref NONE
+    val threads:Runnable.t Queue.t = Queue.new ()
+
+    fun ready (t:Runnable.t) : unit =
+            Queue.enque(threads, t)
+
+    fun next () :Runnable.t =
+            case Queue.deque threads of
+               NONE => valOf (!topLevel)
+             | SOME t => t
+
+    fun 'a exit (): 'a = switch (fn _ => next ())
+
+    fun preparenew (f: unit -> unit):Runnable.t =
+         prepare
+         (new (fn () => ((f () handle _ => exit ())
+                                ; exit ())),
+          ())
+    val spawn = ready o preparenew
+
+    fun run(): unit =
+         (switch (fn t =>
+                  (topLevel := SOME (prepare (t, ()))
+                   ; next()))
+; topLevel := NONE)
 end

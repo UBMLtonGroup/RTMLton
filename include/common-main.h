@@ -26,8 +26,25 @@
 #define VectorInitElem(es, gi, l, w) { es, gi, l, w },
 #define EndVectorInits };
 
-#define LoadArray(a, f) if (fread (a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
-#define SaveArray(a, f) if (fwrite(a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;
+#define LoadArray(a, f) {if (fread (a, sizeof(*a), cardof(a), f) != cardof(a)) return -1; }
+#define SaveArray(a, f) {if (fwrite(a, sizeof(*a), cardof(a), f) != cardof(a)) return -1;}
+
+#undef GCTHRDEBUG
+
+#ifdef GCTHRDEBUG
+# define DBG(X) fprintf X
+#else
+# define DBG(X)
+#endif
+
+#define MYASSERT(X, COMP, RV) {                                  \
+	int __rv__ = X;                                              \
+	if (!(__rv__ COMP RV)) {                                     \
+		fprintf(stderr, #X " failed, %x " #COMP " %x\n",         \
+				RV, __rv__);                                     \
+		exit(-1);                                                \
+	}                                                            \
+}
 
 PRIVATE Pointer gcStateAddress;
 
@@ -63,7 +80,10 @@ PRIVATE Pointer gcStateAddress;
         gcState.profiling.kind = pk;                                    \
         gcState.profiling.stack = ps;                                   \
         gcState.gc_module = gc;                                         \
+        gcState.GCrunnerRunning = FALSE;                                \
+	    gcState.isRealTimeThreadInitialized = FALSE;           			\
         MLton_init (argc, argv, &gcState);                              \
+
 
 #define LIB_PASTE(x,y) x ## y
 #define LIB_OPEN(x) LIB_PASTE(x, _open)

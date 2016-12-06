@@ -20,12 +20,16 @@
 #define LOCAL_USED_FOR_ASSERT  __attribute__ ((unused))
 #endif
 
+#include "gc/hash_threadid.c"
+
 #include "gc/virtual-memory.c"
 #include "gc/align.c"
 #include "gc/read_write.c"
 
 //#include "gc/array-allocate.c"
 #include "gc/umarray-allocate.c"
+#include "gc/ssleep.c"
+
 #include "gc/array.c"
 #include "gc/atomic.c"
 #include "gc/call-stack.c"
@@ -39,7 +43,9 @@
 #include "gc/foreach.c"
 #include "gc/forward.c"
 #include "gc/frame.c"
+#include "gc/garbage-stw.c"
 #include "gc/garbage-collection.c"
+#include "gc/realtime_thread.c"
 #include "gc/gc_state.c"
 #include "gc/generational.c"
 #include "gc/handler.c"

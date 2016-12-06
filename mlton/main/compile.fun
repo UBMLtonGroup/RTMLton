@@ -1,4 +1,4 @@
-(* Copyright (C) 2011,2014 Matthew Fluet.
+(* Copyright (C) 2011,2014-2015 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -351,7 +351,10 @@ fun parseAndElaborateMLB (input: MLBString.t)
     style = Control.ML,
     suffix = "core-ml",
     thunk = (fn () =>
-             (Const.lookup := lookupConstant
+             (if !Control.keepAST
+                 then File.remove (concat [!Control.inputFile, ".ast"])
+                 else ()
+              ; Const.lookup := lookupConstant
               ; elaborateMLB (lexAndParseMLB input, {addPrim = addPrim})))}
 
 (* ------------------------------------------------- *)
@@ -708,11 +711,11 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
       val () =
          case !Control.codegen of
             Control.AMD64Codegen =>
-               (clearNames ()
-                ; (Control.trace (Control.Top, "amd64 code gen")
+               (print "hi"; clearNames ()
+                (*; (Control.trace (Control.Top, "amd64! code gen")
                    amd64Codegen.output {program = machine,
                                         outputC = outputC,
-                                        outputS = outputS}))
+                                        outputS = outputS})*) )
           | Control.CCodegen =>
                (clearNames ()
                 ; (Control.trace (Control.Top, "C code gen")
@@ -730,6 +733,7 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
                    x86Codegen.output {program = machine,
                                       outputC = outputC,
                                       outputS = outputS}))
+                                      
       val _ = Control.message (Control.Detail, PropertyList.stats)
       val _ = Control.message (Control.Detail, HashSet.stats)
    in

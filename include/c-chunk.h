@@ -11,6 +11,10 @@
 
 #include <stdio.h>
 
+#ifndef PTHREAD_NUM
+# define PTHREAD_NUM get_pthread_num()
+#endif
+
 #include "ml-types.h"
 #include "c-types.h"
 #include "c-common.h"
@@ -27,30 +31,63 @@
 #define DEBUG_CCODEGEN FALSE
 #endif
 
+#define WORDWIDTH 8 /* use gcState->alignment */
+
+#define NO_CACHE_STACK
+#define NO_CACHE_FRONTIER
+
 #define GCState ((Pointer)&gcState)
-#define ExnStack *(size_t*)(GCState + ExnStackOffset)
+#define ExnStack *(size_t*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define UMFrontierMem *(Pointer*)(GCState + UMFrontierOffset)
 #define Frontier *(Pointer*)(GCState + FrontierOffset)
 // frontier
 #define UMFrontier *(Pointer*)(GCState + UMFrontierOffset)
 // umfrontier
-#define StackBottom *(Pointer*)(GCState + StackBottomOffset)
-#define StackTopMem *(Pointer*)(GCState + StackTopOffset)
+
+#define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
+#define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
+
 #define StackTop StackTopMem
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
 /* ------------------------------------------------- */
 
+
 #define C(ty, x) (*(ty*)(x))
 #define G(ty, i) (global##ty [i])
 #define GPNR(i) G(ObjptrNonRoot, i)
+#undef DEBUG_MEMORY
+#if 0
+
+    #define O(ty, b, o) (*((fprintf (stderr, "%s:%d O: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
+                                           (void*)((b) + (o)), \
+                                           *((ty*)((b) + (o))))), \
+                                 ((ty*)((b) + (o)))))
+
+    #define X(ty, b, i, s, o) (*((fprintf (stderr, "%s:%d X: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
+                                                 (void*)((b) + ((i) * (s)) + (o)), \
+                                                 *(ty*)((b) + ((i) * (s)) + (o)))), \
+                                       ((ty*)((b) + ((i) * (s)) + (o)))))
+
+    #define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p Val=%018p\n", __FILE__, __LINE__,PTHREAD_NUM, \
+                                (void*) StackTop, \
+                               (void*)(StackTop + (i)), \
+                               *(ty*)(StackTop + (i)))) , \
+                        (ty*)(StackTop + (i))))
+
+
+#endif
+#if 1
+
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 // #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
 #define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
+
+#endif
 
 /* ------------------------------------------------- */
 /*                       Tests                       */
@@ -74,27 +111,43 @@
                 if (x) goto l;                                          \
         } while (0)
 
+#ifndef NO_CACHE_FRONTIER
 #define FlushFrontier()                         \
         do {                                    \
                 /* FrontierMem = Frontier; */     \
                /* UMFrontierMem = UMFrontier; */     \
         } while (0)
+#else
+#define FlushFrontier()
+#endif
 
+#ifndef NO_CACHE_STACK
 #define FlushStackTop()                         \
         do {                                    \
                 /* StackTopMem = StackTop; */        \
         } while (0)
+#else
+#define FlushStackTop() 
+#endif
 
+#ifndef NO_CACHE_FRONTIER
 #define CacheFrontier()                         \
         do {                                    \
                 /* Frontier = FrontierMem; */    \
                 /* UMFrontier = UMFrontierMem; */     \
         } while (0)
+#else
+#define CacheFrontier()
+#endif
 
+#ifndef NO_CACHE_STACK
 #define CacheStackTop()                         \
         do {                                    \
                 /*StackTop = StackTopMem;*/         \
         } while (0)
+#else
+#define CacheStackTop() 
+#endif
 
 /* ------------------------------------------------- */
 /*                       Chunk                       */
@@ -105,7 +158,7 @@
         DeclareChunk(n) {                                       \
                 struct cont cont;                               \
                 /* register unsigned int frontier asm("g5"); */       \
-                uintptr_t l_nextFun = nextFun;                  \
+                /*uintptr_t l_nextFun = nextFun; */                  \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
@@ -113,7 +166,7 @@
                 struct cont cont;               \
      /*          Pointer frontier;  */             \
      /*          Pointer umfrontier; */              \
-                uintptr_t l_nextFun = nextFun;  \
+                /*uintptr_t l_nextFun = nextFun; */ \
                 Pointer stackTop;
 #endif
 
@@ -130,8 +183,8 @@
 #define EndChunk                                                        \
                 default:                                                \
                         /* interchunk return */                         \
-                        nextFun = l_nextFun;                            \
-                        cont.nextChunk = (void*)nextChunks[nextFun];    \
+                        cont.nextFun = l_nextFun;                            \
+                        cont.nextChunk = (void*)nextChunks[l_nextFun];    \
                         leaveChunk:                                     \
                                 FlushFrontier();                        \
                                 FlushStackTop();                        \
@@ -149,7 +202,7 @@
                 if (DEBUG_CCODEGEN)                                     \
                         fprintf (stderr, "%s:%d: Thread_returnToC()\n", \
                                         __FILE__, __LINE__);            \
-                returnToC = TRUE;                                       \
+                returnToC[get_pthread_num()] = TRUE;                          \
                 return cont;                                            \
         } while (0)
 
@@ -159,7 +212,7 @@
 
 #define FarJump(n, l)                           \
         do {                                    \
-                PrepFarJump(n, l);              \
+                PrepFarJump(cont, n, l);              \
                 goto leaveChunk;                \
         } while (0)
 
@@ -340,3 +393,4 @@ MLTON_CODEGEN_MEMCPY(void * memcpy(void *, const void*, size_t);)
 #define WordU64_mulCheck(dst, x, y, l) WordU_mulCheck(64, dst, x, y, l)
 
 #endif /* #ifndef _C_CHUNK_H_ */
+

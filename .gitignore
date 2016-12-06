@@ -4,3 +4,16 @@
 *.sml-e
 cscope.*
 regression/*
+*.swp
+core
+*.0.c
+*.1.c
+*.2.c
+.project
+*.ssa
+*.ssa2
+*.xml
+*.core-ml
+*.machine
+*.sxml
+*.rssa

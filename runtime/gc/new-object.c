@@ -89,6 +89,9 @@ GC_thread newThread (GC_state s, size_t reserved) {
   GC_thread thread;
   pointer res;
 
+  if (DEBUG)
+	  fprintf(stderr, "newThread\n");
+
   assert (isStackReservedAligned (s, reserved));
   ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
   stack = newStack (s, reserved, FALSE);
@@ -101,7 +104,8 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
-             (uintptr_t)thread, (uintmax_t)reserved);;
+             (uintptr_t)thread, (uintmax_t)reserved);
+
   return thread;
 }
 

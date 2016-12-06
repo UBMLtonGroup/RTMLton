@@ -97,9 +97,9 @@ doit "$lib" \
         -ar-script "$lib/static-library"                         \
         -cc "$gcc"                                               \
         -cc-opt-quote "-I$lib/include"                           \
-        -cc-opt '-O1 -fno-common'                                \
+        -cc-opt '-O1 -fno-common -D_GNU_SOURCE -D__USE_GNU'                                \
         -cc-opt '-fno-strict-aliasing -fomit-frame-pointer -w'   \
-        -link-opt '-lm -lgmp'                                    \
+        -link-opt '-lm -lgmp'                          \
         -llvm-llc-opt '-O2'                                      \
         -llvm-opt-opt '-mem2reg -O2'                             \
         -mlb-path-map "$lib/mlb-path-map"                        \
@@ -129,11 +129,11 @@ doit "$lib" \
         -target-link-opt amd64 '-m64'                            \
         -target-link-opt alpha                                   \
                 '-mieee -mbwx -mtune=ev6 -mfp-rounding-mode=d'   \
-        -target-link-opt darwin "$darwinLinkOpts"                \
-        -target-link-opt freebsd '-L/usr/local/lib/'             \
+        -target-link-opt darwin "$darwinLinkOpts -lpthread"       \
+        -target-link-opt freebsd '-L/usr/local/lib/ -lpthread -lexecinfo' \
+        -target-link-opt linux '-lpthread -lrt'   \
         -target-link-opt aix '-maix64'                           \
         -target-link-opt ia64 "$ia64hpux"                        \
-        -target-link-opt linux '-Wl,-znoexecstack'               \
         -target-link-opt mingw                                   \
                 '-lws2_32 -lkernel32 -lpsapi -lnetapi32 -lwinmm' \
         -target-link-opt mingw '-Wl,--enable-stdcall-fixup'      \

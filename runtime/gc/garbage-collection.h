@@ -7,6 +7,9 @@
  * See the file MLton-LICENSE for details.
  */
 
+void *GCrunner(void *);
+extern pthread_mutex_t gcflag_lock;
+
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
 static void minorGC (GC_state s);
@@ -23,6 +26,11 @@ static void performUMGC(GC_state s,
                         size_t ensureObjectChunksAvailable,
                         size_t ensureArrayChunksAvailable,
                         bool fullGC);
+static void performGC_helper (GC_state s,
+								size_t oldGenBytesRequested,
+								size_t nurseryBytesRequested,
+								bool forceMajor,
+								bool mayResize);
 static inline void ensureInvariantForMutator (GC_state s, bool force);
 static inline void ensureHasHeapBytesFree (GC_state s,
                                            size_t oldGenBytesRequested,
@@ -33,5 +41,6 @@ static inline void ensureHasHeapBytesFree (GC_state s,
 #if (defined (MLTON_GC_INTERNAL_BASIS))
 
 PRIVATE void GC_collect (GC_state s, size_t bytesRequested, bool force);
+void maybe_growstack(GC_state s);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */

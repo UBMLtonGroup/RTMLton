@@ -1,0 +1,26 @@
+diff -Naur smlnj-lib/Util/engine.mlton.sml smlnj-lib-ubmlton/Util/engine.mlton.sml
+--- smlnj-lib/Util/engine.mlton.sml	2015-05-08 08:55:00.000000000 -0500
++++ smlnj-lib-ubmlton/Util/engine.mlton.sml	2015-05-08 08:58:05.000000000 -0500
+@@ -54,9 +54,9 @@
+ 	     val ret = valOf (!return)
+ 	     val _ = done return
+ 	  in
+-	     Thread.switch (fn _ => Thread.prepare (ret, res))
++	     Thread.switch (fn _ => Thread.prepare (ret, res, 0))
+ 	  end)
+-      val thread = Thread.prepare (thread, ())
++      val thread = Thread.prepare (thread, (), 0)
+    in
+       T {return = return, thread = thread}
+    end
+@@ -70,8 +70,8 @@
+ 	  Thread.prepare
+ 	  (Thread.prepend (cur, fn () => (done return
+ 					  ; TimeOut (T {return = return,
+-							thread = me}))),
+-	   ())
++							thread = me})), 0),
++	   (), 0)
+        val _ = Signal.setHandler (signal, Signal.Handler.handler handler)
+        val _ = Itimer.set (which, {value = time,
+ 				   interval = Time.zeroTime})

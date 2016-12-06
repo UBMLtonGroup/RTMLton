@@ -18,11 +18,11 @@ void displayStack (__attribute__ ((unused)) GC_state s,
 }
 
 
-#if ASSERT
 bool isStackEmpty (GC_stack stack) {
   return 0 == stack->used;
 }
 
+#if ASSERT
 bool isStackReservedAligned (GC_state s, size_t reserved) {
   return isAligned (GC_STACK_HEADER_SIZE + sizeof (struct GC_stack) + reserved,
                     s->alignment);
@@ -79,7 +79,7 @@ GC_frameIndex getCachedStackTopFrameIndex (GC_state s) {
 
   res =
     getFrameIndexFromReturnAddress
-    (s, *((GC_returnAddress*)(s->stackTop - GC_RETURNADDRESS_SIZE)));
+    (s, *((GC_returnAddress*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE)));
   return res;
 }
 
@@ -228,10 +228,12 @@ void copyStack (GC_state s, GC_stack from, GC_stack to) {
 
   fromBottom = getStackBottom (s, from);
   toBottom = getStackBottom (s, to);
+
   assert (from->used <= to->reserved);
   to->used = from->used;
   if (DEBUG_STACKS)
-    fprintf (stderr, "stackCopy from "FMTPTR" to "FMTPTR" of length %"PRIuMAX"\n",
+    fprintf (stderr, "%d] stackCopy from "FMTPTR" to "FMTPTR" of length %"PRIuMAX"\n",
+             PTHREAD_NUM,
              (uintptr_t)fromBottom,
              (uintptr_t)toBottom,
              (uintmax_t)from->used);

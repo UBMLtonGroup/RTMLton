@@ -1,7 +1,8 @@
 #!/bin/bash
 rm -rf build
 
-arch_flags=""
+export CFLAGS=-Wunused-but-set-variable
+arch_flags="-j 8"
 make $arch_flags dirs     &&
 make $arch_flags runtime  &&
 make $arch_flags compiler &&

@@ -1,4 +1,4 @@
-(* Copyright (C) 2009,2014 Matthew Fluet.
+(* Copyright (C) 2009,2014-2015 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -258,7 +258,7 @@ fun declareGlobals (prefix: string, print) =
              val s = CType.toString t
           in
              print (concat [prefix, s, " global", s,
-                            " [", C.int (Global.numberOfType t), "];\n"])
+                            "[", C.int (Global.numberOfType t), "];\n"])
              ; print (concat [prefix, s, " CReturn", CType.name t, ";\n"])
           end)
       val _ =
@@ -283,6 +283,8 @@ fun outputDeclarations
          Ffi.declareExports {print = print}
       fun declareLoadSaveGlobals () =
          let
+            val _ = 
+               print "void Copy_globalObjptrs(int f, int t) { memcpy(globalObjptr[t], globalObjptr[f], sizeof(globalObjptr[t])); }\n"
             val _ =
                (print "static int saveGlobals (FILE *f) {\n"
                 ; (List.foreach
@@ -410,9 +412,15 @@ fun outputDeclarations
                case !Control.align of
                   Control.Align4 => 4
                 | Control.Align8 => 8
-            val magic = C.word (case Random.useed () of
-                                   NONE => String.hash (!Control.inputFile)
-                                 | SOME w => w)
+            val magic =
+               let
+                  val version = String.hash Version.version
+                  val random = Random.word ()
+               in
+                  Word.orb
+                  (Word.<< (version, Word.fromInt (Word.wordSize - 8)),
+                   Word.>> (random, Word.fromInt 8))
+               end
             val profile =
                case !Control.profile of
                   Control.ProfileNone => "PROFILE_NONE"
@@ -434,7 +442,7 @@ fun outputDeclarations
                            | Control.LibArchive => "MLtonLibrary"
                            | Control.Library => "MLtonLibrary",
                           [C.int align,
-                           magic,
+                           C.word magic,
                            C.bytes maxFrameSize,
                            C.bool (!Control.markCards),
                            profile,
@@ -517,7 +525,7 @@ structure StackOffset =
          concat ["S", C.args [Type.toC ty, C.bytes offset]]
    end
 
-fun contents (ty, z) = concat ["C", C.args [Type.toC ty, z]]
+fun contents (ty, z) = concat ["/*Contents*/ C", C.args [Type.toC ty, z]]
 
 fun declareFFI (Chunk.T {blocks, ...}, {print: string -> unit}) =
    let
@@ -576,6 +584,8 @@ fun declareFFI (Chunk.T {blocks, ...}, {print: string -> unit}) =
           ()
        end)
    end
+
+val inCritical = ref false
 
 fun output {program as Machine.Program.T {chunks,
                                           frameLayouts,
@@ -668,22 +678,64 @@ fun output {program as Machine.Program.T {chunks,
          concat [CType.toString (Type.toCType ty),
                  "_fetch(", addr z, ")"]
       fun move' ({dst, src}, ty) =
-         concat [CType.toString (Type.toCType ty),
+         concat ["/*BeginCriticalSection 4*/", CType.toString (Type.toCType ty),
                  "_move(", addr dst, ", ", addr src, ");\n"]
       fun store ({dst, src}, ty) =
-         concat [CType.toString (Type.toCType ty),
+         concat ["/*BeginCriticalSection 3*/", CType.toString (Type.toCType ty),
                  "_store(", addr dst, ", ", src, ");\n"]
+      
+      (* If the dst is Frontier, then we are entering a critical section
+      where we've extended the frontier and are going to now write into 
+      that extension. 
+      
+      // critical starts just before the next statement
+      Frontier = CPointer_add (Frontier, (Word64)(0x18ull)); // Frontier += 24 bytes
+      O(Word64, G(Objptr, 0), 0) = (Word64)(0x0ull);         // (*(Word64 *)(globalObjptr[0] + 0) = (Word64)(0x0ull)
+      O(Word64, G(Objptr, 0), 8) = (Word64)(0x0ull);         // (*(Word64 *)(globalObjptr[0] + 8) = (Word64)(0x0ull)
+      C(Word64, Frontier) = (Word64)(0x71ull);               // (*(Word64 *)(Frontier) = (Word64)(0x71ull) 
+      // critical ends just after the C() statement (?)
+      
+      *)
       fun move {dst: string, dstIsMem: bool,
                 src: string, srcIsMem: bool,
-                ty: Type.t}: string =
-         if handleMisaligned ty then
-            case (dstIsMem, srcIsMem) of
-               (false, false) => concat [dst, " = ", src, ";\n"]
-             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
-             | (true, false) => store ({dst = dst, src = src}, ty)
-             | (true, true) => move' ({dst = dst, src = src}, ty)
-         else
-            concat [dst, " = ", src, ";\n"]
+                ty: Type.t, inCrit : bool ref}: string =
+         case dst of
+         "Frontier" => 
+	         if handleMisaligned ty then (
+	            inCrit := true ;
+	            case (dstIsMem, srcIsMem) of
+	               (false, false) => concat ["/*BeginCriticalSection 1*/", dst, " = ", src, ";\n"]
+	             | (false, true) => concat ["/*BeginCriticalSection 2*/", dst, " = ", fetch (src, ty), ";\n"]
+	             | (true, false) => store ({dst = dst, src = src}, ty)
+	             | (true, true) => move' ({dst = dst, src = src}, ty)
+	         ) else (
+	            inCrit := true ;
+	            concat ["/*BeginCriticalSection 5*/", dst, " = ", src, ";\n"]
+	         )
+	        | _ => 
+	          case !inCrit of
+	          true => (
+	              inCrit := false ;
+			        	if handleMisaligned ty then
+			            case (dstIsMem, srcIsMem) of
+			               (false, false) => concat [dst, " = ", src, ";\n"]
+			             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
+			             | (true, false) => store ({dst = dst, src = src}, ty)
+			             | (true, true) => move' ({dst = dst, src = src}, ty)
+			         else (
+			            inCrit := false ;
+			            concat [dst, " = ", src, ";/*InCriticalSection*/\n"]
+			         )
+			       )
+		        | false =>
+			        	if handleMisaligned ty then
+			            case (dstIsMem, srcIsMem) of
+			               (false, false) => concat [dst, " = ", src, ";\n"]
+			             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
+			             | (true, false) => store ({dst = dst, src = src}, ty)
+			             | (true, true) => move' ({dst = dst, src = src}, ty)
+			         else
+			            concat [dst, " = ", src, ";/*NotInCriticalSection*/\n"]
       local
          datatype z = datatype Operand.t
          fun toString (z: Operand.t): string =
@@ -749,7 +801,8 @@ fun output {program as Machine.Program.T {chunks,
                                    dstIsMem = Operand.isMem dst,
                                    src = operandToString src,
                                    srcIsMem = Operand.isMem src,
-                                   ty = Operand.ty dst})
+                                   ty = Operand.ty dst,
+                                   inCrit = inCritical})
                        | Noop => ()
                        | PrimApp {args, dst, prim} =>
                             let
@@ -778,7 +831,8 @@ fun output {program as Machine.Program.T {chunks,
                                                   dstIsMem = Operand.isMem dst,
                                                   src = app (),
                                                   srcIsMem = false,
-                                                  ty = Operand.ty dst})
+                                                  ty = Operand.ty dst,
+                                                  inCrit = inCritical})
                             end
                        | ProfileLabel l =>
                             C.call ("ProfileLabel", [ProfileLabel.toString l],
@@ -860,7 +914,7 @@ fun output {program as Machine.Program.T {chunks,
                                dstIsMem = true,
                                src = operandToString (Operand.Label return),
                                srcIsMem = false,
-                               ty = Type.label return})
+                               ty = Type.label return, inCrit = inCritical})
                 ; C.push (size, print)
                 ; if amTimeProfiling
                      then print "\tFlushStackTop();\n"
@@ -901,7 +955,7 @@ fun output {program as Machine.Program.T {chunks,
                                            print
                                            (concat
                                             ["\t", Type.toC ty, " ", tmp, " = ",
-                                             fetchOperand z, ";\n"])
+                                             fetchOperand z, "; /*J1*/\n"])
                                      in
                                         tmp
                                      end
@@ -975,7 +1029,7 @@ fun output {program as Machine.Program.T {chunks,
                                            dstIsMem = Operand.isMem x,
                                            src = creturn ty,
                                            srcIsMem = false,
-                                           ty = ty}])
+                                           ty = ty, inCrit = inCritical}])
                                 end)))
                       | Kind.Func => ()
                       | Kind.Handler {frameInfo, ...} => pop frameInfo
@@ -1076,7 +1130,7 @@ fun output {program as Machine.Program.T {chunks,
                            val _ =
                               if Type.isUnit returnTy
                                  then ()
-                              else print (concat [creturn returnTy, " = "])
+                              else print (concat [creturn returnTy, " = /*J2*/ "])
                            datatype z = datatype CFunction.Target.t
                            val _ =
                               case target of

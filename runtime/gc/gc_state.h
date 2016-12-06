@@ -25,24 +25,27 @@ struct GC_state {
   pointer umfrontier;
   pointer umarfrontier;
   pointer limit; /* limit = heap.start + heap.size */
-  pointer stackTop; /* Top of stack in current thread. */
-  pointer stackLimit; /* stackBottom + stackSize - maxFrameSize */
-  size_t exnStack;
+  pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
+  pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+  size_t exnStack[MAXPRI];
+
   size_t fl_chunks;
   size_t fl_array_chunks;
+
   /* Alphabetized fields follow. */
   size_t alignment; /* */
-  bool amInGC;
+  volatile bool amInGC;
   bool amOriginal;
   char **atMLtons; /* Initial @MLton args, processed before command line. */
   int atMLtonsLength;
-  uint32_t atomicState;
-  objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
+  volatile uint32_t atomicState;
+  volatile objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
   struct GC_callStackState callStackState;
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;
   struct GC_cumulativeStatistics cumulativeStatistics;
-  objptr currentThread; /* Currently executing thread (in heap). */
+  objptr currentThread[MAXPRI]; /* Currently executing thread (in heap). */
+
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
   uint32_t frameLayoutsLength; /* Cardinality of frameLayouts array. */
@@ -64,16 +67,15 @@ struct GC_state {
   uint32_t objectTypesLength; /* Cardinality of objectTypes array. */
   struct GC_profiling profiling;
   GC_frameIndex (*returnAddressToFrameIndex) (GC_returnAddress ra);
-  objptr savedThread; /* Result of GC_copyCurrentThread.
-                       * Thread interrupted by arrival of signal.
-                       */
+  objptr savedThread[MAXPRI]; /* Result of GC_copyCurrentThread.
+                       	    * Thread interrupted by arrival of signal.
+                       	    */
   int (*saveGlobals)(FILE *f); /* saves the globals to the file. */
   bool saveWorldStatus; /* */
   struct GC_heap secondaryHeap; /* Used for major copying collection. */
-  objptr signalHandlerThread; /* Handler for signals (in heap). */
+  objptr signalHandlerThread[MAXPRI]; /* Handler for signals (in heap). */
   struct GC_signalsInfo signalsInfo;
   struct GC_sourceMaps sourceMaps;
-  pointer stackBottom; /* Bottom of stack in current thread. */
   struct GC_sysvals sysvals;
   struct GC_translateState translateState;
   struct GC_vectorInit *vectorInits;
@@ -82,6 +84,28 @@ struct GC_state {
   GC_moduleKind gc_module;
   struct GC_heap infHeap;
   pointer infFrontier;
+  
+  /*New additions for RTMLton*/
+  
+  size_t oldGenBytesRequested;
+  size_t nurseryBytesRequested;
+  bool forceMajor;
+  bool mayResize;
+  /* -------------------------- */
+  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
+ 
+  /* added for rt-threading */
+
+  pthread_t *realtimeThreads[MAXPRI];
+  volatile bool mainBooted;
+  /* Begin inter-thread GC communication data */
+  volatile bool GCrunnerRunning;
+  volatile bool isRealTimeThreadInitialized;
+  volatile bool isRealTimeThreadRunning;
+  int gcCallSeq[MAXPRI];
+  /* end of rt-threading additions */
+
+  pointer ffiOpArgsResPtr[MAXPRI];
 };
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */
@@ -114,7 +138,7 @@ PRIVATE void GC_setHashConsDuringGC (GC_state s, bool b);
 PRIVATE size_t GC_getLastMajorStatisticsBytesLive (GC_state s);
 
 PRIVATE pointer GC_getCallFromCHandlerThread (GC_state s);
-PRIVATE void GC_setCallFromCHandlerThread (GC_state s, pointer p);
+PRIVATE void GC_setCallFromCHandlerThread (GC_state s, pointer p); // __attribute__((noreturn));
 PRIVATE pointer GC_getCurrentThread (GC_state s);
 PRIVATE pointer GC_getSavedThread (GC_state s);
 PRIVATE void GC_setSavedThread (GC_state s, pointer p);
@@ -129,3 +153,5 @@ PRIVATE sigset_t* GC_getSignalsPendingAddr (GC_state s);
 PRIVATE void GC_setGCSignalHandled (GC_state s, bool b);
 PRIVATE bool GC_getGCSignalPending (GC_state s);
 PRIVATE void GC_setGCSignalPending (GC_state s, bool b);
+PRIVATE void push(GC_state s,int n);
+PRIVATE int pop(GC_state s);

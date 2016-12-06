@@ -127,7 +127,10 @@ void initWorld (GC_state s) {
   s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
-  s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
+//fixing oldgen to 500000 initially
+//s->frontier = alignFrontier(s,s->frontier+0x7A120); 
+
+s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
   GC_UM_Chunk next_chunk = NULL;
@@ -136,7 +139,8 @@ void initWorld (GC_state s) {
   s->umfrontier = (Pointer) next_chunk->ml_object;
 
 
-  thread = newThread (s, sizeofStackInitialReserved (s));
+  thread = newThread (s, sizeofStackInitialReserved (s)); // defaults to pri 0
+
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
   if (DEBUG_MEM) {
       fprintf(stderr, "UMFrontier start: "FMTPTR"\n", (uintptr_t)(s->umfrontier));

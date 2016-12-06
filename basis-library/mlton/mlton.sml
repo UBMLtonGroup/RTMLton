@@ -76,6 +76,7 @@ structure LargeWord =
    end
 structure Platform = MLtonPlatform
 structure Pointer = MLtonPointer
+structure PrimThread = PrimThread
 structure ProcEnv = MLtonProcEnv
 structure Process = MLtonProcess
 (* structure Ptrace = MLtonPtrace *)

@@ -1,3 +1,4 @@
+
 /* Copyright (C) 2011-2012 Matthew Fluet.
  * Copyright (C) 1999-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
@@ -32,7 +33,7 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
 
 bool invariantForGC (GC_state s) {
   if (DEBUG)
-    fprintf (stderr, "invariantForGC\n");
+    fprintf (stderr, "%d] invariantForGC\n", PTHREAD_NUM);
   /* Frame layouts */
   for (unsigned int i = 0; i < s->frameLayoutsLength; ++i) {
     GC_frameLayout layout;
@@ -86,10 +87,24 @@ bool invariantForGC (GC_state s) {
   /* Current thread. */
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
-  assert (s->stackBottom == getStackBottom (s, stack));
-  assert (s->stackTop == getStackTop (s, stack));
-  assert (s->stackLimit == getStackLimit (s, stack));
-  assert (s->stackBottom <= s->stackTop);
+  if (DEBUG)
+  { int d = s->stackBottom[PTHREAD_NUM] - getStackBottom (s, stack);
+  fprintf(stderr, "stackBottom[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackBottom %"PRIuMAX" %d)\n", 
+	PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack),
+        d, d
+	);
+  }
+  assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
+  if (DEBUG)
+  { int d = s->stackTop[PTHREAD_NUM] - getStackTop (s, stack);
+  fprintf(stderr, "stackTop[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackTop %"PRIuMAX" %d)\n", 
+	PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack),
+	d,d
+	);
+  }
+  assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
+  assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
+  assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
   assert (stack->used == sizeofGCStateCurrentStackUsed (s));
   assert (stack->used <= stack->reserved);
   if (DEBUG)
@@ -105,9 +120,37 @@ bool invariantForMutatorFrontier (GC_state s) {
 }
 
 bool invariantForMutatorStack (GC_state s) {
+  pointer top, limit;
+  uint16_t framesize;
+
   GC_stack stack = getStackCurrent(s);
-  return (getStackTop (s, stack) 
-          <= getStackLimit (s, stack) + getStackTopFrameSize (s, stack));
+
+  
+  if(s->mainBooted)
+    {
+        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
+        GC_thread th = (GC_thread)(p + offsetofThread (s));
+
+        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
+        
+        if (st == stack)
+            return true;
+
+    }
+
+  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
+
+#if 0
+  if (top <= (limit + framesize)) {
+	  fprintf(stderr, "grow stack %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
+	  growStackCurrent (s); // XXX bc we disabled the GC
+  }
+  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
+#endif
+
+  if (DEBUG)
+	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %"PRIuMAX" <= %"PRIuMAX" (%"PRIuMAX" + %"PRIuMAX")\n", top, (limit+framesize), limit, framesize);
+  return (top <= (limit + framesize));
 }
 
 #if ASSERT

@@ -41,7 +41,8 @@ COMPILE_TIME_ASSERT(GC_thread__packed,
                     sizeof(struct GC_thread) ==
                     sizeof(size_t)
                     + sizeof(size_t)
-                    + sizeof(objptr));
+                    + sizeof(objptr)
+				);
 
 #define BOGUS_EXN_STACK ((size_t)(-1))
 

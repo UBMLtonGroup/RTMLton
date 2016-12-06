@@ -29,6 +29,9 @@ structure Scheduler : SCHEDULER =
       datatype thread = datatype RepTypes.thread
       datatype rdy_thread = datatype RepTypes.rdy_thread
 
+      (* threads created through this library default to priority zero so as to 
+       * keep the API consistent
+       *)
       fun prep (THRD (tid, t)) = RTHRD (tid, T.prepare (t, ()))
       fun prepVal (THRD (tid, t), v) = RTHRD (tid, T.prepare (t, v))
       fun prepFn (THRD (tid, t), f) = RTHRD (tid, T.prepare (T.prepend (t, f), ()))
@@ -163,7 +166,7 @@ structure Scheduler : SCHEDULER =
          let
             val () = Assert.assertAtomic' ("Scheduler.prepend", NONE)
             val THRD (tid, t) = thrd
-            val t = T.prepend (t, f)
+            val t = T.prepend (t, f) 
          in
             THRD (tid, t)
          end

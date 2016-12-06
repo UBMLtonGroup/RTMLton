@@ -6,15 +6,80 @@
  * See the file MLton-LICENSE for details.
  */
 
+static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
+
+/* s->atomicState is modified in other places, eg switch-thread.c */
+
+#define DECVARS         int __attribute__((unused))lockop, __attribute__((unused))unlockop
+
+void incAtomicBy (GC_state s, uint32_t v) {
+        DECVARS;
+        lockop = pthread_mutex_lock(&lock);
+        assert(lockop == 0);
+        s->atomicState += v;
+        unlockop = pthread_mutex_unlock(&lock);
+        assert(unlockop == 0);
+}
+
+void decAtomicBy (GC_state s, uint32_t v) {
+        DECVARS;
+        lockop = pthread_mutex_lock(&lock);
+        assert(lockop == 0);
+        s->atomicState -= v;
+        unlockop = pthread_mutex_unlock(&lock);
+        assert(unlockop == 0);
+}
+
+void setAtomic (GC_state s, uint32_t v) {
+        DECVARS;
+        lockop = pthread_mutex_lock(&lock);
+        assert(lockop == 0);
+        s->atomicState = v;
+        unlockop = pthread_mutex_unlock(&lock);
+        assert(unlockop == 0);
+}
+
+void incAtomic (GC_state s) {
+	DECVARS;
+        lockop = pthread_mutex_lock(&lock);
+        assert(lockop == 0);
+        s->atomicState++;
+        unlockop = pthread_mutex_unlock(&lock);
+        assert(unlockop == 0);
+}
+
+void decAtomic (GC_state s) {
+	DECVARS;
+        lockop = pthread_mutex_lock(&lock);
+        assert(lockop == 0);
+        s->atomicState--;
+        unlockop = pthread_mutex_unlock(&lock);
+        assert(unlockop == 0);
+}
+
 void beginAtomic (GC_state s) {
-  s->atomicState++;
-  if (0 == s->limit)
-    s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
+	DECVARS;
+
+	lockop = pthread_mutex_lock(&lock);
+	assert(lockop == 0);
+	s->atomicState++;
+	unlockop = pthread_mutex_unlock(&lock);
+	assert(unlockop == 0);
+
+	if (0 == s->limit)
+		s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
 }
 
 void endAtomic (GC_state s) {
-  s->atomicState--;
-  if (0 == s->atomicState 
-      and s->signalsInfo.signalIsPending)
-    s->limit = 0;
+	DECVARS;
+
+	lockop = pthread_mutex_lock(&lock);
+	assert(lockop == 0);
+	s->atomicState--;
+	unlockop = pthread_mutex_unlock(&lock);
+	assert(unlockop == 0);
+
+	if (0 == s->atomicState
+			and s->signalsInfo.signalIsPending)
+		s->limit = 0;
 }

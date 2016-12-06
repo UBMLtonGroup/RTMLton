@@ -1,0 +1,788 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+ARRAY_TAG	object.h	/^  ARRAY_TAG = 0,$/;"	e	enum:__anon1
+BOGUS_EXN_STACK	thread.h	47;"	d
+BOGUS_OBJPTR	objptr.h	23;"	d
+BOGUS_POINTER	pointer.h	11;"	d
+CARD_MAP_ELEM_SIZE	generational.h	24;"	d
+CARD_SIZE	generational.h	14;"	d
+CARD_SIZE_LOG2	generational.h	13;"	d
+CHECKDISABLEGC	enter_leave.c	9;"	d	file:
+CHECKDISABLEGC	garbage-collection.c	13;"	d	file:
+COMPLETEGC	garbage-collection.c	155;"	d	file:
+COPY_CHUNK_SIZE	heap.c	/^  COPY_CHUNK_SIZE = 0x2000000, \/* 32M *\/$/;"	e	enum:__anon3	file:
+COUNTER_BITS	object.h	63;"	d
+COUNTER_MASK	object.h	64;"	d
+COUNTER_SHIFT	object.h	65;"	d
+CROSS_MAP_ELEM_SIZE	generational.h	25;"	d
+CROSS_MAP_EMPTY	generational.h	26;"	d
+CROSS_MAP_OFFSET_SCALE	generational.h	27;"	d
+C_Errno_t	world.c	/^C_Errno_t(Bool_t) GC_getSaveWorldStatus (GC_state s) {$/;"	f
+C_FRAME	frame.h	/^  C_FRAME,$/;"	e	enum:__anon7
+DBG	garbage-collection.c	138;"	d	file:
+DBG	garbage-collection.c	140;"	d	file:
+DEBUG	debug.h	10;"	d
+DEBUG_ARRAY	debug.h	/^  DEBUG_ARRAY = FALSE,$/;"	e	enum:__anon4
+DEBUG_CALL_STACK	debug.h	/^  DEBUG_CALL_STACK = FALSE,$/;"	e	enum:__anon4
+DEBUG_CARD_MARKING	debug.h	/^  DEBUG_CARD_MARKING = FALSE,$/;"	e	enum:__anon4
+DEBUG_DETAILED	debug.h	/^  DEBUG_DETAILED = FALSE,$/;"	e	enum:__anon4
+DEBUG_DFS_MARK	debug.h	/^  DEBUG_DFS_MARK = FALSE,$/;"	e	enum:__anon4
+DEBUG_ENTER_LEAVE	debug.h	/^  DEBUG_ENTER_LEAVE = FALSE,$/;"	e	enum:__anon4
+DEBUG_GENERATIONAL	debug.h	/^  DEBUG_GENERATIONAL = FALSE,$/;"	e	enum:__anon4
+DEBUG_INT_INF	debug.h	/^  DEBUG_INT_INF = FALSE,$/;"	e	enum:__anon4
+DEBUG_INT_INF_DETAILED	debug.h	/^  DEBUG_INT_INF_DETAILED = FALSE,$/;"	e	enum:__anon4
+DEBUG_MARK_COMPACT	debug.h	/^  DEBUG_MARK_COMPACT = FALSE,$/;"	e	enum:__anon4
+DEBUG_MEM	debug.h	/^  DEBUG_MEM = FALSE,$/;"	e	enum:__anon4
+DEBUG_OBJPTR	debug.h	/^  DEBUG_OBJPTR = FALSE,$/;"	e	enum:__anon4
+DEBUG_PROFILE	debug.h	/^  DEBUG_PROFILE = FALSE,$/;"	e	enum:__anon4
+DEBUG_RESIZING	debug.h	/^  DEBUG_RESIZING = FALSE,$/;"	e	enum:__anon4
+DEBUG_SHARE	debug.h	/^  DEBUG_SHARE = FALSE,$/;"	e	enum:__anon4
+DEBUG_SIGNALS	debug.h	/^  DEBUG_SIGNALS = FALSE,$/;"	e	enum:__anon4
+DEBUG_SIZE	debug.h	/^  DEBUG_SIZE = FALSE,$/;"	e	enum:__anon4
+DEBUG_SOURCES	debug.h	/^  DEBUG_SOURCES = FALSE,$/;"	e	enum:__anon4
+DEBUG_STACKS	debug.h	/^  DEBUG_STACKS = FALSE,$/;"	e	enum:__anon4
+DEBUG_THREADS	debug.h	/^  DEBUG_THREADS = FALSE,$/;"	e	enum:__anon4
+DEBUG_WEAK	debug.h	/^  DEBUG_WEAK = FALSE,$/;"	e	enum:__anon4
+DEBUG_WORLD	debug.h	/^  DEBUG_WORLD = FALSE,$/;"	e	enum:__anon4
+FFI_getOpArgsResPtr	realtime_thread.c	/^pointer FFI_getOpArgsResPtr (GC_state s) {$/;"	f
+FMTARRCTR	array.h	37;"	d
+FMTARRLEN	array.h	33;"	d
+FMTCME	generational.h	28;"	d
+FMTFI	frame.h	44;"	d
+FMTHASH	hash-cons.h	18;"	d
+FMTHDR	object.h	54;"	d
+FMTOBJPTR	objptr.h	18;"	d
+FMTRA	frame.h	48;"	d
+FMTSI	sources.h	21;"	d
+FMTSLI	sources.h	17;"	d
+FMTSNI	sources.h	13;"	d
+FMTSSI	sources.h	28;"	d
+FORCE_GENERATIONAL	debug.h	/^  FORCE_GENERATIONAL = FALSE,$/;"	e	enum:__anon4
+FORCE_MARK_COMPACT	debug.h	/^  FORCE_MARK_COMPACT = FALSE,$/;"	e	enum:__anon4
+GCTHRDEBUG	garbage-collection.c	135;"	d	file:
+GC_ARRAY_COUNTER_SIZE	array.h	35;"	d
+GC_ARRAY_HEADER_SIZE	array.h	38;"	d
+GC_ARRAY_LENGTH_SIZE	array.h	29;"	d
+GC_ARRLEN_TYPE	array.h	27;"	d
+GC_ARRLEN_TYPE_	array.h	26;"	d
+GC_ARRLEN_TYPE__	array.h	25;"	d
+GC_COPYING	major.h	/^  GC_COPYING,$/;"	e	enum:__anon8
+GC_FORWARDED	forward.h	19;"	d
+GC_HASH_SIZE	hash-cons.h	16;"	d
+GC_HEADER_SIZE	object.h	50;"	d
+GC_HEADER_TYPE	object.h	48;"	d
+GC_HEADER_TYPE_	object.h	47;"	d
+GC_HEADER_TYPE__	object.h	46;"	d
+GC_HEAP_LIMIT_SLOP	heap.h	34;"	d
+GC_INTINF_HEADER	int-inf.h	44;"	d
+GC_MARK_COMPACT	major.h	/^  GC_MARK_COMPACT,$/;"	e	enum:__anon8
+GC_MODEL_ARRLEN_SIZE	model.h	145;"	d
+GC_MODEL_ARRLEN_SIZE	model.h	151;"	d
+GC_MODEL_HEADER_SIZE	model.h	144;"	d
+GC_MODEL_HEADER_SIZE	model.h	150;"	d
+GC_MODEL_MINALIGN	model.h	157;"	d
+GC_MODEL_MINALIGN_SHIFT	model.h	156;"	d
+GC_MODEL_OBJPTR_BASE	model.h	143;"	d
+GC_MODEL_OBJPTR_BASE	model.h	149;"	d
+GC_MODEL_OBJPTR_SHIFT	model.h	142;"	d
+GC_MODEL_OBJPTR_SHIFT	model.h	148;"	d
+GC_MODEL_OBJPTR_SIZE	model.h	141;"	d
+GC_MODEL_OBJPTR_SIZE	model.h	147;"	d
+GC_NORMAL_HEADER_SIZE	object.h	97;"	d
+GC_RETURNADDRESS_SIZE	frame.h	47;"	d
+GC_STACK_HEADER	object.h	154;"	d
+GC_STACK_HEADER_SIZE	stack.h	52;"	d
+GC_STRING8_HEADER	string.h	38;"	d
+GC_THREAD_HEADER	object.h	155;"	d
+GC_VALID_HEADER_MASK	object.h	59;"	d
+GC_WEAK_GONE_HEADER	object.h	156;"	d
+GC_WORD16_VECTOR_HEADER	object.h	158;"	d
+GC_WORD32_VECTOR_HEADER	object.h	159;"	d
+GC_WORD64_VECTOR_HEADER	object.h	160;"	d
+GC_WORD8_VECTOR_HEADER	object.h	157;"	d
+GC_arrayAllocate	array-allocate.c	/^pointer GC_arrayAllocate (GC_state s,$/;"	f
+GC_arrayCounter	array.h	/^typedef GC_arrayLength GC_arrayCounter;$/;"	t
+GC_arrayLength	array.h	/^typedef GC_ARRLEN_TYPE GC_arrayLength;$/;"	t
+GC_callStack	call-stack.c	/^void GC_callStack (GC_state s, pointer p) {$/;"	f
+GC_callStackState	call-stack.h	/^struct GC_callStackState {$/;"	s
+GC_cardMap	generational.h	/^typedef GC_cardMapElem *GC_cardMap;$/;"	t
+GC_cardMapElem	generational.h	/^typedef uint8_t GC_cardMapElem;$/;"	t
+GC_cardMapIndex	generational.h	/^typedef size_t GC_cardMapIndex;$/;"	t
+GC_collect	garbage-collection.c	/^void GC_collect (GC_state s, size_t bytesRequested, bool force) {$/;"	f
+GC_controls	controls.h	/^struct GC_controls {$/;"	s
+GC_copyCurrentThread	copy-thread.c	/^void GC_copyCurrentThread (GC_state s) {$/;"	f
+GC_copyThread	copy-thread.c	/^pointer GC_copyThread (GC_state s, pointer p) {$/;"	f
+GC_crossMap	generational.h	/^typedef GC_crossMapElem *GC_crossMap;$/;"	t
+GC_crossMapElem	generational.h	/^typedef uint8_t GC_crossMapElem;$/;"	t
+GC_crossMapIndex	generational.h	/^typedef size_t GC_crossMapIndex;$/;"	t
+GC_cumulativeStatistics	statistics.h	/^struct GC_cumulativeStatistics {$/;"	s
+GC_displayThreadQueue	realtime_thread.c	/^int GC_displayThreadQueue(__attribute__ ((unused)) GC_state s, __attribute__ ((unused)) int unused) {$/;"	f
+GC_done	done.c	/^void GC_done (GC_state s) {$/;"	f
+GC_finishSignalHandler	handler.c	/^void GC_finishSignalHandler (GC_state s) {$/;"	f
+GC_foreachObjptrFun	foreach.h	/^typedef void (*GC_foreachObjptrFun) (GC_state s, objptr *opp);$/;"	t
+GC_foreachStackFrameFun	foreach.h	/^typedef void (*GC_foreachStackFrameFun) (GC_state s, GC_frameIndex i);$/;"	t
+GC_forwardState	forward.h	/^struct GC_forwardState {$/;"	s
+GC_frameIndex	frame.h	/^typedef uint32_t GC_frameIndex;$/;"	t
+GC_frameIndexSourceSeq	call-stack.c	/^uint32_t* GC_frameIndexSourceSeq (GC_state s, GC_frameIndex frameIndex) {$/;"	f
+GC_frameKind	frame.h	/^} GC_frameKind;$/;"	t	typeref:enum:__anon7
+GC_frameLayout	frame.h	/^typedef struct GC_frameLayout {$/;"	s
+GC_frameLayout	frame.h	/^} *GC_frameLayout;$/;"	t	typeref:struct:GC_frameLayout
+GC_frameOffsets	frame.h	/^typedef uint16_t *GC_frameOffsets;$/;"	t
+GC_generationalMaps	generational.h	/^struct GC_generationalMaps {$/;"	s
+GC_getAmOriginal	gc_state.c	/^bool GC_getAmOriginal (GC_state s) {$/;"	f
+GC_getArrayLength	array.c	/^uintmax_t GC_getArrayLength (pointer a) {$/;"	f
+GC_getCallFromCHandlerThread	gc_state.c	/^pointer GC_getCallFromCHandlerThread (GC_state s) {$/;"	f
+GC_getCumulativeStatisticsBytesAllocated	gc_state.c	/^uintmax_t GC_getCumulativeStatisticsBytesAllocated (GC_state s) {$/;"	f
+GC_getCumulativeStatisticsMaxBytesLive	gc_state.c	/^size_t GC_getCumulativeStatisticsMaxBytesLive (GC_state s) {$/;"	f
+GC_getCumulativeStatisticsNumCopyingGCs	gc_state.c	/^uintmax_t GC_getCumulativeStatisticsNumCopyingGCs (GC_state s) {$/;"	f
+GC_getCumulativeStatisticsNumMarkCompactGCs	gc_state.c	/^uintmax_t GC_getCumulativeStatisticsNumMarkCompactGCs (GC_state s) {$/;"	f
+GC_getCumulativeStatisticsNumMinorGCs	gc_state.c	/^uintmax_t GC_getCumulativeStatisticsNumMinorGCs (GC_state s) {$/;"	f
+GC_getCurrentThread	gc_state.c	/^pointer GC_getCurrentThread (GC_state s) {$/;"	f
+GC_getGCSignalPending	gc_state.c	/^bool GC_getGCSignalPending (GC_state s) {$/;"	f
+GC_getLastMajorStatisticsBytesLive	gc_state.c	/^size_t GC_getLastMajorStatisticsBytesLive (GC_state s) {$/;"	f
+GC_getProfileCurrent	profiling.c	/^GC_profileData GC_getProfileCurrent (GC_state s) {$/;"	f
+GC_getRusageGCAddr	gc_state.c	/^struct rusage* GC_getRusageGCAddr (GC_state s) {$/;"	f
+GC_getSavedThread	gc_state.c	/^pointer GC_getSavedThread (GC_state s) {$/;"	f
+GC_getSignalsHandledAddr	gc_state.c	/^sigset_t* GC_getSignalsHandledAddr (GC_state s) {$/;"	f
+GC_getSignalsPendingAddr	gc_state.c	/^sigset_t* GC_getSignalsPendingAddr (GC_state s) {$/;"	f
+GC_getThreadPriority	realtime_thread.c	/^int32_t GC_getThreadPriority(GC_state s, pointer p) {$/;"	f
+GC_handleSigProf	profiling.c	/^void GC_handleSigProf (code_pointer pc) {$/;"	f
+GC_handler	handler.c	/^void GC_handler (GC_state s, int signum) {$/;"	f
+GC_hash	hash-cons.h	/^typedef uint32_t GC_hash;$/;"	t
+GC_header	object.h	/^typedef GC_HEADER_TYPE GC_header;$/;"	t
+GC_heap	heap.h	/^typedef struct GC_heap {$/;"	s
+GC_heap	heap.h	/^} *GC_heap;$/;"	t	typeref:struct:GC_heap
+GC_init	init.c	/^int GC_init (GC_state s, int argc, char **argv) {$/;"	f
+GC_initSignalStack	signals.c	/^void GC_initSignalStack (GC_state s) {$/;"	f
+GC_intInf	int-inf.h	/^typedef struct GC_intInf {$/;"	s
+GC_intInf	int-inf.h	/^} __attribute__ ((packed)) *GC_intInf;$/;"	t	typeref:struct:GC_intInf
+GC_intInfInit	init-world.h	/^struct GC_intInfInit {$/;"	s
+GC_intInf_obj	int-inf.h	/^struct GC_intInf_obj {$/;"	s
+GC_lastMajorStatistics	statistics.h	/^struct GC_lastMajorStatistics {$/;"	s
+GC_majorKind	major.h	/^} GC_majorKind;$/;"	t	typeref:enum:__anon8
+GC_markMode	dfs-mark.h	/^} GC_markMode;$/;"	t	typeref:enum:__anon5
+GC_memcpy	virtual-memory.c	/^static inline void GC_memcpy (pointer src, pointer dst, size_t size) {$/;"	f	file:
+GC_memmove	virtual-memory.c	/^static inline void GC_memmove (pointer src, pointer dst, size_t size) {$/;"	f	file:
+GC_mmapAnon_safe	virtual-memory.c	/^void *GC_mmapAnon_safe (void *p, size_t length) {$/;"	f
+GC_myPriority	realtime_thread.c	/^int32_t GC_myPriority(__attribute__ ((unused)) GC_state s)$/;"	f
+GC_numStackFrames	call-stack.c	/^uint32_t GC_numStackFrames (GC_state s) {$/;"	f
+GC_objectHashElement	hash-cons.h	/^typedef struct GC_objectHashElement {$/;"	s
+GC_objectHashElement	hash-cons.h	/^} *GC_objectHashElement;$/;"	t	typeref:struct:GC_objectHashElement
+GC_objectHashTable	hash-cons.h	/^typedef struct GC_objectHashTable {$/;"	s
+GC_objectHashTable	hash-cons.h	/^} *GC_objectHashTable;$/;"	t	typeref:struct:GC_objectHashTable
+GC_objectType	object.h	/^typedef struct GC_objectType {$/;"	s
+GC_objectType	object.h	/^} *GC_objectType;$/;"	t	typeref:struct:GC_objectType
+GC_objectTypeTag	object.h	/^} GC_objectTypeTag;$/;"	t	typeref:enum:__anon1
+GC_pack	pack.c	/^void GC_pack (GC_state s) {$/;"	f
+GC_profileAllocInc	profiling.c	/^void GC_profileAllocInc (GC_state s, size_t amount) {$/;"	f
+GC_profileData	profiling.h	/^typedef struct GC_profileData *GC_profileData;$/;"	t	typeref:struct:GC_profileData
+GC_profileData	profiling.h	/^typedef struct GC_profileData {$/;"	s
+GC_profileData	profiling.h	/^} *GC_profileData;$/;"	t	typeref:struct:GC_profileData
+GC_profileDone	profiling.c	/^void GC_profileDone (GC_state s) {$/;"	f
+GC_profileEnter	profiling.c	/^void GC_profileEnter (GC_state s) {$/;"	f
+GC_profileFree	profiling.c	/^void GC_profileFree (GC_state s, GC_profileData p) {$/;"	f
+GC_profileInc	profiling.c	/^void GC_profileInc (GC_state s, size_t amount) {$/;"	f
+GC_profileKind	profiling.h	/^} GC_profileKind;$/;"	t	typeref:enum:__anon6
+GC_profileLeave	profiling.c	/^void GC_profileLeave (GC_state s) {$/;"	f
+GC_profileMalloc	profiling.c	/^GC_profileData GC_profileMalloc (GC_state s) {$/;"	f
+GC_profileMasterIndex	profiling.h	/^typedef uint32_t GC_profileMasterIndex;$/;"	t
+GC_profileStack	profiling.h	/^typedef struct GC_profileStack {$/;"	s
+GC_profileStack	profiling.h	/^} *GC_profileStack;$/;"	t	typeref:struct:GC_profileStack
+GC_profileWrite	profiling.c	/^void GC_profileWrite (GC_state s, GC_profileData p, NullString8_t fileName) {$/;"	f
+GC_profiling	profiling.h	/^struct GC_profiling {$/;"	s
+GC_ratios	controls.h	/^struct GC_ratios {$/;"	s
+GC_returnAddress	frame.h	/^typedef uintptr_t GC_returnAddress;$/;"	t
+GC_saveWorld	world.c	/^void GC_saveWorld (GC_state s, NullString8_t fileName) {$/;"	f
+GC_setAmOriginal	gc_state.c	/^void GC_setAmOriginal (GC_state s, bool b) {$/;"	f
+GC_setCallFromCHandlerThread	gc_state.c	/^void GC_setCallFromCHandlerThread (GC_state s, pointer p) {$/;"	f
+GC_setControlsMessages	gc_state.c	/^void GC_setControlsMessages (GC_state s, bool b) {$/;"	f
+GC_setControlsRusageMeasureGC	gc_state.c	/^void GC_setControlsRusageMeasureGC (GC_state s, bool b) {$/;"	f
+GC_setControlsSummary	gc_state.c	/^void GC_setControlsSummary (GC_state s, bool b) {$/;"	f
+GC_setGCSignalHandled	gc_state.c	/^void GC_setGCSignalHandled (GC_state s, bool b) {$/;"	f
+GC_setGCSignalPending	gc_state.c	/^void GC_setGCSignalPending (GC_state s, bool b) {$/;"	f
+GC_setHashConsDuringGC	gc_state.c	/^void GC_setHashConsDuringGC (GC_state s, bool b) {$/;"	f
+GC_setProfileCurrent	profiling.c	/^void GC_setProfileCurrent (GC_state s, GC_profileData p) {$/;"	f
+GC_setSavedThread	gc_state.c	/^void GC_setSavedThread (GC_state s, pointer p) {$/;"	f
+GC_setSignalHandlerThread	gc_state.c	/^void GC_setSignalHandlerThread (GC_state s, pointer p) {$/;"	f
+GC_setThreadPriority	realtime_thread.c	/^int32_t GC_setThreadPriority(GC_state s, pointer p, int32_t prio) {$/;"	f
+GC_setThreadRunnable	realtime_thread.c	/^int32_t GC_setThreadRunnable(GC_state s, pointer p) {$/;"	f
+GC_share	share.c	/^void GC_share (GC_state s, pointer object) {$/;"	f
+GC_signalsInfo	signals.h	/^struct GC_signalsInfo {$/;"	s
+GC_size	size.c	/^size_t GC_size (GC_state s, pointer root) {$/;"	f
+GC_source	sources.h	/^typedef struct GC_source {$/;"	s
+GC_source	sources.h	/^} *GC_source;$/;"	t	typeref:struct:GC_source
+GC_sourceIndex	sources.h	/^typedef uint32_t GC_sourceIndex;$/;"	t
+GC_sourceLabel	sources.h	/^typedef struct GC_sourceLabel {$/;"	s
+GC_sourceLabel	sources.h	/^} *GC_sourceLabel;$/;"	t	typeref:struct:GC_sourceLabel
+GC_sourceLabelIndex	sources.h	/^typedef uint32_t GC_sourceLabelIndex;$/;"	t
+GC_sourceMaps	sources.h	/^struct GC_sourceMaps {$/;"	s
+GC_sourceName	sources.c	/^char* GC_sourceName (GC_state s, GC_sourceIndex i) {$/;"	f
+GC_sourceNameIndex	sources.h	/^typedef uint32_t GC_sourceNameIndex;$/;"	t
+GC_sourceSeqIndex	sources.h	/^typedef uint32_t GC_sourceSeqIndex;$/;"	t
+GC_stack	stack.h	/^typedef struct GC_stack {       $/;"	s
+GC_stack	stack.h	/^} *GC_stack;$/;"	t	typeref:struct:GC_stack
+GC_startSignalHandler	handler.c	/^void GC_startSignalHandler (GC_state s) {$/;"	f
+GC_state	gc_state.h	/^struct GC_state {$/;"	s
+GC_string8	string.h	/^typedef struct GC_string8 {$/;"	s
+GC_string8	string.h	/^} __attribute__ ((packed)) *GC_string8;$/;"	t	typeref:struct:GC_string8
+GC_string8_obj	string.h	/^struct GC_string8_obj {$/;"	s
+GC_stringHeader	string.c	/^GC_header GC_stringHeader (void) {$/;"	f
+GC_switchToThread	switch-thread.c	/^void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {$/;"	f
+GC_sysvals	sysvals.h	/^struct GC_sysvals {$/;"	s
+GC_thread	thread.h	/^typedef struct GC_thread *GC_thread;$/;"	t	typeref:struct:GC_thread
+GC_thread	thread.h	/^typedef struct GC_thread {$/;"	s
+GC_thread	thread.h	/^} __attribute__ ((packed)) *GC_thread;$/;"	t	typeref:struct:GC_thread
+GC_threadYield	realtime_thread.c	/^int32_t GC_threadYield(__attribute__ ((unused)) GC_state s) {$/;"	f
+GC_translateState	translate.h	/^struct GC_translateState {$/;"	s
+GC_unpack	pack.c	/^void GC_unpack (GC_state s) {$/;"	f
+GC_vectorInit	init-world.h	/^struct GC_vectorInit {$/;"	s
+GC_weak	weak.h	/^typedef struct GC_weak {$/;"	s
+GC_weak	weak.h	/^} __attribute__ ((packed)) *GC_weak;$/;"	t	typeref:struct:GC_weak
+GC_weakCanGet	weak.c	/^uint32_t GC_weakCanGet (__attribute__ ((unused)) GC_state s, pointer p) {$/;"	f
+GC_weakGet	weak.c	/^pointer GC_weakGet (GC_state s, pointer p) {$/;"	f
+GC_weakNew	weak.c	/^pointer GC_weakNew (GC_state s, GC_header header, pointer p) {$/;"	f
+GCrunner	garbage-collection.c	/^void *GCrunner(void *_s) {$/;"	f
+GCrunnerRunning	gc_state.h	/^  volatile bool GCrunnerRunning;$/;"	m	struct:GC_state
+IntInf_binop	int-inf.c	/^objptr IntInf_binop (GC_state s,$/;"	f
+IntInf_cmpop	int-inf.c	/^Int32_t IntInf_cmpop (GC_state s, objptr lhs, objptr rhs,$/;"	f
+IntInf_shop	int-inf.c	/^objptr IntInf_shop (GC_state s,$/;"	f
+IntInf_strop	int-inf.c	/^objptr IntInf_strop (GC_state s, objptr arg, Int32_t base, size_t bytes,$/;"	f
+IntInf_unop	int-inf.c	/^objptr IntInf_unop (GC_state s,$/;"	f
+LIMBS_PER_OBJPTR	int-inf.h	55;"	d
+LOCK	realtime_thread.c	5;"	d	file:
+LOCKFLAG	garbage-collection.c	152;"	d	file:
+MARK_BITS	object.h	66;"	d
+MARK_MASK	object.h	67;"	d
+MARK_MODE	dfs-mark.h	/^  MARK_MODE,$/;"	e	enum:__anon5
+MARK_SHIFT	object.h	68;"	d
+MAXPRI	realtime_thread.h	4;"	d
+ML_FRAME	frame.h	/^  ML_FRAME$/;"	e	enum:__anon7
+MYASSERT	garbage-collection.c	143;"	d	file:
+NORMAL_TAG	object.h	/^  NORMAL_TAG = 1,$/;"	e	enum:__anon1
+OBJPTR_SIZE	objptr.h	14;"	d
+OBJPTR_TYPE	objptr.h	12;"	d
+OBJPTR_TYPE_	objptr.h	11;"	d
+OBJPTR_TYPE__	objptr.h	10;"	d
+PRIFI	frame.h	43;"	d
+PRISI	sources.h	20;"	d
+PRISLI	sources.h	16;"	d
+PRISNI	sources.h	12;"	d
+PRISSI	sources.h	27;"	d
+PRIxARRCTR	array.h	36;"	d
+PRIxARRLEN	array.h	32;"	d
+PRIxARRLEN_	array.h	31;"	d
+PRIxARRLEN__	array.h	30;"	d
+PRIxHASH	hash-cons.h	17;"	d
+PRIxHDR	object.h	53;"	d
+PRIxHDR_	object.h	52;"	d
+PRIxHDR__	object.h	51;"	d
+PRIxOBJPTR	objptr.h	17;"	d
+PRIxOBJPTR_	objptr.h	16;"	d
+PRIxOBJPTR__	objptr.h	15;"	d
+PROFILE_ALLOC	profiling.h	/^  PROFILE_ALLOC,$/;"	e	enum:__anon6
+PROFILE_COUNT	profiling.h	/^  PROFILE_COUNT,$/;"	e	enum:__anon6
+PROFILE_NONE	profiling.h	/^  PROFILE_NONE,$/;"	e	enum:__anon6
+PROFILE_TIME_FIELD	profiling.h	/^  PROFILE_TIME_FIELD,$/;"	e	enum:__anon6
+PROFILE_TIME_LABEL	profiling.h	/^  PROFILE_TIME_LABEL$/;"	e	enum:__anon6
+PTHREAD_NUM	hash_threadid.h	1;"	d
+REQUESTGC	garbage-collection.c	154;"	d	file:
+RTThread_addThreadToQueue	realtime_thread.c	/^int RTThread_addThreadToQueue(GC_thread t, int32_t priority) {$/;"	f
+RTThread_addThreadToQueue_nolock	realtime_thread.c	/^static int RTThread_addThreadToQueue_nolock(GC_thread t, int32_t priority) {$/;"	f	file:
+RTThread_findThreadAndQueue	realtime_thread.c	/^TQNode *RTThread_findThreadAndQueue(GC_thread t, int32_t *priority) {$/;"	f
+RTThread_findThreadInQueue	realtime_thread.c	/^TQNode *RTThread_findThreadInQueue(GC_thread t, int32_t priority) {$/;"	f
+RTThread_unlinkThreadFromQueue	realtime_thread.c	/^TQNode *RTThread_unlinkThreadFromQueue(GC_thread t, int32_t priority) {$/;"	f
+SOURCES_INDEX_GC	sources.h	24;"	d
+SOURCES_INDEX_UNKNOWN	sources.h	23;"	d
+SOURCE_SEQ_GC	sources.h	31;"	d
+SOURCE_SEQ_UNKNOWN	sources.h	30;"	d
+STACK_TAG	object.h	/^  STACK_TAG = 2,$/;"	e	enum:__anon1
+STACK_TYPE_INDEX	object.h	/^  STACK_TYPE_INDEX =         0,$/;"	e	enum:__anon2
+THREADED	garbage-collection.c	130;"	d	file:
+THREAD_TYPE_INDEX	object.h	/^  THREAD_TYPE_INDEX =        1,$/;"	e	enum:__anon2
+TQNode	realtime_thread.h	/^typedef struct _TQNode TQNode;$/;"	t	typeref:struct:_TQNode
+TYPE_INDEX_BITS	object.h	60;"	d
+TYPE_INDEX_MASK	object.h	61;"	d
+TYPE_INDEX_SHIFT	object.h	62;"	d
+UNLOCK	realtime_thread.c	6;"	d	file:
+UNLOCKFLAG	garbage-collection.c	153;"	d	file:
+UNMARK_MODE	dfs-mark.h	/^  UNMARK_MODE,$/;"	e	enum:__anon5
+WEAK_GONE_TYPE_INDEX	object.h	/^  WEAK_GONE_TYPE_INDEX =     2,$/;"	e	enum:__anon2
+WEAK_TAG	object.h	/^  WEAK_TAG = 3,$/;"	e	enum:__anon1
+WORD16_VECTOR_TYPE_INDEX	object.h	/^  WORD16_VECTOR_TYPE_INDEX = 5,$/;"	e	enum:__anon2
+WORD32_VECTOR_TYPE_INDEX	object.h	/^  WORD32_VECTOR_TYPE_INDEX = 4,$/;"	e	enum:__anon2
+WORD64_VECTOR_TYPE_INDEX	object.h	/^  WORD64_VECTOR_TYPE_INDEX = 6,$/;"	e	enum:__anon2
+WORD8_VECTOR_TYPE_INDEX	object.h	/^  WORD8_VECTOR_TYPE_INDEX =  3,$/;"	e	enum:__anon2
+_REALTIME_THREAD_H_	realtime_thread.h	2;"	d
+_TQ	realtime_thread.c	/^static struct _TQ {$/;"	s	file:
+_TQNode	realtime_thread.h	/^struct _TQNode {$/;"	s
+addToStackForProfiling	profiling.c	/^void addToStackForProfiling (GC_state s, GC_profileMasterIndex i) {$/;"	f
+advanceToObjectData	object.c	/^pointer advanceToObjectData (ARG_USED_FOR_ASSERT GC_state s, pointer p) {$/;"	f
+alignFrontier	align.c	/^pointer alignFrontier (GC_state s, pointer p) {$/;"	f
+alignStackReserved	stack.c	/^size_t alignStackReserved (GC_state s, size_t reserved) {$/;"	f
+alignWithExtra	align.c	/^size_t alignWithExtra (GC_state s, size_t bytes, size_t extra) {$/;"	f
+alignment	gc_state.h	/^  size_t alignment; \/* *\/$/;"	m	struct:GC_state
+allocHashTable	hash-cons.c	/^GC_objectHashTable allocHashTable (GC_state s) {$/;"	f
+amInGC	gc_state.h	/^  volatile bool amInGC;$/;"	m	struct:GC_state
+amInMinorGC	forward.h	/^  bool amInMinorGC;$/;"	m	struct:GC_forwardState
+amInSignalHandler	signals.h	/^  bool amInSignalHandler;   $/;"	m	struct:GC_signalsInfo
+amOriginal	gc_state.h	/^  bool amOriginal;$/;"	m	struct:GC_state
+areSmall	int-inf.c	/^static inline bool areSmall (objptr arg1, objptr arg2) {$/;"	f	file:
+assertIsObjptrInFromSpace	invariant.c	/^void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {$/;"	f
+atMLtons	gc_state.h	/^  char **atMLtons; \/* Initial @MLton args, processed before command line. *\/$/;"	m	struct:GC_state
+atMLtonsLength	gc_state.h	/^  int atMLtonsLength;$/;"	m	struct:GC_state
+atexitForProfiling	profiling.c	/^void atexitForProfiling (void) {$/;"	f
+atexitForProfilingState	profiling.c	/^static GC_state atexitForProfilingState;$/;"	v	file:
+atomicState	gc_state.h	/^  volatile uint32_t atomicState;$/;"	m	struct:GC_state
+back	forward.h	/^  pointer back;$/;"	m	struct:GC_forwardState
+beginAtomic	atomic.c	/^void beginAtomic (GC_state s) {$/;"	f
+buildHeaderFromTypeIndex	object.c	/^GC_header buildHeaderFromTypeIndex (uint32_t t) {$/;"	f
+bytesAllocated	statistics.h	/^  uintmax_t bytesAllocated;$/;"	m	struct:GC_cumulativeStatistics
+bytesCopied	statistics.h	/^  uintmax_t bytesCopied;$/;"	m	struct:GC_cumulativeStatistics
+bytesCopiedMinor	statistics.h	/^  uintmax_t bytesCopiedMinor;$/;"	m	struct:GC_cumulativeStatistics
+bytesHashConsed	statistics.h	/^  size_t bytesHashConsed;$/;"	m	struct:GC_lastMajorStatistics
+bytesHashConsed	statistics.h	/^  uintmax_t bytesHashConsed;$/;"	m	struct:GC_cumulativeStatistics
+bytesLive	statistics.h	/^  size_t bytesLive; \/* Number of bytes live at most recent major GC. *\/$/;"	m	struct:GC_lastMajorStatistics
+bytesMarkCompacted	statistics.h	/^  uintmax_t bytesMarkCompacted;$/;"	m	struct:GC_cumulativeStatistics
+bytesNeeded	thread.h	/^  size_t bytesNeeded;$/;"	m	struct:GC_thread
+bytesNonObjptrs	object.h	/^  uint16_t bytesNonObjptrs;$/;"	m	struct:GC_objectType
+bytesScannedMinor	statistics.h	/^  uintmax_t bytesScannedMinor;$/;"	m	struct:GC_cumulativeStatistics
+callFromCHandlerThread	gc_state.h	/^  volatile objptr callFromCHandlerThread; \/* Handler for exported C calls (in heap). *\/$/;"	m	struct:GC_state
+callIfIsObjptr	foreach.c	/^void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {$/;"	f
+callStack	call-stack.h	/^  uint32_t *callStack;$/;"	m	struct:GC_callStackState
+callStackAux	call-stack.c	/^void callStackAux (GC_state s, GC_frameIndex i) {$/;"	f
+callStackState	gc_state.h	/^  struct GC_callStackState callStackState;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_callStackState
+canMinor	gc_state.h	/^  bool canMinor; \/* TRUE iff there is space for a minor gc. *\/$/;"	m	struct:GC_state
+cardMap	generational.h	/^  GC_cardMap cardMap;$/;"	m	struct:GC_generationalMaps
+cardMapAbsolute	generational.h	/^  GC_cardMap cardMapAbsolute;$/;"	m	struct:GC_generationalMaps
+cardMapIndexToSize	generational.c	/^size_t cardMapIndexToSize (GC_cardMapIndex i) {$/;"	f
+cardMapLength	generational.h	/^  GC_cardMapIndex cardMapLength;$/;"	m	struct:GC_generationalMaps
+chars	string.h	/^  char chars[1];$/;"	m	struct:GC_string8_obj
+clearCardMap	generational.c	/^void clearCardMap (GC_state s) {$/;"	f
+clearCardMapAndCrossMap	generational.c	/^void clearCardMapAndCrossMap (GC_state s) {$/;"	f
+clearCrossMap	generational.c	/^void clearCrossMap (GC_state s) {$/;"	f
+compareSourceLabels	sources.c	/^int compareSourceLabels (const void *v1, const void *v2) {$/;"	f
+compressSourceLabels	sources.c	/^void compressSourceLabels (GC_state s) {$/;"	f
+controls	gc_state.h	/^  struct GC_controls controls;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_controls
+copy	controls.h	/^  float copy; $/;"	m	struct:GC_ratios
+copyForThreadInternal	mark-compact.c	/^void copyForThreadInternal (pointer dst, pointer src) {$/;"	f
+copyGenerational	controls.h	/^  float copyGenerational; $/;"	m	struct:GC_ratios
+copyStack	stack.c	/^void copyStack (GC_state s, GC_stack from, GC_stack to) {$/;"	f
+copyThread	copy-thread.c	/^GC_thread copyThread (GC_state s, GC_thread from, size_t used) {$/;"	f
+countTop	profiling.h	/^  uintmax_t *countTop;$/;"	m	struct:GC_profileData
+counter	int-inf.h	/^  GC_arrayCounter counter;$/;"	m	struct:GC_intInf
+counter	string.h	/^  GC_arrayCounter counter;$/;"	m	struct:GC_string8
+createHeap	heap.c	/^bool createHeap (GC_state s, GC_heap h,$/;"	f
+createHeapSecondary	heap.c	/^bool createHeapSecondary (GC_state s, size_t desiredSize) {$/;"	f
+crossMap	generational.h	/^  GC_crossMap crossMap;$/;"	m	struct:GC_generationalMaps
+crossMapLength	generational.h	/^  GC_crossMapIndex crossMapLength;$/;"	m	struct:GC_generationalMaps
+crossMapValidSize	generational.h	/^  size_t crossMapValidSize;$/;"	m	struct:GC_generationalMaps
+cumulativeStatistics	gc_state.h	/^  struct GC_cumulativeStatistics cumulativeStatistics;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_cumulativeStatistics
+curSourceSeqsIndex	sources.h	/^  volatile GC_sourceSeqIndex curSourceSeqsIndex;$/;"	m	struct:GC_sourceMaps
+currentThread	gc_state.h	/^  objptr currentThread[MAXPRI]; \/* Currently executing thread (in heap). *\/$/;"	m	struct:GC_state
+data	profiling.h	/^  GC_profileData data;$/;"	m	struct:GC_profiling
+detailedGCTime	controls.c	/^bool detailedGCTime (GC_state s) {$/;"	f
+dfsMarkByMode	dfs-mark.c	/^size_t dfsMarkByMode (GC_state s, pointer root,$/;"	f
+dfsMarkWithHashConsWithLinkWeaks	dfs-mark.c	/^void dfsMarkWithHashConsWithLinkWeaks (GC_state s, objptr *opp) {$/;"	f
+dfsMarkWithoutHashConsWithLinkWeaks	dfs-mark.c	/^void dfsMarkWithoutHashConsWithLinkWeaks (GC_state s, objptr *opp) {$/;"	f
+displayCol	done.c	/^static void displayCol (FILE *out, size_t width, const char *s) {$/;"	f	file:
+displayCollectionStats	done.c	/^static void displayCollectionStats (FILE *out, const char *name, struct rusage *ru, $/;"	f	file:
+displayGCState	gc_state.c	/^void displayGCState (GC_state s, FILE *stream) {$/;"	f
+displayGenerationalMaps	generational.c	/^void displayGenerationalMaps (__attribute__ ((unused)) GC_state s,$/;"	f
+displayHeap	heap.c	/^void displayHeap (__attribute__ ((unused)) GC_state s,$/;"	f
+displayHeapInfo	heap_predicates.c	/^void displayHeapInfo(GC_state s) {$/;"	f
+displayStack	stack.c	/^void displayStack (__attribute__ ((unused)) GC_state s,$/;"	f
+displayThread	thread.c	/^void displayThread (GC_state s,$/;"	f
+elementSize	init-world.h	/^  size_t elementSize;$/;"	m	struct:GC_vectorInit
+elements	hash-cons.h	/^  struct GC_objectHashElement *elements;$/;"	m	struct:GC_objectHashTable	typeref:struct:GC_objectHashTable::GC_objectHashElement
+elementsIsInHeap	hash-cons.h	/^  bool elementsIsInHeap;$/;"	m	struct:GC_objectHashTable
+elementsLengthCur	hash-cons.h	/^  uint32_t elementsLengthCur;$/;"	m	struct:GC_objectHashTable
+elementsLengthMax	hash-cons.h	/^  uint32_t elementsLengthMax;$/;"	m	struct:GC_objectHashTable
+elementsLengthMaxLog2	hash-cons.h	/^  uint32_t elementsLengthMaxLog2;$/;"	m	struct:GC_objectHashTable
+endAtomic	atomic.c	/^void endAtomic (GC_state s) {$/;"	f
+ensureHasHeapBytesFree	garbage-collection.c	/^void ensureHasHeapBytesFree (GC_state s, $/;"	f
+ensureInvariantForMutator	garbage-collection.c	/^void ensureInvariantForMutator (GC_state s, bool force) {$/;"	f
+enter	enter_leave.c	/^void enter (GC_state s) {$/;"	f
+enterForProfiling	profiling.c	/^void enterForProfiling (GC_state s, GC_sourceSeqIndex sourceSeqIndex) {$/;"	f
+enterFrameForProfiling	profiling.c	/^void enterFrameForProfiling (GC_state s, GC_frameIndex i) {$/;"	f
+enterGC	garbage-collection.c	/^void enterGC (GC_state s) {$/;"	f
+enterSourceForProfiling	profiling.c	/^void enterSourceForProfiling (GC_state s, GC_profileMasterIndex i) {$/;"	f
+exnStack	gc_state.h	/^  size_t exnStack[MAXPRI];$/;"	m	struct:GC_state
+exnStack	thread.h	/^  size_t exnStack;$/;"	m	struct:GC_thread
+fetchObjptrToPointer	objptr.c	/^pointer fetchObjptrToPointer (pointer OP, pointer B) {$/;"	f
+ffiOpArgsResPtr	gc_state.h	/^  pointer ffiOpArgsResPtr[MAXPRI];$/;"	m	struct:GC_state
+fillIntInfArg	int-inf.c	/^void fillIntInfArg (GC_state s, objptr arg, __mpz_struct *res,$/;"	f
+find_runnable	realtime_thread.c	/^static TQNode* find_runnable(struct _TQ queue) {$/;"	f	file:
+finiIntInfRes	int-inf.c	/^objptr finiIntInfRes (GC_state s, __mpz_struct *res, size_t bytes) {$/;"	f
+fixedHeap	controls.h	/^  size_t fixedHeap; \/* If 0, then no fixed heap. *\/$/;"	m	struct:GC_controls
+forceMajor	gc_state.h	/^  bool forceMajor;$/;"	m	struct:GC_state
+foreachGlobalObjptr	foreach.c	/^void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {$/;"	f
+foreachObjptrInObject	foreach.c	/^pointer foreachObjptrInObject (GC_state s, pointer p,$/;"	f
+foreachObjptrInRange	foreach.c	/^pointer foreachObjptrInRange (GC_state s, pointer front, pointer *back,$/;"	f
+foreachStackFrame	foreach.c	/^void foreachStackFrame (GC_state s, GC_foreachStackFrameFun f) {$/;"	f
+forwardInterGenerationalObjptrs	forward.c	/^void forwardInterGenerationalObjptrs (GC_state s) {$/;"	f
+forwardObjptr	forward.c	/^void forwardObjptr (GC_state s, objptr *opp) {$/;"	f
+forwardObjptrIfInNursery	forward.c	/^void forwardObjptrIfInNursery (GC_state s, objptr *opp) {$/;"	f
+forwardState	gc_state.h	/^  struct GC_forwardState forwardState;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_forwardState
+frameLayouts	gc_state.h	/^  GC_frameLayout frameLayouts; \/* Array of frame layouts. *\/$/;"	m	struct:GC_state
+frameLayoutsLength	gc_state.h	/^  uint32_t frameLayoutsLength; \/* Cardinality of frameLayouts array. *\/$/;"	m	struct:GC_state
+frameSources	sources.h	/^  GC_sourceSeqIndex *frameSources;$/;"	m	struct:GC_sourceMaps
+frameSourcesLength	sources.h	/^  uint32_t frameSourcesLength;$/;"	m	struct:GC_sourceMaps
+freeHashTable	hash-cons.c	/^void freeHashTable (GC_objectHashTable t) {$/;"	f
+from	translate.h	/^  pointer from;$/;"	m	struct:GC_translateState
+frontier	gc_state.h	/^  pointer frontier; \/* heap.start <= frontier < limit *\/$/;"	m	struct:GC_state
+gcSignalHandled	signals.h	/^  bool gcSignalHandled;$/;"	m	struct:GC_signalsInfo
+gcSignalPending	signals.h	/^  bool gcSignalPending;$/;"	m	struct:GC_signalsInfo
+gc_mutex	gc_state.h	/^  pthread_mutex_t gc_mutex;$/;"	m	struct:GC_state
+gcflag	garbage-collection.c	/^static volatile int gcflag = -1;$/;"	v	file:
+gcflag_lock	garbage-collection.c	/^pthread_mutex_t gcflag_lock;$/;"	v
+generationalMaps	gc_state.h	/^  struct GC_generationalMaps generationalMaps;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_generationalMaps
+getArrayCounter	array.c	/^GC_arrayCounter getArrayCounter (pointer a) {$/;"	f
+getArrayCounterp	array.c	/^GC_arrayCounter* getArrayCounterp (pointer a) {$/;"	f
+getArrayLength	array.c	/^GC_arrayLength getArrayLength (pointer a) {$/;"	f
+getArrayLengthp	array.c	/^GC_arrayLength* getArrayLengthp (pointer a) {$/;"	f
+getCachedStackTopFrameIndex	stack.c	/^GC_frameIndex getCachedStackTopFrameIndex (GC_state s) {$/;"	f
+getCachedStackTopFrameSourceSeqIndex	sources.c	/^GC_sourceSeqIndex getCachedStackTopFrameSourceSeqIndex (GC_state s) {$/;"	f
+getCrossMapCardStart	generational.c	/^pointer getCrossMapCardStart (GC_state s, pointer p) {$/;"	f
+getFrameIndexFromReturnAddress	frame.c	/^GC_frameIndex getFrameIndexFromReturnAddress (GC_state s, GC_returnAddress ra) {$/;"	f
+getFrameLayoutFromFrameIndex	frame.c	/^GC_frameLayout getFrameLayoutFromFrameIndex (GC_state s, GC_frameIndex findex) {$/;"	f
+getFrameLayoutFromReturnAddress	frame.c	/^GC_frameLayout getFrameLayoutFromReturnAddress (GC_state s, GC_returnAddress ra) {$/;"	f
+getHeader	object.c	/^GC_header getHeader (pointer p) {$/;"	f
+getHeaderp	object.c	/^GC_header* getHeaderp (pointer p) {$/;"	f
+getProfileStackInfo	profiling.c	/^GC_profileStack getProfileStackInfo (GC_state s, GC_profileMasterIndex i) {$/;"	f
+getSourceName	sources.c	/^char* getSourceName (GC_state s, GC_sourceIndex i) {$/;"	f
+getStackBottom	stack.c	/^pointer getStackBottom (ARG_USED_FOR_ASSERT GC_state s, GC_stack stack) {$/;"	f
+getStackCurrent	current.c	/^GC_stack getStackCurrent (GC_state s) {$/;"	f
+getStackCurrentObjptr	current.c	/^objptr getStackCurrentObjptr (GC_state s) {$/;"	f
+getStackLimit	stack.c	/^pointer getStackLimit (GC_state s, GC_stack stack) {$/;"	f
+getStackLimitPlusSlop	stack.c	/^pointer getStackLimitPlusSlop (GC_state s, GC_stack stack) {$/;"	f
+getStackTop	stack.c	/^pointer getStackTop (GC_state s, GC_stack stack) {$/;"	f
+getStackTopFrameIndex	stack.c	/^GC_frameIndex getStackTopFrameIndex (GC_state s, GC_stack stack) {$/;"	f
+getStackTopFrameLayout	stack.c	/^GC_frameLayout getStackTopFrameLayout (GC_state s, GC_stack stack) {$/;"	f
+getStackTopFrameSize	stack.c	/^uint16_t getStackTopFrameSize (GC_state s, GC_stack stack) {$/;"	f
+getThreadCurrent	current.c	/^GC_thread getThreadCurrent (GC_state s) {$/;"	f
+getThreadCurrentObjptr	current.c	/^objptr getThreadCurrentObjptr (GC_state s) {$/;"	f
+get_pthread_num	hash_threadid.c	/^get_pthread_num(void)$/;"	f
+globalIndex	init-world.h	/^  uint32_t globalIndex;$/;"	m	struct:GC_intInfInit
+globalIndex	init-world.h	/^  uint32_t globalIndex;$/;"	m	struct:GC_vectorInit
+globals	gc_state.h	/^  objptr *globals;$/;"	m	struct:GC_state
+globalsLength	gc_state.h	/^  uint32_t globalsLength;$/;"	m	struct:GC_state
+grow	controls.h	/^  float grow; $/;"	m	struct:GC_ratios
+growHashTableMaybe	hash-cons.c	/^void growHashTableMaybe (GC_state s, GC_objectHashTable t) {$/;"	f
+growHeap	heap.c	/^void growHeap (GC_state s, size_t desiredSize, size_t minSize) {$/;"	f
+growStackCurrent	garbage-collection.c	/^void growStackCurrent (GC_state s) {$/;"	f
+handleSigProfState	profiling.c	/^static GC_state handleSigProfState;$/;"	v	file:
+handle_resume_signal	garbage-stw.c	/^static void handle_resume_signal(int signum)$/;"	f	file:
+handle_suspend_signal	garbage-stw.c	/^static void handle_suspend_signal(int signum)$/;"	f	file:
+hasHeapBytesFree	heap_predicates.c	/^bool hasHeapBytesFree (GC_state s, size_t oldGen, size_t nursery) {$/;"	f
+hasIdentity	object.h	/^  bool hasIdentity;$/;"	m	struct:GC_objectType
+hash	hash-cons.h	/^  GC_hash hash;$/;"	m	struct:GC_objectHashElement
+hashCons	controls.h	/^  float hashCons;$/;"	m	struct:GC_ratios
+hashConsDuringGC	gc_state.h	/^  bool hashConsDuringGC;$/;"	m	struct:GC_state
+hashConsPointer	hash-cons.c	/^pointer hashConsPointer (GC_state s, pointer object, bool countBytesHashConsed) {$/;"	f
+head	realtime_thread.c	/^	TQNode *head;$/;"	m	struct:_TQ	file:
+header	int-inf.h	/^  GC_header header;$/;"	m	struct:GC_intInf
+header	string.h	/^  GC_header header;$/;"	m	struct:GC_string8
+heap	gc_state.h	/^  struct GC_heap heap;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_heap
+incForProfiling	profiling.c	/^void incForProfiling (GC_state s, size_t amount, GC_sourceSeqIndex sourceSeqIndex) {$/;"	f
+indexArrayAtObjptrIndex	array.c	/^pointer indexArrayAtObjptrIndex (GC_state s, pointer a,$/;"	f
+initHeap	heap.c	/^void initHeap (__attribute__ ((unused)) GC_state s,$/;"	f
+initIntInf	int-inf.c	/^void initIntInf (__attribute__ ((unused)) GC_state s) {$/;"	f
+initIntInfRes	int-inf.c	/^void initIntInfRes (GC_state s, __mpz_struct *res,$/;"	f
+initProfiling	profiling.c	/^void initProfiling (GC_state s) {$/;"	f
+initProfilingTime	profiling.c	/^static void initProfilingTime (GC_state s) {$/;"	f	file:
+initProfilingTime	profiling.c	/^void initProfilingTime (__attribute__ ((unused)) GC_state s) {$/;"	f
+initSignalStack	signals.c	/^void initSignalStack (GC_state s) {$/;"	f
+initSignalStack	signals.c	/^void initSignalStack (__attribute__ ((unused)) GC_state s) {$/;"	f
+initSourceLabels	sources.c	/^void initSourceLabels (GC_state s) {$/;"	f
+initVectors	init-world.c	/^void initVectors (GC_state s) {$/;"	f
+initWorld	init-world.c	/^void initWorld (GC_state s) {$/;"	f
+initialized	realtime_thread.c	/^static volatile int initialized = 0;$/;"	v	file:
+insertHashTableElem	hash-cons.c	/^pointer insertHashTableElem (GC_state s,$/;"	f
+install_signal_handler	garbage-stw.c	/^void install_signal_handler(GC_state s)$/;"	f
+invariantForGC	invariant.c	/^bool invariantForGC (GC_state s) {$/;"	f
+invariantForMutator	invariant.c	/^bool invariantForMutator (GC_state s, bool frontier, bool stack) {$/;"	f
+invariantForMutatorFrontier	invariant.c	/^bool invariantForMutatorFrontier (GC_state s) {$/;"	f
+invariantForMutatorStack	invariant.c	/^bool invariantForMutatorStack (GC_state s) {$/;"	f
+invertSizeofCardMapAndCrossMap	generational.c	/^size_t invertSizeofCardMapAndCrossMap (GC_state s, size_t heapWithMapsSize) {$/;"	f
+isCardMarked	generational.c	/^bool isCardMarked (GC_state s, pointer p) {$/;"	f
+isCrossMapOk	generational.c	/^bool isCrossMapOk (GC_state s) {$/;"	f
+isFrontierAligned	align.c	/^bool isFrontierAligned (GC_state s, pointer p) {$/;"	f
+isHeapInit	heap_predicates.c	/^bool isHeapInit (GC_heap h) {$/;"	f
+isObjptr	objptr.c	/^bool isObjptr (objptr p) {$/;"	f
+isObjptrInFromSpace	heap_predicates.c	/^bool isObjptrInFromSpace (GC_state s, objptr op) {$/;"	f
+isObjptrInNursery	heap_predicates.c	/^bool isObjptrInNursery (GC_state s, objptr op) {$/;"	f
+isObjptrInOldGen	heap_predicates.c	/^bool isObjptrInOldGen (GC_state s, objptr op) {$/;"	f
+isObjptrInToSpace	forward.c	/^bool isObjptrInToSpace (GC_state s, objptr op) {$/;"	f
+isOn	profiling.h	/^  bool isOn;$/;"	m	struct:GC_profiling
+isPointer	pointer.c	/^bool isPointer (pointer p) {$/;"	f
+isPointerInNursery	heap_predicates.c	/^bool isPointerInNursery (GC_state s, pointer p) {$/;"	f
+isPointerInOldGen	heap_predicates.c	/^bool isPointerInOldGen (GC_state s, pointer p) {$/;"	f
+isPointerInToSpace	forward.c	/^bool isPointerInToSpace (GC_state s, pointer p) {$/;"	f
+isPointerMarked	dfs-mark.c	/^bool isPointerMarked (pointer p) {$/;"	f
+isPointerMarkedByMode	dfs-mark.c	/^bool isPointerMarkedByMode (pointer p, GC_markMode m) {$/;"	f
+isRealTimeThreadInitialized	gc_state.h	/^  volatile bool isRealTimeThreadInitialized;$/;"	m	struct:GC_state
+isSmall	int-inf.c	/^static inline bool isSmall (objptr arg) {$/;"	f	file:
+isStackEmpty	stack.c	/^bool isStackEmpty (GC_stack stack) {$/;"	f
+isStackReservedAligned	stack.c	/^bool isStackReservedAligned (GC_state s, size_t reserved) {$/;"	f
+isneg	int-inf.h	/^  mp_limb_t isneg;$/;"	m	struct:GC_intInf_obj
+key	hash_threadid.c	/^static pthread_key_t key;$/;"	v	file:
+key_once	hash_threadid.c	/^static pthread_once_t key_once = PTHREAD_ONCE_INIT;$/;"	v	file:
+kind	frame.h	/^  GC_frameKind kind;$/;"	m	struct:GC_frameLayout
+kind	profiling.h	/^  GC_profileKind kind;$/;"	m	struct:GC_profiling
+kind	statistics.h	/^  GC_majorKind kind;$/;"	m	struct:GC_lastMajorStatistics
+label	sources.h	/^  code_pointer label;$/;"	m	struct:GC_sourceLabel
+lastMajorStatistics	gc_state.h	/^  struct GC_lastMajorStatistics lastMajorStatistics;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_lastMajorStatistics
+lastTotal	profiling.h	/^  uintmax_t lastTotal;$/;"	m	struct:GC_profileStack
+lastTotalGC	profiling.h	/^  uintmax_t lastTotalGC;$/;"	m	struct:GC_profileStack
+leave	enter_leave.c	/^void leave (GC_state s) {$/;"	f
+leaveForProfiling	profiling.c	/^void leaveForProfiling (GC_state s, GC_sourceSeqIndex sourceSeqIndex) {$/;"	f
+leaveGC	garbage-collection.c	/^void leaveGC (GC_state s) {$/;"	f
+leaveSourceForProfiling	profiling.c	/^void leaveSourceForProfiling (GC_state s, GC_profileMasterIndex i) {$/;"	f
+length	init-world.h	/^  GC_arrayLength length;$/;"	m	struct:GC_vectorInit
+length	int-inf.h	/^  GC_arrayLength length;$/;"	m	struct:GC_intInf
+length	string.h	/^  GC_arrayLength length;$/;"	m	struct:GC_string8
+lenofCardMap	generational.c	/^GC_cardMapIndex lenofCardMap (ARG_USED_FOR_ASSERT GC_state s, size_t cardMapSize) {$/;"	f
+lenofCrossMap	generational.c	/^GC_crossMapIndex lenofCrossMap (ARG_USED_FOR_ASSERT GC_state s, size_t crossMapSize) {$/;"	f
+limbs	int-inf.h	/^  mp_limb_t limbs[1];$/;"	m	struct:GC_intInf_obj
+limit	gc_state.h	/^  pointer limit; \/* limit = heap.start + heap.size *\/$/;"	m	struct:GC_state
+limitPlusSlop	gc_state.h	/^  pointer limitPlusSlop; \/* limit + GC_HEAP_LIMIT_SLOP *\/$/;"	m	struct:GC_state
+link	weak.h	/^  struct GC_weak *link;$/;"	m	struct:GC_weak	typeref:struct:GC_weak::GC_weak
+live	controls.h	/^  float live; $/;"	m	struct:GC_ratios
+loadGlobals	gc_state.h	/^  int (*loadGlobals)(FILE *f); \/* loads the globals from the file. *\/$/;"	m	struct:GC_state
+loadWorldFromFILE	world.c	/^void loadWorldFromFILE (GC_state s, FILE *f) {$/;"	f
+loadWorldFromFileName	world.c	/^void loadWorldFromFileName (GC_state s, const char *fileName) {$/;"	f
+magic	gc_state.h	/^  uint32_t magic; \/* The magic number for this executable. *\/$/;"	m	struct:GC_state
+majorCheneyCopyGC	cheney-copy.c	/^void majorCheneyCopyGC (GC_state s) {$/;"	f
+majorGC	garbage-collection.c	/^void majorGC (GC_state s, size_t bytesRequested, bool mayResize) {$/;"	f
+majorMarkCompactGC	mark-compact.c	/^void majorMarkCompactGC (GC_state s) {$/;"	f
+make_key	hash_threadid.c	/^make_key(void)$/;"	f	file:
+make_tqnode	realtime_thread.c	/^static TQNode* make_tqnode(GC_thread t) {$/;"	f	file:
+markCard	generational.c	/^void markCard (GC_state s, pointer p) {$/;"	f
+markCompact	controls.h	/^  float markCompact; $/;"	m	struct:GC_ratios
+markCompactGenerational	controls.h	/^  float markCompactGenerational; $/;"	m	struct:GC_ratios
+markIndex	stack.h	/^  uint32_t markIndex;$/;"	m	struct:GC_stack
+markIntergenerationalObjptr	generational.c	/^void markIntergenerationalObjptr (GC_state s, objptr *opp) {$/;"	f
+markIntergenerationalPointer	generational.c	/^void markIntergenerationalPointer (GC_state s, pointer *pp) {$/;"	f
+markTop	stack.h	/^  pointer markTop;$/;"	m	struct:GC_stack
+maxBytesLive	statistics.h	/^  size_t maxBytesLive;$/;"	m	struct:GC_cumulativeStatistics
+maxFrameSize	gc_state.h	/^  uint32_t maxFrameSize;$/;"	m	struct:GC_state
+maxHeap	controls.h	/^  size_t maxHeap; \/* if zero, then unlimited, else limit total heap *\/$/;"	m	struct:GC_controls
+maxHeapSize	statistics.h	/^  size_t maxHeapSize;$/;"	m	struct:GC_cumulativeStatistics
+maxPauseTime	statistics.h	/^  uintmax_t maxPauseTime;$/;"	m	struct:GC_cumulativeStatistics
+maxStackSize	statistics.h	/^  size_t maxStackSize;$/;"	m	struct:GC_cumulativeStatistics
+mayInsert	hash-cons.h	/^  bool mayInsert;$/;"	m	struct:GC_objectHashTable
+mayLoadWorld	controls.h	/^  bool mayLoadWorld;$/;"	m	struct:GC_controls
+mayPageHeap	controls.h	/^  bool mayPageHeap; \/* Permit paging heap to disk during GC *\/$/;"	m	struct:GC_controls
+mayProcessAtMLton	controls.h	/^  bool mayProcessAtMLton;$/;"	m	struct:GC_controls
+mayResize	gc_state.h	/^  bool mayResize;$/;"	m	struct:GC_state
+maybe_growstack	garbage-collection.c	/^void maybe_growstack(GC_state s) {$/;"	f
+messages	controls.h	/^  bool messages; \/* Print a message at the start and end of each gc. *\/$/;"	m	struct:GC_controls
+minorCheneyCopyGC	cheney-copy.c	/^void minorCheneyCopyGC (GC_state s) {$/;"	f
+minorGC	garbage-collection.c	/^void minorGC (GC_state s) {$/;"	f
+mlstr	init-world.h	/^  const char *mlstr;$/;"	m	struct:GC_intInfInit
+mutatorMarksCards	gc_state.h	/^  bool mutatorMarksCards;$/;"	m	struct:GC_state
+needGCTime	controls.c	/^bool needGCTime (GC_state s) {$/;"	f
+newObject	new-object.c	/^pointer newObject (GC_state s,$/;"	f
+newStack	new-object.c	/^GC_stack newStack (GC_state s,$/;"	f
+newThread	new-object.c	/^GC_thread newThread (GC_state s, size_t reserved) {$/;"	f
+next	realtime_thread.h	/^	TQNode *next;$/;"	m	struct:_TQNode
+numCardsMarked	statistics.h	/^  uintmax_t numCardsMarked; \/* Number of marked cards seen during minor GCs. *\/$/;"	m	struct:GC_cumulativeStatistics
+numCopyingGCs	statistics.h	/^  uintmax_t numCopyingGCs;$/;"	m	struct:GC_cumulativeStatistics
+numGCs	statistics.h	/^  uintmax_t numGCs;$/;"	m	struct:GC_cumulativeStatistics
+numHashConsGCs	statistics.h	/^  uintmax_t numHashConsGCs;$/;"	m	struct:GC_cumulativeStatistics
+numMarkCompactGCs	statistics.h	/^  uintmax_t numMarkCompactGCs;$/;"	m	struct:GC_cumulativeStatistics
+numMinorGCs	statistics.h	/^  uintmax_t numMinorGCs;$/;"	m	struct:GC_cumulativeStatistics
+numMinorGCs	statistics.h	/^  uintmax_t numMinorGCs;$/;"	m	struct:GC_lastMajorStatistics
+numObjptrs	object.h	/^  uint16_t numObjptrs;$/;"	m	struct:GC_objectType
+numOccurrences	profiling.h	/^  uintmax_t numOccurrences;$/;"	m	struct:GC_profileStack
+numStackFrames	call-stack.h	/^  uint32_t numStackFrames;$/;"	m	struct:GC_callStackState
+numStackFramesAux	call-stack.c	/^void numStackFramesAux (GC_state s, $/;"	f
+nursery	controls.h	/^  float nursery; $/;"	m	struct:GC_ratios
+nursery	heap.h	/^  pointer nursery; \/* start of nursery *\/$/;"	m	struct:GC_heap
+nurseryBytesRequested	gc_state.h	/^  size_t nurseryBytesRequested;$/;"	m	struct:GC_state
+obj	int-inf.h	/^  struct GC_intInf_obj obj;$/;"	m	struct:GC_intInf	typeref:struct:GC_intInf::GC_intInf_obj
+obj	string.h	/^  struct GC_string8_obj obj;$/;"	m	struct:GC_string8	typeref:struct:GC_string8::GC_string8_obj
+object	hash-cons.h	/^  pointer object;$/;"	m	struct:GC_objectHashElement
+objectHashTable	gc_state.h	/^  GC_objectHashTable objectHashTable;$/;"	m	struct:GC_state
+objectTypeTagToString	object.c	/^const char* objectTypeTagToString (GC_objectTypeTag tag) {$/;"	f
+objectTypes	gc_state.h	/^  GC_objectType objectTypes; \/* Array of object types. *\/$/;"	m	struct:GC_state
+objectTypesLength	gc_state.h	/^  uint32_t objectTypesLength; \/* Cardinality of objectTypes array. *\/$/;"	m	struct:GC_state
+objptr	objptr.h	/^typedef OBJPTR_TYPE objptr;$/;"	t
+objptr	weak.h	/^  objptr objptr;$/;"	m	struct:GC_weak
+objptrToPointer	objptr.c	/^pointer objptrToPointer (objptr O, pointer B) {$/;"	f
+offsetofThread	thread.c	/^size_t offsetofThread (GC_state s) {$/;"	f
+offsetofWeak	weak.c	/^size_t offsetofWeak (GC_state s) {$/;"	f
+offsets	frame.h	/^  GC_frameOffsets offsets;$/;"	m	struct:GC_frameLayout
+oldGenArraySize	controls.h	/^  size_t oldGenArraySize; \/* Arrays larger are allocated in old gen, if possible. *\/$/;"	m	struct:GC_controls
+oldGenBytesRequested	gc_state.h	/^  size_t oldGenBytesRequested;$/;"	m	struct:GC_state
+oldGenSize	heap.h	/^  size_t oldGenSize; \/* size of old generation *\/$/;"	m	struct:GC_heap
+pageSize	sysvals.h	/^  size_t pageSize;$/;"	m	struct:GC_sysvals
+paused_threads_count	garbage-stw.c	/^int paused_threads_count(GC_state s)$/;"	f
+performGC	garbage-collection.c	/^void performGC (GC_state s,$/;"	f
+performGC_helper	garbage-collection.c	/^void performGC_helper (GC_state s, $/;"	f
+physMem	sysvals.h	/^  uintmax_t physMem;$/;"	m	struct:GC_sysvals
+pointerToCardMapAddr	generational.c	/^GC_cardMapElem *pointerToCardMapAddr (GC_state s, pointer p) {$/;"	f
+pointerToCardMapIndexAbsolute	generational.c	/^GC_cardMapIndex pointerToCardMapIndexAbsolute (pointer p) {$/;"	f
+pointerToObjptr	objptr.c	/^objptr pointerToObjptr (pointer P, pointer B) {$/;"	f
+prev	realtime_thread.h	/^	TQNode *prev;$/;"	m	struct:_TQNode
+printBytesHashConsedMessage	hash-cons.c	/^void printBytesHashConsedMessage (size_t bytesHashConsed, size_t bytesExamined) {$/;"	f
+processAtMLton	init.c	/^int processAtMLton (GC_state s, int start, int argc, char **argv,$/;"	f
+profileDepth	profiling.c	/^static int profileDepth = 0;$/;"	v	file:
+profileFree	profiling.c	/^void profileFree (GC_state s, GC_profileData p) {$/;"	f
+profileIndent	profiling.c	/^static void profileIndent (void) {$/;"	f	file:
+profileIndexSourceName	profiling.c	/^char* profileIndexSourceName (GC_state s, GC_sourceIndex i) {$/;"	f
+profileMalloc	profiling.c	/^GC_profileData profileMalloc (GC_state s) {$/;"	f
+profileMasterIndexToSourceNameIndex	profiling.c	/^GC_sourceNameIndex profileMasterIndexToSourceNameIndex (GC_state s,$/;"	f
+profileWrite	profiling.c	/^void profileWrite (GC_state s, GC_profileData p, const char *fileName) {$/;"	f
+profiling	gc_state.h	/^  struct GC_profiling profiling;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_profiling
+quiesce_threads	garbage-stw.c	/^void quiesce_threads(GC_state s)$/;"	f
+ram	sysvals.h	/^  size_t ram;$/;"	m	struct:GC_sysvals
+ramSlop	controls.h	/^  float ramSlop;$/;"	m	struct:GC_ratios
+ratios	controls.h	/^  struct GC_ratios ratios;$/;"	m	struct:GC_controls	typeref:struct:GC_controls::GC_ratios
+readObjptr	read_write.c	/^static inline objptr readObjptr (FILE *f) {$/;"	f	file:
+readPointer	read_write.c	/^static inline pointer readPointer (FILE *f) {$/;"	f	file:
+realtimeRunner	realtime_thread.c	/^void* realtimeRunner(void* paramsPtr) {$/;"	f
+realtimeRunnerParameters	realtime_thread.h	/^struct realtimeRunnerParameters {$/;"	s
+realtimeThreadInit	realtime_thread.c	/^void realtimeThreadInit(struct GC_state *state, pthread_t *main, pthread_t *gc) {$/;"	f
+realtimeThreadWaitForInit	realtime_thread.c	/^void realtimeThreadWaitForInit(void)$/;"	f
+realtimeThreads	gc_state.h	/^  pthread_t *realtimeThreads[MAXPRI];$/;"	m	struct:GC_state
+releaseHeap	heap.c	/^void releaseHeap (GC_state s, GC_heap h) {$/;"	f
+remapHeap	heap.c	/^bool remapHeap (GC_state s, GC_heap h,$/;"	f
+remapHeap	heap.c	/^bool remapHeap (__attribute__ ((unused)) GC_state s,$/;"	f
+removeFromStackForProfiling	profiling.c	/^void removeFromStackForProfiling (GC_state s, GC_profileMasterIndex i) {$/;"	f
+reserved	stack.h	/^  size_t reserved;$/;"	m	struct:GC_stack
+resizeHeap	heap.c	/^void resizeHeap (GC_state s, size_t minSize) {$/;"	f
+resizeHeapSecondary	heap.c	/^void resizeHeapSecondary (GC_state s) {$/;"	f
+resume_threads	garbage-stw.c	/^void resume_threads(GC_state s)$/;"	f
+returnAddressToFrameIndex	gc_state.h	/^  GC_frameIndex (*returnAddressToFrameIndex) (GC_returnAddress ra);$/;"	m	struct:GC_state
+ru_gc	statistics.h	/^  struct rusage ru_gc; \/* total resource usage in gc. *\/$/;"	m	struct:GC_cumulativeStatistics	typeref:struct:GC_cumulativeStatistics::rusage
+ru_gcCopying	statistics.h	/^  struct rusage ru_gcCopying; \/* resource usage in major copying gcs. *\/$/;"	m	struct:GC_cumulativeStatistics	typeref:struct:GC_cumulativeStatistics::rusage
+ru_gcMarkCompact	statistics.h	/^  struct rusage ru_gcMarkCompact; \/* resource usage in major mark-compact gcs. *\/$/;"	m	struct:GC_cumulativeStatistics	typeref:struct:GC_cumulativeStatistics::rusage
+ru_gcMinor	statistics.h	/^  struct rusage ru_gcMinor; \/* resource usage in minor copying gcs. *\/$/;"	m	struct:GC_cumulativeStatistics	typeref:struct:GC_cumulativeStatistics::rusage
+runnable	realtime_thread.h	/^	bool runnable;$/;"	m	struct:_TQNode
+rusageMeasureGC	controls.h	/^  bool rusageMeasureGC;$/;"	m	struct:GC_controls
+rusageMinusMax	rusage.c	/^void rusageMinusMax (struct rusage *ru1,$/;"	f
+rusagePlusMax	rusage.c	/^void rusagePlusMax (struct rusage *ru1,$/;"	f
+rusageTime	rusage.c	/^uintmax_t rusageTime (struct rusage *ru) {$/;"	f
+rusageZero	rusage.c	/^void rusageZero (struct rusage *ru) {$/;"	f
+s	world.h	/^PRIVATE C_Errno_t(Bool_t) GC_getSaveWorldStatus (GC_state s);$/;"	v
+saveGlobals	gc_state.h	/^  int (*saveGlobals)(FILE *f); \/* saves the globals to the file. *\/$/;"	m	struct:GC_state
+saveWorldStatus	gc_state.h	/^  bool saveWorldStatus; \/* *\/$/;"	m	struct:GC_state
+saveWorldToFILE	world.c	/^int saveWorldToFILE (GC_state s, FILE *f) {$/;"	f
+savedThread	gc_state.h	/^  objptr savedThread[MAXPRI]; \/* Result of GC_copyCurrentThread.$/;"	m	struct:GC_state
+secondaryHeap	gc_state.h	/^  struct GC_heap secondaryHeap; \/* Used for major copying collection. *\/$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_heap
+setCardMapAbsolute	generational.c	/^void setCardMapAbsolute (GC_state s) {$/;"	f
+setCardMapAndCrossMap	generational.c	/^void setCardMapAndCrossMap (GC_state s) {$/;"	f
+setFrontier	new-object.c	/^static inline void setFrontier (GC_state s, pointer p,$/;"	f	file:
+setGCStateCurrentHeap	gc_state.c	/^void setGCStateCurrentHeap (GC_state s, $/;"	f
+setGCStateCurrentThreadAndStack	gc_state.c	/^void setGCStateCurrentThreadAndStack (GC_state s) {$/;"	f
+setProfTimer	profiling.c	/^void setProfTimer (suseconds_t usec) {$/;"	f
+set_pthread_num	hash_threadid.c	/^set_pthread_num(uint32_t tid)$/;"	f
+shareObjptr	hash-cons.c	/^void shareObjptr (GC_state s, objptr *opp) {$/;"	f
+showSources	sources.c	/^void showSources (GC_state s) {$/;"	f
+shrinkHeap	heap.c	/^void shrinkHeap (GC_state s, GC_heap h, size_t keepSize) {$/;"	f
+signalHandlerThread	gc_state.h	/^  objptr signalHandlerThread[MAXPRI]; \/* Handler for signals (in heap). *\/$/;"	m	struct:GC_state
+signalIsPending	signals.h	/^  volatile uint32_t signalIsPending; $/;"	m	struct:GC_signalsInfo
+signalsHandled	signals.h	/^  sigset_t signalsHandled;$/;"	m	struct:GC_signalsInfo
+signalsInfo	gc_state.h	/^  struct GC_signalsInfo signalsInfo;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_signalsInfo
+signalsPending	signals.h	/^  sigset_t signalsPending;$/;"	m	struct:GC_signalsInfo
+size	frame.h	/^  uint16_t size;$/;"	m	struct:GC_frameLayout
+size	heap.h	/^  size_t size; \/* size of heap *\/$/;"	m	struct:GC_heap
+sizeToCardMapIndex	generational.c	/^GC_cardMapIndex sizeToCardMapIndex (size_t z) {$/;"	f
+sizeToCrossMapIndex	generational.c	/^GC_crossMapIndex sizeToCrossMapIndex (size_t z) {$/;"	f
+sizeofArrayNoHeader	object-size.c	/^size_t sizeofArrayNoHeader (GC_state s, $/;"	f
+sizeofCardMap	generational.c	/^size_t sizeofCardMap (GC_state s, size_t heapSize) {$/;"	f
+sizeofCardMapAndCrossMap	generational.c	/^size_t sizeofCardMapAndCrossMap (GC_state s, size_t heapSize) {$/;"	f
+sizeofCrossMap	generational.c	/^size_t sizeofCrossMap (GC_state s, size_t heapSize) {$/;"	f
+sizeofGCStateCurrentStackUsed	gc_state.c	/^size_t sizeofGCStateCurrentStackUsed (GC_state s) {$/;"	f
+sizeofHeapDesired	heap.c	/^size_t sizeofHeapDesired (GC_state s, size_t liveSize, size_t currentSize) {$/;"	f
+sizeofInitialBytesLive	init-world.c	/^size_t sizeofInitialBytesLive (GC_state s) {$/;"	f
+sizeofObject	object-size.c	/^size_t sizeofObject (GC_state s, pointer p) {$/;"	f
+sizeofStackGrowReserved	stack.c	/^size_t sizeofStackGrowReserved (GC_state s, GC_stack stack) {$/;"	f
+sizeofStackInitialReserved	stack.c	/^size_t sizeofStackInitialReserved (GC_state s) {$/;"	f
+sizeofStackMinimumReserved	stack.c	/^size_t sizeofStackMinimumReserved (GC_state s, GC_stack stack) {$/;"	f
+sizeofStackNoHeader	object-size.c	/^size_t sizeofStackNoHeader (__attribute__ ((unused)) GC_state s,$/;"	f
+sizeofStackShrinkReserved	stack.c	/^size_t sizeofStackShrinkReserved (GC_state s, GC_stack stack, bool current) {$/;"	f
+sizeofStackSlop	stack.c	/^size_t sizeofStackSlop (GC_state s) {$/;"	f
+sizeofStackWithHeader	stack.c	/^size_t sizeofStackWithHeader (ARG_USED_FOR_ASSERT GC_state s, size_t reserved) {$/;"	f
+sizeofThread	thread.c	/^size_t sizeofThread (GC_state s) {$/;"	f
+sizeofWeak	weak.c	/^size_t sizeofWeak (GC_state s) {$/;"	f
+sortSourceLabels	sources.c	/^void sortSourceLabels (GC_state s) {$/;"	f
+sourceIndexToProfileMasterIndex	profiling.c	/^GC_profileMasterIndex sourceIndexToProfileMasterIndex (GC_state s,$/;"	f
+sourceLabels	sources.h	/^  struct GC_sourceLabel *sourceLabels;$/;"	m	struct:GC_sourceMaps	typeref:struct:GC_sourceMaps::GC_sourceLabel
+sourceLabelsLength	sources.h	/^  uint32_t sourceLabelsLength;$/;"	m	struct:GC_sourceMaps
+sourceMaps	gc_state.h	/^  struct GC_sourceMaps sourceMaps;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_sourceMaps
+sourceNameIndex	sources.h	/^  GC_sourceNameIndex sourceNameIndex;$/;"	m	struct:GC_source
+sourceNames	sources.h	/^  char **sourceNames;$/;"	m	struct:GC_sourceMaps
+sourceNamesLength	sources.h	/^  uint32_t sourceNamesLength;$/;"	m	struct:GC_sourceMaps
+sourceSeqIndex	sources.h	/^  GC_sourceSeqIndex sourceSeqIndex;$/;"	m	struct:GC_sourceLabel
+sourceSeqs	sources.h	/^  uint32_t **sourceSeqs;$/;"	m	struct:GC_sourceMaps
+sourceSeqsLength	sources.h	/^  uint32_t sourceSeqsLength;$/;"	m	struct:GC_sourceMaps
+sources	sources.h	/^  struct GC_source *sources;$/;"	m	struct:GC_sourceMaps	typeref:struct:GC_sourceMaps::GC_source
+sourcesLength	sources.h	/^  uint32_t sourcesLength;$/;"	m	struct:GC_sourceMaps
+splitHeader	object.c	/^void splitHeader(GC_state s, GC_header header,$/;"	f
+ssleep	ssleep.c	/^int ssleep(int s, int us)$/;"	f
+stack	profiling.h	/^  bool stack;$/;"	m	struct:GC_profiling
+stack	profiling.h	/^  struct GC_profileStack *stack;$/;"	m	struct:GC_profileData	typeref:struct:GC_profileData::GC_profileStack
+stack	thread.h	/^  objptr stack;$/;"	m	struct:GC_thread
+stackBottom	gc_state.h	/^  pointer stackBottom[MAXPRI]; \/* Bottom of stack in current thread. *\/$/;"	m	struct:GC_state
+stackCurrentGrow	controls.h	/^  float stackCurrentGrow;$/;"	m	struct:GC_ratios
+stackCurrentMaxReserved	controls.h	/^  float stackCurrentMaxReserved;$/;"	m	struct:GC_ratios
+stackCurrentPermitReserved	controls.h	/^  float stackCurrentPermitReserved;$/;"	m	struct:GC_ratios
+stackCurrentShrink	controls.h	/^  float stackCurrentShrink;$/;"	m	struct:GC_ratios
+stackLimit	gc_state.h	/^  pointer stackLimit[MAXPRI]; \/* stackBottom + stackSize - maxFrameSize *\/$/;"	m	struct:GC_state
+stackMaxReserved	controls.h	/^  float stackMaxReserved;$/;"	m	struct:GC_ratios
+stackShrink	controls.h	/^  float stackShrink;$/;"	m	struct:GC_ratios
+stackTop	gc_state.h	/^  pointer stackTop[MAXPRI]; \/* Top of stack in current thread. *\/$/;"	m	struct:GC_state
+start	heap.h	/^  pointer start; \/* start of heap (and old generation) *\/$/;"	m	struct:GC_heap
+startTiming	rusage.c	/^void startTiming (struct rusage *ru_start) {$/;"	f
+stashed	garbage-stw.c	/^static GC_state stashed;$/;"	v	file:
+state	realtime_thread.h	/^    struct GC_state *state;$/;"	m	struct:realtimeRunnerParameters	typeref:struct:realtimeRunnerParameters::GC_state
+stopTiming	rusage.c	/^uintmax_t stopTiming (struct rusage *ru_start, struct rusage *ru_acc) {$/;"	f
+storeObjptrFromPointer	objptr.c	/^void storeObjptrFromPointer (pointer OP, pointer P, pointer B) {$/;"	f
+stringToBool	init.c	/^static bool stringToBool (char *s) {$/;"	f	file:
+stringToBytes	init.c	/^static size_t stringToBytes (char *s) {$/;"	f	file:
+stringToFloat	init.c	/^static float stringToFloat (char *s) {$/;"	f	file:
+successorSourceSeqIndex	sources.h	/^  GC_sourceSeqIndex successorSourceSeqIndex;$/;"	m	struct:GC_source
+summary	controls.h	/^  bool summary; \/* Print a summary of gc info when program exits. *\/$/;"	m	struct:GC_controls
+swapHeapsForCheneyCopy	cheney-copy.c	/^void swapHeapsForCheneyCopy (GC_state s) {$/;"	f
+switchToSignalHandlerThreadIfNonAtomicAndSignalPending	handler.c	/^void switchToSignalHandlerThreadIfNonAtomicAndSignalPending (GC_state s) {$/;"	f
+switchToThread	switch-thread.c	/^void switchToThread (GC_state s, objptr op) {$/;"	f
+sysvals	gc_state.h	/^  struct GC_sysvals sysvals;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_sysvals
+t	realtime_thread.h	/^	GC_thread t;$/;"	m	struct:_TQNode
+tNum	realtime_thread.h	/^    int tNum;$/;"	m	struct:realtimeRunnerParameters
+tag	object.h	/^  GC_objectTypeTag tag;$/;"	m	struct:GC_objectType
+tail	realtime_thread.c	/^	TQNode *tail;$/;"	m	struct:_TQ	file:
+threadInternalObjptr	mark-compact.c	/^void threadInternalObjptr (GC_state s, objptr *opp) {$/;"	f
+threadPaused	gc_state.h	/^  bool threadPaused[MAXPRI];$/;"	m	struct:GC_state
+thread_queue	realtime_thread.c	/^} thread_queue[MAXPRI];$/;"	v	typeref:struct:_TQ	file:
+thread_queue_lock	realtime_thread.c	/^static pthread_mutex_t thread_queue_lock;$/;"	v	file:
+ticks	profiling.h	/^  uintmax_t ticks;$/;"	m	struct:GC_profileStack
+ticksGC	profiling.h	/^  uintmax_t ticksGC; $/;"	m	struct:GC_profileStack
+to	translate.h	/^  pointer to;$/;"	m	struct:GC_translateState
+toBignum	int-inf.c	/^static inline GC_intInf toBignum (GC_state s, objptr arg) {$/;"	f	file:
+toLimit	forward.h	/^  pointer toLimit;$/;"	m	struct:GC_forwardState
+toStart	forward.h	/^  pointer toStart;$/;"	m	struct:GC_forwardState
+total	profiling.h	/^  uintmax_t total;$/;"	m	struct:GC_profileData
+totalGC	profiling.h	/^  uintmax_t totalGC;$/;"	m	struct:GC_profileData
+translateHeap	translate.c	/^void translateHeap (GC_state s, pointer from, pointer to, size_t size) {$/;"	f
+translateObjptr	translate.c	/^void translateObjptr (GC_state s, $/;"	f
+translateState	gc_state.h	/^  struct GC_translateState translateState;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_translateState
+updateBackwardPointersAndSlideForMarkCompact	mark-compact.c	/^void updateBackwardPointersAndSlideForMarkCompact (GC_state s, GC_stack currentStack) {$/;"	f
+updateCrossMap	generational.c	/^void updateCrossMap (GC_state s) {$/;"	f
+updateForwardPointersForMarkCompact	mark-compact.c	/^void updateForwardPointersForMarkCompact (GC_state s, GC_stack currentStack) {$/;"	f
+updateWeaksForCheneyCopy	cheney-copy.c	/^void updateWeaksForCheneyCopy (GC_state s) {$/;"	f
+updateWeaksForMarkCompact	mark-compact.c	/^void updateWeaksForMarkCompact (GC_state s) {$/;"	f
+used	stack.h	/^  size_t used;      $/;"	m	struct:GC_stack
+vectorInits	gc_state.h	/^  struct GC_vectorInit *vectorInits;$/;"	m	struct:GC_state	typeref:struct:GC_state::GC_vectorInit
+vectorInitsLength	gc_state.h	/^  uint32_t vectorInitsLength;$/;"	m	struct:GC_state
+weaks	gc_state.h	/^  GC_weak weaks; \/* Linked list of (live) weak pointers *\/$/;"	m	struct:GC_state
+withMapsSize	heap.h	/^  size_t withMapsSize; \/* size of heap with card\/cross maps *\/$/;"	m	struct:GC_heap
+words	init-world.h	/^  pointer words;$/;"	m	struct:GC_vectorInit
+writeObjptr	read_write.c	/^static inline void writeObjptr (FILE *f, objptr op) {$/;"	f	file:
+writePointer	read_write.c	/^static inline void writePointer (FILE *f, pointer p) {$/;"	f	file:
+writeProfileCount	profiling.c	/^void writeProfileCount (GC_state s, FILE *f,$/;"	f

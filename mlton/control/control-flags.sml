@@ -1,4 +1,4 @@
-(* Copyright (C) 2009-2012,2014 Matthew Fluet.
+(* Copyright (C) 2009-2012,2014-2015 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -449,6 +449,30 @@ structure Elaborate =
          val (allowOverload, ac) =
             makeBool ({name = "allowOverload",
                        default = false, expert = true}, ac)
+         val (allowOptBar, ac) =
+            makeBool ({name = "allowOptBar",
+                       default = false, expert = false}, ac)
+         val (allowOptSemicolon, ac) =
+            makeBool ({name = "allowOptSemicolon",
+                       default = false, expert = false}, ac)
+         val (allowLineComments, ac) =
+            makeBool ({name = "allowLineComments",
+                       default = false, expert = false}, ac)
+         val (allowDoDecls, ac) =
+            makeBool ({name = "allowDoDecls",
+                       default = false, expert = false}, ac)
+         val (allowRecPunning, ac) =
+            makeBool ({name = "allowRecPunning",
+                       default = false, expert = false}, ac)
+         val (allowOrPats, ac) =
+            makeBool ({name = "allowOrPats",
+                       default = false, expert = false}, ac)
+         val (allowExtendedLiterals, ac) =
+            makeBool ({name = "allowExtendedLiterals",
+                       default = false, expert = false}, ac)
+         val (allowSigWithtype, ac) =
+            makeBool ({name = "allowSigWithtype",
+                       default = false, expert = false}, ac)
          val (allowRebindEquals, ac) =
             makeBool ({name = "allowRebindEquals",
                        default = false, expert = true}, ac)
@@ -506,6 +530,9 @@ structure Elaborate =
          val (sequenceNonUnit, ac) =
             makeDiagEIW ({name = "sequenceNonUnit",
                           default = DiagEIW.Ignore, expert = false}, ac)
+         val (valrecConstr, ac) =
+            makeDiagEIW ({name = "valrecConstr",
+                          default = DiagEIW.Warn, expert = false}, ac)
          val (warnUnused, ac) =
             makeBool ({name = "warnUnused",
                        default = false, expert = false}, ac)
@@ -764,6 +791,10 @@ val inlineNonRec =
 val inputFile = control {name = "input file",
                          default = "<bogus>",
                          toString = File.toString}
+
+val keepAST = control {name = "keep AST",
+                       default = false,
+                       toString = Bool.toString}
 
 val keepCoreML = control {name = "keep CoreML",
                           default = false,

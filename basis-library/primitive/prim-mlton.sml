@@ -107,7 +107,8 @@ structure Exn =
 
 structure FFI =
    struct
-      val getOpArgsResPtr = #1 _symbol "MLton_FFI_opArgsResPtr" private: Pointer.t GetSet.t;
+      (*val getOpArgsResPtr = #1 _symbol "MLton_FFI_opArgsResPtr" private: Pointer.t GetSet.t;*)
+      val getOpArgsResPtr = _prim "FFI_getOpArgsResPtr" : unit -> Pointer.t;
       val numExports = _build_const "MLton_FFI_numExports": Int32.int;
    end
 
@@ -337,6 +338,12 @@ structure Thread =
        *)
       val copyCurrent = _prim "Thread_copyCurrent": unit -> unit;
       val current = _import "GC_getCurrentThread" runtime private: GCState.t -> thread;
+
+      val myPriority = _import "GC_myPriority": GCState.t -> Int32.int;      
+      val yield = _import "GC_threadYield": GCState.t -> Int32.int;
+      val setBooted = _import "GC_setBooted" runtime private: Int32.int * GCState.t -> Int32.int;
+      val gcSafePoint = _import "GC_safePoint" runtime private: Int32.int -> Int32.int;
+      
       val finishSignalHandler = _import "GC_finishSignalHandler" runtime private: GCState.t -> unit;
       val returnToC = _prim "Thread_returnToC": unit -> unit;
       val saved = _import "GC_getSavedThread" runtime private: GCState.t -> thread;

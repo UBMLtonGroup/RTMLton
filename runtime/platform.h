@@ -14,6 +14,7 @@
 #include "util.h"
 #include "ml-types.h"
 #include "c-types.h"
+#include "../include/c-common.h" /* need to know definition of struct cont */
 
 #ifndef MLton_Platform_Arch_host
 #error MLton_Platform_Arch_host not defined

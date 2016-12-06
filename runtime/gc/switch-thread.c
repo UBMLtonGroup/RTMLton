@@ -19,7 +19,7 @@ void switchToThread (GC_state s, objptr op) {
              "  reserved = %"PRIuMAX"\n",
              op, (uintmax_t)stack->used, (uintmax_t)stack->reserved);
   }
-  s->currentThread = op;
+  s->currentThread[PTHREAD_NUM] = op;
   setGCStateCurrentThreadAndStack (s);
 }
 
@@ -36,7 +36,7 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
     enter (s);
     getThreadCurrent(s)->bytesNeeded = ensureBytesFree;
     switchToThread (s, pointerToObjptr(p, s->heap.start));
-    s->atomicState--;
+    decAtomic(s); /* s->atomicState--; */
     switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
     ensureInvariantForMutator (s, FALSE);
     assert (invariantForMutatorFrontier(s));
@@ -45,18 +45,19 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
   } else {
     /* BEGIN: enter(s); */
     getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
-    getThreadCurrent(s)->exnStack = s->exnStack;
+    getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
     beginAtomic (s);
     /* END: enter(s); */
     getThreadCurrent(s)->bytesNeeded = ensureBytesFree;
     switchToThread (s, pointerToObjptr(p, s->heap.start));
-    s->atomicState--;
+    decAtomic(s); /* s->atomicState--; */
     switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
     /* BEGIN: ensureInvariantForMutator */
     if (not (invariantForMutatorFrontier(s))
         or not (invariantForMutatorStack(s))) {
       /* This GC will grow the stack, if necessary. */
-      performGC (s, 0, getThreadCurrent(s)->bytesNeeded, FALSE, TRUE);
+     // performGC (s, 0, getThreadCurrent(s)->bytesNeeded, FALSE, TRUE);
+     maybe_growstack(s);
     }
     /* END: ensureInvariantForMutator */
     /* BEGIN: leave(s); */
