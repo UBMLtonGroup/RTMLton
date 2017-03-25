@@ -10,6 +10,7 @@
 
 #if ASSERT
 void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
+    return;
   assert (isObjptrInFromSpace (s, *opp));
   unless (isObjptrInFromSpace (s, *opp))
     die ("gc.c: assertIsObjptrInFromSpace "
@@ -149,7 +150,7 @@ bool invariantForMutatorStack (GC_state s) {
 #endif
 
   if (DEBUG)
-	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %"PRIuMAX" <= %"PRIuMAX" (%"PRIuMAX" + %"PRIuMAX")\n", top, (limit+framesize), limit, framesize);
+	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
   return (top <= (limit + framesize));
 }
 
