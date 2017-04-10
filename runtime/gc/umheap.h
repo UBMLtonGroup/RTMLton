@@ -1,5 +1,18 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
+typedef union GC_UM_Chunktype{
+
+   struct GC_UM_Chunk* umChunk;
+   struct GC_UM_Array_Chunk* umArrayChunk;
+
+} GC_UM_Chunktype;
+
+typedef struct UM_Mem_Chunk{
+   GC_UM_Chunktype chunkType;
+   struct UM_Mem_Chunk* next_chunk;
+} *UM_Mem_Chunk;
+
+
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
@@ -12,7 +25,7 @@ typedef struct GC_UM_heap {
     pointer start;
     pointer end;
     size_t size;
-    GC_UM_Chunk fl_head;
+    UM_Mem_Chunk fl_head;
 } *GC_UM_heap;
 
 struct GC_UM_Array_Chunk;

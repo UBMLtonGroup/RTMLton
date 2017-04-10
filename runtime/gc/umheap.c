@@ -21,8 +21,8 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 //        GC_collect(s, 0, true);
         die("allocNextChunk: No more memory available\n");
     }
-
-    GC_UM_Chunk c = h->fl_head;
+    h->fl_head->chunkType.umChunk = insertFreeUMChunk(s, h, h->fl_head);
+    GC_UM_Chunk c = h->fl_head->chunkType.umChunk;
     h->fl_head = h->fl_head->next_chunk;
     c->next_chunk = NULL;
     c->chunk_header = UM_CHUNK_HEADER_CLEAN;
@@ -52,13 +52,30 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 void insertFreeChunk(GC_state s,
                      GC_UM_heap h,
                      pointer c) {
-    GC_UM_Chunk pc = (GC_UM_Chunk) c;
+    /*GC_UM_Chunk pc = (GC_UM_Chunk) c;
     //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
     pc->next_chunk = h->fl_head;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
     pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
     h->fl_head = pc;
+    s->fl_chunks += 1;*/
+
+    UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
+    pc->next_chunk = h->fl_head;
+    h->fl_head = pc;
     s->fl_chunks += 1;
+    
+}
+
+void insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
+
+    GC_UM_Chunk pc = (GC_UM_Chunk) c;
+    //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
+    pc->next_chunk = NULL;
+    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
+    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
+    //h->fl_head = pc;
+   // s->fl_chunks += 1;
 }
 
 void insertArrayFreeChunk(GC_state s,
@@ -71,6 +88,7 @@ void insertArrayFreeChunk(GC_state s,
     h->fl_array_head = pc;
     s->fl_array_chunks += 1;
 }
+
 
 bool createUMHeap(GC_state s,
                   GC_UM_heap h,
