@@ -511,7 +511,7 @@ void performUMGC(GC_state s,
                         (uintptr_t)pc, pc->array_chunk_magic,
                         pc->array_chunk_header);
             }
-            insertArrayFreeChunk(s, &(s->umarheap), pchunk);
+            insertFreeChunkArr(s, &(s->umarheap), pchunk);
         }
 
         /* if (!fullGC && */

@@ -8,7 +8,7 @@ typedef union GC_UM_Chunktype{
 } GC_UM_Chunktype;
 
 typedef struct UM_Mem_Chunk{
-   GC_UM_Chunktype chunkType;
+  // GC_UM_Chunktype chunkType;
    struct UM_Mem_Chunk* next_chunk;
 } *UM_Mem_Chunk;
 
@@ -60,7 +60,7 @@ typedef struct GC_UM_Array_Chunk {
 typedef struct GC_UM_Array_heap {
     pointer start;
     size_t size;
-    GC_UM_Array_Chunk fl_array_head;
+    UM_Mem_Chunk fl_array_head;
 } *GC_UM_Array_heap;
 #endif /* MLTON_GC_INTERNAL_TYPES */
 
@@ -68,7 +68,7 @@ typedef struct GC_UM_Array_heap {
 static void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 static void initUMHeap(GC_state s, GC_UM_heap h);
 static void initUMArrayHeap(GC_state s, GC_UM_Array_heap h);
-static void insertArrayFreeChunk(GC_state s, GC_UM_Array_heap h, pointer c);
+GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_Array_heap h, pointer c);
 GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_Array_heap h);
 bool createUMHeap(GC_state s, GC_UM_heap h,
