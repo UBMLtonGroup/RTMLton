@@ -7,11 +7,11 @@ void initUMHeap(GC_state s,
 }
 
 void initUMArrayHeap(GC_state s,
-                     GC_UM_Array_heap h) {
+                     GC_UM_heap h) {
     h->start = NULL;
     h->size = 0;
     s->fl_array_chunks = 0;
-    h->fl_array_head = NULL;
+    h->fl_head = NULL;
 }
 
 GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
@@ -42,13 +42,13 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 }
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
-                                      GC_UM_Array_heap h) {
+                                      GC_UM_heap h) {
     //if (s->fl_array_chunks <= 0) {
       //  die("allocNextArrayChunk: No more memory available\n");
     //}
 
-    GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h, h->fl_array_head);
-    h->fl_array_head = h->fl_array_head->next_chunk;
+    GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h, h->fl_head);
+    h->fl_head = h->fl_head->next_chunk;
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
     c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
@@ -78,7 +78,7 @@ void insertFreeChunk(GC_state s,
     
 }
 void insertFreeChunkArr(GC_state s,
-                     GC_UM_Array_heap h,
+                     GC_UM_heap h,
                      pointer c) {
     /*GC_UM_Chunk pc = (GC_UM_Chunk) c;
     //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
@@ -89,21 +89,21 @@ void insertFreeChunkArr(GC_state s,
     s->fl_chunks += 1;*/
 
     UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
-    pc->next_chunk = h->fl_array_head;
-    h->fl_array_head = pc;
+    pc->next_chunk = h->fl_head;
+    h->fl_head = pc;
     s->fl_array_chunks += 1;
     
 }
 
 
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
-                          GC_UM_Array_heap h,
+                          GC_UM_heap h,
                           pointer c) {
     GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) c;
     //    memset(pc->ml_array_payload.ml_object, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE);
     pc->next_chunk = NULL;
     pc->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
-    //h->fl_array_head = pc;
+    //h->fl_head = pc;
     //s->fl_array_chunks += 1;
     return pc;
 }
@@ -153,7 +153,7 @@ bool createUMHeap(GC_state s,
 }
 
 bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
-                       GC_UM_Array_heap h,
+                       GC_UM_heap h,
                        size_t desiredSize,
                        __attribute__ ((unused)) size_t minSize) {
     pointer newStart;
