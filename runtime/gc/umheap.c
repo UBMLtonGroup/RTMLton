@@ -33,6 +33,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 //        GC_collect(s, 0, true);
         die("allocNextChunk: No more memory available\n");
     }
+    h->fl_head->chunkType= UM_NORMAL_CHUNK;
     GC_UM_Chunk c = insertFreeUMChunk(s, h, h->fl_head);
     h->fl_head = h->fl_head->next_chunk;
     c->next_chunk = NULL;
@@ -43,10 +44,10 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_heap h) {
-    //if (s->fl_chunks <= 0) {
-      //  die("allocNextArrayChunk: No more memory available\n");
-    //}
-
+    if (s->fl_chunks <= 0) {
+        die("allocNextArrayChunk: No more memory available\n");
+    }
+    h->fl_head->chunkType = UM_ARRAY_CHUNK;
     GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h, h->fl_head);
     h->fl_head = h->fl_head->next_chunk;
     c->next_chunk = NULL;
@@ -73,6 +74,7 @@ void insertFreeChunk(GC_state s,
 
     UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
     pc->next_chunk = h->fl_head;
+    pc->chunkType = UM_EMPTY;
     h->fl_head = pc;
     s->fl_chunks += 1;
     
@@ -119,7 +121,7 @@ bool createUMHeap(GC_state s,
     h->end = newStart + desiredSize;
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk);
+    size_t step = sizeof(struct GC_UM_Chunk); //TODO: reason if it should be sizeof(struct GC_UM_Chunk) + sizeof(struct UM_MEM_Chunk)
     pointer end = h->start + h->size - step;
 
 

@@ -11,27 +11,35 @@ void dumpUMHeap(GC_state s) {
     for (pchunk=s->umheap.start;
          pchunk < end;
          pchunk += step) {
-        GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
-        if (pc->chunk_header & UM_CHUNK_IN_USE) {
-            fprintf(stdout, "Normal: "FMTPTR" , "FMTPTR" -> ", pchunk, pchunk + 4);
-            foreachObjptrInObject(s, pchunk + 4, printObjptr, false);
-            fprintf(stdout, "\n");
+        if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
+        {
+
+            GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
+            if (pc->chunk_header & UM_CHUNK_IN_USE) {
+                fprintf(stdout, "Normal: "FMTPTR" , "FMTPTR" -> ", pchunk, pchunk + 4);
+                foreachObjptrInObject(s, pchunk + 4, printObjptr, false);
+                fprintf(stdout, "\n");
+            }
         }
     }
 
     fprintf(stdout, "========= ARRAY =========\n");
     step = sizeof(struct GC_UM_Array_Chunk);
-    end = s->umarheap.start + s->umarheap.size - step;
+    end = s->umheap.start + s->umheap.size - step;
 
-    //    if (s->umarheap.fl_array_chunks <= 2000) {
-    for (pchunk=s->umarheap.start;
+    //    if (s->umheap.fl_array_chunks <= 2000) {
+    for (pchunk=s->umheap.start;
          pchunk < end;
          pchunk += step) {
-        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
-        if (pc->array_chunk_header & UM_CHUNK_IN_USE) {
-            fprintf(stdout, "Array: "FMTPTR" , "FMTPTR" -> ", pchunk, pchunk + 8);
-            foreachObjptrInObject(s, pchunk + 8, printObjptr, false);
-            fprintf(stdout, "\n");
+        if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
+        {
+
+            GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
+            if (pc->array_chunk_header & UM_CHUNK_IN_USE) {
+                fprintf(stdout, "Array: "FMTPTR" , "FMTPTR" -> ", pchunk, pchunk + 8);
+                foreachObjptrInObject(s, pchunk + 8, printObjptr, false);
+                fprintf(stdout, "\n");
+            }
         }
     }
 

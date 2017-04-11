@@ -9,6 +9,7 @@ typedef union GC_UM_Chunktype{
 
 typedef struct UM_Mem_Chunk{
   // GC_UM_Chunktype chunkType;
+   Word32_t chunkType;
    struct UM_Mem_Chunk* next_chunk;
 } *UM_Mem_Chunk;
 

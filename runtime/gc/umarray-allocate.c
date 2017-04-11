@@ -27,7 +27,7 @@ pointer GC_arrayAllocate (GC_state s,
                 numElements, chunkNumObjs, numChunks);
     }
 
-    GC_UM_Array_Chunk parray_header = allocNextArrayChunk(s, &s->umarheap);
+    GC_UM_Array_Chunk parray_header = allocNextArrayChunk(s, &s->umheap);
     parray_header->array_chunk_counter = 0;
     parray_header->array_chunk_length = numElements;
     parray_header->array_chunk_ml_header = header;
@@ -46,7 +46,7 @@ pointer GC_arrayAllocate (GC_state s,
     int i;
 
     for (i=0; i<numChunks - 1; i++) {
-        cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umarheap);
+        cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umheap);
         cur_chunk->next_chunk->array_chunk_fan_out = chunkNumObjs;
         cur_chunk = cur_chunk->next_chunk;
         cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
@@ -87,7 +87,7 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
     if (head->next_chunk == NULL)
         return head;
 
-    GC_UM_Array_Chunk start = allocNextArrayChunk(s, &(s->umarheap));
+    GC_UM_Array_Chunk start = allocNextArrayChunk(s, &(s->umheap));
     GC_UM_Array_Chunk cur_chunk = start;
     cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
     cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;
@@ -99,7 +99,7 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
         head = head->next_chunk;
         cur_index++;
         if (cur_index >= num && head) {
-            cur_chunk->next_chunk = allocNextArrayChunk(s, &(s->umarheap));
+            cur_chunk->next_chunk = allocNextArrayChunk(s, &(s->umheap));
             cur_chunk = cur_chunk->next_chunk;
             cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
             cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;

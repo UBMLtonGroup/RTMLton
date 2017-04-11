@@ -117,8 +117,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     }
 
     if (tag == ARRAY_TAG &&
-        p >= s->umarheap.start &&
-        p < s->umarheap.start + s->umarheap.size) {
+        p >= s->umheap.start &&
+        p < s->umheap.start + s->umheap.size) {
         GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)
             (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
         if (DEBUG_MEM) {

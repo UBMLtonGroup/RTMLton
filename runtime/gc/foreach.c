@@ -117,8 +117,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       p += OBJPTR_SIZE;
     }
   } else if (ARRAY_TAG == tag &&
-             ((p >= s->umarheap.start + s->umarheap.size) ||
-              (p < s->umarheap.start))) {
+             ((p >= s->umheap.start + s->umheap.size) ||
+              (p < s->umheap.start))) {
     size_t bytesPerElement;
     size_t dataBytes;
     pointer last;

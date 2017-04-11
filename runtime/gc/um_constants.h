@@ -9,4 +9,7 @@
 #define UM_CHUNK_IN_USE                  2
 #define UM_CHUNK_ARRAY_INTERNAL          0
 #define UM_CHUNK_ARRAY_LEAF              1
+#define UM_EMPTY                         0
+#define UM_NORMAL_CHUNK                  1
+#define UM_ARRAY_CHUNK                   2
 #endif

@@ -108,7 +108,7 @@ void initWorld (GC_state s) {
   size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
-  createUMHeap (s, &s->umarheap, avail_mem, avail_mem);
+  //createUMHeap (s, &s->umarheap, avail_mem, avail_mem);
 
   createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
 
@@ -120,7 +120,7 @@ void initWorld (GC_state s) {
   s->gc_module = GC_UM;
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
-  s->umarfrontier = s->umarheap.start;
+  //s->umarfrontier = s->umarheap.start;
   s->frontier = start;
   s->infFrontier = s->infHeap.start;
   s->limitPlusSlop = s->heap.start + s->heap.size;
