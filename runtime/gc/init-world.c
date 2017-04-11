@@ -108,7 +108,7 @@ void initWorld (GC_state s) {
   size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
-  createUMArrayHeap (s, &s->umarheap, avail_mem, avail_mem);
+  createUMHeap (s, &s->umarheap, avail_mem, avail_mem);
 
   createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
 
@@ -127,8 +127,6 @@ void initWorld (GC_state s) {
   s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
-//fixing oldgen to 500000 initially
-//s->frontier = alignFrontier(s,s->frontier+0x7A120); 
 
 s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);

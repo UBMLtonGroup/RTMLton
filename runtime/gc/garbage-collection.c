@@ -459,7 +459,7 @@ void performUMGC(GC_state s,
     long t_start = getCurrentTime();
     fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
             s->fl_chunks,
-            s->fl_array_chunks);
+            s->fl_chunks);
 #endif
 
     GC_stack currentStack = getStackCurrent(s);
@@ -511,11 +511,11 @@ void performUMGC(GC_state s,
                         (uintptr_t)pc, pc->array_chunk_magic,
                         pc->array_chunk_header);
             }
-            insertFreeChunkArr(s, &(s->umarheap), pchunk);
+            insertFreeChunk(s, &(s->umarheap), pchunk);
         }
 
         /* if (!fullGC && */
-        /*     s->fl_array_chunks >= ensureArrayChunksAvailable) { */
+        /*     s->fl_chunks >= ensureArrayChunksAvailable) { */
         /*     fprintf(stderr, "Array chunk ensured\n"); */
         /*     break; */
         /* } */
@@ -530,7 +530,7 @@ void performUMGC(GC_state s,
             "ensureArrayChunk: %d\n",
             t_end - t_start,
             s->fl_chunks,
-            s->fl_array_chunks,
+            s->fl_chunks,
             ensureArrayChunksAvailable);
 #endif
 
@@ -712,8 +712,8 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
     if (!force) {
-        if ((s->fl_chunks > 2000) &&
-            (s->fl_array_chunks > 1000000))
+        if ((s->fl_chunks > 2000))// &&
+            //(s->fl_array_chunks > 1000000))
             return;
     }
 

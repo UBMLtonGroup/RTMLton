@@ -322,7 +322,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->hashConsDuringGC = FALSE;
   initHeap (s, &s->heap);
   initUMHeap (s, &s->umheap);
-  initUMArrayHeap (s, &s->umarheap);
+  //initUMArrayHeap (s, &s->umarheap);
   s->lastMajorStatistics.bytesHashConsed = 0;
   s->lastMajorStatistics.bytesLive = 0;
   s->lastMajorStatistics.kind = GC_COPYING;

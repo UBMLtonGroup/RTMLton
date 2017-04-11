@@ -6,13 +6,13 @@ void initUMHeap(GC_state s,
     s->fl_chunks = 0;
 }
 
-void initUMArrayHeap(GC_state s,
+/*void initUMArrayHeap(GC_state s,
                      GC_UM_heap h) {
     h->start = NULL;
     h->size = 0;
-    s->fl_array_chunks = 0;
+    s->fl_chunks = 0;
     h->fl_head = NULL;
-}
+}*/
 
 GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
 
@@ -43,7 +43,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_heap h) {
-    //if (s->fl_array_chunks <= 0) {
+    //if (s->fl_chunks <= 0) {
       //  die("allocNextArrayChunk: No more memory available\n");
     //}
 
@@ -56,7 +56,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
         c->ml_array_payload.um_array_pointers[i] = NULL;
     }
-    s->fl_array_chunks -= 1;
+    s->fl_chunks -= 1;
     return c;
 }
 
@@ -77,23 +77,16 @@ void insertFreeChunk(GC_state s,
     s->fl_chunks += 1;
     
 }
-void insertFreeChunkArr(GC_state s,
+/*void insertFreeChunkArr(GC_state s,
                      GC_UM_heap h,
                      pointer c) {
-    /*GC_UM_Chunk pc = (GC_UM_Chunk) c;
-    //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
-    pc->next_chunk = h->fl_head;
-    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
-    h->fl_head = pc;
-    s->fl_chunks += 1;*/
 
     UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
     pc->next_chunk = h->fl_head;
     h->fl_head = pc;
-    s->fl_array_chunks += 1;
+    s->fl_chunks += 1;
     
-}
+}*/
 
 
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
@@ -104,7 +97,7 @@ GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
     pc->next_chunk = NULL;
     pc->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
     //h->fl_head = pc;
-    //s->fl_array_chunks += 1;
+    //s->fl_chunks += 1;
     return pc;
 }
 
@@ -152,7 +145,7 @@ bool createUMHeap(GC_state s,
     return TRUE;
 }
 
-bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
+/*bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
                        GC_UM_heap h,
                        size_t desiredSize,
                        __attribute__ ((unused)) size_t minSize) {
@@ -176,12 +169,12 @@ bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
     for (pchunk=h->start;
          pchunk < end;
          pchunk+=step) {
-        insertFreeChunkArr(s, h, pchunk);
+        insertFreeChunk(s, h, pchunk);
     }
 
 #ifdef PROFILE_UMGC
-    fprintf(stderr, "[GC] Created array heap of %d chunks\n", s->fl_array_chunks);
+    fprintf(stderr, "[GC] Created array heap of %d chunks\n", s->fl_chunks);
 #endif
 
     return TRUE;
-}
+}*/
