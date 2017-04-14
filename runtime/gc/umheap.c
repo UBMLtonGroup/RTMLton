@@ -34,8 +34,9 @@ GC_UM_Chunk allocNextChunk(GC_state s,
         die("allocNextChunk: No more memory available\n");
     }
     h->fl_head->chunkType= UM_NORMAL_CHUNK;
-    GC_UM_Chunk c = insertFreeUMChunk(s, h, h->fl_head);
-    h->fl_head = h->fl_head->next_chunk;
+    struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
+    GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head +4 )); /*pass pointer to area after chunktype*/
+    h->fl_head = nc;
     c->next_chunk = NULL;
     c->chunk_header = UM_CHUNK_HEADER_CLEAN;
     s->fl_chunks -= 1;
@@ -48,8 +49,9 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
         die("allocNextArrayChunk: No more memory available\n");
     }
     h->fl_head->chunkType = UM_ARRAY_CHUNK;
-    GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h, h->fl_head);
-    h->fl_head = h->fl_head->next_chunk;
+    struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
+    GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h,((pointer)h->fl_head + 4)); /*pass pointer to area after chunktype*/
+    h->fl_head = nc;
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
     c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
@@ -121,7 +123,7 @@ bool createUMHeap(GC_state s,
     h->end = newStart + desiredSize;
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk); //TODO: reason if it should be sizeof(struct GC_UM_Chunk) + sizeof(struct UM_MEM_Chunk)
+    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(Word32_t);/*account for size of chunktype field*/ //TODO: reason if it should be sizeof(struct GC_UM_Chunk) + sizeof(struct UM_MEM_Chunk)
     pointer end = h->start + h->size - step;
 
 

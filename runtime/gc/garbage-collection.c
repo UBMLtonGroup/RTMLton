@@ -528,7 +528,7 @@ void performUMGC(GC_state s,
          pchunk+=step) {
         if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
         {
-        GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
+        GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+4); /*account for size of chunktype*/
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
             if (DEBUG_MEM) {
@@ -542,7 +542,7 @@ void performUMGC(GC_state s,
         else if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
         {
 
-        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
+        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
         if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->array_chunk_header & UM_CHUNK_HEADER_MASK))) {
             if (DEBUG_MEM) {
