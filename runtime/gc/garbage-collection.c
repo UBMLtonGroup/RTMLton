@@ -474,7 +474,7 @@ void performUMGC(GC_state s,
 
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk);
+    size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
     pointer end = s->umheap.start + s->umheap.size - step;
 #if 0
     //    if (s->umheap.fl_chunks <= 2000) {

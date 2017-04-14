@@ -5,7 +5,7 @@ void printObjptr(GC_state s, objptr* opp) {
 void dumpUMHeap(GC_state s) {
     freopen("heap_ref.txt", "a", stdout);
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk);
+    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(Word32_t); /*account for size of chunk type header*/
     pointer end = s->umheap.start + s->umheap.size - step;
 
     for (pchunk=s->umheap.start;
