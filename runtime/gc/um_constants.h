@@ -1,5 +1,5 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
-#define UM_CHUNK_PAYLOAD_SIZE            32
+#define UM_CHUNK_PAYLOAD_SIZE            154
 #define UM_CHUNK_PAYLOAD_SAFE_REGION     16
 #define UM_CHUNK_ARRAY_INTERNAL_POINTERS 32
 #define UM_CHUNK_ARRAY_PAYLOAD_SIZE      128
@@ -9,4 +9,7 @@
 #define UM_CHUNK_IN_USE                  2
 #define UM_CHUNK_ARRAY_INTERNAL          0
 #define UM_CHUNK_ARRAY_LEAF              1
+#define UM_EMPTY                         0
+#define UM_NORMAL_CHUNK                  1
+#define UM_ARRAY_CHUNK                   2
 #endif

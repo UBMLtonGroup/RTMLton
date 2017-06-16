@@ -105,12 +105,12 @@ void initWorld (GC_state s) {
 
 #define MEGABYTES 1024*1024
 #define MEM_AVAILABLE 1024
-  size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);
+  size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (0.150 * MEGABYTES);
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
-  createUMArrayHeap (s, &s->umarheap, avail_mem, avail_mem);
+  //createUMHeap (s, &s->umarheap, avail_mem, avail_mem);
 
-  createHeap (s, &s->heap, 100*MEGABYTES, 100*MEGABYTES);
+  createHeap (s, &s->heap, MEM_AVAILABLE * MEGABYTES, MEM_AVAILABLE * MEGABYTES);
 
   createHeap (s, &s->infHeap, 100*MEGABYTES, 100*MEGABYTES);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
@@ -120,15 +120,13 @@ void initWorld (GC_state s) {
   s->gc_module = GC_UM;
   setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
-  s->umarfrontier = s->umarheap.start;
+  //s->umarfrontier = s->umarheap.start;
   s->frontier = start;
   s->infFrontier = s->infHeap.start;
   s->limitPlusSlop = s->heap.start + s->heap.size;
   s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
-//fixing oldgen to 500000 initially
-//s->frontier = alignFrontier(s,s->frontier+0x7A120); 
 
 s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);

@@ -166,8 +166,9 @@ struct
   fun doit () = gcbench 18
 end
 
+val _ = gcbench 18
 
-fun printTime () = TextIO.output (TextIO.stdOut, "Time: " ^ Time.toString (Time.now())  ^  "\n")
+(*fun printTime () = TextIO.output (TextIO.stdOut, "Time: " ^ Time.toString (Time.now())  ^  "\n")
 open MLton 
 open PrimThread
 open MLton.Thread
@@ -211,4 +212,4 @@ fun pause () = (print "sleep\n"; inf_sleep (Time.fromSeconds 1)
 
 val _ = pause ()
 
-
+*)

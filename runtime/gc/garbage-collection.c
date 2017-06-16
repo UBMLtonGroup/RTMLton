@@ -459,7 +459,7 @@ void performUMGC(GC_state s,
     long t_start = getCurrentTime();
     fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
             s->fl_chunks,
-            s->fl_array_chunks);
+            s->fl_chunks);
 #endif
 
     GC_stack currentStack = getStackCurrent(s);
@@ -474,9 +474,9 @@ void performUMGC(GC_state s,
 
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk);
+    size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
     pointer end = s->umheap.start + s->umheap.size - step;
-
+#if 0
     //    if (s->umheap.fl_chunks <= 2000) {
     for (pchunk=s->umheap.start;
          pchunk < end;
@@ -511,14 +511,52 @@ void performUMGC(GC_state s,
                         (uintptr_t)pc, pc->array_chunk_magic,
                         pc->array_chunk_header);
             }
-            insertArrayFreeChunk(s, &(s->umarheap), pchunk);
+            insertFreeChunk(s, &(s->umarheap), pchunk);
         }
 
         /* if (!fullGC && */
-        /*     s->fl_array_chunks >= ensureArrayChunksAvailable) { */
+        /*     s->fl_chunks >= ensureArrayChunksAvailable) { */
         /*     fprintf(stderr, "Array chunk ensured\n"); */
         /*     break; */
         /* } */
+    }
+
+#endif
+
+    for (pchunk=s->umheap.start;
+         pchunk < end;
+         pchunk+=step) {
+        if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
+        {
+        GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+4); /*account for size of chunktype*/
+        if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
+            (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
+            if (DEBUG_MEM) {
+                fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
+                        (uintptr_t)pc, pc->sentinel, pc->chunk_header);
+            }
+            insertFreeChunk(s, &(s->umheap), pchunk);
+        }
+
+        }
+        else if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
+        {
+
+        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
+        if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
+            (!(pc->array_chunk_header & UM_CHUNK_HEADER_MASK))) {
+            if (DEBUG_MEM) {
+                fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
+                        (uintptr_t)pc, pc->array_chunk_magic,
+                        pc->array_chunk_header);
+            }
+            insertFreeChunk(s, &(s->umheap), pchunk);
+        }
+        }
+
+        if (!fullGC && s->fl_chunks >= ensureObjectChunksAvailable) {
+            break;
+        }
     }
 
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
@@ -530,7 +568,7 @@ void performUMGC(GC_state s,
             "ensureArrayChunk: %d\n",
             t_end - t_start,
             s->fl_chunks,
-            s->fl_array_chunks,
+            s->fl_chunks,
             ensureArrayChunksAvailable);
 #endif
 
@@ -712,8 +750,8 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
     if (!force) {
-        if ((s->fl_chunks > 2000) &&
-            (s->fl_array_chunks > 1000000))
+        if ((s->fl_chunks > 2000))// &&
+            //(s->fl_array_chunks > 1000000))
             return;
     }
 

@@ -1,5 +1,19 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
+typedef union GC_UM_Chunktype{
+
+   struct GC_UM_Chunk* umChunk;
+   struct GC_UM_Array_Chunk* umArrayChunk;
+
+} GC_UM_Chunktype;
+
+typedef struct UM_Mem_Chunk{
+  // GC_UM_Chunktype chunkType;
+   Word32_t chunkType;
+   struct UM_Mem_Chunk* next_chunk;
+} *UM_Mem_Chunk;
+
+
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
@@ -12,7 +26,7 @@ typedef struct GC_UM_heap {
     pointer start;
     pointer end;
     size_t size;
-    GC_UM_Chunk fl_head;
+    UM_Mem_Chunk fl_head;
 } *GC_UM_heap;
 
 struct GC_UM_Array_Chunk;
@@ -44,24 +58,25 @@ typedef struct GC_UM_Array_Chunk {
     struct GC_UM_Array_Chunk* root;         /* For header to connect root       */
 } *GC_UM_Array_Chunk;
 
-typedef struct GC_UM_Array_heap {
+/*typedef struct GC_UM_Array_heap {
     pointer start;
+    pointer end;
     size_t size;
-    GC_UM_Array_Chunk fl_array_head;
-} *GC_UM_Array_heap;
+    UM_Mem_Chunk fl_head;
+} *GC_UM_Array_heap;*/
 #endif /* MLTON_GC_INTERNAL_TYPES */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 static void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 static void initUMHeap(GC_state s, GC_UM_heap h);
-static void initUMArrayHeap(GC_state s, GC_UM_Array_heap h);
-static void insertArrayFreeChunk(GC_state s, GC_UM_Array_heap h, pointer c);
+//static void initUMArrayHeap(GC_state s, GC_UM_heap h);
+GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h);
-GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_Array_heap h);
+GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
 bool createUMHeap(GC_state s, GC_UM_heap h,
                   size_t diredSize,
                   size_t minSize);
-bool createUMArrayHeap(GC_state s, GC_UM_Array_heap h,
+/*bool createUMArrayHeap(GC_state s, GC_UM_heap h,
                        size_t diredSize,
-                       size_t minSize);
+                       size_t minSize);*/
 #endif
