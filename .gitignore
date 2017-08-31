@@ -17,3 +17,7 @@ core
 *.machine
 *.sxml
 *.rssa
+*.swn
+*.swo
+*.swl
+*.swm
