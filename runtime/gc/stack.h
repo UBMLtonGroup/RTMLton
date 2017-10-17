@@ -34,6 +34,8 @@ typedef struct GC_stack {
    * it can continue with the next pointer (either in the current
    * frame or the next frame).
    */
+
+  uint32_t stackstart;
   pointer markTop;
   uint32_t markIndex;
   /* reserved is the number of bytes reserved for stack, 

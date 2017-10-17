@@ -1,5 +1,5 @@
 #include <pthread.h>
-#include <malloc.h>
+#include <sys/malloc.h>
 #include <stdint.h>
 
 
