@@ -58,9 +58,13 @@ typedef GC_state GCState_t;
 #include "gc/major.h"
 #include "gc/statistics.h"
 #include "gc/forward.h"
+/*
 #include "gc/cheney-copy.h"
+ */
 #include "gc/hash-cons.h"
+/*
 #include "gc/mark-compact.h"
+ */
 #include "gc/invariant.h"
 #include "gc/atomic.h"
 #include "gc/enter_leave.h"

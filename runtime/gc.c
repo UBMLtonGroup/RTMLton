@@ -33,7 +33,9 @@
 #include "gc/array.c"
 #include "gc/atomic.c"
 #include "gc/call-stack.c"
+/*
 #include "gc/cheney-copy.c"
+*/
 #include "gc/controls.c"
 #include "gc/copy-thread.c"
 #include "gc/current.c"
@@ -47,7 +49,9 @@
 #include "gc/garbage-collection.c"
 #include "gc/realtime_thread.c"
 #include "gc/gc_state.c"
+/*
 #include "gc/generational.c"
+*/
 #include "gc/handler.c"
 #include "gc/hash-cons.c"
 #include "gc/heap.c"
@@ -57,7 +61,9 @@
 #include "gc/init.c"
 #include "gc/int-inf.c"
 #include "gc/invariant.c"
+/*
 #include "gc/mark-compact.c"
+ */
 #include "gc/model.c"
 #include "gc/new-object.c"
 #include "gc/object-size.c"
