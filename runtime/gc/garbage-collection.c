@@ -15,6 +15,8 @@
 #include <sched.h>
 #include <errno.h>
 
+#pragma GCC diagnostic push  // require GCC 4.6
+#pragma GCC diagnostic ignored "-Wformat"
 
 struct thrctrl
 {
@@ -206,25 +208,25 @@ setup_for_gc (GC_state s)
     COPYIN (stackTop);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy stackBottom = %" PRIuMAX
-                 " , should become = %" PRIuMAX " , actually = %" PRIuMAX
+                 "%d] GCREqBy = %d , before copy stackBottom = " FMTPTR
+                 " , should become = " FMTPTR " , actually = " FMTPTR
                  " \n", PTHREAD_NUM, TC.requested_by, s->stackBottom[1],
                  s->stackBottom[TC.requested_by], s->stackBottom[0]);
     COPYIN (stackBottom);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy StackBottom = %" PRIuMAX " \n",
+                 "%d] GCReqBy= %d,  after copy StackBottom = " FMTPTR " \n",
                  PTHREAD_NUM, TC.requested_by, s->stackBottom[1]);
     COPYIN (stackLimit);
     COPYIN (exnStack);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , main thread = %x \n", PTHREAD_NUM, TC.requested_by,
+                 "%d] GCREqBy = %d , before copy currentThread = "FMTPTR" , should become = "FMTPTR" , main thread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,
                  s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);
     COPYIN (currentThread);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy currentThread = %x \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
+                 "%d] GCReqBy= %d,  after copy currentThread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
     COPYIN (savedThread);
     COPYIN (signalHandlerThread);
     COPYIN (ffiOpArgsResPtr);
@@ -443,3 +445,4 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
 }
 
 
+#pragma GCC diagnostic pop  // require GCC 4.6

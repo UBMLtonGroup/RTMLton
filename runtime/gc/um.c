@@ -118,9 +118,11 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     /* Not on our heap! */
     if (p < (gc_stat->umheap).start ||
         p >= heap_end) {
-        if (DEBUG_MEM)
+        if (DEBUG_MEM) {
             DBG(p, o, s, "not UM Heap");
-        return (p + o);
+            fprintf(stderr, "   p:"FMTPTR" p+o:"FMTPTR"\n", p, (p+o));
+        }
+        return  (p + o);
     }
 
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);

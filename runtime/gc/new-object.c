@@ -75,6 +75,7 @@ GC_stack newStack (GC_state s,
   stack = (GC_stack)(newUMObject (s, GC_STACK_HEADER,
                                   sizeofStackWithHeader (s, reserved),
                                   allocInOldGen));
+  stack->stackmark = 0xdeadbeef;
   stack->reserved = reserved;
   stack->used = 0;
   if (DEBUG_STACKS)

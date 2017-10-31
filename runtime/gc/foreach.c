@@ -6,6 +6,8 @@
  * See the file MLton-LICENSE for details.
  */
 
+#pragma GCC diagnostic push  // require GCC 4.6
+#pragma GCC diagnostic ignored "-Wcast-qual"
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
     if (isObjptr (*opp)) {
         f (s, opp);
@@ -13,7 +15,7 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
     }
 
     if (DEBUG_MEM)
-        fprintf(stderr, "  callIfIsObjptr: Not objptr 0x%x\n", *opp);
+        fprintf(stderr, "  callIfIsObjptr: Not objptr "FMTPTR"\n", *opp);
 }
 
 /* foreachGlobalObjptr (s, f)
@@ -28,11 +30,12 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
   }
   if (DEBUG_DETAILED)
     fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
-  callIfIsObjptr (s, f, &s->callFromCHandlerThread);
+  callIfIsObjptr (s, f, (objptr *)(&s->callFromCHandlerThread));
   callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }
+#pragma GCC diagnostic pop  // require GCC 4.6
 
 
 /* foreachObjptrInObject (s, p, f, skipWeaks)
@@ -45,7 +48,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
 pointer foreachObjptrInObject (GC_state s, pointer p,
                                GC_foreachObjptrFun f, bool skipWeaks) {
   if (DEBUG_MEM) {
-      fprintf(stderr, "foreach object in 0x%x\n", (uintptr_t)p);
+      fprintf(stderr, "foreach object in 0x"FMTPTR"\n", (uintptr_t)p);
   }
   GC_header header;
   uint16_t bytesNonObjptrs;
@@ -110,6 +113,11 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 //      p += bytesNonObjptrs;
 
   } else if (WEAK_TAG == tag) {
+ if (DEBUG_MEM)
+          fprintf(stderr, "   foreachObjptrInObject, weak, bytesNonObjptrs: %d, "
+                  "num ptrs: %d, skipweaks: %d\n", bytesNonObjptrs, numObjptrs, skipWeaks);
+
+
     p += bytesNonObjptrs;
     if (1 == numObjptrs) {
       if (not skipWeaks)
@@ -124,6 +132,10 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     pointer last;
     GC_arrayLength numElements;
 
+ if (DEBUG_MEM)
+          fprintf(stderr, "   foreachObjptrInObject, array, bytesNonObjptrs: %d, "
+                  "num ptrs: %d\n", bytesNonObjptrs, numObjptrs);
+
     numElements = getArrayLength (p);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
     dataBytes = numElements * bytesPerElement;
@@ -134,6 +146,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       dataBytes = OBJPTR_SIZE;
     } else if (0 == numObjptrs) {
       /* No objptrs to process. */
+ if (DEBUG_MEM)
+          fprintf(stderr, "   foreachObjptrInObject, array, no objptrs to process\n");
       ;
     } else {
       last = p + dataBytes;
@@ -183,7 +197,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
                   cur_chunk = cur_chunk->next_chunk;
           }
       }
-  }else { /* stack */
+  } else { /* stack */
     GC_stack stack;
     pointer top, bottom;
     unsigned int i;
@@ -201,8 +215,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     bool doit = true;
     if(s->mainBooted)
     {
-        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
-        GC_thread th = (GC_thread)(p + offsetofThread (s));
+        pointer p_ = objptrToPointer(s->currentThread[0], s->heap.start);
+        GC_thread th = (GC_thread)(p_ + offsetofThread (s));
 
         GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
         
