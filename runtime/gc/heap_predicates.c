@@ -7,7 +7,7 @@
  */
 
 void displayHeapInfo(GC_state s) {
-	fprintf(stderr, "start %x -> from-start %x  -> nursery %x -> frontier %x\n",
+	fprintf(stderr, "start "FMTPTR" -> from-start "FMTPTR"  -> nursery "FMTPTR" -> frontier "FMTPTR"\n",
 			s->heap.start, s->heap.start+s->heap.oldGenSize,
 			s->heap.nursery, s->frontier);
 }

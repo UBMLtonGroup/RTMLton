@@ -440,7 +440,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
         return;
     }
 
-    GC_collect_real(s, bytesRequested, true);
+    /*GC_collect_real(s, bytesRequested, true);*/
 
 }
 

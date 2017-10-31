@@ -5,6 +5,10 @@ hello.1.c:(.text+0xb912): undefined reference to `UM_Payload_alloc'
 hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 */
 
+#pragma GCC diagnostic push  // require GCC 4.6
+#pragma GCC diagnostic ignored "-Wformat"
+
+
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
 		__FILE__, __LINE__, __FUNCTION__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
 
@@ -221,3 +225,5 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     die("UM_Array_Offset: shouldn't be here!");
 }
+
+#pragma GCC diagnostic pop  // require GCC 4.6

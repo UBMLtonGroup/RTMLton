@@ -1,3 +1,8 @@
+
+#pragma GCC diagnostic push  // require GCC 4.6
+#pragma GCC diagnostic ignored "-Wformat"
+
+
 void umDfsMarkObjectsUnMark(GC_state s, objptr *opp) {
     umDfsMarkObjects(s, opp, UNMARK_MODE);
 }
@@ -180,3 +185,5 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
         }
     }
 }
+
+#pragma GCC diagnostic pop  // require GCC 4.6

@@ -9,7 +9,7 @@
 static volatile int initialized = 0;
 
 extern void Copy_globalObjptrs (int f, int t);
-
+extern void Parallel_run(void);
 
 int32_t
 GC_myPriority ( __attribute__ ((unused)) GC_state s)
@@ -164,7 +164,7 @@ realtimeRunner (void *paramsPtr)
     if (DEBUG)
         fprintf (stderr, "%d] switch to copied thread\n", PTHREAD_NUM);
 
-    GC_switchToThread (state, tc, 0);
+    GC_switchToThread (state, (pointer) tc, 0);
 
     COPYIN2 (state, savedThread);
     COPYIN2 (state, signalHandlerThread);

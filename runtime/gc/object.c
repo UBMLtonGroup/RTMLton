@@ -60,7 +60,7 @@ void splitHeader(GC_state s, GC_header header,
   fprintf(stderr, "splitHeader "FMTPTR"\n", header);
 
   if (!(1 == (header & GC_VALID_HEADER_MASK))) {
-	fprintf(stderr, "%x & %x == %x (size %d)\n", header, GC_VALID_HEADER_MASK, 
+	fprintf(stderr, FMTPTR" & "FMTPTR" == "FMTPTR" (size %d)\n", header, GC_VALID_HEADER_MASK,
 		header & GC_VALID_HEADER_MASK, sizeof(header));
 	}
 
