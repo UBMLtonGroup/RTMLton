@@ -27,7 +27,7 @@ UM_Header_alloc(GC_state gc_stat,
 
     return (umfrontier + s);
 //    GC_UM_Chunk pchunk = (GC_UM_Chunk)umfrontier;
-//    pchunk->chunk_header = UM_CHUNK_IN_USE;
+//    pchunk->chunk_header |= UM_CHUNK_IN_USE;
 //    GC_collect(gc_stat, 0, true);
 //    GC_UM_Chunk pchunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
 //    return (umfrontier + s);
@@ -38,11 +38,11 @@ Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
 {
     GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-    chunk->chunk_header = UM_CHUNK_IN_USE;
+    chunk->chunk_header |= UM_CHUNK_IN_USE;
     *((uint32_t*) chunk->ml_object) = header;
     if (num_chunks > 1) {
         chunk->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-        chunk->next_chunk->chunk_header = UM_CHUNK_IN_USE;
+        chunk->next_chunk->chunk_header |= UM_CHUNK_IN_USE;
     }
     return (Pointer)(chunk->ml_object + s);
 }
@@ -50,13 +50,14 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 Pointer
 UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
+    fprintf(stderr,"In UM_PAYLOAD_ALLOC\n");
     if (DEBUG_MEM)
        DBG(umfrontier, s, 0, "enter");
     //    GC_collect(gc_stat, 0, false);
     //    GC_collect(gc_stat, 0, false);
     GC_UM_Chunk next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
-    current_chunk->chunk_header= UM_CHUNK_IN_USE;
+    current_chunk->chunk_header |= UM_CHUNK_IN_USE;
 
     if (DEBUG_MEM) {
         fprintf(stderr, "Sentinel: %d \n", current_chunk->sentinel);
@@ -82,7 +83,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
      */
     current_chunk->next_chunk = next_chunk;
 /////////////////
-    next_chunk->chunk_header = UM_CHUNK_IN_USE;
+    next_chunk->chunk_header |= UM_CHUNK_IN_USE;
 /////////////////
     GC_UM_Chunk next_chunk_next = allocNextChunk(gc_stat, &(gc_stat->umheap));
     next_chunk->next_chunk = NULL;
@@ -124,7 +125,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     }
 
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
-    if (current_chunk->chunk_header == UM_CHUNK_HEADER_CLEAN)
+    if (current_chunk->chunk_header & UM_CHUNK_HEADER_CLEAN)
         die("Visiting a chunk that is on free list!\n");
 
     /* On current chunk */
@@ -184,7 +185,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     }
 
     while (true) {
-        if (current->array_chunk_header == UM_CHUNK_HEADER_CLEAN)
+        if (current->array_chunk_header & UM_CHUNK_HEADER_CLEAN)
             die("Visiting a chunk that is on free list!\n");
 
         i = chunk_index / current->array_chunk_fan_out;

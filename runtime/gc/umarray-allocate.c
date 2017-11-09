@@ -36,7 +36,7 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->array_num_chunks = numChunks;
     parray_header->array_chunk_objSize = bytesPerElement;
     parray_header->parent = NULL;
-    parray_header->array_chunk_header = UM_CHUNK_IN_USE;
+    parray_header->array_chunk_header |= UM_CHUNK_IN_USE;
 
     if (numChunks <= 1 || numElements == 0) {
         return (pointer)&(parray_header->ml_array_payload.ml_object[0]);
@@ -50,7 +50,7 @@ pointer GC_arrayAllocate (GC_state s,
         cur_chunk->next_chunk->array_chunk_fan_out = chunkNumObjs;
         cur_chunk = cur_chunk->next_chunk;
         cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
-        cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;
+        cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
     }
 
     GC_UM_Array_Chunk root = UM_Group_Array_Chunk(s,
@@ -90,7 +90,7 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
     GC_UM_Array_Chunk start = allocNextArrayChunk(s, &(s->umheap));
     GC_UM_Array_Chunk cur_chunk = start;
     cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
-    cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;
+    cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
     cur_chunk->array_chunk_fan_out = fan_out;
 
     int cur_index = 0;
@@ -102,7 +102,7 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
             cur_chunk->next_chunk = allocNextArrayChunk(s, &(s->umheap));
             cur_chunk = cur_chunk->next_chunk;
             cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
-            cur_chunk->array_chunk_header = UM_CHUNK_IN_USE;
+            cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
             cur_chunk->array_chunk_fan_out = fan_out;
             cur_index = 0;
         }

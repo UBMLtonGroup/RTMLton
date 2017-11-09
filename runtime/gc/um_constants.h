@@ -4,9 +4,19 @@
 #define UM_CHUNK_ARRAY_INTERNAL_POINTERS 32
 #define UM_CHUNK_ARRAY_PAYLOAD_SIZE      128
 #define UM_CHUNK_SENTINEL_UNUSED         9999
-#define UM_CHUNK_HEADER_CLEAN            0
-#define UM_CHUNK_HEADER_MASK             1
-#define UM_CHUNK_IN_USE                  2
+
+/*
+ * Chunk header splitup
+ * bits         purpose
+ * 00-03       Chunk in use/clean
+ * 04-07    Mark bits
+ * 08-31    Object counter
+ */
+
+#define UM_CHUNK_HEADER_CLEAN            ((UM_header)0x0)
+#define UM_CHUNK_IN_USE                  ((UM_header)0x80000000)
+#define UM_CHUNK_MARK_MASK               ((UM_header)0x01000000)
+#define UM_CHUNK_GREY_MASK               ((UM_header)0x02000000)
 #define UM_CHUNK_ARRAY_INTERNAL          0
 #define UM_CHUNK_ARRAY_LEAF              1
 #define UM_EMPTY                         0

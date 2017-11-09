@@ -11,6 +11,7 @@
 /*                       Depth-first Marking                        */
 /* ---------------------------------------------------------------- */
 
+
 bool isPointerMarked (pointer p) {
   return MARK_MASK & getHeader (p);
 }
@@ -25,6 +26,7 @@ bool isPointerMarkedByMode (pointer p, GC_markMode m) {
     die ("bad mark mode %u", m);
   }
 }
+
 
 /* dfsMarkByMode (s, r, m, shc, slw)
  *
@@ -129,7 +131,7 @@ mark:
     if (cur >= (s->umheap.start) &&
         cur < (s->umheap.start + s->umheap.size)) {
         GC_UM_Chunk pchunk = (GC_UM_Chunk)(cur - GC_NORMAL_HEADER_SIZE);
-        pchunk->chunk_header |= UM_CHUNK_HEADER_MASK;
+        pchunk->chunk_header |= UM_CHUNK_MARK_MASK;
         if (DEBUG_MEM) {
             fprintf(stderr, "dfs-mark: chunk: "FMTPTR", sentinel: %d\n",
                     (uintptr_t)pchunk,
@@ -137,7 +139,7 @@ mark:
         }
 
         if (NULL != pchunk->next_chunk) {
-            pchunk->next_chunk->chunk_header |= UM_CHUNK_HEADER_MASK;
+            pchunk->next_chunk->chunk_header |= UM_CHUNK_MARK_MASK;
         }
     }
 

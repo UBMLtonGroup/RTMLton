@@ -12,6 +12,7 @@
 typedef enum {
   MARK_MODE,
   UNMARK_MODE,
+  GREY_MODE,
 } GC_markMode;
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */

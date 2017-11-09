@@ -20,7 +20,7 @@ GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
     //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
     pc->next_chunk = NULL;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
+    pc->chunk_header |= UM_CHUNK_HEADER_CLEAN;
     //h->fl_head = pc;
    // s->fl_chunks += 1;
    return pc;
@@ -38,7 +38,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head +4 )); /*pass pointer to area after chunktype*/
     h->fl_head = nc;
     c->next_chunk = NULL;
-    c->chunk_header = UM_CHUNK_HEADER_CLEAN;
+    c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
     s->fl_chunks -= 1;
     return c;
 }
@@ -54,7 +54,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     h->fl_head = nc;
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
-    c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
+    c->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
     int i;
     for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
         c->ml_array_payload.um_array_pointers[i] = NULL;
@@ -70,7 +70,7 @@ void insertFreeChunk(GC_state s,
     //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
     pc->next_chunk = h->fl_head;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
+    pc->chunk_header |= UM_CHUNK_HEADER_CLEAN;
     h->fl_head = pc;
     s->fl_chunks += 1;*/
 
@@ -99,7 +99,7 @@ GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
     GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) c;
     //    memset(pc->ml_array_payload.ml_object, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE);
     pc->next_chunk = NULL;
-    pc->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
+    pc->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
     //h->fl_head = pc;
     //s->fl_chunks += 1;
     return pc;

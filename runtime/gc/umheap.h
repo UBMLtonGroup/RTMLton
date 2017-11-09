@@ -1,5 +1,11 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
+#define UM_HEADER_TYPE__(z) uint ## z ## _t
+#define UM_HEADER_TYPE_(z) UM_HEADER_TYPE__(z)
+#define UM_HEADER_TYPE UM_HEADER_TYPE_(GC_MODEL_HEADER_SIZE)
+
+typedef UM_HEADER_TYPE UM_header;
+
 typedef union GC_UM_Chunktype{
 
    struct GC_UM_Chunk* umChunk;
@@ -17,7 +23,7 @@ typedef struct UM_Mem_Chunk{
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
-    Word32_t chunk_header;
+    UM_header chunk_header;
     size_t sentinel;
     struct GC_UM_Chunk* next_chunk;
 } *GC_UM_Chunk;
@@ -44,7 +50,7 @@ typedef struct GC_UM_Array_Chunk {
     Word32_t array_chunk_length;            /* Array Length                     */
     Word32_t array_chunk_ml_header;         /* MLton's array header             */
     GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer      */
-    Word32_t array_chunk_header;            /* For Mark / Sweep                 */
+    UM_header array_chunk_header;            /* For Mark / Sweep                 */
     Word32_t array_chunk_counter;           /* MLton's array counter            */
     Word32_t array_chunk_type;              /* Internal or Leaf                 */
     size_t array_height;                    /* Height of the tree (subtree)     */

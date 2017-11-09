@@ -483,7 +483,7 @@ void performUMGC(GC_state s,
          pchunk+=step) {
         GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
+            (!(pc->chunk_header & UM_CHUNK_MARK_MASK))) {
             if (DEBUG_MEM) {
                 fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
                         (uintptr_t)pc, pc->sentinel, pc->chunk_header);
@@ -505,7 +505,7 @@ void performUMGC(GC_state s,
          pchunk += step) {
         GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
         if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->array_chunk_header & UM_CHUNK_HEADER_MASK))) {
+            (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK))) {
             if (DEBUG_MEM) {
                 fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
                         (uintptr_t)pc, pc->array_chunk_magic,
@@ -530,7 +530,7 @@ void performUMGC(GC_state s,
         {
         GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+4); /*account for size of chunktype*/
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->chunk_header & UM_CHUNK_HEADER_MASK))) {
+            (!(pc->chunk_header & UM_CHUNK_MARK_MASK) && !(pc->chunk_header & UM_CHUNK_GREY_MASK))) {
             if (DEBUG_MEM) {
                 fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
                         (uintptr_t)pc, pc->sentinel, pc->chunk_header);
@@ -544,7 +544,7 @@ void performUMGC(GC_state s,
 
         GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
         if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->array_chunk_header & UM_CHUNK_HEADER_MASK))) {
+            (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK) && !(pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
             if (DEBUG_MEM) {
                 fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
                         (uintptr_t)pc, pc->array_chunk_magic,
