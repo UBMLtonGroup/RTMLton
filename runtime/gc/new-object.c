@@ -18,36 +18,6 @@ pointer newObject (GC_state s,
                    bool allocInOldGen) {
 
     return newUMObject(s, header, bytesRequested, allocInOldGen);
-  pointer frontier;
-  pointer result;
-
-  assert (isAligned (bytesRequested, s->alignment));
-  assert (allocInOldGen
-          ? hasHeapBytesFree (s, bytesRequested, 0)
-          : hasHeapBytesFree (s, 0, bytesRequested));
-  if (allocInOldGen) {
-    frontier = s->heap.start + s->heap.oldGenSize;
-    s->heap.oldGenSize += bytesRequested;
-    s->cumulativeStatistics.bytesAllocated += bytesRequested;
-  } else {
-    if (DEBUG_DETAILED)
-      fprintf (stderr, "frontier changed from "FMTPTR" to "FMTPTR"\n",
-               (uintptr_t)s->frontier,
-               (uintptr_t)(s->frontier + bytesRequested));
-    frontier = s->frontier;
-    s->frontier += bytesRequested;
-  }
-  GC_profileAllocInc (s, bytesRequested);
-  *((GC_header*)frontier) = header;
-  result = frontier + GC_NORMAL_HEADER_SIZE;
-  assert (isAligned ((size_t)result, s->alignment));
-  if (DEBUG)
-    fprintf (stderr, FMTPTR " = newObject ("FMTHDR", %"PRIuMAX", %s)\n",
-             (uintptr_t)result,
-             header,
-             (uintmax_t)bytesRequested,
-             boolToString (allocInOldGen));
-  return result;
 }
 
 pointer newUMObject (GC_state s,
@@ -93,7 +63,6 @@ GC_thread newThread (GC_state s, size_t reserved) {
 	  fprintf(stderr, "newThread\n");
 
   assert (isStackReservedAligned (s, reserved));
-  ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
   stack = newStack (s, reserved, FALSE);
   res = newUMObject (s, GC_THREAD_HEADER,
                      sizeofThread (s),

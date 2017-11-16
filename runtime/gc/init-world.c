@@ -118,7 +118,7 @@ void initWorld (GC_state s) {
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
   s->gc_module = GC_UM;
-  setCardMapAndCrossMap (s);
+  //setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   //s->umarfrontier = s->umarheap.start;
   s->frontier = start;

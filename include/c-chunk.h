@@ -84,8 +84,14 @@
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 // #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
-#define S(ty, i) *(ty*)(StackTop + (i))
+#define S_temp_disabled(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
+
+#define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p Val=%018p\n", __FILE__, __LINE__,PTHREAD_NUM, \
+                                (void*) StackTop, \
+                                (void*)(StackTop + (i)), \
+                               *(ty*)(StackTop + (i)))) , \
+                                (ty*)(StackTop + (i))))
 
 #endif
 

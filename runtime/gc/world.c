@@ -26,7 +26,7 @@ void loadWorldFromFILE (GC_state s, FILE *f) {
   createHeap (s, &s->heap,
               sizeofHeapDesired (s, s->heap.oldGenSize, 0),
               s->heap.oldGenSize);
-  setCardMapAndCrossMap (s);
+  //setCardMapAndCrossMap (s);
   fread_safe (s->heap.start, 1, s->heap.oldGenSize, f);
   if ((*(s->loadGlobals)) (f) != 0) diee("couldn't load globals");
   // unless (EOF == fgetc (file))
@@ -59,7 +59,7 @@ int saveWorldToFILE (GC_state s, FILE *f) {
   if (DEBUG_WORLD)
     fprintf (stderr, "saveWorldToFILE\n");
   /* Compact the heap. */
-  performGC (s, 0, 0, TRUE, TRUE);
+  //performGC (s, 0, 0, TRUE, TRUE);
   snprintf (buf, cardof(buf),
             "Heap file created by MLton.\nheap.start = "FMTPTR"\nbytesLive = %"PRIuMAX"\n",
             (uintptr_t)s->heap.start,

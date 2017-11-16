@@ -46,19 +46,19 @@ size_t sizeofHeapDesired (GC_state s, size_t liveSize, size_t currentSize) {
   double ratio;
 
   syslimWithMapsSize = alignDown (SIZE_MAX, s->sysvals.pageSize);
-  syslimSize = invertSizeofCardMapAndCrossMap (s, syslimWithMapsSize);
-  syslimMapsSize = sizeofCardMapAndCrossMap (s, syslimSize);
+  syslimSize = 0;
+  syslimMapsSize = 0;
   assert (syslimSize + syslimMapsSize <= syslimWithMapsSize);
 
   liveSize = align (liveSize, s->sysvals.pageSize);
   if (syslimSize < liveSize)
     die ("Out of memory with system-limit heap size %s.\n",
          uintmaxToCommaString(syslimSize));
-  liveMapsSize = sizeofCardMapAndCrossMap (s, liveSize);
+  liveMapsSize = 0;
   liveWithMapsSize = liveSize + liveMapsSize;
 
   assert (isAligned (currentSize, s->sysvals.pageSize));
-  currentMapsSize = sizeofCardMapAndCrossMap (s, currentSize);
+  currentMapsSize = 0;
   currentWithMapsSize = currentSize + currentMapsSize;
 
   ratio = (double)s->sysvals.ram / (double)liveWithMapsSize;
@@ -134,7 +134,7 @@ size_t sizeofHeapDesired (GC_state s, size_t liveSize, size_t currentSize) {
       die ("Out of memory with max heap size %s.",
            uintmaxToCommaString(s->controls.maxHeap));
   }
-  resSize = invertSizeofCardMapAndCrossMap (s, resWithMapsSize);
+  resSize = 0;
   assert (isAligned (resSize, s->sysvals.pageSize));
   if (DEBUG_RESIZING)
     fprintf (stderr, "%s = sizeofHeapDesired (%s, %s)\n",
@@ -169,7 +169,7 @@ void shrinkHeap (GC_state s, GC_heap h, size_t keepSize) {
   keepSize = align (keepSize, s->sysvals.pageSize);
   if (keepSize < h->size) {
     size_t keepWithMapsSize;
-    keepWithMapsSize = keepSize + sizeofCardMapAndCrossMap (s, keepSize);
+    keepWithMapsSize = keepSize;
     if (DEBUG or s->controls.messages) {
       fprintf (stderr,
                "[GC: Shrinking heap at "FMTPTR" of size %s bytes (+ %s bytes card/cross map)]\n",
@@ -229,7 +229,7 @@ bool createHeap (GC_state s, GC_heap h,
   while (lowSize <= highSize) {
     pointer newStart;
 
-    newWithMapsSize = newSize + sizeofCardMapAndCrossMap (s, newSize);
+    newWithMapsSize = newSize;
 
     assert (isAligned (newWithMapsSize, s->sysvals.pageSize));
 
@@ -295,14 +295,14 @@ bool createHeap (GC_state s, GC_heap h,
 bool createHeapSecondary (GC_state s, size_t desiredSize) {
   size_t desiredWithMapsSize;
   size_t minSize, minWithMapsSize;
-  desiredWithMapsSize = desiredSize + sizeofCardMapAndCrossMap (s, desiredSize);
+  desiredWithMapsSize = desiredSize;
   if ((s->controls.fixedHeap > 0
        and s->heap.withMapsSize + desiredWithMapsSize > s->controls.fixedHeap)
       or (s->controls.maxHeap > 0
           and s->heap.withMapsSize + desiredWithMapsSize > s->controls.maxHeap))
     return FALSE;
   minSize = align (s->heap.oldGenSize, s->sysvals.pageSize);
-  minWithMapsSize = minSize + sizeofCardMapAndCrossMap (s, minSize);
+  minWithMapsSize = minSize;
   if (minWithMapsSize > SIZE_MAX - s->heap.withMapsSize)
     return FALSE;
   return createHeap (s, &s->secondaryHeap, desiredSize, s->heap.oldGenSize);
@@ -346,7 +346,7 @@ bool remapHeap (GC_state s, GC_heap h,
   while (lowSize <= highSize) {
     pointer newStart;
 
-    newWithMapsSize = newSize + sizeofCardMapAndCrossMap (s, newSize);
+    newWithMapsSize = newSize;
 
     assert (isAligned (newWithMapsSize, s->sysvals.pageSize));
 
@@ -433,13 +433,11 @@ void growHeap (GC_state s, size_t desiredSize, size_t minSize) {
              uintmaxToCommaString(s->heap.size),
              uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
     fprintf (stderr,
-             "[GC:\tto desired size of %s bytes (+ %s bytes card/cross map)]\n",
-             uintmaxToCommaString(desiredSize),
-             uintmaxToCommaString(sizeofCardMapAndCrossMap (s, desiredSize)));
+             "[GC:\tto desired size of %s bytes]\n",
+             uintmaxToCommaString(desiredSize));
     fprintf (stderr,
-             "[GC:\tand minimum size of %s bytes (+ %s bytes card/cross map).]\n",
-             uintmaxToCommaString(minSize),
-             uintmaxToCommaString(sizeofCardMapAndCrossMap (s, minSize)));
+             "[GC:\tand minimum size of %s bytes]\n",
+             uintmaxToCommaString(minSize));
   }
   if (minSize <= s->heap.size) {
     useCurrent = TRUE;
@@ -460,7 +458,7 @@ void growHeap (GC_state s, size_t desiredSize, size_t minSize) {
     shrinkHeap (s, curHeapp, liveSize);
   initHeap (s, newHeapp);
   /* Allocate a space of the desired size. */
-  if (minSize + sizeofCardMapAndCrossMap (s, minSize) <= SIZE_MAX - curHeapp->withMapsSize
+  if (minSize <= SIZE_MAX - curHeapp->withMapsSize
       and createHeap (s, newHeapp, desiredSize, minSize)) {
     pointer from;
     pointer to;

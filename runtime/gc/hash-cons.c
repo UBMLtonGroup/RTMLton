@@ -288,7 +288,7 @@ void shareObjptr (GC_state s, objptr *opp) {
              (uintptr_t)opp, *opp);
   p = hashConsPointer (s, p, FALSE);
   *opp = pointerToObjptr (p, s->heap.start);
-  markIntergenerationalObjptr (s, opp);
+  //markIntergenerationalObjptr (s, opp);
 }
 
 void printBytesHashConsedMessage (size_t bytesHashConsed, size_t bytesExamined) {

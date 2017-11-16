@@ -145,6 +145,7 @@ void forwardObjptrIfInNursery (GC_state s, objptr *opp) {
 
 /* Walk through all the cards and forward all intergenerational pointers. */
 void forwardInterGenerationalObjptrs (GC_state s) {
+#if 0 
   GC_cardMapElem *cardMap;
   GC_crossMapElem *crossMap;
   pointer oldGenStart, oldGenEnd;
@@ -222,4 +223,5 @@ checkCard:
 done:
   if (DEBUG_GENERATIONAL)
     fprintf (stderr, "Forwarding inter-generational pointers done.\n");
+#endif
 }

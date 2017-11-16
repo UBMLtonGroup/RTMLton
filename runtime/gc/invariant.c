@@ -22,6 +22,7 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
    * for stacks, the card containing the beginning of the stack is
    * marked, but any remaining cards aren't.
    */
+#if 0
   if (FALSE and s->mutatorMarksCards 
       and isPointerInOldGen (s, (pointer)opp) 
       and isObjptrInNursery (s, *opp)
@@ -30,6 +31,7 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
     die ("gc.c: intergenerational pointer from "FMTPTR" to "FMTOBJPTR" with unmarked card.\n",
          (uintptr_t)opp, *opp);
   }
+#endif
 }
 
 bool invariantForGC (GC_state s) {
@@ -50,6 +52,7 @@ bool invariantForGC (GC_state s) {
     }
   }
   /* Generational */
+#if 0
   if (s->mutatorMarksCards) {
     assert (s->generationalMaps.cardMap == 
             &(s->generationalMaps.cardMapAbsolute
@@ -59,6 +62,7 @@ bool invariantForGC (GC_state s) {
             < (s->generationalMaps.cardMap 
                + (s->generationalMaps.cardMapLength * CARD_MAP_ELEM_SIZE)));
   }
+#endif
   assert (isAligned (s->heap.size, s->sysvals.pageSize));
   assert (isAligned ((size_t)s->heap.start, CARD_SIZE));
   assert (isFrontierAligned (s, s->heap.start + s->heap.oldGenSize));

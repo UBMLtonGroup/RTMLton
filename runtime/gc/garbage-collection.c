@@ -89,7 +89,7 @@ struct thrctrl
 #define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
 #endif
 void minorGC (GC_state s) {
-    minorCheneyCopyGC (s);
+    //minorCheneyCopyGC (s);
 }
 
 
@@ -117,7 +117,6 @@ growStackCurrent (GC_state s)
                      "%d]No heap bytes free to grow stack hence calling GC\n",
                      PTHREAD_NUM);
         //             resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
-        ensureHasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0);
     }
 
 
@@ -126,7 +125,6 @@ growStackCurrent (GC_state s)
     copyStack (s, getStackCurrent (s), stack);
     getThreadCurrent (s)->stack =
         pointerToObjptr ((pointer) stack, s->heap.start);
-    markCard (s, objptrToPointer (getThreadCurrentObjptr (s), s->heap.start));
 
     s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
     s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);

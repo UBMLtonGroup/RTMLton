@@ -42,7 +42,7 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
   s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
   s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
-  markCard (s, (pointer)stack);
+  //markCard (s, (pointer)stack);
 }
 
 void setGCStateCurrentHeap (GC_state s, 
@@ -90,7 +90,6 @@ void setGCStateCurrentHeap (GC_state s,
     s->canMinor = TRUE;
     nursery = genNursery;
     nurserySize = genNurserySize;
-    clearCardMap (s);
   } else {
     unless (nurseryBytesRequested <= nurserySize)
       die ("Out of memory.  Insufficient space in nursery.");

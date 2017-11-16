@@ -350,8 +350,8 @@ ret:
     prev = fetchObjptrToPointer (todo, s->heap.start);
     // *(pointer*)todo = next;
     storeObjptrFromPointer (todo, next, s->heap.start);
-    if (shouldHashCons)
-      markIntergenerationalPointer (s, (pointer*)todo);
+    //if (shouldHashCons)
+    //  markIntergenerationalPointer (s, (pointer*)todo);
     goto markNextInNormal;
   } else if (ARRAY_TAG == tag) {
     arrayIndex = getArrayCounter (cur);
@@ -362,8 +362,8 @@ ret:
     prev = fetchObjptrToPointer (todo, s->heap.start);
     // *(pointer*)todo = next;
     storeObjptrFromPointer (todo, next, s->heap.start);
-    if (shouldHashCons)
-      markIntergenerationalPointer (s, (pointer*)todo);
+    //if (shouldHashCons)
+    //  markIntergenerationalPointer (s, (pointer*)todo);
     goto markNextInArray;
   } else {
     assert (STACK_TAG == tag);
@@ -378,8 +378,8 @@ ret:
     prev = fetchObjptrToPointer (todo, s->heap.start);
     // *(pointer*)todo = next;
     storeObjptrFromPointer (todo, next, s->heap.start);
-    if (shouldHashCons)
-      markIntergenerationalPointer (s, (pointer*)todo);
+    //if (shouldHashCons)
+    // markIntergenerationalPointer (s, (pointer*)todo);
     objptrIndex++;
     goto markInFrame;
   }
