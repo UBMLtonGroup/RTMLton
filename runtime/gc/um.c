@@ -47,6 +47,9 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     return (Pointer)(chunk->ml_object + s);
 }
 
+
+
+
 Pointer
 UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
@@ -144,6 +147,26 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
        DBG(p, o, s, "go to next chunk");
     return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
                      UM_CHUNK_PAYLOAD_SIZE);
+}
+
+
+void writeBarrier(GC_state s,Pointer dst, Pointer src)
+{
+
+
+    if((dst >s->umheap.start && dst < s->umheap.end) && (src >s->umheap.start && src < s->umheap.end))
+    {
+    
+       fprintf(stderr,"In writebarrier \n");
+
+    /*    if(isPointerMarkedByMode(dst, MARK_MODE))
+            fprintf(stderr,"Marked\n");
+        else if(!isPointerMarkedByMode(dst, MARK_MODE))
+            fprintf(stderr,"UnMarked\n");
+        else
+            fprintf(stderr,"Grey mode ?\n");
+            */
+    }
 }
 
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
