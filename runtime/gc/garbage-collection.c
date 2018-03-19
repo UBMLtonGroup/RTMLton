@@ -227,6 +227,9 @@ leaveGC (GC_state s)
 
 #define THREADED
 
+#undef THREADED
+#define CONCURRENT
+
 #undef GCTHRDEBUG
 
 #ifdef GCTHRDEBUG
@@ -328,6 +331,53 @@ __attribute__ ((noreturn))
 
     s->GCrunnerRunning = TRUE;
 
+
+#ifdef CONCURRENT
+    while(1){
+        if(DEBUG)
+            fprintf(stderr,"%d] GC thread is Idle \n",PTHREAD_NUM);
+        if ((s->fl_chunks < 2000) && !s->dirty)
+        {
+            s->dirty = true;
+
+        }
+        else if(s->dirty)
+        {
+            int i;
+            bool syncDone = true;
+           for(i=0; i < MAXPRI;i++)
+           {
+               /* Don't check for GC thread */
+               if(i == 1)
+                   continue;
+               //fprintf(stderr,"%d] GC checking if thread %d is set\n",PTHREAD_NUM,i);
+               if(!s->rtSync[i])
+               {
+                   syncDone = false;
+                   sched_yield(); //TODO:Should i be yielding in a multicore environment? 
+               }
+
+           }
+
+           if(syncDone) 
+               {
+                fprintf(stderr,"%d] GC going to sweep\n",PTHREAD_NUM);
+                performGC_helper (s,
+                                  s->oldGenBytesRequested,
+                                  s->nurseryBytesRequested,
+                                  s->forceMajor, s->mayResize);
+
+               }
+
+        }
+    
+    }
+
+
+#endif
+    
+
+
 #ifdef THREADED
     while (1) {
         if (DEBUG)
@@ -365,11 +415,11 @@ __attribute__ ((noreturn))
                          "%d] GC running needed=%d threads=%d\n",
                          PTHREAD_NUM, TC.gc_needed, TC.running_threads);
             }
-
-            performGC_helper (s,
-                              s->oldGenBytesRequested,
-                              s->nurseryBytesRequested,
-                              s->forceMajor, s->mayResize);
+            performUMGC(s, 3000, 0, true);
+            //performGC_helper (s,
+            //                  s->oldGenBytesRequested,
+            //                  s->nurseryBytesRequested,
+            //                  s->forceMajor, s->mayResize);
 
             if (DEBUG)
                 fprintf (stderr,
@@ -414,13 +464,13 @@ performGC (GC_state s,
      * proceed. Once the GC finishes, it signals all of the 
      * threads waiting on the condition, causing them to wakeup.
      */
-
-#ifdef THREADED
     s->oldGenBytesRequested = oldGenBytesRequested;
     s->nurseryBytesRequested = nurseryBytesRequested;
     s->forceMajor = forceMajor;
     s->mayResize = mayResize;
 
+#ifdef THREADED
+   
     while (s->isRealTimeThreadInitialized == FALSE) {
         if (DEBUG) {
             fprintf (stderr, "%d] spin [can't performGC yet] ..\n",
@@ -437,45 +487,30 @@ performGC (GC_state s,
 
 #else
     DBG ((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
-    performGC_helper (s, oldGenBytesRequested, nurseryBytesRequested,
-                      forceMajor, mayResize);
+    s->rtSync[PTHREAD_NUM]= true;
+    //performGC_helper (s, oldGenBytesRequested, nurseryBytesRequested,
+      //                forceMajor, mayResize);
 #endif
 }
 
+void markStack(GC_state s,GC_stack currentStack)
+{
 
-
-void performUMGC(GC_state s,
-                 size_t ensureObjectChunksAvailable,
-                 size_t ensureArrayChunksAvailable,
-                 bool fullGC) {
-
-    if (DEBUG_MEM) {
-        fprintf(stderr, "PerformUMGC\n");
-        dumpUMHeap(s);
-    }
-
-
-#ifdef PROFILE_UMGC
-    long t_start = getCurrentTime();
-    fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
-            s->fl_chunks,
-            s->fl_chunks);
-#endif
-
-    GC_stack currentStack = getStackCurrent(s);
     foreachGlobalObjptr (s, umDfsMarkObjectsMark);
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
+    
 
-//    foreachGlobalObjptr (s, dfsMarkWithoutHashConsWithLinkWeaks);
-//    GC_stack currentStack = getStackCurrent(s);
-//    foreachObjptrInObject(s, currentStack,
-//                          dfsMarkWithoutHashConsWithLinkWeaks, FALSE);
+}
 
-
+void sweep(GC_state s,GC_stack currentStack, size_t ensureObjectChunksAvailable,
+                 size_t ensureArrayChunksAvailable,
+                 bool fullGC)
+{
 
     pointer pchunk;
     size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
     pointer end = s->umheap.start + s->umheap.size - step;
+
 #if 0
     //    if (s->umheap.fl_chunks <= 2000) {
     for (pchunk=s->umheap.start;
@@ -561,6 +596,32 @@ void performUMGC(GC_state s,
 
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
     foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
+}
+
+void performUMGC(GC_state s,
+                 size_t ensureObjectChunksAvailable,
+                 size_t ensureArrayChunksAvailable,
+                 bool fullGC) {
+
+    if (DEBUG_MEM) {
+        fprintf(stderr, "PerformUMGC\n");
+        dumpUMHeap(s);
+    }
+
+
+#ifdef PROFILE_UMGC
+    long t_start = getCurrentTime();
+    fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
+            s->fl_chunks,
+            s->fl_chunks);
+#endif
+    
+    GC_stack currentStack = getStackCurrent(s);
+// Mark phase
+    //markStack(s,currentStack);
+//Sweep phase
+    sweep(s,currentStack,ensureObjectChunksAvailable,ensureArrayChunksAvailable,fullGC);
+
 
 #ifdef PROFILE_UMGC
     long t_end = getCurrentTime();
@@ -698,10 +759,12 @@ void performGC_helper (GC_state s,
 
 void ensureInvariantForMutator (GC_state s, bool force) {
     force = true;
+   
+    markStack(s,getStackCurrent(s)); 
     performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
 
-    assert (invariantForMutatorFrontier(s));
-    assert (invariantForMutatorStack(s));
+    //assert (invariantForMutatorFrontier(s));
+    //assert (invariantForMutatorStack(s));
 /*
 void
 ensureInvariantForMutator (GC_state s, bool force)
@@ -776,6 +839,7 @@ void ensureHasHeapBytesFree (GC_state s,
     }
 
     if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested)) {
+        markStack(s,getStackCurrent(s));
         performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE,
                    TRUE);
         if (DEBUG) {

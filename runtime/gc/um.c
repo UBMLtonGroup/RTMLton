@@ -152,7 +152,8 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 
 void writeBarrier(GC_state s,Pointer dst, Pointer src)
 {
-
+    if(!s->dirty)
+        return;
 
     if((dst >s->umheap.start && dst < s->umheap.end) && (src >s->umheap.start && src < s->umheap.end))
     {

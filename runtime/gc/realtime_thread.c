@@ -5,6 +5,7 @@
 
 #define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
+#define DEBUG true
 
 static volatile int initialized = 0;
 
@@ -104,6 +105,7 @@ realtimeRunner (void *paramsPtr)
             fprintf (stderr,
                      "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
         }
+        state->rtSync[PTHREAD_NUM]= true;
         ssleep (1, 0);
     }
 

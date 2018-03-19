@@ -103,6 +103,8 @@ struct GC_state {
   volatile bool isRealTimeThreadInitialized;
   volatile bool isRealTimeThreadRunning;
   int gcCallSeq[MAXPRI];
+  bool dirty;
+  volatile bool rtSync[MAXPRI];
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];

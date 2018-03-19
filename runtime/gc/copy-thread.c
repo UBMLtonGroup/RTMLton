@@ -48,7 +48,7 @@ void GC_copyCurrentThread (GC_state s) {
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread (s, fromThread, fromStack->used);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
-  assert (toStack->reserved == alignStackReserved (s, toStack->used));
+  //assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = GC_copyCurrentThread\n", (uintptr_t)toThread);
@@ -69,7 +69,7 @@ pointer GC_copyThread (GC_state s, pointer p) {
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread (s, fromThread, fromStack->used);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
-  assert (toStack->reserved == alignStackReserved (s, toStack->used));
+  //assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = GC_copyThread ("FMTPTR")\n", 
@@ -118,7 +118,7 @@ pointer GC_copyThread0 (GC_state s, pointer p) {
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread0 (s, fromThread, fromStack->used);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
-  assert (toStack->reserved == alignStackReserved (s, toStack->used));
+  //assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = GC_copyThread0 ("FMTPTR")\n",
