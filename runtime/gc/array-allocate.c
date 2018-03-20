@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-pointer GC_arrayAllocate (GC_state s,
+pointer not_used_GC_arrayAllocate (GC_state s,
                           size_t ensureBytesFree,
                           GC_arrayLength numElements,
                           GC_header header) {
@@ -17,6 +17,8 @@ pointer GC_arrayAllocate (GC_state s,
   pointer frontier;
   pointer last;
   pointer result;
+
+  fprintf(stderr, "GC_arrayAllocate...\n"); exit(-1);
 
   splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
   if (DEBUG)

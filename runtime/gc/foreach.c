@@ -207,6 +207,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
     assert (STACK_TAG == tag);
     stack = (GC_stack)p;
+
+#if 0
+
     bottom = getStackBottom (s, stack);
     top = getStackTop (s, stack);
     if(DEBUG_STACKS)
@@ -259,6 +262,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     assert(top == bottom);
     }
+#endif
     p += sizeof (struct GC_stack) + stack->reserved;
   }
   return p;

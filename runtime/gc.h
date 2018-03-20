@@ -75,7 +75,7 @@ typedef GC_state GCState_t;
 #include "gc/garbage-collection.h"
 #include "gc/realtime_thread.h"
 #include "gc/new-object.h"
-#include "gc/array-allocate.h"
+//#include "gc/array-allocate.h"
 #include "gc/umarray-allocate.h"
 #include "gc/sources.h"
 #include "gc/call-stack.h"

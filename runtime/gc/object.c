@@ -44,7 +44,7 @@ GC_header getHeader (pointer p) {
  */
 GC_header buildHeaderFromTypeIndex (uint32_t t) {
   assert (t < TWOPOWER (TYPE_INDEX_BITS));
-  fprintf(stderr, "object header %x\n", (1 | (t << 1)));
+  //fprintf(stderr, "object header %x\n", (1 | (t << 1)));
   return 1 | (t << 1);
 }
 
@@ -62,6 +62,7 @@ void splitHeader(GC_state s, GC_header header,
   if (!(1 == (header & GC_VALID_HEADER_MASK))) {
 	fprintf(stderr, FMTPTR" & "FMTPTR" == "FMTPTR" (size %d)\n", header, GC_VALID_HEADER_MASK,
 		header & GC_VALID_HEADER_MASK, sizeof(header));
+        return;
 	}
 
   assert (1 == (header & GC_VALID_HEADER_MASK)); 

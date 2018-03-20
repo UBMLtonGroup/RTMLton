@@ -48,6 +48,11 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         chunk->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
         chunk->next_chunk->chunk_header = UM_CHUNK_IN_USE;
     }
+    fprintf(stderr, "UM_Object_alloc(..,%d, %x, %d) = "FMTPTR"\n",
+            num_chunks, header, s, (Pointer)(chunk->ml_object + s));
+    fprintf(stderr, "  sizeof(Pointer) %d\n", sizeof(Pointer));
+    fprintf(stderr, "  sizeof(CPointer) %d\n", sizeof(CPointer));
+
     return (Pointer)(chunk->ml_object + s);
 }
 

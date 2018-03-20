@@ -13,9 +13,9 @@ void displayGCState (GC_state s, FILE *stream) {
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
                  stream);
-  fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
-  displayGenerationalMaps (s, &s->generationalMaps, 
-                           stream);
+  //fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
+  //displayGenerationalMaps (s, &s->generationalMaps, 
+  //                         stream);
   fprintf (stream, "%d] \theap\n", PTHREAD_NUM);
   displayHeap (s, &s->heap, 
                stream);

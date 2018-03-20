@@ -135,8 +135,10 @@ COMPILE_TIME_ASSERT(sizeof_double__is_eight, sizeof(double) == 8);
 #ifndef POINTER_BITS
 #if UINTPTR_MAX == UINT32_MAX
 #define POINTER_BITS 32
+#warn "Building for 32 bits"
 #elif UINTPTR_MAX == UINT64_MAX
 #define POINTER_BITS 64
+#warn "Building for 64 bits"
 #else
 #error Platform did not set POINTER_BITS and could not guess it.
 #endif

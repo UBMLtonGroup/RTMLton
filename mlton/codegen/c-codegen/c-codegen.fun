@@ -494,7 +494,7 @@ fun outputDeclarations
          end
    in
       outputIncludes (includes, print)
-      ; declareGlobals ("PRIVATE ", print)
+      ; declareGlobals ("PRIVATE /*GLOBAL*/ ", print)
       ; declareExports ()
       ; declareLoadSaveGlobals ()
       ; declareVectors ()
@@ -554,7 +554,7 @@ fun declareFFI (Chunk.T {blocks, ...}, {print: string -> unit}) =
                            (name, fn () =>
                             concat [case symbolScope of
                                        External => "EXTERNAL "
-                                     | Private => "PRIVATE "
+                                     | Private => "PRIVATE /*FFI FUNC*/ "
                                      | Public => "PUBLIC ",
                                     "extern ",
                                     case cty of
@@ -1266,7 +1266,7 @@ fun output {program as Machine.Program.T {chunks,
          in
             outputIncludes (["c-chunk.h"], print)
             ; outputOffsets ()
-            ; declareGlobals ("PRIVATE extern ", print)
+            ; declareGlobals ("PRIVATE extern  /*GLOBAL2*/ ", print)
             ; declareFFI (chunk, {print = print})
             ; declareChunks ()
             ; declareProfileLabels ()

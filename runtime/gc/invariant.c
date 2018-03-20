@@ -64,7 +64,7 @@ bool invariantForGC (GC_state s) {
   }
 #endif
   assert (isAligned (s->heap.size, s->sysvals.pageSize));
-  assert (isAligned ((size_t)s->heap.start, CARD_SIZE));
+  //assert (isAligned ((size_t)s->heap.start, CARD_SIZE));
   assert (isFrontierAligned (s, s->heap.start + s->heap.oldGenSize));
   assert (isFrontierAligned (s, s->heap.nursery));
   assert (isFrontierAligned (s, s->frontier));

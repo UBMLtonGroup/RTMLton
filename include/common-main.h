@@ -22,6 +22,12 @@
 #define DeclareProfileLabel(l)                  \
         extern char l __attribute__ ((weak))
 
+/* es = Element Size
+ * gi = Global Index (into globalObjptr[])
+ *  l = length
+ *  w = vector (string)
+ */
+
 #define BeginVectorInits static struct GC_vectorInit vectorInits[] = {
 #define VectorInitElem(es, gi, l, w) { es, gi, l, w },
 #define EndVectorInits };

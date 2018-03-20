@@ -228,7 +228,7 @@
 
 #define Push(bytes)                                                     \
         do {                                                            \
-                if (DEBUG_CCODEGEN)                                     \
+                if (1 || DEBUG_CCODEGEN)                                     \
                         fprintf (stderr, "%s:%d: Push (%d)\n",          \
                                         __FILE__, __LINE__, bytes);     \
                 StackTop += (bytes);                                    \
