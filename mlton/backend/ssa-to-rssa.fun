@@ -163,7 +163,7 @@ structure CFunction =
                          SOME CType.objptr),
             return = return,
             symbolScope = Private,
-            target = Direct "UM_Object_alloc /*HI*/"}
+            target = Direct "UM_Object_alloc"}
 
       val returnToC = fn () =>
          T {args = Vector.new0 (),
@@ -1220,8 +1220,8 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                        ccall {args = (Vector.new4
                                                      (GCState,
                                                       Operand.zero (WordSize.csize ()),
-                                                      Operand.zero (WordSize.csize()),
-                                                      Operand.zero (WordSize.csize()))),
+                                                      Operand.zero (WordSize.word32 ),
+                                                      Operand.zero (WordSize.csize ()))),
                                              func = (CFunction.UM_Object_alloc
                                                      {return = Type.cpointer ()})}
                                | Array_length => arrayOrVectorLength ()
