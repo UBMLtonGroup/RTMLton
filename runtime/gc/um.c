@@ -9,6 +9,8 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 #pragma GCC diagnostic ignored "-Wformat"
 
 
+#include <stdint.h>
+
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
 		__FILE__, __LINE__, __FUNCTION__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
 
@@ -44,14 +46,21 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     chunk->chunk_header = UM_CHUNK_IN_USE;
     *((uint32_t*) chunk->ml_object) = header;
-    if (num_chunks > 1) {
-        chunk->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-        chunk->next_chunk->chunk_header = UM_CHUNK_IN_USE;
-    }
+
     fprintf(stderr, "UM_Object_alloc(..,%d, %x, %d) = "FMTPTR"\n",
             num_chunks, header, s, (Pointer)(chunk->ml_object + s));
     fprintf(stderr, "  sizeof(Pointer) %d\n", sizeof(Pointer));
     fprintf(stderr, "  sizeof(CPointer) %d\n", sizeof(CPointer));
+
+    if (num_chunks > 1) {
+        fprintf(stderr, "  allocating %d chunks\n", num_chunks);
+        GC_UM_Chunk prev = chunk;
+        for(int i = 1 ; i < num_chunks ; i++) {
+            prev->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
+            prev->next_chunk->chunk_header = UM_CHUNK_IN_USE;
+            prev = prev->next_chunk;
+        }
+    }
 
     return (Pointer)(chunk->ml_object + s);
 }

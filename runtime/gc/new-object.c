@@ -34,10 +34,29 @@ pointer newUMObject (GC_state s,
     return result;
 }
 
+GC_stack newStack_um (GC_state s,
+                   size_t reserved,
+                   bool allocInOldGen) {
+    GC_stack um_stack;
+#define max(a,b) a>b?a:b
+    uint32_t need_chunks = max(1, reserved / sizeof(GC_UM_Chunk));
+
+    fprintf(stderr, "newStack reserved=%d chunksneeds=%d\n", reserved, need_chunks);
+    um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
+
+
+    if (DEBUG_STACKS)
+        fprintf (stderr, FMTPTR " = newStack (%"PRIuMAX")\n",
+            (uintptr_t)um_stack,
+            (uintmax_t)reserved);
+    return um_stack;
+}
+
 GC_stack newStack (GC_state s,
                    size_t reserved,
                    bool allocInOldGen) {
   GC_stack stack;
+
   reserved = 100 * 1024 * 1024;
   assert (isStackReservedAligned (s, reserved));
   if (reserved > s->cumulativeStatistics.maxStackSize)
@@ -64,6 +83,8 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
   assert (isStackReservedAligned (s, reserved));
   stack = newStack (s, reserved, FALSE);
+  thread->umstack = newStack_um(s, reserved, FALSE);
+
   res = newUMObject (s, GC_THREAD_HEADER,
                      sizeofThread (s),
                      FALSE);
