@@ -1,7 +1,7 @@
 (* Copyright (C) 2002-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -26,7 +26,7 @@ fun isRedundant {cases: 'a vector,
                                orelse loop (i + 1, cur)
                             end
               in
-                 loop (1, Vector.sub (cases, 0))
+                 loop (1, Vector.first cases)
               end
    end
 
@@ -63,7 +63,7 @@ fun isOk (T {cases, default, size = _, test}, {checkUse, labelIsOk}): bool =
                    {cases = cases,
                     equals = fn ((w, _), (w', _)) => WordX.equals (w, w')})
       andalso
-      if 0 = Vector.length cases
+      if Vector.isEmpty cases
          then isSome default
       else
          let

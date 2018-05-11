@@ -3,7 +3,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -716,8 +716,8 @@ fun transform (Program.T {datatypes, globals, functions, main}) =
                                (case (Prim.name prim, Vector.length targs) of
                                    (Prim.Name.MLton_hash, 1) =>
                                       let
-                                         val ty = Vector.sub (targs, 0)
-                                         val x = Vector.sub (args, 0)
+                                         val ty = Vector.first targs
+                                         val x = Vector.first args
                                          val l = Label.newNoname ()
                                       in
                                         (finish 

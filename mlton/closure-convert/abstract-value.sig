@@ -3,7 +3,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -50,6 +50,7 @@ signature ABSTRACT_VALUE =
       val ssaType: t -> Ssa.Type.t option ref
       val deArray: t -> t
       val deRef: t -> t
+      val deVector: t -> t
       val deWeak: t -> t
       val dest: t -> dest
       (* Destroy info associated with Sxml.Type used to keep track of arrows. *)

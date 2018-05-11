@@ -1,8 +1,8 @@
-(* Copyright (C) 2009 Matthew Fluet.
+(* Copyright (C) 2009,2017 Matthew Fluet.
  * Copyright (C) 2005-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -22,8 +22,8 @@ open Exp Transfer
  * Section 19.3 of Appel's "Modern Compiler Implementation in ML".) 
  * However, passes that require critical edges to be broken in order
  * to accomodate code motion (for example, PRE), should also break an
- * edge that connects a block with non-functional control transfer to
- * one with two or more predecessors.
+ * edge that connects a block with non-goto transfer to one with two
+ * or more predecessors.
  *)
 structure CriticalEdges =
 struct
@@ -73,10 +73,11 @@ fun breakFunction (f, {codeMotion: bool}) =
           let
              val mustBreak =
                 case transfer of
-                   Arith _ => true
-                 | Call _ => true
-                 | Runtime _ => true
-                 | _ => false
+                   Bug => false (* no successors *)
+                 | Goto _ => false
+                 | Raise _ => false (* no successors *)
+                 | Return _ => false (* no successors *)
+                 | _ => true
           in
              setLabelInfo (label, LabelInfo.new (args, mustBreak))
           end)

@@ -3,7 +3,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -148,7 +148,7 @@ fun shrinkOnce (Program.T {datatypes, body, overflow}) =
             Cases.Con v =>
                (0 < Vector.length v
                 andalso (Vector.length v
-                         = conNumCons (Pat.con (#1 (Vector.sub (v, 0))))))
+                         = conNumCons (Pat.con (#1 (Vector.first v)))))
           | _ => false
       val {get = varInfo: Var.t -> InternalVarInfo.t, set = setVarInfo, ...} =
          Property.getSet (Var.plist,

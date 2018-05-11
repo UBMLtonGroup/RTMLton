@@ -1,7 +1,8 @@
-(* Copyright (C) 2007 Henry Cejtin, Matthew Fluet, Suresh
+(* Copyright (C) 2017 Matthew Fluet.
+ * Copyright (C) 2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -11,7 +12,7 @@ structure MinGW =
          let
             fun lp bufSz =
                let
-                  val buf = CharArray.arrayUninit (C_Size.toInt bufSz)
+                  val buf = CharArray.alloc (C_Size.toInt bufSz)
                   val reqSz = PrimitiveFFI.MinGW.getTempPath (bufSz, buf)
                in
                   if 0w0 = reqSz

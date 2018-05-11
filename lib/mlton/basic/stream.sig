@@ -1,8 +1,9 @@
-(* Copyright (C) 2009 Matthew Fluet.
+(* Copyright (C) 2017 Jason Carr.
+ * Copyright (C) 2009 Matthew Fluet.
  * Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -22,7 +23,9 @@ signature STREAM =
       val delay: (unit -> 'a t) -> 'a t
       val empty: unit -> 'a t
       val firstN: 'a t * int -> 'a list
+      val firstNSafe: 'a t * int -> 'a list
       val force: 'a t -> ('a * 'a t) option
+      val fromList: 'a list -> 'a t
       val infinite: 'a * ('a -> 'a) -> 'a t
       val isEmpty: 'a t -> bool
       val keep: 'a t * ('a -> bool) -> 'a t

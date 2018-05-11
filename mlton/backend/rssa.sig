@@ -1,9 +1,9 @@
-(* Copyright (C) 2009 Matthew Fluet.
+(* Copyright (C) 2009,2017 Matthew Fluet.
  * Copyright (C) 1999-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -203,7 +203,8 @@ signature RSSA =
              * then applying v' ().
              *)
             val dfs: t * (Block.t -> unit -> unit) -> unit
-            val foreachVar: t * (Var.t * Type.t -> unit) -> unit
+            val foreachDef: t * (Var.t * Type.t -> unit) -> unit
+            val foreachUse: t * (Var.t -> unit) -> unit
             val name: t -> Func.t
             val new: {args: (Var.t * Type.t) vector,
                       blocks: Block.t vector,

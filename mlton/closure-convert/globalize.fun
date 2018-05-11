@@ -2,7 +2,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -140,7 +140,7 @@ fun globalize {program = Program.T {datatypes, body, ...},
                      then ()
                   else
                      let
-                        val {lambda, ...} = Vector.sub (decs, 0)
+                        val {lambda, ...} = Vector.first decs
                      in
                         if Vector.forall (lambdaFree lambda, varIsGlobal)
                            then Vector.foreach (decs, makeGlobal o #var)

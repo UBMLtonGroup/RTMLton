@@ -1,7 +1,8 @@
-(* Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
+(* Copyright (C) 2017 Matthew Fluet.
+ * Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -172,7 +173,7 @@ val styleToString =
     | Dashed => "dashed"
     | Dotted => "dotted"
     | Filled => "filled"
-    | Invisible => "invisible"
+    | Invisible => "invis"
     | Solid => "solid"
 
 fun labelToString (l: (string * justify) list): string =

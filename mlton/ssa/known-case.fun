@@ -3,7 +3,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -747,7 +747,7 @@ fun doMany ()
                                       else Vector.sub (conValues, i))
 
                   fun route (statements, (cases, default))
-                    = if Vector.length statements = 0
+                    = if Vector.isEmpty statements
                         then (cases, default)
                         else let
                                fun route' dst
@@ -803,7 +803,7 @@ fun doMany ()
                      | SOME (statements, transfer)
                      => let
                           val label
-                            = if Vector.length statements = 0
+                            = if Vector.isEmpty statements
                                 then newBlock transfer
                                 else let
                                        val label = Label.newNoname ()

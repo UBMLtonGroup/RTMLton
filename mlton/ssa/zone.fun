@@ -2,7 +2,7 @@
  * Copyright (C) 2004-2006, 2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -194,7 +194,7 @@ fun zoneFunction f =
                      val {componentsRev, tuple, ...} = info'
                      val components = Vector.fromListRev (!componentsRev)
                   in
-                     if 0 = Vector.length components
+                     if Vector.isEmpty components
                         then statements
                      else
                         let

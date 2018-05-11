@@ -1,7 +1,8 @@
-(* Copyright (C) 2004-2007 Henry Cejtin, Matthew Fluet, Suresh
+(* Copyright (C) 2017 Matthew Fluet.
+ * Copyright (C) 2004-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -18,7 +19,7 @@ structure MLtonCallStack =
             then T (Array.array (0, 0wx0))
          else
             let
-               val a = Array.arrayUninit (Word32.toInt (numStackFrames gcState))
+               val a = Array.alloc (Word32.toInt (numStackFrames gcState))
                val () = callStack (gcState, a)
             in
                T a

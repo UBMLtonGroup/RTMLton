@@ -1,8 +1,8 @@
-(* Copyright (C) 2009,2014 Matthew Fluet.
+(* Copyright (C) 2009,2014,2017 Matthew Fluet.
  * Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -14,6 +14,8 @@ signature LAYOUT =
       val align: t list -> t
       val alignPrefix: t list * string -> t
       val array: t array -> t
+      (* layout the object on one line *)
+      val compact: t -> t
       (* Whether or not to print things in detail -
        * routines that create layouts should use this flag to decide
        * how detailed to print.
@@ -48,6 +50,7 @@ signature LAYOUT =
       val separateLeft: t list * string -> t list
       (* adds string at the end of all objects except last *) 
       val separateRight: t list * string -> t list
+      val setDefaultWidth: int -> unit
       (* layout the objects on the same line *)
       val seq: t list -> t
       (* convert a string to a layout object *)

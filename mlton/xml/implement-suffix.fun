@@ -2,7 +2,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -73,7 +73,7 @@ fun transform (Program.T {datatypes, body, overflow, ...}): Program.t =
                         (PrimApp {prim = Prim.assign,
                                   targs = Vector.new1 ty,
                                   args = Vector.new2 (VarExp.mono var,
-                                                      Vector.sub (args, 0))})
+                                                      Vector.first args)})
                   in
                      case Prim.name prim of
                         TopLevel_getSuffix =>

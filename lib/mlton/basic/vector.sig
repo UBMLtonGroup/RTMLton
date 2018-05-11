@@ -2,7 +2,7 @@
  * Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -44,6 +44,8 @@ signature VECTOR =
        * returns.  If the end of the vector is reached, g is applied to the
        * state.
        *)
+
+      val first: 'a t -> 'a
       val fold':
          'a t * int * 'b * (int * 'a * 'b -> ('b, 'c) continue) * ('b -> 'c)
          -> 'c

@@ -2,7 +2,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -145,7 +145,7 @@ fun monomorphise (Xprogram.T {datatypes, body, ...}): Sprogram.t =
             val x' = Var.new x
             val ve = SvarExp.mono x'
             fun inst ts =
-               if 0 = Vector.length ts
+               if Vector.isEmpty ts
                   then ve
                else Error.bug "Monomorphise.renameMono: expected monomorphic instance"
             val _ = setVar (x, inst)

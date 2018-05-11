@@ -1,7 +1,8 @@
-(* Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
+(* Copyright (C) 2017 Matthew Fluet.
+ * Copyright (C) 1999-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -237,13 +238,14 @@ fun makeCommandLine (commandLine: string list -> unit) args =
     handle e =>
        let
           val out = Out.error
-          open Layout
        in
-          output (Exn.layout e, out)
-          ; List.foreach (Exn.history e, fn s =>
-                          (Out.output (out, "\n\t")
-                           ; Out.output (out, s)))
-          ; Out.newline out
+          Out.output (out, concat ["unhandled exception: ", Exn.toString e, "\n"])
+          ; (case Exn.history e of
+                [] => ()
+              | l => (Out.output (out, "with history: \n")
+                      ; List.foreach
+                        (l, fn s =>
+                         Out.output (out, concat ["\t", s, "\n"]))))
           ; OS.Process.failure
        end)
 

@@ -1,7 +1,8 @@
-(* Copyright (C) 2005-2006 Henry Cejtin, Matthew Fluet, Suresh
+(* Copyright (C) 2017 Matthew Fluet.
+ * Copyright (C) 2005-2006 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -13,6 +14,8 @@ type t = exn
 val history = MLton.Exn.history
 
 val name = General.exnName
+
+val message = General.exnMessage
 
 exception Bind = Bind
 exception Match = Match
