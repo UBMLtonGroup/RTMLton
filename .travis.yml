@@ -10,3 +10,8 @@ env:
   global:
     - MAKEFLAGS="-j 2"
 
+branches:
+  only:
+  - master
+
+script: make && make test
