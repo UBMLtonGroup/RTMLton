@@ -29,6 +29,10 @@ struct GC_state {
   pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
   size_t exnStack[MAXPRI];
 
+  pointer UMstackTop[MAXPRI]; /* Top of stack in current thread. */
+  pointer UMstackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+
+
   size_t fl_chunks;
   size_t fl_array_chunks;
 
@@ -93,6 +97,7 @@ struct GC_state {
   bool mayResize;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
+  pointer UMstackBottom[MAXPRI]; /* Bottom of stack in current thread. */
  
   /* added for rt-threading */
 

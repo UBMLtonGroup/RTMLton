@@ -183,7 +183,7 @@ realtimeRunner (void *paramsPtr)
         TC.running_threads++;
         TC_UNLOCK;
 
-        Parallel_run ();
+//        Parallel_run ();
 
         fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
                  tNum);

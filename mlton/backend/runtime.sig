@@ -29,6 +29,8 @@ signature RUNTIME =
              | LimitPlusSlop (* frontier + heapSize *)
              | MaxFrameSize
              | SignalIsPending
+             | UMStackBottom
+             | UMStackTop
              | StackBottom
              | StackLimit (* Must have StackTop <= StackLimit *)
              | StackTop (* Points at the next available byte on the stack. *)
@@ -47,6 +49,8 @@ signature RUNTIME =
                              limitPlusSlop: Bytes.t,
                              maxFrameSize: Bytes.t,
                              signalIsPending: Bytes.t,
+                             UMstackBottom: Bytes.t,
+                             UMstackTop: Bytes.t,
                              stackBottom: Bytes.t,
                              stackLimit: Bytes.t,
                              stackTop: Bytes.t,
@@ -62,6 +66,8 @@ signature RUNTIME =
                            limitPlusSlop: Bytes.t,
                            maxFrameSize: Bytes.t,
                            signalIsPending: Bytes.t,
+                           UMstackBottom: Bytes.t,
+                           UMstackTop: Bytes.t,
                            stackBottom: Bytes.t,
                            stackLimit: Bytes.t,
                            stackTop: Bytes.t,

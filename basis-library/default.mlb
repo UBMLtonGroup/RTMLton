@@ -8,10 +8,10 @@
 (* Order here matters for choice of type names.  In particular, we want 
  * basis.mlb to come last so that basis type names are preferred to MLton type
  * names.
- *)
 unsafe.mlb
 sml-nj.mlb
 mlton.mlb
 basis.mlb
+ *)
 
 

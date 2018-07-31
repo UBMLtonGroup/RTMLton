@@ -41,12 +41,12 @@ GC_stack newStack_um (GC_state s,
 #define max(a,b) a>b?a:b
     uint32_t need_chunks = max(1, reserved / sizeof(GC_UM_Chunk));
 
-    fprintf(stderr, "newStack reserved=%d chunksneeds=%d\n", reserved, need_chunks);
+    fprintf(stderr, "newStack_um reserved=%d chunksneeds=%d\n", reserved, need_chunks);
     um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
 
     if (DEBUG_STACKS)
-        fprintf (stderr, FMTPTR " = newStack (%"PRIuMAX")\n",
+        fprintf (stderr, FMTPTR " = newStack_um (%"PRIuMAX")\n",
             (uintptr_t)um_stack,
             (uintmax_t)reserved);
     return um_stack;
@@ -83,7 +83,6 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
   assert (isStackReservedAligned (s, reserved));
   stack = newStack (s, reserved, FALSE);
-  thread->umstack = newStack_um(s, reserved, FALSE);
 
   res = newUMObject (s, GC_THREAD_HEADER,
                      sizeofThread (s),
@@ -92,6 +91,8 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
+  thread->umstack = newStack_um(s, reserved, FALSE);
+
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
              (uintptr_t)thread, (uintmax_t)reserved);
@@ -101,6 +102,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
 static inline void setFrontier (GC_state s, pointer p,
                                 ARG_USED_FOR_ASSERT size_t bytes) {
+    fprintf(stderr, "setFrontier called?\n");
   p = alignFrontier (s, p);
   assert ((size_t)(p - s->frontier) <= bytes);
   GC_profileAllocInc (s, (size_t)(p - s->frontier));

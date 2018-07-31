@@ -493,6 +493,8 @@ let
       val exnStackOp = runtimeOp GCField.ExnStack
       val stackBottomOp = runtimeOp GCField.StackBottom
       val stackTopOp = runtimeOp GCField.StackTop
+      val UMstackBottomOp = runtimeOp GCField.UMStackBottom
+      val UMstackTopOp = runtimeOp GCField.UMStackTop
       fun translateOperand (oper: R.Operand.t): M.Operand.t =
          let
             datatype z = datatype R.Operand.t

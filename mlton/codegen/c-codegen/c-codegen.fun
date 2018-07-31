@@ -1258,6 +1258,8 @@ fun output {program as Machine.Program.T {chunks,
                ([("ExnStackOffset", GCField.ExnStack),
                  ("FrontierOffset", GCField.Frontier),
                  ("UMFrontierOffset", GCField.UMFrontier),
+                 ("UMStackBottomOffset", GCField.UMStackBottom),
+                 ("UMStackTopOffset", GCField.UMStackTop),
                  ("StackBottomOffset", GCField.StackBottom),
                  ("StackTopOffset", GCField.StackTop)],
                 fn (name, f) =>
