@@ -97,7 +97,8 @@ struct GC_state {
   bool mayResize;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
-  pointer UMstackBottom[MAXPRI]; /* Bottom of stack in current thread. */
+  pointer UMstackBottom[MAXPRI]; /* Bottom of stack in current thread. Note this is a chunk
+                                  * that contains a GC_frameLayout */
  
   /* added for rt-threading */
 

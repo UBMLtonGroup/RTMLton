@@ -34,8 +34,8 @@
 typedef struct GC_thread {
   size_t bytesNeeded;
   size_t exnStack;
-  objptr stack;
-  objptr umstack;
+  objptr stack; /* this contains a GC_stack */
+  objptr umstack; /* this contains a GC_frameLayout */
 } __attribute__ ((packed)) *GC_thread;
 
 COMPILE_TIME_ASSERT(GC_thread__packed,

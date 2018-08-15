@@ -32,3 +32,17 @@ GC_stack getStackCurrent (GC_state s) {
   pointer p = objptrToPointer(getStackCurrentObjptr(s), s->heap.start);
   return (GC_stack)p;
 }
+
+
+/* note that what is returned is not a GC_stack but a GC_frameLayout.
+ * we will need to account for the chunk header.
+ */
+objptr getUMStackCurrentObjptr (GC_state s) {
+  GC_thread thread = getThreadCurrent(s);
+  return thread->umstack;
+}
+
+GC_frameLayout getUMStackCurrent (GC_state s) {
+  pointer p = objptrToPointer(getUMStackCurrentObjptr(s), s->heap.start);
+  return (GC_frameLayout)p;
+}

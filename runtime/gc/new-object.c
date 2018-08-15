@@ -34,14 +34,28 @@ pointer newUMObject (GC_state s,
     return result;
 }
 
+/* this variable is declared by the c-codegen. if you
+ * -keep g, you will find it in the ".0.c" file
+ */
+extern uint32_t frameLayouts_len;
+
+/* the UM stack is more like a stacklet. we allocate N chunks,
+ * where N corresponds to the number of anticipated stack frames.
+ * in the first rev, we initially allocate as many chunks as there
+ * are frameLayouts. this is an arbitrary choice.
+
+ TODO growStack_um to add chunks to an existing stack
+
+ */
 GC_stack newStack_um (GC_state s,
                    size_t reserved,
                    bool allocInOldGen) {
     GC_stack um_stack;
 #define max(a,b) a>b?a:b
-    uint32_t need_chunks = max(1, reserved / sizeof(GC_UM_Chunk));
+    uint32_t need_chunks = frameLayouts_len;
 
-    fprintf(stderr, "newStack_um reserved=%d chunksneeds=%d\n", reserved, need_chunks);
+    fprintf(stderr, "newStack_um reserved=%d chunksneeded=%d\n",
+            reserved, need_chunks);
     um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
 

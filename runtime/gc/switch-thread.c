@@ -9,11 +9,12 @@
 void switchToThread (GC_state s, objptr op) {
   if (DEBUG_THREADS) {
     GC_thread thread;
-    GC_stack stack;
+    GC_stack stack, umstack;
 
     thread = (GC_thread)(objptrToPointer (op, s->heap.start)
                          + offsetofThread (s));
     stack = (GC_stack)(objptrToPointer (thread->stack, s->heap.start));
+    umstack = (GC_stack)(objptrToPointer (thread->umstack, s->heap.start));
 
     fprintf (stderr, "switchToThread ("FMTOBJPTR")  used = %"PRIuMAX
              "  reserved = %"PRIuMAX"\n",

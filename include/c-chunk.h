@@ -48,7 +48,13 @@
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
 
+
+#define UMStackBottom (*(Pointer*)(GCState + UMStackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
+#define UMStackTopMem (*(Pointer*)(GCState + UMStackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
+
 #define StackTop StackTopMem
+#define UMStackTop UMStackTopMem
+
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
@@ -87,9 +93,10 @@
 #define S_temp_disabled(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
 
-#define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p Val=%018p\n", __FILE__, __LINE__,PTHREAD_NUM, \
-                                (void*) StackTop, \
-                                (void*)(StackTop + (i)), \
+#define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p(%018p) Addr=%018p(%018p) Val=%018p\n", \
+                                 __FILE__, __LINE__,PTHREAD_NUM, \
+                                (void*) StackTop, (void*)UMStackTop, \
+                                (void*)(StackTop + (i)), (void *)(UMStackTop + (i)), \
                                *(ty*)(StackTop + (i)))) , \
                                 (ty*)(StackTop + (i))))
 
@@ -173,7 +180,7 @@
      /*          Pointer frontier;  */             \
      /*          Pointer umfrontier; */              \
                 /*uintptr_t l_nextFun = nextFun; */ \
-                Pointer stackTop;
+                Pointer stackTop, umstackTop;
 #endif
 
 #define ChunkSwitch(n)                                                  \
@@ -232,14 +239,15 @@
                         fprintf (stderr, "%s:%d: Push (%d)\n",          \
                                         __FILE__, __LINE__, bytes);     \
                 StackTop += (bytes);                                    \
+                UMStackTop += (bytes);                                  \
         } while (0)
 
 #define Return()                                                                \
         do {                                                                    \
                 l_nextFun = *(uintptr_t*)(StackTop - sizeof(void*));            \
                 if (DEBUG_CCODEGEN)                                             \
-                        fprintf (stderr, "%s:%d: Return()  l_nextFun = %d\n",   \
-                                        __FILE__, __LINE__, (int)l_nextFun);    \
+                        fprintf (stderr, "%s:%d: Return()  l_nextFun = %d (%d)\n",   \
+                                        __FILE__, __LINE__, (int)l_nextFun, *(uintptr_t*)(UMStackTop - sizeof(void*)));    \
                 goto top;                                                       \
         } while (0)
 
@@ -249,6 +257,7 @@
                         fprintf (stderr, "%s:%d: Raise\n",                      \
                                         __FILE__, __LINE__);                    \
                 StackTop = StackBottom + ExnStack;                              \
+                UMStackTop = UMStackBottom + ExnStack;                          \
                 Return();                                                       \
         } while (0)                                                             \
 

@@ -22,10 +22,16 @@ void displayGCState (GC_state s, FILE *stream) {
   fprintf (stream,
            "%d] \tlimit = "FMTPTR"\n"
            "\tstackBottom = "FMTPTR"\n"
-           "\tstackTop = "FMTPTR"\n", PTHREAD_NUM,
+           "\tstackTop = "FMTPTR"\n"
+           "\tumstackBottom = "FMTPTR"\n"
+           "\tumstackTop = "FMTPTR"\n",
+           PTHREAD_NUM,
            (uintptr_t)s->limit,
            (uintptr_t)s->stackBottom[PTHREAD_NUM],
-           (uintptr_t)s->stackTop[PTHREAD_NUM]);
+           (uintptr_t)s->stackTop[PTHREAD_NUM],
+           (uintptr_t)s->UMstackBottom[PTHREAD_NUM],
+           (uintptr_t)s->UMstackTop[PTHREAD_NUM]
+           );
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
@@ -35,13 +41,18 @@ size_t sizeofGCStateCurrentStackUsed (GC_state s) {
 void setGCStateCurrentThreadAndStack (GC_state s) {
   GC_thread thread;
   GC_stack stack;
+  GC_frameLayout umstack;
 
   thread = getThreadCurrent (s);
   s->exnStack[PTHREAD_NUM] = thread->exnStack;
   stack = getStackCurrent (s);
+  umstack = getUMStackCurrent (s);
+
   s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
   s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
   s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
+
+  s->UMstackBottom[PTHREAD_NUM] = getUMStackBottom (s, umstack);
   //markCard (s, (pointer)stack);
 }
 
