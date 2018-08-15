@@ -335,7 +335,8 @@ fun outputDeclarations
                         name: string,
                         v: 'a vector,
                         toString: int * 'a -> string) =
-         (print (concat ["static ", ty, " ", name, "[] = {\n"])
+         (  print (concat ["uint32_t ", name, "_len = ", Int.toString(Vector.length v), ";\n"])
+          ; print (concat ["static ", ty, " ", name, "[] = {\n"])
           ; Vector.foreachi (v, fn (i, x) =>
                              print (concat ["\t", toString (i, x), ",\n"]))
           ; print "};\n")
@@ -686,7 +687,7 @@ fun output {program as Machine.Program.T {chunks,
       
       (* If the dst is Frontier, then we are entering a critical section
       where we've extended the frontier and are going to now write into 
-      that extension. 
+      that extension. XXX remove
       
       // critical starts just before the next statement
       Frontier = CPointer_add (Frontier, (Word64)(0x18ull)); // Frontier += 24 bytes
