@@ -99,7 +99,8 @@ struct GC_state {
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
   pointer UMstackBottom[MAXPRI]; /* Bottom of stack in current thread. Note this is a chunk
                                   * that contains a GC_frameLayout */
- 
+  pointer currentFrame[MAXPRI];
+
   /* added for rt-threading */
 
   pthread_t *realtimeThreads[MAXPRI];

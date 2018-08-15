@@ -67,7 +67,8 @@ val gcFields =
     "stackTop",
     "fl_chunks",
     "UMstackBottom",
-    "UMstackTop"
+    "UMstackTop",
+    "currentFrame"
     ]
 
 val gcFieldsOffsets =

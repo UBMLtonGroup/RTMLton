@@ -30,6 +30,7 @@ structure GCField =
        | StackTop
        | UMStackTop
        | UMStackBottom
+       | CurrentFrame
        | FLChunks
 
       val atomicStateOffset: Bytes.t ref = ref Bytes.zero
@@ -45,6 +46,7 @@ structure GCField =
       val stackBottomOffset: Bytes.t ref = ref Bytes.zero
       val stackLimitOffset: Bytes.t ref = ref Bytes.zero
       val stackTopOffset: Bytes.t ref = ref Bytes.zero
+      val currentFrameOffset: Bytes.t ref = ref Bytes.zero
       val UMstackTopOffset: Bytes.t ref = ref Bytes.zero
       val UMstackBottomOffset: Bytes.t ref = ref Bytes.zero
       val umfrontierOffset: Bytes.t ref = ref Bytes.zero
@@ -52,7 +54,8 @@ structure GCField =
 
       fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
                       exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
-                      signalIsPending, stackBottom, stackLimit, stackTop, flChunks, UMstackBottom, UMstackTop} =
+                      signalIsPending, stackBottom, stackLimit, stackTop, flChunks,
+                      UMstackBottom, UMstackTop, currentFrame} =
          (atomicStateOffset := atomicState
           ; cardMapAbsoluteOffset := cardMapAbsolute
           ; currentThreadOffset := currentThread
@@ -65,6 +68,7 @@ structure GCField =
           ; maxFrameSizeOffset := maxFrameSize
           ; signalIsPendingOffset := signalIsPending
           ; stackBottomOffset := stackBottom
+          ; currentFrameOffset := currentFrame
           ; stackLimitOffset := stackLimit
           ; stackTopOffset := stackTop
           ; flChunksOffset := flChunks
@@ -87,6 +91,7 @@ structure GCField =
           | StackLimit => !stackLimitOffset
           | StackTop => !stackTopOffset
           | FLChunks => !flChunksOffset
+          | currentFrame => !currentFrameOffset
           | UMStackBottom => !UMstackBottomOffset
           | UMStackTop => !UMstackTopOffset
 
@@ -106,10 +111,12 @@ structure GCField =
       val UMstackTopSize: Bytes.t ref = ref Bytes.zero
       val UMstackBottomSize: Bytes.t ref = ref Bytes.zero
       val flChunksSize: Bytes.t ref = ref Bytes.zero
+      val currentFrameSize: Bytes.t ref = ref Bytes.zero
 
       fun setSizes {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
                     exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
-                    signalIsPending, stackBottom, stackLimit, stackTop, flChunks, UMstackBottom, UMstackTop} =
+                    signalIsPending, stackBottom, stackLimit, stackTop, flChunks,
+                    UMstackBottom, UMstackTop, currentFrame} =
          (atomicStateSize := atomicState
           ; cardMapAbsoluteSize := cardMapAbsolute
           ; currentThreadSize := currentThread
@@ -125,7 +132,8 @@ structure GCField =
           ; stackTopSize := stackTop
           ; flChunksSize := flChunks
           ; UMstackBottomSize := UMstackBottom
-          ; UMstackTopSize := UMstackTop)
+          ; UMstackTopSize := UMstackTop
+          ; currentFrameSize := currentFrame)
 
       val size =
          fn AtomicState => !atomicStateSize
@@ -145,6 +153,7 @@ structure GCField =
           | FLChunks => !flChunksSize
           | UMStackBottom => !UMstackBottomSize
           | UMStackTop => !UMstackTopSize
+          | currentFrame => !currentFrameSize
 
       val toString =
          fn AtomicState => "AtomicState"
@@ -164,6 +173,7 @@ structure GCField =
           | FLChunks => "FLChunks"
           | UMStackBottom => "UMStackBottom"
           | UMStackTop => "UMStackTop"
+          | CurrentFrame => "currentFrame"
 
       val layout = Layout.str o toString
    end

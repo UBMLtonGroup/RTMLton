@@ -529,6 +529,7 @@ fun ofGCField (f: GCField.t): t =
        | StackBottom => cpointer ()
        | UMStackTop => cpointer ()
        | UMStackBottom => cpointer ()
+       | CurrentFrame => cpointer ()
        | StackLimit => cpointer ()
        | StackTop => cpointer ()
        | FLChunks => csize ()

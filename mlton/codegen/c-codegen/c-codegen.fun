@@ -1262,7 +1262,8 @@ fun output {program as Machine.Program.T {chunks,
                  ("UMStackBottomOffset", GCField.UMStackBottom),
                  ("UMStackTopOffset", GCField.UMStackTop),
                  ("StackBottomOffset", GCField.StackBottom),
-                 ("StackTopOffset", GCField.StackTop)],
+                 ("StackTopOffset", GCField.StackTop),
+                 ("CurrentFrameOffset", GCField.CurrentFrame)],
                 fn (name, f) =>
                 print (concat ["#define ", name, " ",
                                Bytes.toString (GCField.offset f), "\n"]))
