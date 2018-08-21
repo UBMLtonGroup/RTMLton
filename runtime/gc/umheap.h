@@ -20,6 +20,7 @@ typedef struct GC_UM_Chunk {
     Word32_t chunk_header;
     size_t sentinel;
     struct GC_UM_Chunk* next_chunk;
+    struct GC_UM_Chunk* prev_chunk;
 } *GC_UM_Chunk;
 
 typedef struct GC_UM_heap {

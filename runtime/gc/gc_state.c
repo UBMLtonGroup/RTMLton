@@ -53,6 +53,7 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
 
   s->UMstackBottom[PTHREAD_NUM] = getUMStackBottom (s, umstack);
+  s->currentFrame[PTHREAD_NUM] = s->UMstackBottom[PTHREAD_NUM];
   //markCard (s, (pointer)stack);
 }
 

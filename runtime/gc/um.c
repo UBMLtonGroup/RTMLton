@@ -58,6 +58,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         for(int i = 1 ; i < num_chunks ; i++) {
             prev->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
             prev->next_chunk->chunk_header = UM_CHUNK_IN_USE;
+            prev->next_chunk->prev_chunk = prev;
             prev = prev->next_chunk;
         }
     }
@@ -99,6 +100,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
      * TODO: Set header to represent chunked object
      */
     current_chunk->next_chunk = next_chunk;
+    next_chunk->prev_chunk = current_chunk;
 /////////////////
     next_chunk->chunk_header = UM_CHUNK_IN_USE;
 /////////////////

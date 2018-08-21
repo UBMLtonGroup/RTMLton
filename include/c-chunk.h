@@ -51,6 +51,7 @@
 
 #define UMStackBottom (*(Pointer*)(GCState + UMStackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define UMStackTopMem (*(Pointer*)(GCState + UMStackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
+#define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
 
 #define StackTop StackTopMem
 #define UMStackTop UMStackTopMem
@@ -233,13 +234,39 @@
 /*                       Stack                       */
 /* ------------------------------------------------- */
 
+
+#define UM_CHUNK_PAYLOAD_SIZE 154
+#define UM_CHUNK_PAYLOAD_SAFE_REGION 16
+
+typedef struct GC_UM_Chunk {
+    unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
+    Word32_t chunk_header;
+    size_t sentinel;
+    struct GC_UM_Chunk* next_chunk;
+    struct GC_UM_Chunk* prev_chunk;
+};
+
 #define Push(bytes)                                                     \
         do {                                                            \
                 if (1 || DEBUG_CCODEGEN)                                     \
                         fprintf (stderr, "%s:%d: Push (%d)\n",          \
                                         __FILE__, __LINE__, bytes);     \
                 StackTop += (bytes);                                    \
-                UMStackTop += (bytes);                                  \
+                if (bytes > 0) {                                             \
+                     fprintf(stderr, "%d] umstack: advance\n", PTHREAD_NUM); \
+                     if (((struct GC_UM_Chunk *)CurrentFrame)->next_chunk) { \
+                         CurrentFrame = ((struct GC_UM_Chunk *)CurrentFrame)->next_chunk; \
+                     } else {                                                \
+                         fprintf(stderr, "cant advance to next frame");      \
+                     }                                                       \
+                } else if (bytes < 0) {                                      \
+                     fprintf(stderr, "%d] umstack: retreat\n", PTHREAD_NUM); \
+                     if (((struct GC_UM_Chunk *)CurrentFrame)->prev_chunk) { \
+                         CurrentFrame = ((struct GC_UM_Chunk *)CurrentFrame)->prev_chunk; \
+                     } else {                                                \
+                         fprintf(stderr, "cant retreat to prev frame");      \
+                     }                                                       \
+                } \
         } while (0)
 
 #define Return()                                                                \
