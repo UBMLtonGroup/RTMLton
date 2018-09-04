@@ -523,7 +523,15 @@ structure StackOffset =
       open StackOffset
 
       fun toString (T {offset, ty}): string =
-         concat ["S", C.args [Type.toC ty, C.bytes offset]]
+         concat ["/*StackOffset*/ S", C.args [Type.toC ty, C.bytes offset]]
+   end
+
+structure StackOffset2 =
+   struct
+      open StackOffset
+
+      fun toString (T {offset, ty}): string =
+         concat ["/*StackOffset2*/ S2", C.args [Type.toC ty, C.bytes offset]]
    end
 
 fun contents (ty, z) = concat ["/*Contents*/ C", C.args [Type.toC ty, z]]
@@ -907,7 +915,7 @@ fun output {program as Machine.Program.T {chunks,
                      | Switch s => Switch.foreachLabel (s, jump)
                  end)
             fun push (return: Label.t, size: Bytes.t) =
-               (print "\t"
+               (print "\t/*push*/ "
                 ; print (move {dst = (StackOffset.toString
                                       (StackOffset.T
                                        {offset = Bytes.- (size, Runtime.labelSize ()),
@@ -916,6 +924,14 @@ fun output {program as Machine.Program.T {chunks,
                                src = operandToString (Operand.Label return),
                                srcIsMem = false,
                                ty = Type.label return, inCrit = inCritical})
+               ; print (move {dst = (StackOffset2.toString
+                                     (StackOffset.T
+                                      {offset = Bytes.- (size, Runtime.labelSize ()),
+                                       ty = Type.label return})),
+                              dstIsMem = true,
+                              src = operandToString (Operand.Label return),
+                              srcIsMem = false,
+                              ty = Type.label return, inCrit = inCritical})
                 ; C.push (size, print)
                 ; if amTimeProfiling
                      then print "\tFlushStackTop();\n"

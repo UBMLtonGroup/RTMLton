@@ -36,6 +36,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     h->fl_head->chunkType= UM_NORMAL_CHUNK;
     struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
     GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head +4 )); /*pass pointer to area after chunktype*/
+    memset(c->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION);
     h->fl_head = nc;
     c->next_chunk = NULL;
     c->chunk_header = UM_CHUNK_HEADER_CLEAN;

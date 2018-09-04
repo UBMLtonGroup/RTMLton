@@ -57,13 +57,14 @@ void splitHeader(GC_state s, GC_header header,
   bool hasIdentity;
   uint16_t bytesNonObjptrs, numObjptrs;
 
-  fprintf(stderr, "splitHeader "FMTPTR"\n", header);
+  //fprintf(stderr, "splitHeader "FMTPTR"\n", header);
 
   if (!(1 == (header & GC_VALID_HEADER_MASK))) {
-	fprintf(stderr, FMTPTR" & "FMTPTR" == "FMTPTR" (size %d)\n", header, GC_VALID_HEADER_MASK,
-		header & GC_VALID_HEADER_MASK, sizeof(header));
+	//fprintf(stderr, FMTPTR" & "FMTPTR" == "FMTPTR" (size %d)\n", header, GC_VALID_HEADER_MASK,
+	//	header & GC_VALID_HEADER_MASK, sizeof(header));
         return;
 	}
+
 
   assert (1 == (header & GC_VALID_HEADER_MASK)); 
   objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT; 

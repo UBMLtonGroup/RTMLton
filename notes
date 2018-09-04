@@ -4,3 +4,17 @@ this will cause programs to throw an error on exit:
 
 see mlton/xml/implement-suffix.fun for deets, but 
 it seems to be ok to ignore this when testing without basis.
+
+
+print (struct GC_UM_Chunk)*(gcState->UMstackBottom[0])
+
+print ((struct GC_UM_Chunk)*(gcState->UMstackBottom[0]))->next_chunk
+
+print (struct GC_UM_Chunk)((struct GC_UM_Chunk)*(gcState->UMstackBottom[0]))->next_chunk
+
+
+
+print (struct GC_UM_Chunk)*(gcState->currentFrame[0])
+
+x/8xg gcState->stackBottom[0]
+

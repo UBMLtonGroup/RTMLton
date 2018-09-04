@@ -94,12 +94,19 @@
 #define S_temp_disabled(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
 
-#define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p(%018p) Addr=%018p(%018p) Val=%018p\n", \
-                                 __FILE__, __LINE__,PTHREAD_NUM, \
-                                (void*) StackTop, (void*)UMStackTop, \
-                                (void*)(StackTop + (i)), (void *)(UMStackTop + (i)), \
-                               *(ty*)(StackTop + (i)))) , \
+#define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p Val=%018p\n", \
+                                 __FILE__, __LINE__, PTHREAD_NUM, \
+                                (void*) StackTop, \
+                                (void*)(StackTop + (i)),  \
+                               *(ty*)(StackTop + (i)))),  \
                                 (ty*)(StackTop + (i))))
+
+#define S2(ty, i) (*((fprintf (stderr, "%s:%d %d] S: UMStackTop=%018p UMAddr=%018p Val=%018p\n", \
+                                 __FILE__, __LINE__, PTHREAD_NUM, \
+                                (void*)UMStackTop, \
+                                (void *)(UMStackTop + (i)), \
+                               *(ty*)(UMStackTop + (i)))) , \
+                                (ty*)(UMStackTop + (i))))
 
 #endif
 
@@ -248,12 +255,14 @@ typedef struct GC_UM_Chunk {
 
 #define Push(bytes)                                                     \
         do {                                                            \
-                if (1 || DEBUG_CCODEGEN)                                     \
+                if (1 || DEBUG_CCODEGEN)                                \
                         fprintf (stderr, "%s:%d: Push (%d)\n",          \
                                         __FILE__, __LINE__, bytes);     \
                 StackTop += (bytes);                                    \
                 if (bytes > 0) {                                             \
                      fprintf(stderr, "%d] umstack: advance\n", PTHREAD_NUM); \
+                     struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
+                     fprintf(stderr, "   base %016lx next %016lx\n", cf, cf->next_chunk); \
                      if (((struct GC_UM_Chunk *)CurrentFrame)->next_chunk) { \
                          CurrentFrame = ((struct GC_UM_Chunk *)CurrentFrame)->next_chunk; \
                      } else {                                                \
@@ -261,6 +270,8 @@ typedef struct GC_UM_Chunk {
                      }                                                       \
                 } else if (bytes < 0) {                                      \
                      fprintf(stderr, "%d] umstack: retreat\n", PTHREAD_NUM); \
+                     struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
+                     fprintf(stderr, "   base %016lx prev %016lx\n", cf, cf->prev_chunk); \
                      if (((struct GC_UM_Chunk *)CurrentFrame)->prev_chunk) { \
                          CurrentFrame = ((struct GC_UM_Chunk *)CurrentFrame)->prev_chunk; \
                      } else {                                                \
