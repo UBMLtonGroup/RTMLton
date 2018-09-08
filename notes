@@ -18,3 +18,8 @@ print (struct GC_UM_Chunk)*(gcState->currentFrame[0])
 
 x/8xg gcState->stackBottom[0]
 
+
+TODO
+
+        W32_0 = CPointer_lt (O(CPointer, GCState, 56), StackTop);/*NotInCriticalSection*/
+
