@@ -14,6 +14,8 @@ typedef struct UM_Mem_Chunk{
 } *UM_Mem_Chunk;
 
 
+/* if you update this, also update the copy in c-chunk.h around line 262  */
+
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
@@ -21,6 +23,7 @@ typedef struct GC_UM_Chunk {
     size_t sentinel;
     struct GC_UM_Chunk* next_chunk;
     struct GC_UM_Chunk* prev_chunk;
+    GC_returnAddress ra;
 } *GC_UM_Chunk;
 
 typedef struct GC_UM_heap {

@@ -516,12 +516,12 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              maxFrameSize = get "maxFrameSize_Offset",
              signalIsPending = get "signalsInfo.signalIsPending_Offset",
              stackBottom = get "stackBottom_Offset",
-             UMstackBottom = get "UMstackBottom_Offset",
-             UMstackTop = get "UMstackTop_Offset",
              stackLimit = get "stackLimit_Offset",
              stackTop = get "stackTop_Offset",
              flChunks = get "fl_chunks_Offset",
-             currentFrame = get "currentFrame_Offset"
+              UMstackBottom = get "UMstackBottom_Offset",
+              UMstackTop = get "UMstackTop_Offset",
+              currentFrame = get "currentFrame_Offset"
              };
             Runtime.GCField.setSizes
             {
@@ -536,13 +536,13 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              limitPlusSlop = get "limitPlusSlop_Size",
              maxFrameSize = get "maxFrameSize_Size",
              signalIsPending = get "signalsInfo.signalIsPending_Size",
-             UMstackBottom = get "UMstackBottom_Size",
-             UMstackTop = get "UMstackTop_Size",
              stackBottom = get "stackBottom_Size",
              stackLimit = get "stackLimit_Size",
              stackTop = get "stackTop_Size",
              flChunks = get "fl_chunks_Size",
-             currentFrame = get "currentFrame_Size"
+              UMstackBottom = get "UMstackBottom_Size",
+              UMstackTop = get "UMstackTop_Size",
+              currentFrame = get "currentFrame_Size"
              }
          end
       (* Setup endianness *)

@@ -171,8 +171,8 @@ structure GCField =
           | StackLimit => "StackLimit"
           | StackTop => "StackTop"
           | FLChunks => "FLChunks"
-          | UMStackBottom => "UMStackBottom"
-          | UMStackTop => "UMStackTop"
+          | UMStackBottom => "UMstackBottom"
+          | UMStackTop => "UMstackTop"
           | CurrentFrame => "currentFrame"
 
       val layout = Layout.str o toString

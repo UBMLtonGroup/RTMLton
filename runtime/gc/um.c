@@ -47,11 +47,11 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     chunk->chunk_header = UM_CHUNK_IN_USE;
     *((uint32_t*) chunk->ml_object) = header;
 
-    fprintf(stderr, "UM_Object_alloc(..,%d, %x, %d) = "FMTPTR"\n",
+    fprintf(stderr, "UM_Object_alloc(..,nchunks=%d, objheader=%x, s_param=%d) = "FMTPTR"\n",
             num_chunks, header, s, (Pointer)(chunk->ml_object + s));
-    fprintf(stderr, "  sizeof(Pointer) %d\n", sizeof(Pointer));
-    fprintf(stderr, "  sizeof(CPointer) %d\n", sizeof(CPointer));
-    fprintf(stderr, "  #1 @ "FMTPTR"\n", chunk);
+    //fprintf(stderr, "  sizeof(Pointer) %d\n", sizeof(Pointer));
+    //fprintf(stderr, "  sizeof(CPointer) %d\n", sizeof(CPointer));
+    //fprintf(stderr, "  #1 @ "FMTPTR"\n", chunk);
 
     if (num_chunks > 1) {
         fprintf(stderr, "  allocating %d addt'l chunks\n", num_chunks-1);

@@ -119,6 +119,8 @@ bool createUMHeap(GC_state s,
         return FALSE;
     }
 
+    fprintf(stderr, "creating UMHeap with chunkSize of %d\n", sizeof(struct GC_UM_Chunk));
+
     h->start = newStart;
     h->size = desiredSize;
     h->end = newStart + desiredSize;

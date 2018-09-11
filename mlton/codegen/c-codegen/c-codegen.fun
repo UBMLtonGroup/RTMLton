@@ -914,9 +914,10 @@ fun output {program as Machine.Program.T {chunks,
                      | Return => ()
                      | Switch s => Switch.foreachLabel (s, jump)
                  end)
+                 (* this is where the return address is written to the stack *)
             fun push (return: Label.t, size: Bytes.t) =
                (print "\t/*push*/ "
-                ; print (move {dst = (StackOffset.toString
+                ; print (move {dst = (StackOffset2.toString
                                       (StackOffset.T
                                        {offset = Bytes.- (size, Runtime.labelSize ()),
                                         ty = Type.label return})),
@@ -924,9 +925,9 @@ fun output {program as Machine.Program.T {chunks,
                                src = operandToString (Operand.Label return),
                                srcIsMem = false,
                                ty = Type.label return, inCrit = inCritical})
-               ; print (move {dst = (StackOffset2.toString
+               ; print (move {dst = (StackOffset.toString
                                      (StackOffset.T
-                                      {offset = Bytes.- (size, Runtime.labelSize ()),
+                                      {offset = Bytes.- (Bytes.fromInt 200, Bytes.fromInt 0), (* JCM XXX sizeof(GC_UM_Chunk) is 208, so we stash the return address at 200. orig code is above *)
                                        ty = Type.label return})),
                               dstIsMem = true,
                               src = operandToString (Operand.Label return),
