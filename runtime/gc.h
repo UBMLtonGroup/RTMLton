@@ -44,7 +44,7 @@ typedef GC_state GCState_t;
 #include "gc/int-inf.h"
 #include "gc/string.h"
 #include "gc/object-size.h"
-#include "gc/generational.h"
+//#include "gc/generational.h"
 #include "gc/heap.h"
 #include "gc/umheap.h"
 #include "gc/current.h"

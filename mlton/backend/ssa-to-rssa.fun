@@ -138,7 +138,7 @@ structure CFunction =
                                       CType.csize (),
                                       CType.seqIndex (),
                                       CType.objptrHeader ()),
-                         SOME CType.objptr),
+                         SOME CType.cpointer),
             return = return,
             symbolScope = Private,
             target = Direct "GC_arrayAllocate"}
@@ -160,7 +160,7 @@ structure CFunction =
                                       CType.csize (),
                                       CType.Int32,
                                       CType.csize ()),
-                         SOME CType.objptr),
+                         SOME CType.cpointer),
             return = return,
             symbolScope = Private,
             target = Direct "UM_Object_alloc"}

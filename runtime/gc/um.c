@@ -12,7 +12,7 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 #include <stdint.h>
 
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
-		__FILE__, __LINE__, __FUNCTION__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
+		__FILE__, __LINE__, __func__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
 
 /* define chunk structure (linked list)
  * define the free list
@@ -45,7 +45,9 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 {
     GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     chunk->chunk_header = UM_CHUNK_IN_USE;
-    *((uint32_t*) chunk->ml_object) = header;
+    uint32_t *p = (uint32_t *)chunk->ml_object;
+    *p = header;
+//    *((uint32_t*) chunk->ml_object) = header; // phrasing annoys -Wstrict-aliasing
 
     fprintf(stderr, "UM_Object_alloc(..,nchunks=%d, objheader=%x, s_param=%d) = "FMTPTR"\n",
             num_chunks, header, s, (Pointer)(chunk->ml_object + s));

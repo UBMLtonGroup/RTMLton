@@ -66,7 +66,7 @@ static inline bool isStackReservedAligned (GC_state s, size_t reserved);
 
 static inline size_t sizeofStackSlop (GC_state s);
 
-static inline pointer getUMStackBottom (GC_state s, GC_stack stack);
+static inline pointer getUMStackBottom (GC_state s, pointer stack);
 static inline pointer getStackBottom (GC_state s, GC_stack stack);
 static inline pointer getStackTop (GC_state s, GC_stack stack);
 static inline pointer getStackLimitPlusSlop (GC_state s, GC_stack stack);

@@ -135,17 +135,18 @@ void
 maybe_growstack (GC_state s)
 {
     bool stackTopOk;
-    size_t stackBytesRequested;
     if (isStackEmpty (getStackCurrent (s)))
         return;
     stackTopOk = invariantForMutatorStack (s);
-    stackBytesRequested =
+#if 0
+    int stackBytesRequested =
         stackTopOk
         ? 0
         : sizeofStackWithHeader (s,
                                  sizeofStackGrowReserved (s,
                                                           getStackCurrent
-                                                          (s)));
+                                                       (s)));
+#endif
     unless (stackTopOk) growStackCurrent (s);
 }
 
@@ -178,14 +179,6 @@ leaveGC (GC_state s)
 }
 
 #define THREADED
-
-#undef GCTHRDEBUG
-
-#ifdef GCTHRDEBUG
-#define DBG(X) fprintf X
-#else
-#define DBG(X)
-#endif
 
 #define MYASSERT(T, X, COMP, RV) {                               \
 	  T __rv__ = (T)X;                                           \

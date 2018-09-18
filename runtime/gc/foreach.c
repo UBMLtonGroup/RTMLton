@@ -51,9 +51,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       fprintf(stderr, "foreach object in 0x"FMTPTR"\n", (uintptr_t)p);
   }
   GC_header header;
-  uint16_t bytesNonObjptrs;
-  uint16_t numObjptrs;
-  GC_objectTypeTag tag;
+  uint16_t bytesNonObjptrs = 0;
+  uint16_t numObjptrs  = 0;
+  GC_objectTypeTag tag = 0;
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
@@ -198,7 +198,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           }
       }
   } else { /* stack */
-    GC_stack stack;
+    GC_stack stack = NULL;
+#if 0
     pointer top, bottom;
     unsigned int i;
     GC_returnAddress returnAddress;
@@ -207,8 +208,6 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
     assert (STACK_TAG == tag);
     stack = (GC_stack)p;
-
-#if 0
 
     bottom = getStackBottom (s, stack);
     top = getStackTop (s, stack);
@@ -263,7 +262,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     assert(top == bottom);
     }
 #endif
-    p += sizeof (struct GC_stack) + stack->reserved;
+    p += sizeof (struct GC_stack) + stack ? stack->reserved : 0; // TODO
   }
   return p;
 }

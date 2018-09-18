@@ -15,9 +15,9 @@ void getObjectType(GC_state s, objptr *opp) {
     pointer p = objptrToPointer(*opp, s->heap.start);
     GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
-    GC_objectTypeTag tag;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs = 0;
+    GC_objectTypeTag tag = 0;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
     if (DEBUG_MEM) {

@@ -75,8 +75,10 @@ int saveWorldToFILE (GC_state s, FILE *f) {
    * be run in the context of a critical section, which will expect to
    * be in the same context when it is restored.
    */
+#if 0 // TODO "discards volatile"
   if (fwrite (&s->atomicState, sizeof(uint32_t), 1, f) != 1) return -1;
   if (fwrite ((const void *)(&s->callFromCHandlerThread), sizeof(objptr), 1, f) != 1) return -1;
+#endif
   if (fwrite (&s->currentThread, sizeof(objptr), 1, f) != 1) return -1;
   if (fwrite (&s->signalHandlerThread[PTHREAD_NUM], sizeof(objptr), 1, f) != 1) return -1;
 

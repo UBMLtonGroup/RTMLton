@@ -285,6 +285,7 @@ typedef struct GC_UM_Chunk {
                      fprintf(stderr, "   base %016lx prev %016lx\n", cf, cf->prev_chunk); \
                      if (cf->prev_chunk) { \
                          CurrentFrame = cf->prev_chunk; \
+                         fprintf(stderr, "   ra=%d\n", cf->prev_chunk->ra); \
                      } else {                                                \
                          fprintf(stderr, "!!!cant retreat to prev frame\n");      \
                      }                                                       \
@@ -294,6 +295,8 @@ typedef struct GC_UM_Chunk {
                      fprintf(stderr, "   base %016lx next %016lx\n", cf, cf->next_chunk); \
                      if (cf->next_chunk) { \
                          CurrentFrame = cf->next_chunk; \
+                         fprintf(stderr, "   ra=%d\n", cf->next_chunk->ra); \
+                     memset(cf->next_chunk->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION); \
                      } else {                                                \
                          fprintf(stderr, "!!!cant advance to next frame\n");      \
                      } \

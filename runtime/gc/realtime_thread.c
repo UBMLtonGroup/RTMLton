@@ -56,8 +56,6 @@ realtimeThreadWaitForInit (void)
 void
 realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 {
-    int rv = 0;
-
     state->realtimeThreads[0] = main;
     state->realtimeThreads[1] = gc;
     initialized = 2;
@@ -108,7 +106,7 @@ realtimeRunner (void *paramsPtr)
     }
 
     if (DEBUG)
-        fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
+        fprintf (stderr, "%d] callFromCHandlerThread "FMTPTR" is ready\n", tNum,
                  state->callFromCHandlerThread);
 
     while (!TC.booted) {
@@ -141,11 +139,6 @@ realtimeRunner (void *paramsPtr)
     state->currentThread[PTHREAD_NUM] = state->currentThread[0];
     setGCStateCurrentThreadAndStack (state);
 
-    GC_thread curct = (GC_thread) (objptrToPointer (state->currentThread[0],
-                                                    state->heap.start) +
-                                   offsetofThread (state));
-    GC_stack curstk =
-        (GC_stack) objptrToPointer (curct->stack, state->heap.start);
 
     /* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
     /* copy the savedThread which is stored earlier on from the copied thread, when C Handler was set */

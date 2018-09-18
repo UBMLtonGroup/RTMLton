@@ -6,11 +6,6 @@
  * See the file MLton-LICENSE for details.
  */
 
-void displayHeapInfo(GC_state s) {
-	fprintf(stderr, "start "FMTPTR" -> from-start "FMTPTR"  -> nursery "FMTPTR" -> frontier "FMTPTR"\n",
-			s->heap.start, s->heap.start+s->heap.oldGenSize,
-			s->heap.nursery, s->frontier);
-}
 
 bool isPointerInOldGen (GC_state s, pointer p) {
   return (not (isPointer (p))
@@ -33,6 +28,7 @@ bool isObjptrInOldGen (GC_state s, objptr op) {
 }
 #endif
 
+// XXX TODO remove?
 bool isObjptrInNursery (GC_state s, objptr op) {
   pointer p;
   if (not (isObjptr(op)))
@@ -42,12 +38,8 @@ bool isObjptrInNursery (GC_state s, objptr op) {
 }
 
 #if ASSERT
+// XXX TODO remove?
 bool isObjptrInFromSpace (GC_state s, objptr op) {
-  if (0 && DEBUG) {
-	fprintf(stderr, "%d] isObjprtInFromSpace: isObjptr:%x op:%x p:%x\n",PTHREAD_NUM,
-			isObjptr(op), op, isObjptr(op)? objptrToPointer (op, s->heap.start) : 0);
-  }
-
   return (isObjptrInOldGen (s, op) 
           or isObjptrInNursery (s, op));
 }
@@ -59,15 +51,14 @@ bool hasHeapBytesFree (GC_state s, size_t oldGen, size_t nursery) {
 
   if (DEBUG_DETAILED) {
       displayHeap(s, &(s->heap), stderr);
-      displayHeapInfo(s);
-      fprintf(stderr,"%d]in hasHeapBytesFree. OldGenSize = %zu\n", PTHREAD_NUM,s->heap.oldGenSize);
+      fprintf(stderr,"%d]in hasHeapBytesFree. OldGenSize = %zu\n", PTHREAD_NUM, s->heap.oldGenSize);
   }
 
   total =
     s->heap.oldGenSize + oldGen 
     + (s->canMinor ? 2 : 1) * (size_t)(s->limitPlusSlop - s->heap.nursery);
 
-  if(DEBUG_DETAILED) fprintf(stderr,"%d] total = %zu\n", PTHREAD_NUM,total);
+  if(DEBUG_DETAILED) fprintf(stderr,"%d] total = %zu\n", PTHREAD_NUM, total);
 
   res = 
     (total <= s->heap.size) 

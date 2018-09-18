@@ -27,13 +27,9 @@ struct GC_state {
   pointer limit; /* limit = heap.start + heap.size */
   pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
   pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
   size_t exnStack[MAXPRI];
 
-  pointer UMstackTop[MAXPRI]; /* Top of stack in current thread. */
-  pointer UMstackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
-    pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
-    pointer UMstackBottom[MAXPRI]; /* Bottom of stack in current thread. Note this is a chunk
-                                  * that contains a GC_frameLayout */
     pointer currentFrame[MAXPRI];
 
   size_t fl_chunks;
@@ -56,7 +52,7 @@ struct GC_state {
   struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
   uint32_t frameLayoutsLength; /* Cardinality of frameLayouts array. */
-  struct GC_generationalMaps generationalMaps;
+  //struct GC_generationalMaps generationalMaps;
   objptr *globals;
   uint32_t globalsLength;
   bool hashConsDuringGC;

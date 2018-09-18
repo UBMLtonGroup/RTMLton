@@ -3,9 +3,9 @@ pointer GC_arrayAllocate (GC_state s,
                           GC_arrayLength numElements,
                           GC_header header) {
 //    size_t arraySize;
-    size_t bytesPerElement;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
+    size_t bytesPerElement = 0;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs = 0;
 //    pointer frontier, last;
 //    pointer result;
 

@@ -47,14 +47,13 @@ extern uint32_t frameLayouts_len;
  TODO growStack_um to add chunks to an existing stack
 
  */
-GC_stack newStack_um (GC_state s,
-                   size_t reserved,
-                   bool allocInOldGen) {
-    GC_stack um_stack;
-#define max(a,b) a>b?a:b
+pointer newStack_um (GC_state s,
+                     size_t reserved,
+                     bool allocInOldGen) {
+    pointer um_stack;
     uint32_t need_chunks = frameLayouts_len;
 
-    fprintf(stderr, "newStack_um reserved=%d chunksneeded=%d\n",
+    fprintf(stderr, "newStack_um reserved=%zu chunksneeded=%d\n",
             reserved, need_chunks);
     um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
@@ -105,7 +104,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
-  thread->umstack = newStack_um(s, reserved, FALSE);
+  thread->umstack = pointerToObjptr(newStack_um(s, reserved, FALSE), s->heap.start);
 
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",

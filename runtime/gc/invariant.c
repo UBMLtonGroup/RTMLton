@@ -90,72 +90,30 @@ bool invariantForGC (GC_state s) {
   foreachObjptrInRange (s, s->heap.nursery, &s->frontier, 
                         assertIsObjptrInFromSpace, FALSE);
   /* Current thread. */
-  GC_stack stack = getStackCurrent(s);
-  assert (isStackReservedAligned (s, stack->reserved));
-  if (DEBUG)
-  { int d = s->stackBottom[PTHREAD_NUM] - getStackBottom (s, stack);
-  fprintf(stderr, "stackBottom[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackBottom %"PRIuMAX" %d)\n", 
-	PTHREAD_NUM, s->stackBottom[PTHREAD_NUM], getStackBottom (s, stack),
-        d, d
-	);
-  }
-  assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
-  if (DEBUG)
-  { int d = s->stackTop[PTHREAD_NUM] - getStackTop (s, stack);
-  fprintf(stderr, "stackTop[%d] = %"PRIuMAX" ?= %"PRIuMAX" (getStackTop %"PRIuMAX" %d)\n", 
-	PTHREAD_NUM, s->stackTop[PTHREAD_NUM], getStackTop (s, stack),
-	d,d
-	);
-  }
-  assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
-  assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
-  assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
-  assert (stack->used == sizeofGCStateCurrentStackUsed (s));
-  assert (stack->used <= stack->reserved);
+  //GC_stack stack = getStackCurrent(s);
+  // XXX remove
+  //assert (isStackReservedAligned (s, stack->reserved));
+  //assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
+  //assert (s->stackTop[PTHREAD_NUM] == getStackTop (s, stack));
+  //assert (s->stackLimit[PTHREAD_NUM] == getStackLimit (s, stack));
+  //assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
+  //assert (stack->used == sizeofGCStateCurrentStackUsed (s));
+  //assert (stack->used <= stack->reserved);
   if (DEBUG)
     fprintf (stderr, "invariantForGC passed\n");
   return TRUE;
 }
 #endif
 
-bool invariantForMutatorFrontier (GC_state s) {
-  GC_thread thread = getThreadCurrent(s);
-  return (thread->bytesNeeded 
-          <= (size_t)(s->limitPlusSlop - s->frontier));
+bool invariantForMutatorFrontier(GC_state s) {
+    GC_thread thread = getThreadCurrent(s);
+    return (thread->bytesNeeded
+            <= (size_t)(s->limitPlusSlop - s->frontier));
 }
 
-bool invariantForMutatorStack (GC_state s) {
-  pointer top, limit;
-  uint16_t framesize;
-
-  GC_stack stack = getStackCurrent(s);
-
-  
-  if(s->mainBooted)
-    {
-        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
-        GC_thread th = (GC_thread)(p + offsetofThread (s));
-
-        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
-        
-        if (st == stack)
-            return true;
-
-    }
-
-  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
-
-#if 0
-  if (top <= (limit + framesize)) {
-	  fprintf(stderr, "grow stack %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
-	  growStackCurrent (s); // XXX bc we disabled the GC
-  }
-  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
-#endif
-
-  if (DEBUG)
-	  fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
-  return (top <= (limit + framesize));
+bool invariantForMutatorStack(GC_state s) {
+    // TODO invariant for stacklets needs to be thought out
+    return true;
 }
 
 #if ASSERT

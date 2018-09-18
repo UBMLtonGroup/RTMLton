@@ -57,7 +57,6 @@ static inline size_t sizeofHeapDesired (GC_state s, size_t live, size_t currentS
 static inline void releaseHeap (GC_state s, GC_heap h);
 static void shrinkHeap (GC_state s, GC_heap h, size_t keepSize);
 static bool createHeap (GC_state s, GC_heap h, size_t desiredSize, size_t minSize);
-static bool createHeapSecondary (GC_state s, size_t desiredSize);
 static bool remapHeap (GC_state s, GC_heap h, size_t desiredSize, size_t minSize);
 static void growHeap (GC_state s, size_t desiredSize, size_t minSize);
 static void resizeHeap (GC_state s, size_t minSize);

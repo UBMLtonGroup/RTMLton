@@ -51,9 +51,9 @@ size_t dfsMarkByMode (GC_state s, pointer root,
   pointer todo; /* A pointer to the pointer in cur to next. */
   GC_header header;
   GC_header* headerp;
-  uint16_t bytesNonObjptrs;
-  uint16_t numObjptrs;
-  GC_objectTypeTag tag;
+  uint16_t bytesNonObjptrs = 0;
+  uint16_t numObjptrs = 0;
+  GC_objectTypeTag tag = 0;
   uint32_t objptrIndex; /* The i'th pointer in the object (element) being marked. */
   GC_header nextHeader;
   GC_header* nextHeaderp;

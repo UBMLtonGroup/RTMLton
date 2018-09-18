@@ -164,7 +164,7 @@ lookNext:
   /* Compare object to e->object. */
   unless (object == e->object) {
     GC_header header;
-    GC_objectTypeTag tag;
+    GC_objectTypeTag tag = 0;
 
     header = getHeader (object);
     unless (header == getHeader (e->object))
@@ -229,10 +229,10 @@ void growHashTableMaybe (GC_state s, GC_objectHashTable t) {
 pointer hashConsPointer (GC_state s, pointer object, bool countBytesHashConsed) {
   GC_objectHashTable t;
   GC_header header;
-  uint16_t bytesNonObjptrs;
-  uint16_t numObjptrs;
-  bool hasIdentity;
-  GC_objectTypeTag tag;
+  uint16_t bytesNonObjptrs = 0;
+  uint16_t numObjptrs = 0;
+  bool hasIdentity = FALSE;
+  GC_objectTypeTag tag = 0;
   pointer max;
   GC_hash hash;
   GC_hash* p;

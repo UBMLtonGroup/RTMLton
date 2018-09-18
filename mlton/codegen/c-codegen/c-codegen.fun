@@ -516,6 +516,7 @@ structure Type =
 
       fun toC (t: t): string =
          CType.toString (Type.toCType t)
+
    end
 
 structure StackOffset =
@@ -523,7 +524,7 @@ structure StackOffset =
       open StackOffset
 
       fun toString (T {offset, ty}): string =
-         concat ["/*StackOffset*/ S", C.args [Type.toC ty, C.bytes offset]]
+         concat ["S", C.args [Type.toC ty, C.bytes offset]]
    end
 
 structure StackOffset2 =
@@ -787,8 +788,53 @@ fun output {program as Machine.Program.T {chunks,
              | StackOffset s => StackOffset.toString s
              | StackTop => "StackTop"
              | Word w => WordX.toC w
+
+      fun toString2 (z: Operand.t): string =
+                  case z of
+                     ArrayOffset {base, index, offset, scale, ty} =>
+                     concat ["X", C.args [Type.toC ty,
+                                          toString GCState,
+                                          toString base,
+                                          toString index,
+                                          Scale.toString scale,
+                                          C.bytes offset]]
+                   | Cast (z, ty) => concat ["(", Type.toC ty, ")", toString z]
+                   | Contents {oper, ty} => contents (ty, toString oper)
+                   | Frontier => "Frontier"
+                   | UMFrontier => "UMFrontier"
+                   | GCState => "GCState"
+                   | Global g =>
+                        if Global.isRoot g
+                           then concat ["G",
+                                        C.args [Type.toC (Global.ty g),
+                                                Int.toString (Global.index g)]]
+                        else concat ["GPNR", C.args [Int.toString (Global.index g)]]
+                   | Label l => labelToStringIndex l
+                   | Null => "NULL"
+                   | Offset {base, offset, ty} =>
+                        concat ["O", C.args [Type.toC ty,
+                                             toString base,
+                                             C.bytes offset]]
+                   | ChunkedOffset {base, offset, ty, size} =>
+                        concat [ "CHOFF"
+                               , C.args [ toString GCState
+                                        , Type.toC ty
+                                        , toString base
+                                        , C.bytes offset
+                                        , C.bytes size ]]
+                   | Real r => RealX.toC r
+                   | Register r =>
+                        concat [Type.name (Register.ty r), "_",
+                                Int.toString (Register.index r)]
+                   | StackOffset s => StackOffset2.toString s
+                   | StackTop => "StackTop"
+                   | Word w => WordX.toC w
       in
+         (* XXX TODO this is a hack. we use operandToString2 when emitting
+         CReturn code (below) to allow us to redirect the CReturn to our
+         chunk.ra field*)
          val operandToString = toString
+         val operandToString2 = toString2
       end
       fun fetchOperand (z: Operand.t): string =
          if handleMisaligned (Operand.ty z) andalso Operand.isMem z then
@@ -917,14 +963,10 @@ fun output {program as Machine.Program.T {chunks,
                  (* this is where the return address is written to the stack *)
             fun push (return: Label.t, size: Bytes.t) =
                (print "\t/*push*/ "
-                ; print (move {dst = (StackOffset2.toString
+                ; print (concat ["/* ORIG stack-write ", StackOffset.toString
                                       (StackOffset.T
                                        {offset = Bytes.- (size, Runtime.labelSize ()),
-                                        ty = Type.label return})),
-                               dstIsMem = true,
-                               src = operandToString (Operand.Label return),
-                               srcIsMem = false,
-                               ty = Type.label return, inCrit = inCritical})
+                                        ty = Type.label return}), " */"])
                ; print (move {dst = (StackOffset.toString
                                      (StackOffset.T
                                       {offset = Bytes.- (Bytes.fromInt 200, Bytes.fromInt 0), (* JCM XXX sizeof(GC_UM_Chunk) is 208, so we stash the return address at 200. orig code is above *)
@@ -1042,8 +1084,10 @@ fun output {program as Machine.Program.T {chunks,
                                 in
                                    print
                                    (concat
-                                    ["\t",
-                                     move {dst = operandToString x,
+                                    ["\t/*CReturn 1045 --- ", operandToString x, " */",
+
+                                     move {dst =  operandToString x
+                                     ,
                                            dstIsMem = Operand.isMem x,
                                            src = creturn ty,
                                            srcIsMem = false,
@@ -1148,7 +1192,7 @@ fun output {program as Machine.Program.T {chunks,
                            val _ =
                               if Type.isUnit returnTy
                                  then ()
-                              else print (concat [creturn returnTy, " = /*J2*/ "])
+                              else print (concat [creturn returnTy, " = /*CCALL This is a C function call */ "])
                            datatype z = datatype CFunction.Target.t
                            val _ =
                               case target of
@@ -1276,8 +1320,6 @@ fun output {program as Machine.Program.T {chunks,
                ([("ExnStackOffset", GCField.ExnStack),
                  ("FrontierOffset", GCField.Frontier),
                  ("UMFrontierOffset", GCField.UMFrontier),
-                 ("UMStackBottomOffset", GCField.UMStackBottom),
-                 ("UMStackTopOffset", GCField.UMStackTop),
                  ("StackBottomOffset", GCField.StackBottom),
                  ("StackTopOffset", GCField.StackTop),
                  ("CurrentFrameOffset", GCField.CurrentFrame)],
