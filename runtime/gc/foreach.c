@@ -66,6 +66,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
              "  numObjptrs = %d\n",
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
+
   if (NORMAL_TAG == tag) {
 /*
       p += bytesNonObjptrs;
@@ -262,7 +263,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     assert(top == bottom);
     }
 #endif
-    p += sizeof (struct GC_stack) + stack ? stack->reserved : 0; // TODO
+    p += sizeof (struct GC_stack); //+ stack ? stack->reserved : 0; // TODO
   }
   return p;
 }

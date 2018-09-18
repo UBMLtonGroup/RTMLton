@@ -57,7 +57,6 @@ val gcFields =
     "exnStack",
     "frontier",
     "umfrontier",
-    "generationalMaps.cardMapAbsolute",
     "limit",
     "limitPlusSlop",
     "maxFrameSize",

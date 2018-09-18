@@ -53,9 +53,9 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
                 (uintptr_t)*opp, (uintptr_t)p);
     GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
-    GC_objectTypeTag tag;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs = 0;
+    GC_objectTypeTag tag = 0;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 //    if (DEBUG_MEM)

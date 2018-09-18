@@ -614,6 +614,7 @@ structure Type =
 
 val cardSizeLog2 : IntInf.t = 8 (* must agree with CARD_SIZE_LOG2 in gc.c *)
 
+(* not used, removed all refs to CardMap
 fun updateCard (addr: Operand.t): Statement.t list =
    let
       val index = Var.newNoname ()
@@ -636,6 +637,7 @@ fun updateCard (addr: Operand.t): Statement.t list =
                      ty = Type.word cardElemSize}),
              src = Operand.word (WordX.one cardElemSize)}]
    end
+*)
 
 fun convertWordSize (ws: WordSize.t): WordSize.t =
    WordSize.roundUpToPrim ws
@@ -1014,13 +1016,13 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                          baseTy = varType (Base.object base),
                                          offset = offset,
                                          value = varOp value}
-(*                                     val ss =
+(*  notusingcards                    val ss =
                                         if !Control.markCards
                                            andalso Type.isObjptr t
                                            then
                                               updateCard (Base.object baseOp)
                                               @ ss
-                                        else ss*)
+                                        else ss *)
                                   in
                                      adds ss
                                   end)
