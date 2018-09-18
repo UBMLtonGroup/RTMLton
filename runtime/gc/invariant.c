@@ -37,6 +37,9 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
 bool invariantForGC (GC_state s) {
   if (DEBUG)
     fprintf (stderr, "%d] invariantForGC\n", PTHREAD_NUM);
+  return TRUE;
+
+#if 0 // TODO jeff
   /* Frame layouts */
   for (unsigned int i = 0; i < s->frameLayoutsLength; ++i) {
     GC_frameLayout layout;
@@ -51,6 +54,7 @@ bool invariantForGC (GC_state s) {
         assert (offsets[j + 1] < layout->size);
     }
   }
+#endif
   /* Generational */
 #if 0
   if (s->mutatorMarksCards) {

@@ -40,6 +40,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     h->fl_head = nc;
     c->next_chunk = NULL;
     c->chunk_header = UM_CHUNK_HEADER_CLEAN;
+    c->ra = 0;
     s->fl_chunks -= 1;
     return c;
 }
