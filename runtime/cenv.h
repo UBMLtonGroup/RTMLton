@@ -74,6 +74,8 @@ COMPILE_TIME_ASSERT(sizeof_double__is_eight, sizeof(double) == 8);
 
 #if (defined (_AIX))
 #include "platform/aix.h"
+#if (defined (__rtems__))
+#include "platform/rtems_platform.h"
 #elif (defined (__CYGWIN__))
 #include "platform/cygwin.h"
 #elif (defined (__Darwin__))

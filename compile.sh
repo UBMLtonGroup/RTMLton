@@ -1,26 +1,5 @@
 #!/bin/bash
-rm -rf build
-
-export CFLAGS=-Wunused-but-set-variable
-arch_flags="-j 8"
-make $arch_flags dirs     &&
-make $arch_flags runtime  &&
-make $arch_flags compiler &&
-make $arch_flags basis-no-check &&
-make $arch_flags script &&
-make $arch_flags mlbpathmap &&
-make $arch_flags constants 
-
-cat <<EOF
-Try:
-./build/bin/mlton -codegen c -keep g -gc-module none -verbose 3 hello.sml 
-./hello
-EOF
-
-
-exit 0
-
-TARGET=x86_64-pc-linux-gnu
+TARGET=x86-pc-linux-gnu
 arch_flags="TARGET=$TARGET TARGET_OS=linux TARGET_ARCH=x86"
 make  dirs     &&
 cd runtime && make clean && cd .. &&

@@ -200,6 +200,7 @@ structure MLton: MLTON =
                    | FreeBSD
                    | HPUX
                    | Hurd
+                   | Rtems
                    | Linux
                    | MinGW
                    | NetBSD
@@ -212,6 +213,7 @@ structure MLton: MLTON =
                              (FreeBSD, "FreeBSD"),
                              (HPUX, "HPUX"),
                              (Hurd, "Hurd"),
+                             (Rtems, "Rtems"),
                              (Linux, "Linux"),
                              (MinGW, "MinGW"),
                              (NetBSD, "NetBSD"),

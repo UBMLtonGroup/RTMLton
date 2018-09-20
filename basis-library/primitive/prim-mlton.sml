@@ -209,6 +209,7 @@ structure Platform =
              | HPUX
              | Linux
              | MinGW
+             | Rtems
              | NetBSD
              | OpenBSD
              | Solaris
@@ -219,6 +220,7 @@ structure Platform =
                 | "cygwin" => Cygwin
                 | "darwin" => Darwin
                 | "freebsd" => FreeBSD
+                | "rtems" => Rtems
                 | "hurd" => Hurd
                 | "hpux" => HPUX
                 | "linux" => Linux

@@ -52,6 +52,9 @@ HP-UX)
 Linux)
         HOST_OS='linux'
 ;;
+Rtems)
+        HOST_OS='rtems'
+;;
 MINGW*)
         HOST_OS='mingw'
 ;;

@@ -38,6 +38,7 @@ structure SMLofNJ: SML_OF_NJ =
                    | Hurd => UNIX
                    | HPUX => UNIX
                    | Linux => UNIX
+                   | Rtems => UNIX
                    | MinGW => WIN32
                    | NetBSD => UNIX
                    | OpenBSD => UNIX

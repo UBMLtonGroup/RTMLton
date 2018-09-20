@@ -2,6 +2,11 @@
 
 # This script calls MLton.
 
+GMP="/home/$(whoami)/pickle/gmp-6.1.2-sparc-nfp"
+GMP_LIB="$GMP/lib"
+RTEMS="/home/$(whoami)/pickle/rtems3/rtems-4.11-host/sparc-rtems4.11/leon3/lib"
+PATH="/home/$(whoami)/pickle/rtems3/4.11/bin:$PATH"
+
 set -e
 
 dir=`dirname "$0"`
@@ -117,7 +122,6 @@ doit "$lib" \
         -target-cc-opt openbsd '-I/usr/local/include'            \
         -target-cc-opt aix '-maix64'                             \
         -target-cc-opt ia64 "$ia64hpux -mtune=itanium2"          \
-        -target-cc-opt sparc '-m32 -mcpu=v8 -Wa,-xarch=v8plusa'  \
         -target-cc-opt x86                                       \
                 '-m32
                 -fno-strength-reduce
@@ -128,6 +132,9 @@ doit "$lib" \
                 -falign-loops=2'                                 \
         -target-link-opt amd64 '-m64'                            \
         -target-link-opt alpha                                   \
+        -target-cc-opt sparc '-m32 -ffunction-sections -fdata-sections -mcpu=cypress -Wl,--gc-sections -DNO_FENV_H'  \
+        -target-link-opt sparc '-m32 -ffunction-sections -fdata-sections -mcpu=cypress -Wl,--gc-sections -DNO_FENV_H'\
+        -target-cc-opt rtems "-pipe -B$RTEMS -specs bsp_specs -qrtems -g -Wall -msoft-float -B$GMP -DNO_FENV_H -L$GMP_LIB" \
                 '-mieee -mbwx -mtune=ev6 -mfp-rounding-mode=d'   \
         -target-link-opt darwin "$darwinLinkOpts -lpthread"       \
         -target-link-opt freebsd '-L/usr/local/lib/ -lpthread -lexecinfo' \
@@ -142,5 +149,6 @@ doit "$lib" \
         -target-link-opt openbsd '-L/usr/local/lib/'             \
         -target-link-opt solaris '-lnsl -lsocket -lrt'           \
         -target-link-opt x86 '-m32'                              \
+        -target-link-opt rtems  "-pipe -B$RTEMS -specs bsp_specs -qrtems -g -Wall -msoft-float -B$GMP -DNO_FENV_H -L$GMP_LIB" \
         -profile-exclude '\$\(SML_LIB\)'                         \
         "$@"

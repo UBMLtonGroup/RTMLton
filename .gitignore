@@ -1,5 +1,6 @@
 /build/
 /install/
+/AWEF/
 *~
 *.sml-e
 cscope.*

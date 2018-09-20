@@ -73,6 +73,7 @@ structure MLtonPlatform: MLTON_PLATFORM =
                 (Hurd, "Hurd"),
                 (HPUX, "HPUX"),
                 (Linux, "Linux"),
+                (Rtems, "Rtems"),
                 (MinGW, "MinGW"),
                 (NetBSD, "NetBSD"),
                 (OpenBSD, "OpenBSD"),
