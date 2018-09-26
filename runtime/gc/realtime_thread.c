@@ -5,7 +5,7 @@
 
 #define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
-#define DEBUG true
+//#define DEBUG true
 
 static volatile int initialized = 0;
 
