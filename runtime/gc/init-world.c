@@ -105,7 +105,7 @@ void initWorld (GC_state s) {
 
 #define MEGABYTES 1024*1024
 #define MEM_AVAILABLE 1024
-  size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (0.150 * MEGABYTES);
+  size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
   //createUMHeap (s, &s->umarheap, avail_mem, avail_mem);
