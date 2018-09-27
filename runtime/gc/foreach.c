@@ -76,7 +76,11 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           callIfIsObjptr (s, f, (objptr*)p);
       }
 */
-
+     if(p > s->heap.start && p < (s->heap.start + s->heap.size)) 
+     {
+       fprintf(stderr,"Error: Normal object present in old heap\n");
+       exit(-1);
+     }
       if (DEBUG_MEM)
           fprintf(stderr, "   foreachObjptrInObject, normal, bytesNonObjptrs: %d, "
                   "num ptrs: %d\n", bytesNonObjptrs, numObjptrs);

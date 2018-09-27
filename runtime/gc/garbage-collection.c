@@ -634,6 +634,9 @@ void performGC_helper (GC_state s,
     ? 0
     : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
 #endif
+
+  stackBytesRequested = 0;
+
   totalBytesRequested =
     oldGenBytesRequested
     + nurseryBytesRequested
