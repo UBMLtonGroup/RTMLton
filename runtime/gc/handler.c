@@ -24,7 +24,7 @@ void GC_startSignalHandler (GC_state s) {
   assert (s->signalsInfo.signalIsPending);
   s->signalsInfo.signalIsPending = FALSE;
   s->signalsInfo.amInSignalHandler = TRUE;
-  assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+ // assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   s->savedThread[PTHREAD_NUM] = s->currentThread[PTHREAD_NUM];
   /* Set s->atomicState to 2 when switching to the signal handler
    * thread; leaving the runtime will decrement s->atomicState to 1,

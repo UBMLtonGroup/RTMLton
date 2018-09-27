@@ -16,11 +16,15 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
   /* newThread may do a GC, which invalidates from.
    * Hence we need to stash from someplace that the GC can find it.
    */
+  
+  objptr tmp = s->savedThread[PTHREAD_NUM];
+  s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
+
   assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
   to = newThread (s, alignStackReserved(s, used));
   from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->heap.start) + offsetofThread (s));
-  s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
+  s->savedThread[PTHREAD_NUM] = tmp;
   if (DEBUG_THREADS) {
     fprintf (stderr, FMTPTR" = copyThread ("FMTPTR")\n",
              (uintptr_t)to, (uintptr_t)from);
@@ -48,11 +52,12 @@ void GC_copyCurrentThread (GC_state s) {
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread (s, fromThread, fromStack->used);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
-  assert (toStack->reserved == alignStackReserved (s, toStack->used));
+  //assert (toStack->reserved == alignStackReserved (s, toStack->used)); Commented because allocating large reserved bytes as no GC on old heap
   leave (s);
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = GC_copyCurrentThread\n", (uintptr_t)toThread);
-  assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+  
+  //  assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)toThread - offsetofThread (s), s->heap.start);
 }
 
@@ -69,7 +74,8 @@ pointer GC_copyThread (GC_state s, pointer p) {
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread (s, fromThread, fromStack->used);
   toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
-  assert (toStack->reserved == alignStackReserved (s, toStack->used));
+  //assert (toStack->reserved == alignStackReserved (s, toStack->used));Commented because  allocating large reserved bytes as no GC on old heap
+
   leave (s);
   if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = GC_copyThread ("FMTPTR")\n", 
