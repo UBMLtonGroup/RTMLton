@@ -97,9 +97,9 @@ GC_thread newThread (GC_state s, size_t reserved) {
   assert (isStackReservedAligned (s, reserved));
   stack = newStack (s, reserved, FALSE);
 
-  res = newUMObject (s, GC_THREAD_HEADER,
-                     sizeofThread (s),
-                     FALSE);
+  C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
+  res = UM_Object_alloc(s,numchunks,GC_THREAD_HEADER,GC_NORMAL_HEADER_SIZE);
+
   thread = (GC_thread)(res + offsetofThread (s));
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;

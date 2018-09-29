@@ -81,6 +81,11 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       }
 */
 
+      if(p > s->heap.start && p< (s->heap.start+s->heap.size))
+      {
+          die("Non stack Object in old heap");
+      }
+
       if (DEBUG_MEM)
           fprintf(stderr, "   foreachObjptrInObject, normal, bytesNonObjptrs: %d, "
                   "num ptrs: %d\n", bytesNonObjptrs, numObjptrs);

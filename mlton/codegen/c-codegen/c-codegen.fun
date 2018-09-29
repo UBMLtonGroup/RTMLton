@@ -785,56 +785,12 @@ fun output {program as Machine.Program.T {chunks,
              | Register r =>
                   concat [Type.name (Register.ty r), "_",
                           Int.toString (Register.index r)]
-             | StackOffset s => StackOffset.toString s
+             | StackOffset s => concat ["/* move */", StackOffset.toString s]
              | StackTop => "StackTop"
              | Word w => WordX.toC w
 
-      fun toString2 (z: Operand.t): string =
-                  case z of
-                     ArrayOffset {base, index, offset, scale, ty} =>
-                     concat ["X", C.args [Type.toC ty,
-                                          toString GCState,
-                                          toString base,
-                                          toString index,
-                                          Scale.toString scale,
-                                          C.bytes offset]]
-                   | Cast (z, ty) => concat ["(", Type.toC ty, ")", toString z]
-                   | Contents {oper, ty} => contents (ty, toString oper)
-                   | Frontier => "Frontier"
-                   | UMFrontier => "UMFrontier"
-                   | GCState => "GCState"
-                   | Global g =>
-                        if Global.isRoot g
-                           then concat ["G",
-                                        C.args [Type.toC (Global.ty g),
-                                                Int.toString (Global.index g)]]
-                        else concat ["GPNR", C.args [Int.toString (Global.index g)]]
-                   | Label l => labelToStringIndex l
-                   | Null => "NULL"
-                   | Offset {base, offset, ty} =>
-                        concat ["O", C.args [Type.toC ty,
-                                             toString base,
-                                             C.bytes offset]]
-                   | ChunkedOffset {base, offset, ty, size} =>
-                        concat [ "CHOFF"
-                               , C.args [ toString GCState
-                                        , Type.toC ty
-                                        , toString base
-                                        , C.bytes offset
-                                        , C.bytes size ]]
-                   | Real r => RealX.toC r
-                   | Register r =>
-                        concat [Type.name (Register.ty r), "_",
-                                Int.toString (Register.index r)]
-                   | StackOffset s => StackOffset2.toString s
-                   | StackTop => "StackTop"
-                   | Word w => WordX.toC w
       in
-         (* XXX TODO this is a hack. we use operandToString2 when emitting
-         CReturn code (below) to allow us to redirect the CReturn to our
-         chunk.ra field*)
          val operandToString = toString
-         val operandToString2 = toString2
       end
       fun fetchOperand (z: Operand.t): string =
          if handleMisaligned (Operand.ty z) andalso Operand.isMem z then
@@ -1084,7 +1040,7 @@ fun output {program as Machine.Program.T {chunks,
                                 in
                                    print
                                    (concat
-                                    ["\t/*CReturn 1045 --- ", operandToString x, " */",
+                                    ["\t/*CReturn 1045 --- ",  x, " */",
 
                                      move {dst =  operandToString x
                                      ,

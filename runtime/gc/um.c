@@ -43,6 +43,11 @@ UM_Header_alloc(GC_state gc_stat,
 Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
 {
+    if (num_chunks < 1) {
+        fprintf(stderr, "[BUG] warning?? num_chunks < 1 (%d)\n", num_chunks);
+        return NULL;
+    }
+
     GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
     chunk->chunk_header = UM_CHUNK_IN_USE;
     uint32_t *p = (uint32_t *)chunk->ml_object;

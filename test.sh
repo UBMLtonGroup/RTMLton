@@ -19,3 +19,7 @@ gcc -std=gnu99 -c -g -DASSERT=1 \
           -lmlton-gdb -lgdtoa-gdb -lm -lgmp -m64 -lpthread -lrt
 
 
+exit 0
+
+./build/bin/mlton -codegen c -keep g -verbose 3 -debug true -expert true -keep ssa -keep ssa2 -keep rssa -keep machine test.sml
+

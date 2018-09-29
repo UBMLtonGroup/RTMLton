@@ -499,5 +499,8 @@ MLTON_CODEGEN_MEMCPY(void * memcpy(void *, const void*, size_t);)
 #define WordU32_mulCheck(dst, x, y, l) WordU_mulCheck(32, dst, x, y, l)
 #define WordU64_mulCheck(dst, x, y, l) WordU_mulCheck(64, dst, x, y, l)
 
+Objptr UM_Object_alloc (CPointer x3, Word64 x2, Int32 x1, Word64 x0);
+
+
 #endif /* #ifndef _C_CHUNK_H_ */
 

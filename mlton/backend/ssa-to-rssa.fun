@@ -138,7 +138,7 @@ structure CFunction =
                                       CType.csize (),
                                       CType.seqIndex (),
                                       CType.objptrHeader ()),
-                         SOME CType.cpointer),
+                         SOME CType.objptr),
             return = return,
             symbolScope = Private,
             target = Direct "GC_arrayAllocate"}
@@ -1218,6 +1218,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                            in
                               case Prim.name prim of
                                  Array_array => array (a 0)
+                                 (*
                                | chunkedObject =>
                                        ccall {args = (Vector.new4
                                                      (GCState,
@@ -1225,7 +1226,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                                       Operand.zero (WordSize.word32 ),
                                                       Operand.zero (WordSize.csize ()))),
                                              func = (CFunction.UM_Object_alloc
-                                                     {return = Type.cpointer ()})}
+                                                     {return = Type.cpointer ()})} *)
                                | Array_length => arrayOrVectorLength ()
                                | Array_toVector =>
                                     let
