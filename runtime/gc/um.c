@@ -65,7 +65,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         GC_UM_Chunk prev = chunk;
         for(int i = 1 ; i < num_chunks ; i++) {
             prev->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-            fprintf(stderr, "   #%d @ "FMTPTR"\n",  i+1, prev->next_chunk);
+            //fprintf(stderr, "   #%d @ "FMTPTR"\n",  i+1, prev->next_chunk);
             prev->next_chunk->chunk_header = UM_CHUNK_IN_USE;
             prev->next_chunk->prev_chunk = prev;
             prev = prev->next_chunk;

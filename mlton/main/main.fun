@@ -180,8 +180,10 @@ fun hasNativeCodegen () =
    let
       datatype z = datatype Control.codegen
    in
+   (* JEFF DISABLE CODEGEN
       hasCodegen AMD64Codegen
-      orelse hasCodegen X86Codegen
+      orelse hasCodegen X86Codegen *)
+      hasCodegen CCodegen
    end
 
 
@@ -953,28 +955,13 @@ fun commandLine (args: string list): unit =
                       NONE => if defaultAlignIs8 () then Align8 else Align4
                     | SOME a => a)
       val () =
-         codegen := (case !explicitCodegen of
-                        NONE =>
-                           if hasCodegen AMD64Codegen
-                              then AMD64Codegen
-                           else if hasCodegen X86Codegen
-                              then X86Codegen
-                           else CCodegen
-                      | SOME Native =>
-                           if hasCodegen AMD64Codegen
-                              then AMD64Codegen
-                           else if hasCodegen X86Codegen
-                              then X86Codegen
-                           else usage (concat ["can't use native codegen on ",
-                                               MLton.Platform.Arch.toString targetArch,
-                                               " target"])
-                      | SOME (Explicit cg) => cg)
+         codegen := CCodegen
       val () = MLton.Rusage.measureGC (!verbosity <> Silent)
       val () = if !profileTimeSet
-                  then (case !codegen of
+                  then (case !codegen of (* JEFF DISABLE CODEGEN
                            X86Codegen => profile := ProfileTimeLabel
                          | AMD64Codegen => profile := ProfileTimeLabel
-                         | _ => profile := ProfileTimeField)
+                         | *) _ => profile := ProfileTimeField)
                   else ()
       val () = if !exnHistory
                   then (case !profile of
@@ -1087,6 +1074,7 @@ fun commandLine (args: string list): unit =
       val llvm_llcOpts = addTargetOpts llvm_llcOpts
       val llvm_optOpts = addTargetOpts llvm_optOpts
 
+    (* JEFF DISABLE CODEGEN
       val _ =
          if not (hasCodegen (!codegen))
             then usage (concat ["can't use ",
@@ -1095,6 +1083,7 @@ fun commandLine (args: string list): unit =
                                 MLton.Platform.Arch.toString targetArch,
                                 " target"])
          else ()
+         *)
       val () =
          Control.labelsHaveExtra_ := (case targetOS of
                                          Cygwin => true
@@ -1105,15 +1094,19 @@ fun commandLine (args: string list): unit =
          chunk :=
          (case !explicitChunk of
              NONE => (case !codegen of
-                         AMD64Codegen => ChunkPerFunc
-                       | CCodegen => Coalesce {limit = 4096}
+                         CCodegen => Coalesce {limit = 4096}
+                       | _ => Coalesce {limit = 4096}
+                       (*JEFF DISABLED CODEGEN
+                       | AMD64Codegen => ChunkPerFunc
                        | LLVMCodegen => Coalesce {limit = 4096}
-                       | X86Codegen => ChunkPerFunc
+                       | X86Codegen => ChunkPerFunc *)
                        )
            | SOME c => c)
+           (* JEFF DISABLE CODEGEN
       val _ = if not (!Control.codegen = X86Codegen) andalso !Native.IEEEFP
                  then usage "must use x86 codegen with -ieee-fp true"
               else ()
+              *)
       val _ =
          if !keepDot andalso List.isEmpty (!keepPasses)
             then keepSSA := true

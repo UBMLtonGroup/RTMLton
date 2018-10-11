@@ -1040,7 +1040,7 @@ fun output {program as Machine.Program.T {chunks,
                                 in
                                    print
                                    (concat
-                                    ["\t/*CReturn 1045 --- ",  x, " */",
+                                    ["\t",
 
                                      move {dst =  operandToString x
                                      ,

@@ -331,7 +331,7 @@ let
                 *    end of the backend.
                 *)
                if !Control.codegen = Control.CCodegen
-                  orelse !Control.codegen = Control.LLVMCodegen
+                  (*JEFF DISABLE CODEGEN orelse !Control.codegen = Control.LLVMCodegen *)
                   orelse !Control.profile <> Control.ProfileNone
                   then new ()
                else

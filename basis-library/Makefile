@@ -10,7 +10,7 @@
 SRC = $(shell cd .. && pwd)
 BUILD = $(SRC)/build
 BIN = $(BUILD)/bin
-MLTON = mlton
+MLTON = /usr/bin/mlton
 PATH = $(BIN):$(shell echo $$PATH)
 
 all:

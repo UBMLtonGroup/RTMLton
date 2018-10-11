@@ -1452,7 +1452,7 @@ struct
                           else xvom ()
                   end
              | Word_xorb s => bitop (s, Instruction.XOR)
-             | _ => Error.bug ("x86MLton.prim: strange Prim.Name.t: " ^ primName)),
+             | _ => Error.bug ("x86MLton.prim: strange !Prim.Name.t: " ^ primName)),
          comment_end]
       end
 
