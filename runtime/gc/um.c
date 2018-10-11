@@ -14,6 +14,9 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
 		__FILE__, __LINE__, __func__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
 
+
+
+
 /* define chunk structure (linked list)
  * define the free list
  */
