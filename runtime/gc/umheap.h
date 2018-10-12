@@ -33,6 +33,7 @@ typedef struct GC_UM_heap {
     pointer end;
     size_t size;
     UM_Mem_Chunk fl_head;
+    UM_Mem_Chunk fl_tail;
 } *GC_UM_heap;
 
 struct GC_UM_Array_Chunk;

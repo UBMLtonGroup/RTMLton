@@ -30,7 +30,6 @@ struct GC_state {
   size_t exnStack[MAXPRI];
 
   size_t fl_chunks;
-  size_t fl_array_chunks;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
@@ -105,6 +104,10 @@ struct GC_state {
   int gcCallSeq[MAXPRI];
   bool dirty;
   volatile bool rtSync[MAXPRI];
+  pthread_mutex_t fl_lock;
+  pthread_cond_t fl_empty_cond;
+  pthread_mutex_t rtSync_lock;
+  pthread_cond_t rtSync_cond;
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];

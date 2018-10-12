@@ -32,6 +32,44 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
   }
 }
 
+
+/*Check if all chunks have been unmarked at end of sweep phase*/
+bool invariantForRTGC(GC_state s)
+{
+
+    pointer pchunk;
+    size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
+    pointer end = s->umheap.start + s->umheap.size - step;
+
+    for (pchunk=s->umheap.start;
+         pchunk < end;
+         pchunk+=step) 
+    {
+        if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
+        {
+            GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+4); /*account for size of chunktype*/
+            if ((pc->chunk_header & UM_CHUNK_IN_USE) && !(pc->chunk_header & ~UM_CHUNK_MARK_MASK) ) {
+                return false;
+            }
+        }
+        else if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
+        {
+
+            GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
+            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) && !(pc->array_chunk_header & ~UM_CHUNK_MARK_MASK)) {
+                return false;
+            }
+       
+        }
+
+    }
+    
+    return true;
+}
+
+
+
+
 bool invariantForGC (GC_state s) {
   if (DEBUG)
     fprintf (stderr, "%d] invariantForGC\n", PTHREAD_NUM);
@@ -114,15 +152,22 @@ bool invariantForGC (GC_state s) {
 }
 #endif
 
+/*Checks if bytes needed is beyond the limit of heap. but has no relevance in RTMLton because we dont do bump pointer allocation*/
 bool invariantForMutatorFrontier (GC_state s) {
+  
+    return true;
   GC_thread thread = getThreadCurrent(s);
+
   return (thread->bytesNeeded 
           <= (size_t)(s->limitPlusSlop - s->frontier));
 }
 
+/*Do we really need this once stacks are chunked? */
 bool invariantForMutatorStack (GC_state s) {
   pointer top, limit;
   uint16_t framesize;
+
+  return true;
 
   GC_stack stack = getStackCurrent(s);
 

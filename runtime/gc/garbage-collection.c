@@ -31,6 +31,18 @@ struct thrctrl
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
 
+#define LOCK IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK IFED(pthread_mutex_unlock(&s->fl_lock))
+
+#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+#define BROADCAST IFED(pthread_cond_broadcast(&s->fl_empty_cond))
+
+#define RTSYNC_LOCK IFED(pthread_mutex_lock(&s->rtSync_lock))
+#define RTSYNC_UNLOCK IFED(pthread_mutex_unlock(&s->rtSync_lock))
+#define RTSYNC_SIGNAL IFED(pthread_cond_signal(&s->rtSync_cond))
+#define RTSYNC_BLOCK IFED(pthread_cond_wait(&s->rtSync_cond,&s->rtSync_lock))
+#define RTSYNC_TRYLOCK pthread_mutex_trylock(&s->rtSync_lock)
+
 #define TC_LOCK if (DEBUG) fprintf(stderr, "%d] TC_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
 #define TC_UNLOCK if (DEBUG) fprintf(stderr, "%d] TC_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
 #define TCSP_LOCK if (DEBUG) fprintf(stderr, "%d] TCSP_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.safepoint_lock))
@@ -330,21 +342,71 @@ __attribute__ ((noreturn))
         fprintf (stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
 
     s->GCrunnerRunning = TRUE;
-
+    
+  
+   /* if(s->currentThread[PTHREAD_NUM] == BOGUS_OBJPTR)
+    {
+        if(DEBUG_THREADS)
+            fprintf(stderr,"%d] creating green thread to link with RT thread\n");
+     
+        GC_thread thread = newThread (s, sizeofStackInitialReserved (s));
+        switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
+    }
+    */
 
 #ifdef CONCURRENT
     while(1){
         if(DEBUG)
-            fprintf(stderr,"%d] GC thread is Idle \n",PTHREAD_NUM);
+            fprintf(stderr,"%d] GC thread is Idle: FC=%d \n",PTHREAD_NUM,s->fl_chunks);
+       
+       /* GC sweep is performed under RTSYNC_LOCK because this lock also prevents the mutators from marking their stacks*/ 
+        RTSYNC_LOCK;
+        
+        RTSYNC_BLOCK;
+        
+
+        assert(s->dirty);
+
+        int start = s->fl_chunks;
+
+        if(DEBUG_RTGC)
+            fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,start);
+
+        performGC_helper (s,
+                          s->oldGenBytesRequested,
+                          s->nurseryBytesRequested,
+                          s->forceMajor, s->mayResize);
+        
+        if(DEBUG_RTGC)
+            fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,(s->fl_chunks - start));
+
+
+        s->dirty = false;
+
+        /*Change this to reset all rtSync values for all RT threads*/
+        s->rtSync[0] = false;
+     
+       /*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/ 
+        LOCK;
+        BROADCAST;
+        UNLOCK; 
+
+
+        RTSYNC_UNLOCK;
+        
+        
+    #if 0  
         if ((s->fl_chunks < 2000) && !s->dirty)
         {
             s->dirty = true;
+            fprintf(stderr,"%d] Dirty bit set\n",PTHREAD_NUM);
 
         }
         else if(s->dirty)
         {
             int i;
             bool syncDone = true;
+            fprintf(stderr,"%d] waiting for sync\n",PTHREAD_NUM);
            for(i=0; i < MAXPRI;i++)
            {
                /* Don't check for GC thread */
@@ -354,22 +416,37 @@ __attribute__ ((noreturn))
                if(!s->rtSync[i])
                {
                    syncDone = false;
-                   sched_yield(); //TODO:Should i be yielding in a multicore environment? 
+                   //sched_yield(); //TODO:Should i be yielding in a multicore environment? 
+                   ssleep(1,0);
                }
 
            }
 
            if(syncDone) 
                {
-                fprintf(stderr,"%d] GC going to sweep\n",PTHREAD_NUM);
+                int start = s->fl_chunks;
+                fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,start);
                 performGC_helper (s,
                                   s->oldGenBytesRequested,
                                   s->nurseryBytesRequested,
                                   s->forceMajor, s->mayResize);
+                fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,(s->fl_chunks - start));
+
+                s->dirty = false;
+                s->rtSync[0] = false;
+             
+               /*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/ 
+                LOCK;
+                BROADCAST;
+                UNLOCK; 
+
+                
+
 
                }
 
         }
+    #endif
     
     }
 
@@ -487,6 +564,7 @@ performGC (GC_state s,
 
 #else
     DBG ((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
+
     s->rtSync[PTHREAD_NUM]= true;
     //performGC_helper (s, oldGenBytesRequested, nurseryBytesRequested,
       //                forceMajor, mayResize);
@@ -495,14 +573,18 @@ performGC (GC_state s,
 
 void markStack(GC_state s,GC_stack currentStack)
 {
-
-    foreachGlobalObjptr (s, umDfsMarkObjectsMark);
-    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
     
+
+            //fprintf(stderr,"%d] Marking stack \n",PTHREAD_NUM);
+
+            foreachGlobalObjptr (s, umDfsMarkObjectsMark);
+            foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
+    
+            //fprintf(stderr,"%d] Marked its stack,FC=%d. dirty=%d\n",PTHREAD_NUM,s->fl_chunks,s->dirty?1:0) ;
 
 }
 
-void sweep(GC_state s,GC_stack currentStack, size_t ensureObjectChunksAvailable,
+void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                  size_t ensureArrayChunksAvailable,
                  bool fullGC)
 {
@@ -572,6 +654,13 @@ void sweep(GC_state s,GC_stack currentStack, size_t ensureObjectChunksAvailable,
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
         }
+        else if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
+            ((pc->chunk_header & UM_CHUNK_MARK_MASK) || (pc->chunk_header & UM_CHUNK_GREY_MASK))) {
+
+                
+                    pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
+
+        }
 
         }
         else if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
@@ -587,6 +676,11 @@ void sweep(GC_state s,GC_stack currentStack, size_t ensureObjectChunksAvailable,
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
         }
+       if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
+            ((pc->array_chunk_header & UM_CHUNK_MARK_MASK) || (pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
+
+            pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
+        }
         }
 
         if (!fullGC && s->fl_chunks >= ensureObjectChunksAvailable) {
@@ -594,8 +688,11 @@ void sweep(GC_state s,GC_stack currentStack, size_t ensureObjectChunksAvailable,
         }
     }
 
+    /*Not unmarking the objects within chunks*/ 
+    /*
     foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
     foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
+    */
 }
 
 void performUMGC(GC_state s,
@@ -616,11 +713,12 @@ void performUMGC(GC_state s,
             s->fl_chunks);
 #endif
     
-    GC_stack currentStack = getStackCurrent(s);
+   // GC_stack currentStack = getStackCurrent(s);
+
 // Mark phase
     //markStack(s,currentStack);
 //Sweep phase
-    sweep(s,currentStack,ensureObjectChunksAvailable,ensureArrayChunksAvailable,fullGC);
+    sweep(s,ensureObjectChunksAvailable,ensureArrayChunksAvailable,fullGC);
 
 
 #ifdef PROFILE_UMGC
@@ -684,36 +782,53 @@ void performGC_helper (GC_state s,
              100.0 * ((double)(nurseryUsed) / (double)(s->heap.size)),
              100.0 * ((double)(nurseryUsed) / (double)(nurserySize)));
   }
-  assert (invariantForGC (s));
-  if (needGCTime (s))
+  
+
+/*TODO: Assess invariant for GC check in chunked CMS GC*/
+  //assert (invariantForGC (s));
+  
+if (needGCTime (s))
     startTiming (&ru_start);
-//  minorGC (s);
-  stackTopOk = invariantForMutatorStack (s);
+
+  //  minorGC (s);
+    
+  /*What stack? GC has no stack.*/
+  //stackTopOk = invariantForMutatorStack (s);
+
+
 #if 0
   stackBytesRequested =
     stackTopOk
     ? 0
     : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
 #endif
-  totalBytesRequested =
-    oldGenBytesRequested
-    + nurseryBytesRequested
-    + stackBytesRequested;
-  if (forceMajor
-      or totalBytesRequested > s->heap.size - s->heap.oldGenSize) {
-//    majorGC (s, totalBytesRequested, mayResize);
-      performUMGC(s, 3000, 0, true);
-  }
+  totalBytesRequested = oldGenBytesRequested + nurseryBytesRequested + stackBytesRequested;
 
-  setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,
-                         nurseryBytesRequested);
-  assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested,
-                            nurseryBytesRequested));
+  /*if (forceMajor
+      or totalBytesRequested > s->heap.size - s->heap.oldGenSize) {
+      performUMGC(s, 3000, 0, true);
+  }*/
+
+      performUMGC(s, 3000, 0, true);
+    
+    /*The chunked heap does not grow, so we dont need to reset heap */
+    //setGCStateCurrentHeap (s, oldGenBytesRequested + stackBytesRequested,nurseryBytesRequested);
+  
+
+
+   //assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested, nurseryBytesRequested));
+   assert (s->fl_chunks > 3000);
+
+
 #if 0
   unless (stackTopOk)
     growStackCurrent (s);
 #endif
-  setGCStateCurrentThreadAndStack (s);
+
+/*Setting current thread and stack not required for chunked CMS GC*/
+  //setGCStateCurrentThreadAndStack (s);
+
+
   if (needGCTime (s)) {
     gcTime = stopTiming (&ru_start, &s->cumulativeStatistics.ru_gc);
     s->cumulativeStatistics.maxPauseTime =
@@ -751,17 +866,21 @@ void performGC_helper (GC_state s,
   }
   if (DEBUG)
     displayGCState (s, stderr);
-  assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
-  assert (invariantForGC (s));
+  
+  //assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
+  //assert (invariantForGC (s));
+  assert(invariantForRTGC(s));
+  
+
+
   leaveGC (s);
 }
 
 
 void ensureInvariantForMutator (GC_state s, bool force) {
     force = true;
-   
     markStack(s,getStackCurrent(s)); 
-    performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
+    //performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
 
     //assert (invariantForMutatorFrontier(s));
     //assert (invariantForMutatorStack(s));
@@ -802,6 +921,7 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   getThreadCurrent(s)->bytesNeeded = bytesRequested;
   switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
   ensureInvariantForMutator (s, force);
+
   assert (invariantForMutatorFrontier(s));
   assert (invariantForMutatorStack(s));
   leave (s);
@@ -812,7 +932,7 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
-    if (!force) {
+    /*if (!force) {
         if ((s->fl_chunks > 2000))// &&
             //(s->fl_array_chunks > 1000000))
             return;
@@ -821,8 +941,48 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
     if (s->gc_module == GC_NONE) {
         return;
     }
-
+    
+    //fprintf(stderr,"%d] called GC-collect requesting %d bytes, free chunks = %d\n",PTHREAD_NUM,bytesRequested,s->fl_chunks);
     GC_collect_real(s, bytesRequested, true);
+    */
+
+    if(!force)
+    {
+        /*Try to get RTSync lock, if success means a) GC not Sweeping, b) no other thread is in GC_collect
+         * if fails: dont execute section, continue with work
+         * pthread_mutex_trylock returns 0 when mutex is acquired*/
+        if(!RTSYNC_TRYLOCK)
+        {
+            if(s->dirty || s->fl_chunks < 2000)
+            {
+                s->dirty= true;
+                GC_collect_real(s,bytesRequested,true); /*marks stack*/
+                s->rtSync[PTHREAD_NUM] = true;
+                /*Check if all  other RT threads have set their values*/
+                int i;
+                for(i=0;i<MAXPRI;i++)
+                {
+                    if(i==1 || i == PTHREAD_NUM)
+                        continue;
+                    if(!s->rtSync[i])
+                        break;
+                }
+                if(i == MAXPRI)
+                {
+                    RTSYNC_SIGNAL;
+                }
+                else
+                {
+                    fprintf(stderr,"%d] All Threads not synced\n",PTHREAD_NUM);
+                } 
+            }
+            RTSYNC_UNLOCK;
+        }
+    }
+    else
+    {
+        die("Why are you forcing GC_collect?\n");
+    }
 
 }
 
@@ -840,8 +1000,7 @@ void ensureHasHeapBytesFree (GC_state s,
 
     if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested)) {
         markStack(s,getStackCurrent(s));
-        performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE,
-                   TRUE);
+        //performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE,TRUE);
         if (DEBUG) {
             fprintf (stderr,
                      "%d] Back after GCin and going to check assert. oldgen size=%d\n",

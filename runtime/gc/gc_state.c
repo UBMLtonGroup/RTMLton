@@ -8,6 +8,13 @@
  */
 
 void displayGCState (GC_state s, FILE *stream) {
+
+    if(PTHREAD_NUM ==1)
+    {
+        fprintf(stream,"%d] Cannot display GC_state in GC thread\n",PTHREAD_NUM);
+        return;
+    }
+    
   fprintf (stream, "%d] GC state\n", PTHREAD_NUM);
   fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
@@ -160,7 +167,7 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
-  if (DEBUG) fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
+  if (DEBUG_THREADS) fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
   GC_copyCurrentThread(s);
 }
 
@@ -184,6 +191,7 @@ void GC_setSavedThread (GC_state s, pointer p) {
   op = pointerToObjptr (p, s->heap.start);
   s->savedThread[PTHREAD_NUM] = op;
 }
+
 
 void GC_setSignalHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);

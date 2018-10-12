@@ -43,10 +43,10 @@ void dumpUMHeap(GC_state s) {
         }
     }
 
-    fprintf(stdout, "========= STACK =========\n");
+  /*  fprintf(stdout, "========= STACK =========\n");
     fprintf(stdout, "Stack: ");
     foreachObjptrInObject(s, (pointer) getStackCurrent(s), printObjptr, FALSE);
     fprintf(stdout, "\n");
-
+*/
     fclose(stdout);
 }

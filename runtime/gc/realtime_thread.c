@@ -5,6 +5,8 @@
 
 #define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
 #define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
+
+#define CONCURRENT
 //#define DEBUG true
 
 static volatile int initialized = 0;
@@ -28,7 +30,7 @@ GC_threadYield ( __attribute__ ((unused)) GC_state s)
 
 int32_t 
 GC_setBooted(int32_t thr_num, GC_state s) {
-    if (DEBUG) fprintf(stderr, "%d] setBooted thr=%d\n", PTHREAD_NUM, thr_num);
+    if (DEBUG_THREADS) fprintf(stderr, "%d] setBooted thr=%d\n", PTHREAD_NUM, thr_num);
     TC.booted = 1;
     s->mainBooted=TRUE;
     return 0;
@@ -65,8 +67,8 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 
     int tNum;
     for (tNum = 2; tNum < MAXPRI; tNum++) {
-        if (DEBUG)
-            fprintf (stderr, "spawning thread %d\n", tNum);
+        if (DEBUG_THREADS)
+            fprintf (stderr, "spawning posix thread %d\n", tNum);
 
         struct realtimeRunnerParameters *params =
             malloc (sizeof (struct realtimeRunnerParameters));
@@ -113,8 +115,39 @@ realtimeRunner (void *paramsPtr)
         fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
                  state->callFromCHandlerThread);
 
+  
+ /*if(state->currentThread[PTHREAD_NUM] == BOGUS_OBJPTR)
+ {
+     if(DEBUG_THREADS)
+         fprintf(stderr,"%d] creating green thread to link with RT thread\n");
+     
+     GC_thread thread = newThread (state, sizeofStackInitialReserved (state));
+     switchToThread (state, pointerToObjptr((pointer)thread - offsetofThread (state), state->heap.start));
+ }*/
+  
+ while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
+  {
+      state->rtSync[PTHREAD_NUM]= true;
+      if(DEBUG_THREADS)
+          fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
+
+      sched_yield();
+  }
+
+   /* fprintf(stderr,"%d] RT thread\n",PTHREAD_NUM)   ;
+
+    GC_thread rtTH = (GC_thread) (objptrToPointer (state->savedThread[PTHREAD_NUM], state->heap.start) +
+                                   offsetofThread (state));
+
+    state->currentThread[PTHREAD_NUM] = state->savedThread[PTHREAD_NUM];
+    setGCStateCurrentThreadAndStack (state);
+
+    GC_switchToThread(state,rtTH,0);
+    */
+
+#ifdef THREADED
     while (!TC.booted) {
-        if (DEBUG) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
+        if (DEBUG_THREADS) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
         ssleep (1, 0);
     }
 
@@ -191,6 +224,8 @@ realtimeRunner (void *paramsPtr)
                  tNum);
         exit (-1);
     }
+
+#endif
 }
 
 pointer

@@ -320,6 +320,12 @@ int GC_init (GC_state s, int argc, char **argv) {
       s->rtSync[__i] = false;
   }
 
+  pthread_mutex_init (&s->fl_lock, NULL);
+  pthread_cond_init (&s->fl_empty_cond,NULL);
+
+  pthread_mutex_init (&s->rtSync_lock, NULL);
+  pthread_cond_init (&s->rtSync_cond,NULL);
+  
   s->dirty = false;
   
   s->hashConsDuringGC = FALSE;
