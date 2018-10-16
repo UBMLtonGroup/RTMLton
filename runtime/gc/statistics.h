@@ -42,4 +42,11 @@ struct GC_lastMajorStatistics {
   uintmax_t numMinorGCs;
 };
 
+
+struct GC_chunkedGCStatistics {
+  uintmax_t numChunksAllocated;
+  uintmax_t numChunksFreed;
+  uintmax_t numSweeps; 
+};
+
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */

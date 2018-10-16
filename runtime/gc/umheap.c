@@ -49,13 +49,13 @@ GC_UM_Chunk allocNextChunk(GC_state s,
         if(DEBUG_RTGC)
             fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
       
-        /*Blocks on cond variable , autamatically unlocks s->fl_lock*/
+        /*Blocks on cond variable , automatically unlocks s->fl_lock*/
         BLOCK;
 
         if(DEBUG_RTGC)
             fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
         
-        if(!s->fl_chunks > 3)
+        if(s->fl_chunks < 3)
             die("allocNextChunk: No more memory available\n");
 
     }
@@ -68,6 +68,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     c->next_chunk = NULL;
     c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
     s->fl_chunks -= 1;
+    s->cGCStats.numChunksAllocated++;
     UNLOCK;
     return c;
 }
@@ -86,6 +87,9 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
       if(DEBUG_RTGC)
           fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
        
+      if(s->fl_chunks < 3)
+            die("allocNextChunk: No more memory available\n");
+
        // die("allocNextArrayChunk: No more memory available\n");
     }
 
@@ -102,7 +106,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
         c->ml_array_payload.um_array_pointers[i] = NULL;
     }
     s->fl_chunks -= 1;
-
+    s->cGCStats.numChunksAllocated++;
     UNLOCK;
     return c;
 }

@@ -312,6 +312,12 @@ int GC_init (GC_state s, int argc, char **argv) {
   rusageZero (&s->cumulativeStatistics.ru_gcCopying);
   rusageZero (&s->cumulativeStatistics.ru_gcMarkCompact);
   rusageZero (&s->cumulativeStatistics.ru_gcMinor);
+  
+  s->cGCStats.numChunksAllocated = 0;
+  s->cGCStats.numChunksFreed =0;
+  s->cGCStats.numSweeps = 0;
+
+
   for (__i = 0 ; __i < MAXPRI ; __i++) {
 	  s->currentThread[__i] = BOGUS_OBJPTR;
 	  s->savedThread[__i] = BOGUS_OBJPTR;

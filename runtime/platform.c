@@ -27,6 +27,7 @@ void MLton_init (int argc, char **argv, GC_state s) {
 
 void MLton_halt (GC_state s, C_Int_t status) {
   GC_done (s);
+  RTGC_done(s);
   exit (status);
 }
 

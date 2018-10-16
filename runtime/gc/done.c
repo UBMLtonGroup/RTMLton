@@ -37,6 +37,19 @@ static void displayCollectionStats (FILE *out, const char *name, struct rusage *
   fprintf (out, "\n");
 }
 
+
+void RTGC_done(GC_state s)
+{
+    FILE *out;
+    out = stderr;
+    fprintf (out, "-------------\t-------\t-------\t---------------\t---------------\n");
+    fprintf(out,"GC Statistics\n");
+    fprintf (out, "-------------\t-------\t-------\t---------------\t---------------\n");
+    fprintf(out,"Number of Chunks allocated = %s\n",uintmaxToCommaString (s->cGCStats.numChunksAllocated));
+    fprintf(out,"Number of Chunks Freed = %s\n",uintmaxToCommaString (s->cGCStats.numChunksFreed));
+    fprintf(out,"Number of GC Sweeps = %s\n",uintmaxToCommaString (s->cGCStats.numSweeps));
+}
+
 void GC_done (GC_state s) {
   if (s->gc_module == GC_NONE ||
       s->gc_module == GC_UM) {

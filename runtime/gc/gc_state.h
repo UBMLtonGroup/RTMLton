@@ -90,6 +90,7 @@ struct GC_state {
   size_t nurseryBytesRequested;
   bool forceMajor;
   bool mayResize;
+  struct GC_chunkedGCStatistics cGCStats;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
  

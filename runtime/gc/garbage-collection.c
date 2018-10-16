@@ -367,18 +367,15 @@ __attribute__ ((noreturn))
 
         assert(s->dirty);
 
-        int start = s->fl_chunks;
 
         if(DEBUG_RTGC)
-            fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,start);
+            fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,s->fl_chunks);
 
         performGC_helper (s,
                           s->oldGenBytesRequested,
                           s->nurseryBytesRequested,
                           s->forceMajor, s->mayResize);
         
-        if(DEBUG_RTGC)
-            fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,(s->fl_chunks - start));
 
 
         s->dirty = false;
@@ -593,6 +590,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
     pointer end = s->umheap.start + s->umheap.size - step;
 
+
+    int freed  = 0;
+
 #if 0
     //    if (s->umheap.fl_chunks <= 2000) {
     for (pchunk=s->umheap.start;
@@ -653,6 +653,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                         (uintptr_t)pc, pc->sentinel, pc->chunk_header);
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
+            s->cGCStats.numChunksFreed++;
+            freed++;
         }
         else if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             ((pc->chunk_header & UM_CHUNK_MARK_MASK) || (pc->chunk_header & UM_CHUNK_GREY_MASK))) {
@@ -675,6 +677,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                         pc->array_chunk_header);
             }
             insertFreeChunk(s, &(s->umheap), pchunk);
+            s->cGCStats.numChunksFreed++;
+            freed++;
         }
        if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
             ((pc->array_chunk_header & UM_CHUNK_MARK_MASK) || (pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
@@ -687,6 +691,11 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
             break;
         }
     }
+
+    s->cGCStats.numSweeps++;
+
+    if(DEBUG_RTGC)
+        fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,freed);
 
     /*Not unmarking the objects within chunks*/ 
     /*
