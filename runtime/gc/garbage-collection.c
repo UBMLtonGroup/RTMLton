@@ -573,6 +573,7 @@ void markStack(GC_state s,GC_stack currentStack)
     
 
             //fprintf(stderr,"%d] Marking stack \n",PTHREAD_NUM);
+            assert(!s->dirty);
 
             foreachGlobalObjptr (s, umDfsMarkObjectsMark);
             foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
@@ -920,6 +921,19 @@ ensureInvariantForMutator (GC_state s, bool force)
 /* ensureHasHeapBytesFree (s, oldGen, nursery)
  */
 
+bool ensureChunksAvailable(GC_state s)
+{
+  if(DEBUG_RTGC)
+    fprintf(stderr,"%d]ensureChunksAvailable: FC = %d, Max Chunks = %d\n",PTHREAD_NUM,s->fl_chunks,s->maxChunksAvailable);
+  
+  if(s->fl_chunks > (size_t)((30 * s->maxChunksAvailable)/100 ))
+      return true;
+  else
+      return false;
+     
+}
+
+
 void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   enter (s);
   /* When the mutator requests zero bytes, it may actually need as
@@ -962,8 +976,10 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
          * pthread_mutex_trylock returns 0 when mutex is acquired*/
         if(!RTSYNC_TRYLOCK)
         {
-            if(s->dirty || s->fl_chunks < 2000)
+            if(s->dirty || !ensureChunksAvailable(s))
             {
+                if(DEBUG_RTGC)
+                    fprintf(stderr,"%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n",PTHREAD_NUM,s->dirty?"Y":"N",ensureChunksAvailable(s)?"Y":"N");
                 s->dirty= true;
                 GC_collect_real(s,bytesRequested,true); /*marks stack*/
                 s->rtSync[PTHREAD_NUM] = true;

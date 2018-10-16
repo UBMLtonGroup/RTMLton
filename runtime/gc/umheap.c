@@ -201,6 +201,9 @@ bool createUMHeap(GC_state s,
         insertFreeChunk(s, h, pchunk);
     }
 
+    /*Total number of Chunks in the Chunked heap*/
+    s->maxChunksAvailable = s->fl_chunks;
+
 #ifdef PROFILE_UMGC
     fprintf(stderr, "[GC] Created heap of %d chunks\n", s->fl_chunks);
 #endif

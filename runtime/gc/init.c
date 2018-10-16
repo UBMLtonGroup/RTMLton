@@ -316,6 +316,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->cGCStats.numChunksAllocated = 0;
   s->cGCStats.numChunksFreed =0;
   s->cGCStats.numSweeps = 0;
+  s->maxChunksAvailable = 0;
 
 
   for (__i = 0 ; __i < MAXPRI ; __i++) {
