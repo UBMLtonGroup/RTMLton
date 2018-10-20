@@ -660,9 +660,14 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
         else if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             ((pc->chunk_header & UM_CHUNK_MARK_MASK) || (pc->chunk_header & UM_CHUNK_GREY_MASK))) {
 
-                
+               /*Unmark Chunk*/ 
                     pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
-
+                /*Unmark MLton Object*/
+                    pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
+                    GC_header* headerp = getHeaderp(p);
+                    GC_header header = *headerp;
+                    header = header & ~MARK_MASK;
+                    (*headerp) = header;
         }
 
         }
@@ -684,7 +689,16 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
        if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
             ((pc->array_chunk_header & UM_CHUNK_MARK_MASK) || (pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
 
+            /*Unmark Array chunk*/
             pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
+           
+            /*Unmark MLton Object*/
+            pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
+            GC_header* headerp = getHeaderp(p);
+            GC_header header = *headerp;
+            header = header & ~MARK_MASK;
+            (*headerp) = header;
+
         }
         }
 
@@ -974,14 +988,16 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
         /*Try to get RTSync lock, if success means a) GC not Sweeping, b) no other thread is in GC_collect
          * if fails: dont execute section, continue with work
          * pthread_mutex_trylock returns 0 when mutex is acquired*/
-        if(!RTSYNC_TRYLOCK)
+        if(RTSYNC_TRYLOCK == 0)
         {
-            if(s->dirty || !ensureChunksAvailable(s))
+            /*Mark stack and the rest if the dirty but has been set by another mutator or enough chunks are available and 
+             * own thread's rtsync has not been set i.e. it hasnt marked its stack already*/
+            if((s->dirty || !ensureChunksAvailable(s)) && !s->rtSync[PTHREAD_NUM])
             {
                 if(DEBUG_RTGC)
                     fprintf(stderr,"%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n",PTHREAD_NUM,s->dirty?"Y":"N",ensureChunksAvailable(s)?"Y":"N");
-                s->dirty= true;
                 GC_collect_real(s,bytesRequested,true); /*marks stack*/
+                s->dirty= true;
                 s->rtSync[PTHREAD_NUM] = true;
                 /*Check if all  other RT threads have set their values*/
                 int i;

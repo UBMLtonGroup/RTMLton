@@ -67,6 +67,10 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     h->fl_head = nc;
     c->next_chunk = NULL;
     c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    if(s->rtSync[PTHREAD_NUM])
+    {
+        c->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+    }
     s->fl_chunks -= 1;
     s->cGCStats.numChunksAllocated++;
     UNLOCK;
@@ -101,6 +105,10 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
     c->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    if(s->rtSync[PTHREAD_NUM])
+    {
+        c->array_chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+    }
     int i;
     for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
         c->ml_array_payload.um_array_pointers[i] = NULL;
