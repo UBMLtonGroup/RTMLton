@@ -370,7 +370,8 @@ __attribute__ ((noreturn))
 
         if(DEBUG_RTGC)
             fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,s->fl_chunks);
-
+        
+        s->isGCRunning = true;
         performGC_helper (s,
                           s->oldGenBytesRequested,
                           s->nurseryBytesRequested,
@@ -379,7 +380,6 @@ __attribute__ ((noreturn))
 
 
         s->dirty = false;
-
         /*Change this to reset all rtSync values for all RT threads*/
         s->rtSync[0] = false;
      
@@ -388,7 +388,7 @@ __attribute__ ((noreturn))
         BROADCAST;
         UNLOCK; 
 
-
+        s->isGCRunning = false;
         RTSYNC_UNLOCK;
         
         
@@ -990,6 +990,9 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
          * pthread_mutex_trylock returns 0 when mutex is acquired*/
         if(RTSYNC_TRYLOCK == 0)
         {
+            /*Assert if GC has aquired RTSync lock and is running
+             * This assert should never fail*/
+            assert(!s->isGCRunning);
             /*Mark stack and the rest if the dirty but has been set by another mutator or enough chunks are available and 
              * own thread's rtsync has not been set i.e. it hasnt marked its stack already*/
             if((s->dirty || !ensureChunksAvailable(s)) && !s->rtSync[PTHREAD_NUM])

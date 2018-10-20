@@ -92,6 +92,7 @@ struct GC_state {
   bool mayResize;
   struct GC_chunkedGCStatistics cGCStats;
   size_t maxChunksAvailable;
+  bool isGCRunning;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
  
