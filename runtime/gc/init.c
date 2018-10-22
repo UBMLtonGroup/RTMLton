@@ -323,8 +323,13 @@ int GC_init (GC_state s, int argc, char **argv) {
 	  s->currentThread[__i] = BOGUS_OBJPTR;
 	  s->savedThread[__i] = BOGUS_OBJPTR;
 	  s->signalHandlerThread[__i] = BOGUS_OBJPTR;
-          s->gcCallSeq[__i] = -1;
-      s->rtSync[__i] = false;
+      s->gcCallSeq[__i] = -1;
+   
+     /*For now permanently set the rt threads to true*/ 
+      if(__i < 2)
+          s->rtSync[__i] = false;
+      else
+          s->rtSync[__i] = true;
   }
 
   pthread_mutex_init (&s->fl_lock, NULL);

@@ -841,7 +841,7 @@ if (needGCTime (s))
 
 
    //assert (hasHeapBytesFree (s, oldGenBytesRequested + stackBytesRequested, nurseryBytesRequested));
-   assert (s->fl_chunks > 3000);
+   //assert (s->fl_chunks > 3000);
 
 
 #if 0
