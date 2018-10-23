@@ -132,7 +132,7 @@ s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
   GC_UM_Chunk next_chunk = NULL;
-  next_chunk = allocNextChunk(s, &(s->umheap));
+  next_chunk = allocateChunks(s, &(s->umheap),1);
   next_chunk->next_chunk = NULL;
   s->umfrontier = (Pointer) next_chunk->ml_object;
 

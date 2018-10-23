@@ -38,35 +38,16 @@ GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
    return pc;
 }
 
+
+
+
 GC_UM_Chunk allocNextChunk(GC_state s,
                            GC_UM_heap h) {
 
 
-    LOCK;
-
-    if (s->fl_chunks <= 3) 
-    {
-        if(DEBUG_RTGC)
-            fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
-     
-       size_t fc_BeforeBlock = s->fl_chunks;
-
-      /*If RTSync has not been set, a.k.a thread has not been marked, mark it*/ 
-      if(!s->rtSync[PTHREAD_NUM])
-         GC_collect(s,0,false) ;
-
-        /*Blocks on cond variable , automatically unlocks s->fl_lock*/
-        BLOCK;
-
-        if(DEBUG_RTGC)
-            fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
-        
-        if(!(s->fl_chunks > fc_BeforeBlock))
-            die("allocNextChunk: No more memory available\n");
-
-    }
-
-        /*Allocate next chunk from start of free list*/
+    /*Only place this should be called is allocChunk to preserve fl_lock*/
+    
+    /*Allocate next chunk from start of free list*/
     h->fl_head->chunkType= UM_NORMAL_CHUNK;
     struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
     GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head +4 )); /*pass pointer to area after chunktype*/
@@ -79,9 +60,58 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     }
     s->fl_chunks -= 1;
     s->cGCStats.numChunksAllocated++;
-    UNLOCK;
+
     return c;
 }
+
+
+GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
+{
+    LOCK;
+
+    if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) 
+        {
+            if(DEBUG_RTGC)
+                fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
+         
+           size_t fc_BeforeBlock = s->fl_chunks;
+
+          /*If RTSync has not been set, a.k.a thread has not been marked, mark it*/ 
+          if(!s->rtSync[PTHREAD_NUM])
+             GC_collect(s,0,false) ;
+
+            /*Blocks on cond variable , automatically unlocks s->fl_lock*/
+            BLOCK;
+
+            if(DEBUG_RTGC)
+                fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
+            
+            if(!(s->fl_chunks > fc_BeforeBlock))
+                die("allocNextChunk: No more memory available\n");
+
+        }
+
+    GC_UM_Chunk head = allocNextChunk(s,&(s->umheap));
+    head->chunk_header |= UM_CHUNK_IN_USE;
+    
+    if(numchunks > 1)
+    {
+        int i;
+        GC_UM_Chunk current = head;
+        for (i=0; i< (numChunks -1);i++)
+        {
+            
+            current->next_chunk = allocNextChunk(s, &(s->umheap));
+            current->next_chunk->chunk_header |= UM_CHUNK_IN_USE;
+            current = current->next_chunk;
+        }
+    }
+    
+    UNLOCK;
+
+    return head;
+}
+
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_heap h) {
@@ -105,7 +135,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
           fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
        
       if(!(s->fl_chunks > fc_BeforeBlock))
-          die("allocNextChunk: No more memory available\n");
+          die("allocNextArrayChunk: No more memory available\n");
 
        // die("allocNextArrayChunk: No more memory available\n");
     }

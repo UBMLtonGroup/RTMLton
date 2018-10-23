@@ -26,24 +26,25 @@ UM_Header_alloc(GC_state gc_stat,
         DBG(umfrontier, s, 0, "enter");
 
     return (umfrontier + s);
-//    GC_UM_Chunk pchunk = (GC_UM_Chunk)umfrontier;
-//    pchunk->chunk_header |= UM_CHUNK_IN_USE;
-//    GC_collect(gc_stat, 0, true);
-//    GC_UM_Chunk pchunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-//    return (umfrontier + s);
-//	return (((Pointer)pchunk) + s);
 }
 
 Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
 {
-    GC_UM_Chunk chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-    chunk->chunk_header |= UM_CHUNK_IN_USE;
+    GC_UM_Chunk chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks);
+    
+
     *((uint32_t*) chunk->ml_object) = header;
-    if (num_chunks > 1) {
-        chunk->next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
-        chunk->next_chunk->chunk_header |= UM_CHUNK_IN_USE;
+    
+    /*training wheels. Remove once confident. Use assert loop to verify other properties that must hold*/
+    int i;
+    GC_UM_Chunk current = chunk;
+    for(i=0;i< num_chunks;i++)
+    {
+        assert(current->chunk_header & UM_CHUNK_IN_USE);
+        current = current->next_chunk;
     }
+    
     return (Pointer)(chunk->ml_object + s);
 }
 
@@ -58,7 +59,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
        DBG(umfrontier, s, 0, "enter");
     //    GC_collect(gc_stat, 0, false);
     //    GC_collect(gc_stat, 0, false);
-    GC_UM_Chunk next_chunk = allocNextChunk(gc_stat, &(gc_stat->umheap));
+    GC_UM_Chunk next_chunk = allocateChunks(gc_stat, &(gc_stat->umheap),1);
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
     current_chunk->chunk_header |= UM_CHUNK_IN_USE;
 
@@ -88,7 +89,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 /////////////////
     next_chunk->chunk_header |= UM_CHUNK_IN_USE;
 /////////////////
-    GC_UM_Chunk next_chunk_next = allocNextChunk(gc_stat, &(gc_stat->umheap));
+    GC_UM_Chunk next_chunk_next = allocateChunks(gc_stat, &(gc_stat->umheap),1);
     next_chunk->next_chunk = NULL;
 
     if (DEBUG_MEM) {

@@ -16,10 +16,11 @@ pointer GC_arrayAllocate (GC_state s,
 
     size_t chunkNumObjs = UM_CHUNK_ARRAY_PAYLOAD_SIZE / bytesPerElement;
     size_t numChunks = numElements / chunkNumObjs + (numElements % chunkNumObjs != 0);
+    
     if (s->fl_chunks < numChunks * 2) {
     /*This fn blocks for GC to run. If the GC doesn't free needed chunks, it dies. 
      * Reasoning: Array needs atleast as many chunks. So if GC cannot free as much, why continue? 
-     * When running with ,ultiple mutators, even if the GC can free more than needed chunks, it could be possible that by the time Mutator A 
+     * When running with multiple mutators, even if the GC can free more than needed chunks, it could be possible that by the time Mutator A 
      * allocates a chunks, Mutator B can use up most of the free chunks. In that case, array allocation will block
      * on allcoNextArrayChunk and then die if GC cannot free enough.
      * TODO: Maybe allocate needed chunks upfront when this fn returns? */
