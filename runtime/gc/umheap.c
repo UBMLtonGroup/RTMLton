@@ -132,6 +132,32 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     return c;
 }
 
+
+void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
+{
+    LOCK;
+
+    if(DEBUG_RTGC)
+        fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
+   
+  
+    /*If RTSync has not been set, a.k.a thread has not been marked, mark it*/ 
+    if(!s->rtSync[PTHREAD_NUM])
+        GC_collect(s,0,false) ;
+  
+    /*Blocks on cond variable , autamatically unlocks s->fl_lock*/
+    BLOCK;
+   
+    if(DEBUG_RTGC)
+        fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
+   
+    if(!(s->fl_chunks > chunksNeeded))
+        die("allocNextChunk: No more memory available\n");
+    
+    UNLOCK;
+}
+
+
 void insertFreeChunk(GC_state s,
                      GC_UM_heap h,
                      pointer c) {

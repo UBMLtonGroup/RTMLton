@@ -392,58 +392,6 @@ __attribute__ ((noreturn))
         RTSYNC_UNLOCK;
         
         
-    #if 0  
-        if ((s->fl_chunks < 2000) && !s->dirty)
-        {
-            s->dirty = true;
-            fprintf(stderr,"%d] Dirty bit set\n",PTHREAD_NUM);
-
-        }
-        else if(s->dirty)
-        {
-            int i;
-            bool syncDone = true;
-            fprintf(stderr,"%d] waiting for sync\n",PTHREAD_NUM);
-           for(i=0; i < MAXPRI;i++)
-           {
-               /* Don't check for GC thread */
-               if(i == 1)
-                   continue;
-               //fprintf(stderr,"%d] GC checking if thread %d is set\n",PTHREAD_NUM,i);
-               if(!s->rtSync[i])
-               {
-                   syncDone = false;
-                   //sched_yield(); //TODO:Should i be yielding in a multicore environment? 
-                   ssleep(1,0);
-               }
-
-           }
-
-           if(syncDone) 
-               {
-                int start = s->fl_chunks;
-                fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,start);
-                performGC_helper (s,
-                                  s->oldGenBytesRequested,
-                                  s->nurseryBytesRequested,
-                                  s->forceMajor, s->mayResize);
-                fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,(s->fl_chunks - start));
-
-                s->dirty = false;
-                s->rtSync[0] = false;
-             
-               /*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/ 
-                LOCK;
-                BROADCAST;
-                UNLOCK; 
-
-                
-
-
-               }
-
-        }
-    #endif
     
     }
 
@@ -587,12 +535,15 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                  bool fullGC)
 {
 
+
     pointer pchunk;
     size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
     pointer end = s->umheap.start + s->umheap.size - step;
 
 
     int freed  = 0;
+
+    assert(PTHREAD_NUM ==1);
 
 #if 0
     //    if (s->umheap.fl_chunks <= 2000) {
