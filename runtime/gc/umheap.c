@@ -94,7 +94,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
     GC_UM_Chunk head = allocNextChunk(s,&(s->umheap));
     head->chunk_header |= UM_CHUNK_IN_USE;
     
-    if(numchunks > 1)
+    if(numChunks > 1)
     {
         int i;
         GC_UM_Chunk current = head;
