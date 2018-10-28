@@ -331,7 +331,7 @@ let
                 *    end of the backend.
                 *)
                if !Control.codegen = Control.CCodegen
-                  orelse !Control.codegen = Control.LLVMCodegen
+                  (*JEFF DISABLE CODEGEN orelse !Control.codegen = Control.LLVMCodegen *)
                   orelse !Control.profile <> Control.ProfileNone
                   then new ()
                else
@@ -493,6 +493,7 @@ let
       val exnStackOp = runtimeOp GCField.ExnStack
       val stackBottomOp = runtimeOp GCField.StackBottom
       val stackTopOp = runtimeOp GCField.StackTop
+      val currentFrame = runtimeOp GCField.CurrentFrame
       fun translateOperand (oper: R.Operand.t): M.Operand.t =
          let
             datatype z = datatype R.Operand.t

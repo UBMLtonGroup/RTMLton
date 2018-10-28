@@ -89,13 +89,15 @@ structure Backend = Backend (structure Ssa = Ssa2
                              fun funcToLabel f = f)
 structure CCodegen = CCodegen (structure Ffi = Ffi
                                structure Machine = Machine)
+
+(* JEFF CODEGEN DISABLED
 structure LLVMCodegen = LLVMCodegen (structure CCodegen = CCodegen
                                      structure Machine = Machine)
 structure x86Codegen = x86Codegen (structure CCodegen = CCodegen
                                    structure Machine = Machine)
 structure amd64Codegen = amd64Codegen (structure CCodegen = CCodegen
                                        structure Machine = Machine)
-
+*)
 
 (* ------------------------------------------------- *)
 (*                 Lookup Constant                   *)
@@ -505,7 +507,6 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
             Runtime.GCField.setOffsets
             {
              atomicState = get "atomicState_Offset",
-             cardMapAbsolute = get "generationalMaps.cardMapAbsolute_Offset",
              currentThread = get "currentThread_Offset",
              curSourceSeqsIndex = get "sourceMaps.curSourceSeqsIndex_Offset",
              exnStack = get "exnStack_Offset",
@@ -518,12 +519,12 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              stackBottom = get "stackBottom_Offset",
              stackLimit = get "stackLimit_Offset",
              stackTop = get "stackTop_Offset",
-             flChunks = get "fl_chunks_Offset"
+             flChunks = get "fl_chunks_Offset",
+              currentFrame = get "currentFrame_Offset"
              };
             Runtime.GCField.setSizes
             {
              atomicState = get "atomicState_Size",
-             cardMapAbsolute = get "generationalMaps.cardMapAbsolute_Size",
              currentThread = get "currentThread_Size",
              curSourceSeqsIndex = get "sourceMaps.curSourceSeqsIndex_Size",
              exnStack = get "exnStack_Size",
@@ -536,7 +537,8 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              stackBottom = get "stackBottom_Size",
              stackLimit = get "stackLimit_Size",
              stackTop = get "stackTop_Size",
-             flChunks = get "fl_chunks_Size"
+             flChunks = get "fl_chunks_Size",
+              currentFrame = get "currentFrame_Size"
              }
          end
       (* Setup endianness *)
@@ -667,10 +669,14 @@ fun preCodegen {input: MLBString.t}: Machine.Program.t =
          end
       val codegenImplementsPrim =
          case !Control.codegen of
-            Control.AMD64Codegen => amd64Codegen.implementsPrim
-          | Control.CCodegen => CCodegen.implementsPrim
+            Control.CCodegen => CCodegen.implementsPrim
+          (* JEFF CODEGEN DISABLED
+          |  Control.AMD64Codegen => amd64Codegen.implementsPrim
           | Control.LLVMCodegen => LLVMCodegen.implementsPrim
           | Control.X86Codegen => x86Codegen.implementsPrim
+          *)
+            | _ => CCodegen.implementsPrim
+
       val machine =
          Control.passTypeCheck
          {display = Control.Layouts Machine.Program.layouts,
@@ -710,17 +716,19 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
           ; Machine.Label.printNameAlphaNumeric := true)
       val () =
          case !Control.codegen of
-            Control.AMD64Codegen =>
-               (print "hi"; clearNames ()
-                (*; (Control.trace (Control.Top, "amd64! code gen")
-                   amd64Codegen.output {program = machine,
-                                        outputC = outputC,
-                                        outputS = outputS})*) )
-          | Control.CCodegen =>
+            Control.CCodegen =>
                (clearNames ()
                 ; (Control.trace (Control.Top, "C code gen")
                    CCodegen.output {program = machine,
                                     outputC = outputC}))
+        (* JEFF CODEGEN DISABLED
+          | Control.AMD64Codegen =>
+               (clearNames ()
+                ; (Control.trace (Control.Top, "amd64! code gen")
+                   amd64Codegen.output {program = machine,
+                                        outputC = outputC,
+                                        outputS = outputS}) )
+
           | Control.LLVMCodegen =>
                (clearNames ()
                 ; (Control.trace (Control.Top, "llvm code gen")
@@ -733,6 +741,12 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
                    x86Codegen.output {program = machine,
                                       outputC = outputC,
                                       outputS = outputS}))
+       *)
+          | _ =>  (clearNames ()
+                                 ; (Control.trace (Control.Top, "C code gen (_)")
+                                    CCodegen.output {program = machine,
+                                                     outputC = outputC}))
+
                                       
       val _ = Control.message (Control.Detail, PropertyList.stats)
       val _ = Control.message (Control.Detail, HashSet.stats)

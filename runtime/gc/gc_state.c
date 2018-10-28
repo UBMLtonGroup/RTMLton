@@ -20,19 +20,23 @@ void displayGCState (GC_state s, FILE *stream) {
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
                                 + offsetofThread (s)), 
                  stream);
-  fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
-  displayGenerationalMaps (s, &s->generationalMaps, 
-                           stream);
+  //fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
+  //displayGenerationalMaps (s, &s->generationalMaps, 
+  //                         stream);
   fprintf (stream, "%d] \theap\n", PTHREAD_NUM);
   displayHeap (s, &s->heap, 
                stream);
   fprintf (stream,
            "%d] \tlimit = "FMTPTR"\n"
            "\tstackBottom = "FMTPTR"\n"
-           "\tstackTop = "FMTPTR"\n", PTHREAD_NUM,
+           "\tstackTop = "FMTPTR"\n"
+           "\tcurrentFrame = "FMTPTR"\n",
+           PTHREAD_NUM,
            (uintptr_t)s->limit,
            (uintptr_t)s->stackBottom[PTHREAD_NUM],
-           (uintptr_t)s->stackTop[PTHREAD_NUM]);
+           (uintptr_t)s->stackTop[PTHREAD_NUM],
+           (uintptr_t)s->currentFrame[PTHREAD_NUM]
+           );
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
@@ -42,14 +46,18 @@ size_t sizeofGCStateCurrentStackUsed (GC_state s) {
 void setGCStateCurrentThreadAndStack (GC_state s) {
   GC_thread thread;
   GC_stack stack;
+  pointer umstack = getUMStackCurrent (s);
 
   thread = getThreadCurrent (s);
   s->exnStack[PTHREAD_NUM] = thread->exnStack;
   stack = getStackCurrent (s);
+
   s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
   s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
   s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
-  markCard (s, (pointer)stack);
+
+  s->currentFrame[PTHREAD_NUM] = getUMStackBottom (s, umstack);
+  //markCard (s, (pointer)stack);
 }
 
 void setGCStateCurrentHeap (GC_state s, 
@@ -97,7 +105,6 @@ void setGCStateCurrentHeap (GC_state s,
     s->canMinor = TRUE;
     nursery = genNursery;
     nurserySize = genNurserySize;
-    clearCardMap (s);
   } else {
     unless (nurseryBytesRequested <= nurserySize)
       die ("Out of memory.  Insufficient space in nursery.");

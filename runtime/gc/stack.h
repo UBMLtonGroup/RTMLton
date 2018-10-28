@@ -34,6 +34,8 @@ typedef struct GC_stack {
    * it can continue with the next pointer (either in the current
    * frame or the next frame).
    */
+
+  uint32_t stackstart;
   pointer markTop;
   uint32_t markIndex;
   /* reserved is the number of bytes reserved for stack, 
@@ -64,6 +66,7 @@ static inline bool isStackReservedAligned (GC_state s, size_t reserved);
 
 static inline size_t sizeofStackSlop (GC_state s);
 
+static inline pointer getUMStackBottom (GC_state s, pointer stack);
 static inline pointer getStackBottom (GC_state s, GC_stack stack);
 static inline pointer getStackTop (GC_state s, GC_stack stack);
 static inline pointer getStackLimitPlusSlop (GC_state s, GC_stack stack);

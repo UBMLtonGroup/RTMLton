@@ -15,6 +15,8 @@
 #include <sched.h>
 #include <errno.h>
 
+#pragma GCC diagnostic push  // require GCC 4.6
+#pragma GCC diagnostic ignored "-Wformat"
 
 struct thrctrl
 {
@@ -99,57 +101,9 @@ struct thrctrl
 #define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
 #endif
 void minorGC (GC_state s) {
-    minorCheneyCopyGC (s);
+    //minorCheneyCopyGC (s);
 }
 
-
-
- __attribute__ ((unused)) void majorGC (GC_state s, size_t bytesRequested, bool mayResize)
-{
-    uintmax_t numGCs;
-    size_t desiredSize;
-    CHECKDISABLEGC;
-    
-    if(DEBUG)
-    fprintf (stderr, "%d] [GC: Starting Major GC...]\n", PTHREAD_NUM);
-
-    s->lastMajorStatistics.numMinorGCs = 0;
-    numGCs =
-        s->cumulativeStatistics.numCopyingGCs
-        + s->cumulativeStatistics.numMarkCompactGCs;
-    if (0 < numGCs
-        and ((float) (s->cumulativeStatistics.numHashConsGCs) /
-             (float) (numGCs) < s->controls.ratios.hashCons))
-        s->hashConsDuringGC = TRUE;
-    desiredSize =
-        sizeofHeapDesired (s,
-                           s->lastMajorStatistics.bytesLive + bytesRequested,
-                           0);
-    if (not FORCE_MARK_COMPACT and not s->hashConsDuringGC      // only markCompact can hash cons
-        and s->heap.withMapsSize < s->sysvals.ram
-        and (not isHeapInit (&s->secondaryHeap)
-             or createHeapSecondary (s, desiredSize)))
-        majorCheneyCopyGC (s);
-    else
-        majorMarkCompactGC (s);
-    s->hashConsDuringGC = FALSE;
-    s->lastMajorStatistics.bytesLive = s->heap.oldGenSize;
-    if (s->lastMajorStatistics.bytesLive >
-        s->cumulativeStatistics.maxBytesLive)
-        s->cumulativeStatistics.maxBytesLive =
-            s->lastMajorStatistics.bytesLive;
-    /* Notice that the s->lastMajorStatistics.bytesLive below is
-     * different than the s->lastMajorStatistics.bytesLive used as an
-     * argument to createHeapSecondary above.  Above, it was an
-     * estimate.  Here, it is exactly how much was live after the GC.
-     */
-    if (mayResize) {
-        resizeHeap (s, s->lastMajorStatistics.bytesLive + bytesRequested);
-    }
-    setCardMapAndCrossMap (s);
-    resizeHeapSecondary (s);
-    assert (s->heap.oldGenSize + bytesRequested <= s->heap.size);
-}
 
 void
 growStackCurrent (GC_state s)
@@ -175,7 +129,6 @@ growStackCurrent (GC_state s)
                      "%d]No heap bytes free to grow stack hence calling GC\n",
                      PTHREAD_NUM);
         //             resizeHeap (s, s->lastMajorStatistics.bytesLive + sizeofStackWithHeader(s,reserved));
-        ensureHasHeapBytesFree (s, sizeofStackWithHeader (s, reserved), 0);
     }
 
 
@@ -184,7 +137,6 @@ growStackCurrent (GC_state s)
     copyStack (s, getStackCurrent (s), stack);
     getThreadCurrent (s)->stack =
         pointerToObjptr ((pointer) stack, s->heap.start);
-    markCard (s, objptrToPointer (getThreadCurrentObjptr (s), s->heap.start));
 
     s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
     s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
@@ -195,17 +147,18 @@ void
 maybe_growstack (GC_state s)
 {
     bool stackTopOk;
-    size_t stackBytesRequested;
     if (isStackEmpty (getStackCurrent (s)))
         return;
     stackTopOk = invariantForMutatorStack (s);
-    stackBytesRequested =
+#if 0
+    int stackBytesRequested =
         stackTopOk
         ? 0
         : sizeofStackWithHeader (s,
                                  sizeofStackGrowReserved (s,
                                                           getStackCurrent
-                                                          (s)));
+                                                       (s)));
+#endif
     unless (stackTopOk) growStackCurrent (s);
 }
 
@@ -239,6 +192,7 @@ leaveGC (GC_state s)
 
 #define THREADED
 
+<<<<<<< HEAD
 #undef THREADED
 #define CONCURRENT
 
@@ -250,6 +204,8 @@ leaveGC (GC_state s)
 #define DBG(X)
 #endif
 
+=======
+>>>>>>> develop/rtgc-stacks
 #define MYASSERT(T, X, COMP, RV) {                               \
 	  T __rv__ = (T)X;                                           \
         if (!(__rv__ COMP (T)RV)) {                              \
@@ -269,25 +225,25 @@ setup_for_gc (GC_state s)
     COPYIN (stackTop);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy stackBottom = %" PRIuMAX
-                 " , should become = %" PRIuMAX " , actually = %" PRIuMAX
+                 "%d] GCREqBy = %d , before copy stackBottom = " FMTPTR
+                 " , should become = " FMTPTR " , actually = " FMTPTR
                  " \n", PTHREAD_NUM, TC.requested_by, s->stackBottom[1],
                  s->stackBottom[TC.requested_by], s->stackBottom[0]);
     COPYIN (stackBottom);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy StackBottom = %" PRIuMAX " \n",
+                 "%d] GCReqBy= %d,  after copy StackBottom = " FMTPTR " \n",
                  PTHREAD_NUM, TC.requested_by, s->stackBottom[1]);
     COPYIN (stackLimit);
     COPYIN (exnStack);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , main thread = %x \n", PTHREAD_NUM, TC.requested_by,
+                 "%d] GCREqBy = %d , before copy currentThread = "FMTPTR" , should become = "FMTPTR" , main thread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,
                  s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);
     COPYIN (currentThread);
     if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy currentThread = %x \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
+                 "%d] GCReqBy= %d,  after copy currentThread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
     COPYIN (savedThread);
     COPYIN (signalHandlerThread);
     COPYIN (ffiOpArgsResPtr);
@@ -437,11 +393,16 @@ __attribute__ ((noreturn))
                          "%d] GC running needed=%d threads=%d\n",
                          PTHREAD_NUM, TC.gc_needed, TC.running_threads);
             }
+<<<<<<< HEAD
             performUMGC(s, 3000, 0, true);
             //performGC_helper (s,
             //                  s->oldGenBytesRequested,
             //                  s->nurseryBytesRequested,
             //                  s->forceMajor, s->mayResize);
+=======
+
+            performUMGC(s, 3000, 0, true);
+>>>>>>> develop/rtgc-stacks
 
             if (DEBUG)
                 fprintf (stderr,
@@ -460,9 +421,9 @@ __attribute__ ((noreturn))
     }
 #endif
 
-    pthread_exit (NULL);
  /*NOTREACHED*/}
 
+<<<<<<< HEAD
 void
 performGC (GC_state s,
            size_t oldGenBytesRequested,
@@ -519,6 +480,8 @@ performGC (GC_state s,
 void markStack(GC_state s,GC_stack currentStack)
 {
     
+=======
+>>>>>>> develop/rtgc-stacks
 
             //fprintf(stderr,"%d] Marking stack \n",PTHREAD_NUM);
             assert(!s->dirty);
@@ -545,6 +508,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
     assert(PTHREAD_NUM ==1);
 
+<<<<<<< HEAD
 #if 0
     //    if (s->umheap.fl_chunks <= 2000) {
     for (pchunk=s->umheap.start;
@@ -591,6 +555,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     }
 
 #endif
+=======
+    pointer pchunk;
+    size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
+    pointer end = s->umheap.start + s->umheap.size - step;
+
+>>>>>>> develop/rtgc-stacks
 
     for (pchunk=s->umheap.start;
          pchunk < end;
@@ -708,6 +678,7 @@ void performUMGC(GC_state s,
 
 }
 
+<<<<<<< HEAD
 void performGC_helper (GC_state s,
                 size_t oldGenBytesRequested,
                 size_t nurseryBytesRequested,
@@ -918,6 +889,8 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
       fprintf(stderr, "GC_collect done\n");
   }
 }
+=======
+>>>>>>> develop/rtgc-stacks
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
     /*if (!force) {
@@ -929,6 +902,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
     if (s->gc_module == GC_NONE) {
         return;
     }
+<<<<<<< HEAD
     
     //fprintf(stderr,"%d] called GC-collect requesting %d bytes, free chunks = %d\n",PTHREAD_NUM,bytesRequested,s->fl_chunks);
     GC_collect_real(s, bytesRequested, true);
@@ -1008,4 +982,12 @@ void ensureHasHeapBytesFree (GC_state s,
     assert (hasHeapBytesFree
             (s, oldGenBytesRequested, nurseryBytesRequested));
 }
+=======
 
+    /*GC_collect_real(s, bytesRequested, true);*/
+
+}
+
+>>>>>>> develop/rtgc-stacks
+
+#pragma GCC diagnostic pop  // require GCC 4.6

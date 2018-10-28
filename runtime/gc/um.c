@@ -5,8 +5,17 @@ hello.1.c:(.text+0xb912): undefined reference to `UM_Payload_alloc'
 hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 */
 
+#pragma GCC diagnostic push  // require GCC 4.6
+#pragma GCC diagnostic ignored "-Wformat"
+
+
+#include <stdint.h>
+
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
-		__FILE__, __LINE__, __FUNCTION__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
+		__FILE__, __LINE__, __func__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
+
+
+
 
 /* define chunk structure (linked list)
  * define the free list
@@ -86,6 +95,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
      * TODO: Set header to represent chunked object
      */
     current_chunk->next_chunk = next_chunk;
+    next_chunk->prev_chunk = current_chunk;
 /////////////////
     next_chunk->chunk_header |= UM_CHUNK_IN_USE;
 /////////////////
@@ -123,9 +133,11 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     /* Not on our heap! */
     if (p < (gc_stat->umheap).start ||
         p >= heap_end) {
-        if (DEBUG_MEM)
+        if (DEBUG_MEM) {
             DBG(p, o, s, "not UM Heap");
-        return (p + o);
+            fprintf(stderr, "   p:"FMTPTR" p+o:"FMTPTR"\n", p, (p+o));
+        }
+        return  (p + o);
     }
 
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
@@ -245,3 +257,5 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     die("UM_Array_Offset: shouldn't be here!");
 }
+
+#pragma GCC diagnostic pop  // require GCC 4.6

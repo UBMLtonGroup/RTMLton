@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-pointer GC_arrayAllocate (GC_state s,
+pointer not_used_GC_arrayAllocate (GC_state s,
                           size_t ensureBytesFree,
                           GC_arrayLength numElements,
                           GC_header header) {
@@ -17,6 +17,8 @@ pointer GC_arrayAllocate (GC_state s,
   pointer frontier;
   pointer last;
   pointer result;
+
+  fprintf(stderr, "GC_arrayAllocate...\n"); exit(-1);
 
   splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
   if (DEBUG)
@@ -56,7 +58,7 @@ pointer GC_arrayAllocate (GC_state s,
   if (arraySizeAligned >= s->controls.oldGenArraySize) {
     if (not hasHeapBytesFree (s, arraySizeAligned, ensureBytesFree)) {
       enter (s);
-      performGC (s, arraySizeAligned, ensureBytesFree, FALSE, TRUE);
+      //performGC (s, arraySizeAligned, ensureBytesFree, FALSE, TRUE);
       leave (s);
     }
     frontier = s->heap.start + s->heap.oldGenSize;
@@ -69,7 +71,7 @@ pointer GC_arrayAllocate (GC_state s,
     bytesRequested = arraySizeAligned + ensureBytesFree;
     if (not hasHeapBytesFree (s, 0, bytesRequested)) {
       enter (s);
-      performGC (s, 0, bytesRequested, FALSE, TRUE);
+      //performGC (s, 0, bytesRequested, FALSE, TRUE);
       leave (s);
     }
     frontier = s->frontier;

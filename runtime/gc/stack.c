@@ -47,6 +47,21 @@ pointer getStackBottom (ARG_USED_FOR_ASSERT GC_state s, GC_stack stack) {
   return res;
 }
 
+/* Pointer to the bottommost chunk on the um stack. the frame
+ * start is the start of the chunk.
+ */
+pointer getUMStackBottom (ARG_USED_FOR_ASSERT GC_state s, pointer stack) {
+  pointer res;
+
+  res = ((pointer)stack);//  + GC_STACK_HEADER + sizeof (struct GC_frameLayout);
+
+  fprintf(stderr, "getUMStackBottom is aligned? %zu %zu %zu\n",
+          (size_t)res, s->alignment,
+          (size_t)res / s->alignment);
+  //assert (isAligned ((size_t)res, s->alignment));
+  return res;
+}
+
 /* Pointer to the topmost word in use on the stack. */
 pointer getStackTop (GC_state s, GC_stack stack) {
   pointer res;

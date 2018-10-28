@@ -32,3 +32,19 @@ GC_stack getStackCurrent (GC_state s) {
   pointer p = objptrToPointer(getStackCurrentObjptr(s), s->heap.start);
   return (GC_stack)p;
 }
+
+
+/* note that what is returned is not a GC_stack but a frame.
+ * a frame is just a pointer, it has no intrinsic structure.
+ * the frame layout structure describes the eventual layout of
+ * a given frame, but that is not known until after compilation.
+ */
+objptr getUMStackCurrentObjptr (GC_state s) {
+  GC_thread thread = getThreadCurrent(s);
+  return thread->umstack;
+}
+
+pointer getUMStackCurrent (GC_state s) {
+  pointer p = objptrToPointer(getUMStackCurrentObjptr(s), s->heap.start);
+  return p;
+}

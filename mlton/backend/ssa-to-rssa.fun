@@ -143,6 +143,28 @@ structure CFunction =
             symbolScope = Private,
             target = Direct "GC_arrayAllocate"}
 
+      fun UM_Object_alloc {return} =
+         T {args = Vector.new4 (Type.gcState (),
+                                Type.csize (),
+                                Type.word WordSize.word32,
+                                Type.csize ()),
+            convention = Cdecl,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = true,
+                                 mayGC = true,
+                                 maySwitchThreads = false,
+                                 modifiesFrontier = true,
+                                 readsStackTop = true,
+                                 writesStackTop = true},
+            prototype = (Vector.new4 (CType.gcState,
+                                      CType.csize (),
+                                      CType.Int32,
+                                      CType.csize ()),
+                         SOME CType.cpointer),
+            return = return,
+            symbolScope = Private,
+            target = Direct "UM_Object_alloc"}
+
       val returnToC = fn () =>
          T {args = Vector.new0 (),
             convention = Cdecl,
@@ -592,6 +614,7 @@ structure Type =
 
 val cardSizeLog2 : IntInf.t = 8 (* must agree with CARD_SIZE_LOG2 in gc.c *)
 
+(* not used, removed all refs to CardMap
 fun updateCard (addr: Operand.t): Statement.t list =
    let
       val index = Var.newNoname ()
@@ -614,6 +637,7 @@ fun updateCard (addr: Operand.t): Statement.t list =
                      ty = Type.word cardElemSize}),
              src = Operand.word (WordX.one cardElemSize)}]
    end
+*)
 
 fun convertWordSize (ws: WordSize.t): WordSize.t =
    WordSize.roundUpToPrim ws
@@ -992,13 +1016,13 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                          baseTy = varType (Base.object base),
                                          offset = offset,
                                          value = varOp value}
-(*                                     val ss =
+(*  notusingcards                    val ss =
                                         if !Control.markCards
                                            andalso Type.isObjptr t
                                            then
                                               updateCard (Base.object baseOp)
                                               @ ss
-                                        else ss*)
+                                        else ss *)
                                   in
                                      adds ss
                                   end)
@@ -1194,6 +1218,15 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                            in
                               case Prim.name prim of
                                  Array_array => array (a 0)
+                                 (*
+                               | chunkedObject =>
+                                       ccall {args = (Vector.new4
+                                                     (GCState,
+                                                      Operand.zero (WordSize.csize ()),
+                                                      Operand.zero (WordSize.word32 ),
+                                                      Operand.zero (WordSize.csize ()))),
+                                             func = (CFunction.UM_Object_alloc
+                                                     {return = Type.cpointer ()})} *)
                                | Array_length => arrayOrVectorLength ()
                                | Array_toVector =>
                                     let

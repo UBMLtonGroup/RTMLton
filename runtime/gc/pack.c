@@ -20,11 +20,11 @@ void GC_pack (GC_state s) {
    * allocated since the last collection.  But you would still need to
    * do a minor GC to make all objects contiguous.
    */
-  performGC (s, 0, 0, TRUE, FALSE);
+  //performGC (s, 0, 0, TRUE, FALSE);
   keep = (size_t)(s->heap.oldGenSize * 1.1);
   if (keep <= s->heap.size) {
     shrinkHeap (s, &s->heap, keep);
-    setCardMapAndCrossMap (s);
+   // setCardMapAndCrossMap (s);
     setGCStateCurrentHeap (s, 0, 0);
     setGCStateCurrentThreadAndStack (s);
   }
@@ -51,7 +51,7 @@ void GC_unpack (GC_state s) {
   enterGC (s);
   minorGC (s);
   resizeHeap (s, s->heap.oldGenSize);
-  setCardMapAndCrossMap (s);
+  //setCardMapAndCrossMap (s);
   resizeHeapSecondary (s);
   setGCStateCurrentHeap (s, 0, 0);
   setGCStateCurrentThreadAndStack (s);

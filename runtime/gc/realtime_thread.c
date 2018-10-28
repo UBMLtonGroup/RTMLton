@@ -12,7 +12,7 @@
 static volatile int initialized = 0;
 
 extern void Copy_globalObjptrs (int f, int t);
-
+extern void Parallel_run(void);
 
 int32_t
 GC_myPriority ( __attribute__ ((unused)) GC_state s)
@@ -59,8 +59,6 @@ realtimeThreadWaitForInit (void)
 void
 realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 {
-    int rv = 0;
-
     state->realtimeThreads[0] = main;
     state->realtimeThreads[1] = gc;
     initialized = 2;
@@ -112,7 +110,7 @@ realtimeRunner (void *paramsPtr)
     }
 
     if (DEBUG)
-        fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
+        fprintf (stderr, "%d] callFromCHandlerThread "FMTPTR" is ready\n", tNum,
                  state->callFromCHandlerThread);
 
   
@@ -176,11 +174,6 @@ realtimeRunner (void *paramsPtr)
     state->currentThread[PTHREAD_NUM] = state->currentThread[0];
     setGCStateCurrentThreadAndStack (state);
 
-    GC_thread curct = (GC_thread) (objptrToPointer (state->currentThread[0],
-                                                    state->heap.start) +
-                                   offsetofThread (state));
-    GC_stack curstk =
-        (GC_stack) objptrToPointer (curct->stack, state->heap.start);
 
     /* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
     /* copy the savedThread which is stored earlier on from the copied thread, when C Handler was set */
@@ -199,7 +192,7 @@ realtimeRunner (void *paramsPtr)
     if (DEBUG)
         fprintf (stderr, "%d] switch to copied thread\n", PTHREAD_NUM);
 
-    GC_switchToThread (state, tc, 0);
+    GC_switchToThread (state, (pointer) tc, 0);
 
     COPYIN2 (state, savedThread);
     COPYIN2 (state, signalHandlerThread);
@@ -218,7 +211,7 @@ realtimeRunner (void *paramsPtr)
         TC.running_threads++;
         TC_UNLOCK;
 
-        Parallel_run ();
+//        Parallel_run ();
 
         fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
                  tNum);

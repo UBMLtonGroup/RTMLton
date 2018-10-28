@@ -44,7 +44,7 @@ typedef GC_state GCState_t;
 #include "gc/int-inf.h"
 #include "gc/string.h"
 #include "gc/object-size.h"
-#include "gc/generational.h"
+//#include "gc/generational.h"
 #include "gc/heap.h"
 #include "gc/umheap.h"
 #include "gc/current.h"
@@ -58,9 +58,13 @@ typedef GC_state GCState_t;
 #include "gc/major.h"
 #include "gc/statistics.h"
 #include "gc/forward.h"
+/*
 #include "gc/cheney-copy.h"
+ */
 #include "gc/hash-cons.h"
+/*
 #include "gc/mark-compact.h"
+ */
 #include "gc/invariant.h"
 #include "gc/atomic.h"
 #include "gc/enter_leave.h"
@@ -71,7 +75,7 @@ typedef GC_state GCState_t;
 #include "gc/garbage-collection.h"
 #include "gc/realtime_thread.h"
 #include "gc/new-object.h"
-#include "gc/array-allocate.h"
+//#include "gc/array-allocate.h"
 #include "gc/umarray-allocate.h"
 #include "gc/sources.h"
 #include "gc/call-stack.h"

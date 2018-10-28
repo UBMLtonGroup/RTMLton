@@ -6,8 +6,7 @@
  * MLton is released under a BSD-style license.
  * See the file MLton-LICENSE for details.
  */
-
-void displayGenerationalMaps (__attribute__ ((unused)) GC_state s,
+ void displayGenerationalMaps (__attribute__ ((unused)) GC_state s,
                               struct GC_generationalMaps *generational,
                               FILE *stream) {
   fprintf(stream,

@@ -3,7 +3,8 @@ void printObjptr(GC_state s, objptr* opp) {
 }
 
 void dumpUMHeap(GC_state s) {
-    freopen("heap_ref.txt", "a", stdout);
+    FILE *__j __attribute__ ((unused)) = freopen("heap_ref.txt", "a", stdout);
+
     pointer pchunk;
     size_t step = sizeof(struct GC_UM_Chunk) + sizeof(Word32_t); /*account for size of chunk type header*/
     pointer end = s->umheap.start + s->umheap.size - step;
@@ -16,7 +17,7 @@ void dumpUMHeap(GC_state s) {
 
             GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
             if (pc->chunk_header & UM_CHUNK_IN_USE) {
-                fprintf(stdout, "Normal: "FMTPTR" , "FMTPTR" -> ", pchunk, pchunk + 4);
+                fprintf(stdout, "Normal: "FMTPTR" "FMTPTR"-> ", (uintptr_t)pchunk, (uintptr_t)(pchunk + 4));
                 foreachObjptrInObject(s, pchunk + 4, printObjptr, false);
                 fprintf(stdout, "\n");
             }
@@ -36,7 +37,7 @@ void dumpUMHeap(GC_state s) {
 
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
             if (pc->array_chunk_header & UM_CHUNK_IN_USE) {
-                fprintf(stdout, "Array: "FMTPTR" , "FMTPTR" -> ", pchunk, pchunk + 8);
+                fprintf(stdout, "Array: "FMTPTR" , "FMTPTR" -> ", (uintptr_t)pchunk, (uintptr_t)(pchunk + 8));
                 foreachObjptrInObject(s, pchunk + 8, printObjptr, false);
                 fprintf(stdout, "\n");
             }

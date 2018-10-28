@@ -3,9 +3,9 @@ pointer GC_arrayAllocate (GC_state s,
                           GC_arrayLength numElements,
                           GC_header header) {
 //    size_t arraySize;
-    size_t bytesPerElement;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
+    size_t bytesPerElement = 0;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs = 0;
 //    pointer frontier, last;
 //    pointer result;
 
@@ -28,7 +28,7 @@ pointer GC_arrayAllocate (GC_state s,
     }
 
     if (DEBUG_MEM) {
-        fprintf(stderr, "numElements: %d, chunkNumObjs: %d, numChunks: %d\n",
+        fprintf(stderr, "numElements: %zd, chunkNumObjs: %zd, numChunks: %zd\n",
                 numElements, chunkNumObjs, numChunks);
     }
 
@@ -48,7 +48,7 @@ pointer GC_arrayAllocate (GC_state s,
     }
 
     GC_UM_Array_Chunk cur_chunk = parray_header;
-    int i;
+    unsigned int i;
 
     for (i=0; i<numChunks - 1; i++) {
         cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umheap);
@@ -65,7 +65,7 @@ pointer GC_arrayAllocate (GC_state s,
                                                   //chunkNumObjs);
 
     if (DEBUG_MEM)
-        fprintf(stderr, "1st group created array with chunk_fan_out: %d\n",
+        fprintf(stderr, "1st group created array with chunk_fan_out: %zd\n",
                 root->array_chunk_fan_out);
 
     while (root->next_chunk) {
@@ -79,7 +79,7 @@ pointer GC_arrayAllocate (GC_state s,
     parray_header->root = root;
 
     if (DEBUG_MEM)
-        fprintf(stderr, "Created array with chunk_fan_out: %d\n",
+        fprintf(stderr, "Created array with chunk_fan_out: %zd\n",
                 root->array_chunk_fan_out);
     return (pointer)&(parray_header->ml_array_payload);
 }
@@ -98,7 +98,7 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
     cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
     cur_chunk->array_chunk_fan_out = fan_out;
 
-    int cur_index = 0;
+    unsigned int cur_index = 0;
     while (head) {
         cur_chunk->ml_array_payload.um_array_pointers[cur_index] = head;
         head = head->next_chunk;

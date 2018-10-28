@@ -53,9 +53,9 @@ size_t dfsMarkByMode (GC_state s, pointer root,
   pointer todo; /* A pointer to the pointer in cur to next. */
   GC_header header;
   GC_header* headerp;
-  uint16_t bytesNonObjptrs;
-  uint16_t numObjptrs;
-  GC_objectTypeTag tag;
+  uint16_t bytesNonObjptrs = 0;
+  uint16_t numObjptrs = 0;
+  GC_objectTypeTag tag = 0;
   uint32_t objptrIndex; /* The i'th pointer in the object (element) being marked. */
   GC_header nextHeader;
   GC_header* nextHeaderp;
@@ -133,7 +133,7 @@ mark:
         GC_UM_Chunk pchunk = (GC_UM_Chunk)(cur - GC_NORMAL_HEADER_SIZE);
         pchunk->chunk_header |= UM_CHUNK_MARK_MASK;
         if (DEBUG_MEM) {
-            fprintf(stderr, "dfs-mark: chunk: "FMTPTR", sentinel: %d\n",
+            fprintf(stderr, "dfs-mark: chunk: "FMTPTR", sentinel: %zd\n",
                     (uintptr_t)pchunk,
                     pchunk->sentinel);
         }
@@ -352,8 +352,8 @@ ret:
     prev = fetchObjptrToPointer (todo, s->heap.start);
     // *(pointer*)todo = next;
     storeObjptrFromPointer (todo, next, s->heap.start);
-    if (shouldHashCons)
-      markIntergenerationalPointer (s, (pointer*)todo);
+    //if (shouldHashCons)
+    //  markIntergenerationalPointer (s, (pointer*)todo);
     goto markNextInNormal;
   } else if (ARRAY_TAG == tag) {
     arrayIndex = getArrayCounter (cur);
@@ -364,8 +364,8 @@ ret:
     prev = fetchObjptrToPointer (todo, s->heap.start);
     // *(pointer*)todo = next;
     storeObjptrFromPointer (todo, next, s->heap.start);
-    if (shouldHashCons)
-      markIntergenerationalPointer (s, (pointer*)todo);
+    //if (shouldHashCons)
+    //  markIntergenerationalPointer (s, (pointer*)todo);
     goto markNextInArray;
   } else {
     assert (STACK_TAG == tag);
@@ -380,8 +380,8 @@ ret:
     prev = fetchObjptrToPointer (todo, s->heap.start);
     // *(pointer*)todo = next;
     storeObjptrFromPointer (todo, next, s->heap.start);
-    if (shouldHashCons)
-      markIntergenerationalPointer (s, (pointer*)todo);
+    //if (shouldHashCons)
+    // markIntergenerationalPointer (s, (pointer*)todo);
     objptrIndex++;
     goto markInFrame;
   }

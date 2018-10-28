@@ -44,6 +44,7 @@ GC_header getHeader (pointer p) {
  */
 GC_header buildHeaderFromTypeIndex (uint32_t t) {
   assert (t < TWOPOWER (TYPE_INDEX_BITS));
+  //fprintf(stderr, "object header %x\n", (1 | (t << 1)));
   return 1 | (t << 1);
 }
 

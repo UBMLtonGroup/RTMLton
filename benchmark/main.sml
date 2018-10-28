@@ -4,7 +4,7 @@
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
  *
- * MLton is released under a BSD-style license.
+ * MLton is released under a HPND-style license.
  * See the file MLton-LICENSE for details.
  *)
 
@@ -120,12 +120,14 @@ val benchCounts: (string * int) list =
    ("raytrace", 96):: (* 37.27 sec *)
    ("simple", 768):: (* 36.10 sec *)
    ("smith-normal-form", 192):: (* 41.93 sec *)
+   ("string-concat", 768):: (* 93.94 sec *)
    ("tailfib", 512):: (* 35.36 sec *)
    ("tak", 24):: (* 44.71 sec *)
    ("tensor", 6):: (* 34.63 sec *)
    ("tsp", 16):: (* 36.91 sec *)
    ("tyan", 384):: (* 32.56 sec *)
-   ("vector-concat", 32):: (* 35.13 sec *)
+   ("vector32-concat", 96):: (* 79.84 sec *)
+   ("vector64-concat", 96)::
    ("vector-rev", 64):: (* 32.16 sec *)
    ("vliw", 768):: (* 30.51 sec *)
    ("wc-input1", 24576):: (* 41.69 sec *)
@@ -140,6 +142,8 @@ val benchCount =
     case List.peek (benchCounts, fn (b, _) => b = s) of
        NONE => Error.bug (concat ["no benchCount for ", s])
      | SOME (_, c) => Int.toString c)
+
+val default_main = (fn bench => concat ["val _ = Main.doit ", benchCount bench, "\n"])
 
 fun compileSizeRun {command, exe, doTextPlusData: bool} =
    Escape.new
@@ -169,7 +173,7 @@ fun compileSizeRun {command, exe, doTextPlusData: bool} =
         size = size}
     end)
 
-fun batch {abbrv, bench} =
+fun batch_ {abbrv, bench} =
    let
       val abbrv =
          String.translate
@@ -178,8 +182,11 @@ fun batch {abbrv, bench} =
              then String.fromChar c
           else "_")
    in
-      concat [bench, ".", abbrv, ".batch.sml"]
+      concat [bench, ".", abbrv, ".batch"]
    end
+
+fun batch ab =
+  concat [batch_ ab, ".sml"]
 
 local
    val n = Counter.new 0
@@ -195,6 +202,7 @@ in
              in
                 {name = cmd,
                  abbrv = abbrv,
+                 main = default_main,
                  test = (fn {bench} =>
                          let
                             val src = batch {abbrv = abbrv, bench = bench}
@@ -212,18 +220,28 @@ in
 end
 
 fun kitCompile {bench} =
-   compileSizeRun {command = Explicit {args = [batch {abbrv = "MLKit", bench = bench}],
-                                       com = "mlkit"},
-                   exe = "run",
-                   doTextPlusData = true}
+   let
+      val bargs = {abbrv = "MLKit", bench = bench}
+      val bin = batch_ bargs
+   in compileSizeRun
+      {command = Explicit {args = ["-o", bin, batch bargs],
+                           com = "mlkit"},
+       exe = bin,
+       doTextPlusData = true}
+   end
    
 fun mosmlCompile {bench} =
-   compileSizeRun
-   {command = Explicit {args = ["-orthodox", "-standalone", "-toplevel",
-                                batch {abbrv = "Moscow ML", bench = bench}],
-                        com = "mosmlc"},
-    exe = "a.out",
-    doTextPlusData = false}
+   let
+      val bargs = {abbrv = "Moscow ML", bench = bench}
+      val bin = batch_ bargs
+   in compileSizeRun
+      {command = Explicit {args = ["-orthodox", "-standalone", "-toplevel",
+                                   "-o", bin, batch bargs],
+                           com = "mosmlc"},
+       exe = bin,
+       doTextPlusData = false}
+   end
+
 
 val njSuffix =
    Promise.delay
@@ -295,52 +313,15 @@ fun njCompile {bench} =
     end)
                 
 fun polyCompile {bench} =
-   Escape.new
-   (fn e =>
-    let
-       val originalDbase = "/usr/lib/poly/ML_dbase"
-       val poly = "/usr/bin/poly"
-    in File.withTemp
-       (fn dbase =>
-        let
-           val _ = File.copy (originalDbase, dbase)
-           val original = File.size dbase
-           val {system, user} =
-              File.withTempOut
-              (fn out =>
-               Out.output
-               (out,
-                concat ["use \"", bench, ".sml\" handle _ => PolyML.quit ();\n",
-                        "if PolyML.commit() then () else ",
-                        "(Main.doit ", benchCount bench, "; ());\n",
-                        "PolyML.quit();\n"]),
-               fn input =>
-               withInput
-               (input, fn () =>
-                timeIt (Explicit {args = [dbase],
-                                  com = poly})))
-           val after = File.size dbase
-        in
-           if original = after
-              then {compile = NONE,
-                    run = NONE,
-                    size = NONE}
-           else
-               let
-                  val compile = SOME (Time.toReal (Time.+ (user, system)))
-                  val size = SOME (after - original)
-                  val run =
-                     timeCall (poly, [dbase])
-                     handle _ => Escape.escape (e, {compile = compile,
-                                                    run = NONE,
-                                                    size = size})
-               in
-                  {compile = compile,
-                   run = SOME run,
-                   size = size}
-               end
-        end)
-    end)
+   let
+      val bargs = {abbrv = "Poly/ML", bench = bench}
+      val bin = batch_ bargs
+   in compileSizeRun
+      {command = Explicit {args = [batch bargs, "-o", bin],
+                           com = "polyc"},
+       exe = bin,
+       doTextPlusData = false}
+   end
 
 type 'a data = {bench: string,
                 compiler: string,
@@ -350,6 +331,7 @@ fun main args =
    let
       val compilers: {name: string,
                       abbrv: string,
+                      main: string -> string,
                       test: {bench: File.t} -> {compile: real option,
                                                 run: real option,
                                                 size: Position.int option}} list ref 
@@ -429,11 +411,13 @@ fun main args =
                       None (fn () => pushCompiler
                             {name = "MLKit",
                              abbrv = "MLKit",
+                             main = default_main,
                              test = kitCompile})),
                      ("mosml",
                       None (fn () => pushCompiler
                             {name = "Moscow ML",
                              abbrv = "Moscow ML",
+                             main = default_main,
                              test = mosmlCompile})),
                      ("mlton",
                       SpaceString (fn arg => pushCompilers
@@ -444,11 +428,13 @@ fun main args =
                       None (fn () => pushCompiler
                             {name = "Poly/ML",
                              abbrv = "Poly/ML",
+                             main = (fn bench => concat ["fun main _ = Main.doit ", benchCount bench, "\n"]),
                              test = polyCompile})),
                      ("smlnj",
                       None (fn () => pushCompiler
                             {name = "SML/NJ",
                              abbrv = "SML/NJ",
+                             main = default_main,
                              test = njCompile})),
                      trace,
                      ("wiki", trueRef doWiki)]}
@@ -605,7 +591,7 @@ fun main args =
                       val foundOne = ref false
                       val res =
                          List.fold
-                         (compilers, ac, fn ({name, abbrv, test},
+                         (compilers, ac, fn ({name, abbrv, main, test},
                                              ac as {compiles: real data,
                                                     runs: real data,
                                                     sizes: Position.int data,
@@ -617,10 +603,8 @@ fun main args =
                                    val _ =
                                       File.withOut
                                       (batch {abbrv = abbrv, bench = bench}, fn out =>
-                                       (File.outputContents (concat [bench, ".sml"], out)
-                                        ; Out.output (out, concat ["val _ = Main.doit ",
-                                                                   benchCount bench,
-                                                                   "\n"])))
+                                       (File.outputContents (concat [bench, ".sml"], out);
+                                        Out.output (out, (main bench))))
 (*
                                    val outTmpFile =
                                       File.tempName {prefix = "tmp", suffix = "out"}

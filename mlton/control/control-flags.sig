@@ -37,10 +37,11 @@ signature CONTROL_FLAGS =
       structure Codegen:
          sig
             datatype t =
-               AMD64Codegen
-             | CCodegen
-             | LLVMCodegen
-             | X86Codegen
+              CCodegen
+               (* JEFF DISABLE CODEGEN
+             | AMD64Codegen
+             | Codegen
+             | X86Codegen *)
             val all: t list
             val toString: t -> string
          end

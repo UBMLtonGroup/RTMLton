@@ -19,6 +19,7 @@ INC := $(LIB)/include
 COMP := $(SRC)/mlton
 RUN := $(SRC)/runtime
 MLTON := $(BIN)/mlton
+VMLTON := /usr/bin/mlton
 AOUT := mlton-compile
 ifeq (mingw, $(TARGET_OS))
 EXE := .exe
@@ -81,7 +82,7 @@ basis-no-check:
 basis:
 	$(MAKE) basis-no-check
 	@echo 'Type checking basis.'
-	"$(MLTON)" -disable-ann deadCode \
+	"$(VMLTON)" -disable-ann deadCode \
 		-stop tc \
 		'$$(SML_LIB)/basis/libs/all.mlb' \
 		>/dev/null
@@ -131,7 +132,7 @@ docs: dirs
 	$(MAKE) -C "$(YACC)" docs
 	$(MAKE) -C doc/guide
 
-LIBRARIES := ckit-lib cml mllpt-lib mlnlffi-lib mlrisc-lib mlyacc-lib smlnj-lib
+LIBRARIES := ckit-lib cml mllpt-lib mlnlffi-lib mlrisc-lib mlyacc-lib #smlnj-lib
 
 .PHONY: libraries-no-check
 libraries-no-check:
@@ -157,7 +158,7 @@ libraries:
 	$(MAKE) libraries-no-check
 	for f in $(LIBRARIES); do				\
 		echo "Type checking $$f library.";		\
-		"$(MLTON)" -disable-ann deadCode		\
+		"$(VMLTON)" -disable-ann deadCode		\
 			-stop tc				\
 			'$$(SML_LIB)/'"$$f/$$f.mlb"		\
 			>/dev/null;				\

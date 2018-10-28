@@ -118,7 +118,7 @@ void initWorld (GC_state s) {
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //              s->lastMajorStatistics.bytesLive);
   s->gc_module = GC_UM;
-  setCardMapAndCrossMap (s);
+  //setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->heap.start);
   //s->umarfrontier = s->umarheap.start;
   s->frontier = start;
@@ -128,7 +128,7 @@ void initWorld (GC_state s) {
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
 
-s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
+  s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
   GC_UM_Chunk next_chunk = NULL;

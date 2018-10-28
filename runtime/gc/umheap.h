@@ -20,12 +20,16 @@ typedef struct UM_Mem_Chunk{
 } *UM_Mem_Chunk;
 
 
+/* if you update this, also update the copy in c-chunk.h around line 262  */
+
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
     UM_header chunk_header;
     size_t sentinel;
     struct GC_UM_Chunk* next_chunk;
+    struct GC_UM_Chunk* prev_chunk;
+    GC_returnAddress ra;
 } *GC_UM_Chunk;
 
 typedef struct GC_UM_heap {
@@ -74,7 +78,8 @@ typedef struct GC_UM_Array_Chunk {
 #endif /* MLTON_GC_INTERNAL_TYPES */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
-static void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
+//GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c);
+void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 static void initUMHeap(GC_state s, GC_UM_heap h);
 //static void initUMArrayHeap(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_heap h, pointer c);

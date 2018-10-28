@@ -60,7 +60,7 @@ SOURCES :=			\
 	$(FILE)			\
 	upgrade-basis.sml	\
 	$(FRONT_END_SOURCES)	\
-	$(filter-out control/version.sml,$(shell if [ -r $(FILE) ]; then mlton -stop f $(FILE) | grep -v " "; fi))
+	$(filter-out control/version.sml,$(shell if [ -r $(FILE) ]; then /usr/bin/mlton -stop f $(FILE) | grep -v " "; fi))
 
 .PHONY: all
 all: $(AOUT)
@@ -82,18 +82,18 @@ front-end/%.grm.sig front-end/%.grm.sml: front-end/%.grm
 upgrade-basis.sml:
 	"$(SRC)/bin/upgrade-basis" '$(PATH)' "$(HOST_ARCH)" "$(HOST_OS)" >upgrade-basis.sml
 
-mlton-stubs.mlb: $(shell mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb) $(shell mlton -stop f mlton.mlb)
+mlton-stubs.mlb: $(shell /usr/bin/mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb) $(shell /usr/bin/mlton -stop f mlton.mlb)
 	(									\
 		echo '$$(SML_LIB)/basis/unsafe.mlb';				\
 		echo '$$(SML_LIB)/basis/sml-nj.mlb';				\
 		echo '$$(SML_LIB)/basis/mlton.mlb';				\
 		echo '$$(SML_LIB)/basis/basis.mlb';				\
 		echo 'upgrade-basis.sml';					\
-		mlton -stop f mlton.mlb | grep -v 'mlb$$' | grep 'mlyacc';	\
-		mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb |		\
+		/usr/bin/mlton -stop f mlton.mlb | grep -v 'mlb$$' | grep 'mlyacc';	\
+		/usr/bin/mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb |		\
 			grep -v 'mlb$$' | 					\
 			grep 'mlton-stubs';					\
-		mlton -stop f mlton.mlb |					\
+		/usr/bin/mlton -stop f mlton.mlb |					\
 			grep -v 'mlb$$' |					\
 			grep -v 'sml/basis' | 					\
 			grep -v 'targets' | 					\
@@ -106,13 +106,13 @@ $(AOUT): $(SOURCES)
 	rm -f control/version.sml
 	$(MAKE) control/version.sml
 	@echo 'Compiling mlton (takes a while)'
-	mlton $(FLAGS) $(FILE)
+	/usr/bin/mlton $(FLAGS) $(FILE)
 
 .PHONY: def-use
 def-use: mlton.def-use
 
 mlton.def-use: $(SOURCES)
-	mlton $(FLAGS) -stop tc -prefer-abs-paths true -show-def-use mlton.def-use $(FILE)
+	/usr/bin/mlton $(FLAGS) -stop tc -prefer-abs-paths true -show-def-use mlton.def-use $(FILE)
 
 .PHONY: clean
 clean:
@@ -162,17 +162,17 @@ polyml-mlton: mlton-polyml.use $(FRONT_END_SOURCES)
 	$(CC) -o mlton-polyml mlton-polyml.o -lpolymain -lpolyml
 	rm -f mlton-polyml.o
 
-mlton-polyml.use: ../lib/stubs/basis-stubs-for-polyml/sources.use ../lib/stubs/mlton-stubs-for-polyml/sources.use $(shell mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb) $(filter-out control/version.sml,$(shell mlton -stop f mlton.mlb))
+mlton-polyml.use: ../lib/stubs/basis-stubs-for-polyml/sources.use ../lib/stubs/mlton-stubs-for-polyml/sources.use $(shell /usr/bin/mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb) $(filter-out control/version.sml,$(shell /usr/bin/mlton -stop f mlton.mlb))
 	(									\
 		cat ../lib/stubs/basis-stubs-for-polyml/sources.use |		\
 			sed 's|use "\(.*\)";|../lib/stubs/basis-stubs-for-polyml/\1|'; \
-		mlton -stop f mlton.mlb | grep -v 'mlb$$' | grep 'mlyacc';	\
+		/usr/bin/mlton -stop f mlton.mlb | grep -v 'mlb$$' | grep 'mlyacc';	\
 		cat ../lib/stubs/mlton-stubs-for-polyml/sources.use |		\
 			sed 's|use "\(.*\)";|../lib/stubs/mlton-stubs-for-polyml/\1|'; \
-		mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb |		\
+		/usr/bin/mlton -stop f ../lib/stubs/mlton-stubs/sources.mlb |		\
 			grep -v 'mlb$$' | 					\
 			grep 'mlton-stubs';					\
-		mlton -stop f mlton.mlb |					\
+		/usr/bin/mlton -stop f mlton.mlb |					\
 			grep -v 'mlb$$' |					\
 			grep -v 'sml/basis' | 					\
 			grep -v 'targets' | 					\

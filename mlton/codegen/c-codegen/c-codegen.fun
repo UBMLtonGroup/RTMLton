@@ -335,7 +335,8 @@ fun outputDeclarations
                         name: string,
                         v: 'a vector,
                         toString: int * 'a -> string) =
-         (print (concat ["static ", ty, " ", name, "[] = {\n"])
+         (  print (concat ["uint32_t ", name, "_len = ", Int.toString(Vector.length v), ";\n"])
+          ; print (concat ["static ", ty, " ", name, "[] = {\n"])
           ; Vector.foreachi (v, fn (i, x) =>
                              print (concat ["\t", toString (i, x), ",\n"]))
           ; print "};\n")
@@ -494,7 +495,7 @@ fun outputDeclarations
          end
    in
       outputIncludes (includes, print)
-      ; declareGlobals ("PRIVATE ", print)
+      ; declareGlobals ("PRIVATE /*GLOBAL*/ ", print)
       ; declareExports ()
       ; declareLoadSaveGlobals ()
       ; declareVectors ()
@@ -515,6 +516,7 @@ structure Type =
 
       fun toC (t: t): string =
          CType.toString (Type.toCType t)
+
    end
 
 structure StackOffset =
@@ -523,6 +525,14 @@ structure StackOffset =
 
       fun toString (T {offset, ty}): string =
          concat ["S", C.args [Type.toC ty, C.bytes offset]]
+   end
+
+structure StackOffset2 =
+   struct
+      open StackOffset
+
+      fun toString (T {offset, ty}): string =
+         concat ["/*StackOffset2*/ S2", C.args [Type.toC ty, C.bytes offset]]
    end
 
 fun contents (ty, z) = concat ["/*Contents*/ C", C.args [Type.toC ty, z]]
@@ -554,7 +564,7 @@ fun declareFFI (Chunk.T {blocks, ...}, {print: string -> unit}) =
                            (name, fn () =>
                             concat [case symbolScope of
                                        External => "EXTERNAL "
-                                     | Private => "PRIVATE "
+                                     | Private => "PRIVATE /*FFI FUNC*/ "
                                      | Public => "PUBLIC ",
                                     "extern ",
                                     case cty of
@@ -697,7 +707,7 @@ fun output {program as Machine.Program.T {chunks,
       
       (* If the dst is Frontier, then we are entering a critical section
       where we've extended the frontier and are going to now write into 
-      that extension. 
+      that extension. XXX remove
       
       // critical starts just before the next statement
       Frontier = CPointer_add (Frontier, (Word64)(0x18ull)); // Frontier += 24 bytes
@@ -792,9 +802,10 @@ fun output {program as Machine.Program.T {chunks,
              | Register r =>
                   concat [Type.name (Register.ty r), "_",
                           Int.toString (Register.index r)]
-             | StackOffset s => StackOffset.toString s
+             | StackOffset s => concat ["/* move */", StackOffset.toString s]
              | StackTop => "StackTop"
              | Word w => WordX.toC w
+<<<<<<< HEAD
         fun getbase(x: Operand.t):string = 
           case x of 
                Offset {base, offset, ty} => 
@@ -804,6 +815,8 @@ fun output {program as Machine.Program.T {chunks,
             |   ChunkedOffset {base, offset, ty, size} =>
                     toString base
             |   _ => "NULL"
+=======
+>>>>>>> develop/rtgc-stacks
 
       in
          val operandToString = toString
@@ -937,11 +950,13 @@ fun output {program as Machine.Program.T {chunks,
                      | Return => ()
                      | Switch s => Switch.foreachLabel (s, jump)
                  end)
+                 (* this is where the return address is written to the stack *)
             fun push (return: Label.t, size: Bytes.t) =
-               (print "\t"
-                ; print (move {dst = (StackOffset.toString
+               (print "\t/*push*/ "
+                ; print (concat ["/* ORIG stack-write ", StackOffset.toString
                                       (StackOffset.T
                                        {offset = Bytes.- (size, Runtime.labelSize ()),
+<<<<<<< HEAD
                                         ty = Type.label return})),
                                dstIsMem = true,
                                src = operandToString (Operand.Label return),
@@ -949,6 +964,17 @@ fun output {program as Machine.Program.T {chunks,
                                ty = Type.label return, inCrit = inCritical,
                                dstbase= "NULL" (*getBase dst*),
                                srcbase = "NULL" (*getBase src*)})
+=======
+                                        ty = Type.label return}), " */"])
+               ; print (move {dst = (StackOffset.toString
+                                     (StackOffset.T
+                                      {offset = Bytes.- (Bytes.fromInt 200, Bytes.fromInt 0), (* JCM XXX sizeof(GC_UM_Chunk) is 208, so we stash the return address at 200. orig code is above *)
+                                       ty = Type.label return})),
+                              dstIsMem = true,
+                              src = operandToString (Operand.Label return),
+                              srcIsMem = false,
+                              ty = Type.label return, inCrit = inCritical})
+>>>>>>> develop/rtgc-stacks
                 ; C.push (size, print)
                 ; if amTimeProfiling
                      then print "\tFlushStackTop();\n"
@@ -1059,7 +1085,9 @@ fun output {program as Machine.Program.T {chunks,
                                    print
                                    (concat
                                     ["\t",
-                                     move {dst = operandToString x,
+
+                                     move {dst =  operandToString x
+                                     ,
                                            dstIsMem = Operand.isMem x,
                                            src = creturn ty,
                                            srcIsMem = false,
@@ -1166,7 +1194,7 @@ fun output {program as Machine.Program.T {chunks,
                            val _ =
                               if Type.isUnit returnTy
                                  then ()
-                              else print (concat [creturn returnTy, " = /*J2*/ "])
+                              else print (concat [creturn returnTy, " = /*CCALL This is a C function call */ "])
                            datatype z = datatype CFunction.Target.t
                            val _ =
                               case target of
@@ -1295,14 +1323,15 @@ fun output {program as Machine.Program.T {chunks,
                  ("FrontierOffset", GCField.Frontier),
                  ("UMFrontierOffset", GCField.UMFrontier),
                  ("StackBottomOffset", GCField.StackBottom),
-                 ("StackTopOffset", GCField.StackTop)],
+                 ("StackTopOffset", GCField.StackTop),
+                 ("CurrentFrameOffset", GCField.CurrentFrame)],
                 fn (name, f) =>
                 print (concat ["#define ", name, " ",
                                Bytes.toString (GCField.offset f), "\n"]))
          in
             outputIncludes (["c-chunk.h"], print)
             ; outputOffsets ()
-            ; declareGlobals ("PRIVATE extern ", print)
+            ; declareGlobals ("PRIVATE extern  /*GLOBAL2*/ ", print)
             ; declareFFI (chunk, {print = print})
             ; declareChunks ()
             ; declareProfileLabels ()

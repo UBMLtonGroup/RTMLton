@@ -516,7 +516,6 @@ fun ofGCField (f: GCField.t): t =
    in
       case f of
          AtomicState => word32
-       | CardMapAbsolute => cpointer ()
        | CurrentThread => thread ()
        | CurSourceSeqsIndex => word32
        | ExnStack => exnStack ()
@@ -527,6 +526,7 @@ fun ofGCField (f: GCField.t): t =
        | MaxFrameSize => word32
        | SignalIsPending => word32
        | StackBottom => cpointer ()
+       | CurrentFrame => cpointer ()
        | StackLimit => cpointer ()
        | StackTop => cpointer ()
        | FLChunks => csize ()

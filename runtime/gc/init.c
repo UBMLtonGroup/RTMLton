@@ -364,8 +364,8 @@ int GC_init (GC_state s, int argc, char **argv) {
   initSignalStack (s);
   worldFile = NULL;
 
-  unless (isAligned (s->sysvals.pageSize, CARD_SIZE))
-    die ("Page size must be a multiple of card size.");
+  //unless (isAligned (s->sysvals.pageSize, CARD_SIZE))
+  //  die ("Page size must be a multiple of card size.");
   processAtMLton (s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
   res = processAtMLton (s, 1, argc, argv, &worldFile);
   if (s->controls.fixedHeap > 0 and s->controls.maxHeap > 0)
