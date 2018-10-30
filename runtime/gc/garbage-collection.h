@@ -23,6 +23,29 @@ static void performUMGC(GC_state s,
                         bool fullGC);
 
 
+static void performGC_helper (GC_state s,
+                       size_t oldGenBytesRequested,
+                       size_t nurseryBytesRequested,
+                       bool forceMajor,
+                       __attribute__ ((unused)) bool mayResize);
+
+void
+performGC (GC_state s,
+           size_t oldGenBytesRequested,
+           size_t nurseryBytesRequested, bool forceMajor, bool mayResize);
+
+static void markStack(GC_state s,GC_stack currentStack);
+
+static void sweep(GC_state s, size_t ensureObjectChunksAvailable,
+                  size_t ensureArrayChunksAvailable,
+                  bool fullGC);
+
+void ensureInvariantForMutator (GC_state s, bool force);
+bool ensureChunksAvailable(GC_state s);
+void GC_collect_real(GC_state s, size_t bytesRequested, bool force);
+void ensureHasHeapBytesFree (GC_state s,
+                             size_t oldGenBytesRequested,
+                             size_t nurseryBytesRequested);
 
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 

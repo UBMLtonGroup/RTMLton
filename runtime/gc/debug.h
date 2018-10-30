@@ -36,10 +36,6 @@ enum {
   DEBUG_WEAK = FALSE,
   DEBUG_WORLD = FALSE,
   FORCE_GENERATIONAL = FALSE,
-<<<<<<< HEAD
   FORCE_MARK_COMPACT = TRUE,
   DEBUG_RTGC=FALSE,
-=======
-  FORCE_MARK_COMPACT = FALSE,
->>>>>>> develop/rtgc-stacks
 };

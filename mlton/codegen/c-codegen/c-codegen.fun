@@ -805,8 +805,7 @@ fun output {program as Machine.Program.T {chunks,
              | StackOffset s => concat ["/* move */", StackOffset.toString s]
              | StackTop => "StackTop"
              | Word w => WordX.toC w
-<<<<<<< HEAD
-        fun getbase(x: Operand.t):string = 
+        fun getbase(x: Operand.t):string =
           case x of 
                Offset {base, offset, ty} => 
                     toString base
@@ -815,8 +814,6 @@ fun output {program as Machine.Program.T {chunks,
             |   ChunkedOffset {base, offset, ty, size} =>
                     toString base
             |   _ => "NULL"
-=======
->>>>>>> develop/rtgc-stacks
 
       in
          val operandToString = toString
@@ -956,15 +953,6 @@ fun output {program as Machine.Program.T {chunks,
                 ; print (concat ["/* ORIG stack-write ", StackOffset.toString
                                       (StackOffset.T
                                        {offset = Bytes.- (size, Runtime.labelSize ()),
-<<<<<<< HEAD
-                                        ty = Type.label return})),
-                               dstIsMem = true,
-                               src = operandToString (Operand.Label return),
-                               srcIsMem = false,
-                               ty = Type.label return, inCrit = inCritical,
-                               dstbase= "NULL" (*getBase dst*),
-                               srcbase = "NULL" (*getBase src*)})
-=======
                                         ty = Type.label return}), " */"])
                ; print (move {dst = (StackOffset.toString
                                      (StackOffset.T
@@ -973,8 +961,9 @@ fun output {program as Machine.Program.T {chunks,
                               dstIsMem = true,
                               src = operandToString (Operand.Label return),
                               srcIsMem = false,
-                              ty = Type.label return, inCrit = inCritical})
->>>>>>> develop/rtgc-stacks
+                              ty = Type.label return, inCrit = inCritical,
+                              dstbase= "NULL" (*getBase dst*),
+                              srcbase = "NULL" (*getBase src*)})
                 ; C.push (size, print)
                 ; if amTimeProfiling
                      then print "\tFlushStackTop();\n"

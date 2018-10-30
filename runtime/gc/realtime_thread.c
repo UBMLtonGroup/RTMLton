@@ -226,3 +226,7 @@ FFI_getOpArgsResPtr (GC_state s)
 {
     return s->ffiOpArgsResPtr[PTHREAD_NUM];
 }
+
+
+#undef LOCK
+#undef UNLOCK

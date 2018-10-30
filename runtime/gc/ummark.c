@@ -6,20 +6,18 @@ void umDfsMarkObjectsMark(GC_state s, objptr *opp) {
     umDfsMarkObjects(s, opp, MARK_MODE);
 }
 
-
+static
 void umShadeObject(GC_state s,objptr *opp){
     
     pointer p = objptrToPointer(*opp, s->heap.start);
     GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
-    GC_objectTypeTag tag;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs = 0;
+    GC_objectTypeTag tag = 0;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
     
     markChunk(p,tag,GREY_MODE,s,numObjptrs);
-
-
 }
 
 void getObjectType(GC_state s, objptr *opp) {
@@ -57,7 +55,7 @@ void getObjectType(GC_state s, objptr *opp) {
     }
 }
 
-
+static
 void markChunk(pointer p, GC_objectTypeTag tag,GC_markMode m,GC_state s,uint16_t numObjptrs)
 {
   if (tag == NORMAL_TAG) {
@@ -110,8 +108,8 @@ void markChunk(pointer p, GC_objectTypeTag tag,GC_markMode m,GC_state s,uint16_t
         GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)
             (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
         if (DEBUG_DFS_MARK) {
-            fprintf(stderr, "umDfsMarkObjects: marking array: %x, markmode: %d, "
-                    "magic: %d, length: %d\n", fst_leaf, m,
+            fprintf(stderr, "umDfsMarkObjects: marking array: %p, markmode: %d, "
+                    "magic: %d, length: %d\n", (void *)fst_leaf, m,
                     fst_leaf->array_chunk_magic, fst_leaf->array_chunk_length);
         }
 
@@ -163,9 +161,9 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
                 (uintptr_t)*opp, (uintptr_t)p);
     GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
-    GC_objectTypeTag tag;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs = 0;
+    GC_objectTypeTag tag = 0;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 //    if (DEBUG_DFS_MARK)
@@ -232,8 +230,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
     if (DEBUG_DFS_MARK)
-        fprintf(stderr, "markUMArrayChunks: %x: marking array markmode: %d, "
-                "type: %d\n", p, m,
+        fprintf(stderr, "markUMArrayChunks: %p: marking array markmode: %d, "
+                "type: %d\n", (void *)p, m,
                 p->array_chunk_type);
 
     if (m == MARK_MODE)

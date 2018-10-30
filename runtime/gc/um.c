@@ -11,6 +11,7 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 
 #include <stdint.h>
 
+#undef DBG
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
 		__FILE__, __LINE__, __func__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
 
@@ -42,8 +43,10 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 {
     GC_UM_Chunk chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks);
     
-
-    *((uint32_t*) chunk->ml_object) = header;
+    uint32_t *alias = (uint32_t *)(chunk->ml_object);
+    *alias = header;
+    // violates C aliasing rules (undefined behavior):
+    //*((uint32_t*) chunk->ml_object) = header;
     
     /*training wheels. Remove once confident. Use assert loop to verify other properties that must hold*/
     int i;
@@ -161,7 +164,6 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
                      UM_CHUNK_PAYLOAD_SIZE);
 }
-
 
 void writeBarrier(GC_state s,Pointer dst, Pointer src)
 {

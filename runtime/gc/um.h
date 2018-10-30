@@ -7,3 +7,9 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset);
 Pointer UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header,
                         C_Size_t s);
+
+
+
+void writeBarrier(GC_state s,Pointer dst, Pointer src);
+
+

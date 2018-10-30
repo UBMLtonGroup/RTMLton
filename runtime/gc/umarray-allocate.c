@@ -24,7 +24,7 @@ pointer GC_arrayAllocate (GC_state s,
      * allocates a chunks, Mutator B can use up most of the free chunks. In that case, array allocation will block
      * on allcoNextArrayChunk and then die if GC cannot free enough.
      * TODO: Maybe allocate needed chunks upfront when this fn returns? */
-        blockOnInsuffucientChunks(s,numChunks*2);
+        blockOnInsufficientChunks(s,numChunks*2);
     }
 
     if (DEBUG_MEM) {

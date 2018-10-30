@@ -33,3 +33,47 @@ keep-pass
   ssa2
   sxml
   xml
+
+
+
+
+
+
+	 defunctorize starting
+Warning: control/control-flags.sml 76.15.
+  Function has redundant rules.
+    rules: _ => "c"
+    in: fn (CCodegen) => ("c") | (_) => ("c")
+Warning: main/lookup-constant.fun 31.47.
+  Case has redundant rules.
+    rules: _ => 0
+    in: case ! codegen of (CCodegen) => (0) | (_) => (0)
+Warning: main/compile.fun 671.10.
+  Case has redundant rules.
+    rules: _ => CCodegen.implementsPrim
+    in: case ! Control.codegen of (Contro  ...  egen.implementsPrim)
+Warning: main/compile.fun 718.10.
+  Case has redundant rules.
+    rules: _ => (clearNames () ; (Control.tr  ...  outputC = outputC}))
+    in: case ! Control.codegen of (Contro  ...  utputC = outputC})))
+Warning: main/main.fun 174.15.
+  Case has redundant rules.
+    rules: X86Codegen => false
+	   _ => true
+    in: case cg of (AMD64Codegen) => (fal  ...  lse) | (_) => (true)
+Warning: main/main.fun 166.17.
+  Case has redundant rules.
+    rules: X86Codegen => ((! Control.Target.  ...  ol.format = Archive)
+	   _ => true
+    in: case cg of (AMD64Codegen) => (fal  ...  ve)) | (_) => (true)
+Warning: main/main.fun 163.19.
+  Case has redundant rules.
+    rules: _ => true
+    in: case cg of (X86Codegen) => (false) | (_) => (true)
+Warning: main/main.fun 1096.22.
+  Case has redundant rules.
+    rules: _ => Coalesce {limit = 4096}
+    in: case ! codegen of (CCodegen) => (  ...  esce {limit = 4096})
+	 defunctorize finished in 0.44 + 0.45 (50% GC)
+	 xmlSimplify starting
+	    typeCheck starting

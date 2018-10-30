@@ -7,3 +7,4 @@
  */
 
 PRIVATE void GC_done (GC_state s);
+PRIVATE void RTGC_done(GC_state s);

@@ -208,8 +208,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           }
       }
   } else { /* stack */
-    GC_stack stack = NULL;
 #if 0
+    GC_stack stack = NULL;
     pointer top, bottom;
     unsigned int i;
     GC_returnAddress returnAddress;

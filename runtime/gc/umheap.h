@@ -85,11 +85,18 @@ static void initUMHeap(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks);
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
-void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded);
+void blockOnInsufficientChunks(GC_state s,size_t chunksNeeded);
 bool createUMHeap(GC_state s, GC_UM_heap h,
                   size_t diredSize,
                   size_t minSize);
 /*bool createUMArrayHeap(GC_state s, GC_UM_heap h,
                        size_t diredSize,
                        size_t minSize);*/
+
+static
+GC_UM_Chunk allocNextChunk(GC_state s,
+                           GC_UM_heap h);
+static
+GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c);
+
 #endif
