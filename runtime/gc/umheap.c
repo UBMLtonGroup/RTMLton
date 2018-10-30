@@ -13,6 +13,8 @@ void initUMHeap(GC_state s,
                 GC_UM_heap h) {
     h->start = NULL;
     h->size = 0;
+    h->end = NULL;
+    h->limit = NULL;
     h->fl_head = NULL;
     h->fl_tail = NULL;
     s->fl_chunks = 0;
@@ -40,7 +42,6 @@ GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
 
 
 
-
 GC_UM_Chunk allocNextChunk(GC_state s,
                            GC_UM_heap h) {
 
@@ -50,7 +51,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     /*Allocate next chunk from start of free list*/
     h->fl_head->chunkType= UM_NORMAL_CHUNK;
     struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
-    GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head +4 )); /*pass pointer to area after chunktype*/
+    GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head + sizeof(UM_header) )); /*pass pointer to area after chunktype*/
     h->fl_head = nc;
     c->next_chunk = NULL;
     c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
@@ -268,7 +269,7 @@ bool createUMHeap(GC_state s,
     h->end = newStart + desiredSize;
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(Word32_t);/*account for size of chunktype field*/ //TODO: reason if it should be sizeof(struct GC_UM_Chunk) + sizeof(struct UM_MEM_Chunk)
+    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(UM_header);/*account for size of chunktype field*/ //TODO: reason if it should be sizeof(struct GC_UM_Chunk) + sizeof(struct UM_MEM_Chunk)
     pointer end = h->start + h->size - step;
 
 
@@ -277,6 +278,12 @@ bool createUMHeap(GC_state s,
          pchunk+=step) {
         insertFreeChunk(s, h, pchunk);
     }
+
+    assert(pchunk < h->end);
+    assert(h->fl_tail > h->fl_head);
+    
+    h->limit = pchunk;
+
 
     /*Total number of Chunks in the Chunked heap*/
     s->maxChunksAvailable = s->fl_chunks;

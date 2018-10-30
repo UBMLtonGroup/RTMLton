@@ -144,15 +144,54 @@ void markChunk(pointer p, GC_objectTypeTag tag,GC_markMode m,GC_state s,uint16_t
 
 
 
+bool isChunkMarked(pointer p, GC_objectTypeTag tag)
+{
+    /*Treat shaded objects as unmarked*/
+    if(tag == NORMAL_TAG)
+    {
+            GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
+            if ((pc->chunk_header & UM_CHUNK_IN_USE) && (pc->chunk_header & UM_CHUNK_MARK_MASK))
+            {
+                return true;
+            }
+            else
+                return false;
+    }
+    else if(tag == ARRAY_TAG)
+    {
+            GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
+            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) && (pc->array_chunk_header & UM_CHUNK_MARK_MASK))
+                return true;
+            else
+                return false;
+    }
+    else
+    {
+        return false;
+        //die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
+    }
+
+}
+
+bool isContainerChunkMarkedByMode (pointer p, GC_markMode m,GC_objectTypeTag tag) {
+  switch (m) {
+  case MARK_MODE:
+    return isChunkMarked (p,tag);
+  case UNMARK_MODE:
+    return not isChunkMarked (p,tag);
+  default:
+    die ("bad mark mode %u", m);
+  }
+}
+
 
 //TODO: handle marking the mlton objects if packing more than one object in a chunk
 /* Tricolor abstraction at the chunk level. Binary marking for the MLton objects remain same. 
  * Implementation: 
  * 1. If function is in marking mode, mark current chunk grey.
  * 2. mark children grey
- * 3. Mark MLton object black
- * 4. Mark Chunk Black
- * 5. Continue marking in dfs
+ * 3. Mark Chunk Black
+ * 4. Continue marking in dfs
  * NOTE: Function shades object grey only if it isn't already marked grey / black. This makes sure that the shading is to a darker shade and never to lighter shade (unless you are in unmark mode) 
  * */
 
@@ -171,8 +210,10 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 //    if (DEBUG_DFS_MARK)
     getObjectType(s, opp);
 
-    /* Using MLton's header to track if it's marked */
-    if (isPointerMarkedByMode(p, m)) {
+
+
+    /* Using MLton object to track if containing chunk marked */
+    if (isContainerChunkMarkedByMode(p, m,tag)) {
         if (DEBUG_DFS_MARK)
             fprintf(stderr, FMTPTR"marked by mark_mode: %d, RETURN\n",
                     (uintptr_t)p,
@@ -180,6 +221,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
         return;
     }
 
+    /*ensure the MLton object isn't marked. It should be unmarked always*/
+    assert(!isPointerMarkedByMode(p,MARK_MODE));
    
     /*mark children*/
    if(m == MARK_MODE)
@@ -191,6 +234,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     
 
     /*mark object*/
+   /*
     if (m == MARK_MODE) {
         if (DEBUG_DFS_MARK)
             fprintf(stderr, FMTPTR" mark b pheader: %x, header: %x\n",
@@ -214,7 +258,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
             fprintf(stderr, FMTPTR" unmark a pheader: %x, header: %x\n",
                     (uintptr_t)p, *(getHeaderp(p)), header);
     }
-
+    */
 
     /*Mark chunk*/
    
@@ -229,6 +273,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
             foreachObjptrInObject(s, p, umDfsMarkObjectsUnMark, false);
     }
 }
+
+
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
     if (DEBUG_DFS_MARK)
