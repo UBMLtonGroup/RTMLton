@@ -15,7 +15,7 @@ typedef union GC_UM_Chunktype{
 
 typedef struct UM_Mem_Chunk{
   // GC_UM_Chunktype chunkType;
-   Word32_t chunkType;
+   UM_header chunkType;
    struct UM_Mem_Chunk* next_chunk;
 } *UM_Mem_Chunk;
 
@@ -35,6 +35,7 @@ typedef struct GC_UM_Chunk {
 typedef struct GC_UM_heap {
     pointer start;
     pointer end;
+    pointer limit;
     size_t size;
     UM_Mem_Chunk fl_head;
     UM_Mem_Chunk fl_tail;

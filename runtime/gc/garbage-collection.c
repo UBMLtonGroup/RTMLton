@@ -486,8 +486,8 @@ static void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
-    pointer end = s->umheap.start + s->umheap.size - step;
+    size_t step = sizeof(struct GC_UM_Chunk)+sizeof(UM_header); /*account for size of chunktype header*/
+    //pointer end = s->umheap.start + s->umheap.size - step;
 
 
     int freed  = 0;
@@ -543,11 +543,12 @@ static void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 
     for (pchunk=s->umheap.start;
-         pchunk < end;
+         pchunk < s->umheap.limit;
          pchunk+=step) {
+        assert(pchunk != s->umheap.limit);
         if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
         {
-        GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+4); /*account for size of chunktype*/
+        GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+sizeof(UM_header)); /*account for size of chunktype*/
         if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->chunk_header & UM_CHUNK_MARK_MASK) && !(pc->chunk_header & UM_CHUNK_GREY_MASK))) {
             if (DEBUG_MEM) {
@@ -564,18 +565,18 @@ static void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                /*Unmark Chunk*/ 
                     pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
                 /*Unmark MLton Object*/
-                    pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
+                    /*pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
                     GC_header* headerp = getHeaderp(p);
                     GC_header header = *headerp;
                     header = header & ~MARK_MASK;
-                    (*headerp) = header;
+                    (*headerp) = header;*/
         }
 
         }
         else if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
         {
 
-        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
+        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + sizeof(UM_header)); /*account for size of chunktype*/
         if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
             (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK) && !(pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
             if (DEBUG_MEM) {
@@ -594,30 +595,25 @@ static void sweep(GC_state s, size_t ensureObjectChunksAvailable,
             pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
            
             /*Unmark MLton Object*/
-            pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
+            /*pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
             GC_header* headerp = getHeaderp(p);
             GC_header header = *headerp;
             header = header & ~MARK_MASK;
-            (*headerp) = header;
+            (*headerp) = header;*/
 
         }
         }
 
-        if (!fullGC && s->fl_chunks >= ensureObjectChunksAvailable) {
-            break;
-        }
     }
+
+
+    assert(pchunk == s->umheap.limit);
 
     s->cGCStats.numSweeps++;
 
     if(DEBUG_RTGC)
         fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,freed);
 
-    /*Not unmarking the objects within chunks*/ 
-    /*
-    foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsUnMark, FALSE);
-    foreachGlobalObjptr (s, umDfsMarkObjectsUnMark);
-    */
 }
 
 void performUMGC(GC_state s,
