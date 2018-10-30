@@ -108,6 +108,9 @@ static int junk;
 
 #define S(ty, i) *(ty*)(CurrentFrame + (i))
 
+#define WB(ty,d,s,db,sb)  do { writeBarrier(GCState,(db),(sb)); d=s; } while(0)
+
+
 #else
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
