@@ -59,7 +59,6 @@ realtimeThreadWaitForInit (void)
 void
 realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 {
-    int rv = 0;
 
     state->realtimeThreads[0] = main;
     state->realtimeThreads[1] = gc;

@@ -31,7 +31,15 @@ static void performGC_helper (GC_state s,
 								size_t nurseryBytesRequested,
 								bool forceMajor,
 								bool mayResize);
+
+static void markStack(GC_state s, GC_stack currentStack);
+
+static void sweep(GC_state s, size_t ensureObjectChunksAvailable,size_t ensureArrayChunksAvailable,
+        bool fullGC);
+
 static inline void ensureInvariantForMutator (GC_state s, bool force);
+bool ensureChunksAvailable(GC_state s);
+void GC_collect_real(GC_state s, size_t bytesREquested,bool force);
 static inline void ensureHasHeapBytesFree (GC_state s,
                                            size_t oldGenBytesRequested,
                                            size_t nurseryBytesRequested);

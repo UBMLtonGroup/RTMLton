@@ -5,8 +5,9 @@ hello.1.c:(.text+0xb912): undefined reference to `UM_Payload_alloc'
 hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 */
 
+#undef DBG
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
-		__FILE__, __LINE__, __FUNCTION__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
+		__FILE__, __LINE__, __func__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
 
 /* define chunk structure (linked list)
  * define the free list
@@ -32,9 +33,14 @@ Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
 {
     GC_UM_Chunk chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks);
-    
+   
 
-    *((uint32_t*) chunk->ml_object) = header;
+
+    uint32_t *alias = (uint32_t *) (chunk->ml_object) ;
+    *alias = header;
+
+    //violates C aliasing rules (undefined behavior)
+    //*((uint32_t*) chunk->ml_object) = header;
     
     /*training wheels. Remove once confident. Use assert loop to verify other properties that must hold*/
     int i;
@@ -178,7 +184,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     if (base < gc_stat->umheap.start || base >= heap_end) {
         if (DEBUG_MEM) {
             fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
-                    base + offset);
+                    (uintptr_t)base,offset);
         }
         return base + index * elemSize + offset;
     }
@@ -196,7 +202,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         fprintf(stderr, "UM_Array_offset: "FMTPTR" root: "
                 FMTPTR", index: %d size: %d offset %d, "
                 " length: %d, chunk_num_objs: %d\n",
-                (base - 8), root, index, elemSize, offset,
+                (uintptr_t)(base - 8), (uintptr_t)root, index, elemSize, offset,
                 fst_leaf->array_chunk_length,
                 fst_leaf->array_chunk_numObjs);
     }
@@ -232,9 +238,9 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         " --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
                         "offset: %d, addr "FMTPTR" word: %x, %d, "
                         " char: %c\n",
-                        current,
+                        (uintptr_t)current,
                         index,
-                        current->ml_array_payload.ml_object, chunk_offset, res,
+                        (uintptr_t)current->ml_array_payload.ml_object, chunk_offset, (uintptr_t)res,
                         *((Word32_t*)(res)),
                         *((Word32_t*)(res)),
                         *((char*)(res)));

@@ -38,7 +38,7 @@ void GC_copyCurrentThread (GC_state s) {
   GC_thread fromThread;
   GC_stack fromStack;
   GC_thread toThread;
-  LOCAL_USED_FOR_ASSERT GC_stack toStack;
+  //LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
   if (DEBUG_THREADS)
     fprintf (stderr, "GC_copyCurrentThread\n");
@@ -47,7 +47,7 @@ void GC_copyCurrentThread (GC_state s) {
                            + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread (s, fromThread, fromStack->used);
-  toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
+  //toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
   //assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
   if (DEBUG_THREADS)
@@ -60,7 +60,7 @@ pointer GC_copyThread (GC_state s, pointer p) {
   GC_thread fromThread;
   GC_stack fromStack;
   GC_thread toThread;
-  LOCAL_USED_FOR_ASSERT GC_stack toStack;
+  //LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
   if (DEBUG_THREADS)
     fprintf (stderr, "GC_copyThread ("FMTPTR", pthread=%u)\n", (uintptr_t)p, PTHREAD_NUM);
@@ -68,7 +68,7 @@ pointer GC_copyThread (GC_state s, pointer p) {
   fromThread = (GC_thread)(p + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread (s, fromThread, fromStack->used);
-  toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
+  //toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
   //assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
   if (DEBUG_THREADS)
@@ -109,7 +109,7 @@ pointer GC_copyThread0 (GC_state s, pointer p) {
   GC_thread fromThread;
   GC_stack fromStack;
   GC_thread toThread;
-  LOCAL_USED_FOR_ASSERT GC_stack toStack;
+  //LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
   if (DEBUG_THREADS)
     fprintf (stderr, "GC_copyThread0 ("FMTPTR", pthread=%u)\n", (uintptr_t)p, PTHREAD_NUM);
@@ -117,7 +117,7 @@ pointer GC_copyThread0 (GC_state s, pointer p) {
   fromThread = (GC_thread)(p + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
   toThread = copyThread0 (s, fromThread, fromStack->used);
-  toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
+  //toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
   //assert (toStack->reserved == alignStackReserved (s, toStack->used));
   leave (s);
   if (DEBUG_THREADS)

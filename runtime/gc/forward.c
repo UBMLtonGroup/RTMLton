@@ -45,9 +45,9 @@ void forwardObjptr (GC_state s, objptr *opp) {
   if (header != GC_FORWARDED) { /* forward the object */
     size_t size, skip;
 
-    size_t headerBytes, objectBytes;
-    GC_objectTypeTag tag;
-    uint16_t bytesNonObjptrs, numObjptrs;
+    size_t headerBytes, objectBytes =0;
+    GC_objectTypeTag tag = ERROR_TAG;
+    uint16_t bytesNonObjptrs, numObjptrs =0;
 
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 

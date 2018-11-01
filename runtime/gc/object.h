@@ -19,6 +19,7 @@ typedef enum {
   NORMAL_TAG = 1,
   STACK_TAG = 2,
   WEAK_TAG = 3,
+  ERROR_TAG = 4,
 } GC_objectTypeTag;
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */

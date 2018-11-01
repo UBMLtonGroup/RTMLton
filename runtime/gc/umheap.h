@@ -85,6 +85,9 @@ void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded);
 bool createUMHeap(GC_state s, GC_UM_heap h,
                   size_t diredSize,
                   size_t minSize);
+static GC_UM_Chunk allocNextChunk(GC_state s,GC_UM_heap h);
+
+static GC_UM_Chunk insertFreeUMChunk(GC_state s,GC_UM_heap h, pointer c);
 /*bool createUMArrayHeap(GC_state s, GC_UM_heap h,
                        size_t diredSize,
                        size_t minSize);*/

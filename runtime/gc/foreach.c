@@ -5,6 +5,8 @@
  * MLton is released under a BSD-style license.
  * See the file MLton-LICENSE for details.
  */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
 
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
     if (isObjptr (*opp)) {
@@ -28,7 +30,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
   }
   if (DEBUG_DETAILED)
     fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
-  callIfIsObjptr (s, f, &s->callFromCHandlerThread);
+  callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);
   callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
@@ -48,9 +50,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       fprintf(stderr, "foreach object in 0x%x\n", (uintptr_t)p);
   }
   GC_header header;
-  uint16_t bytesNonObjptrs;
-  uint16_t numObjptrs;
-  GC_objectTypeTag tag;
+  uint16_t bytesNonObjptrs =0;
+  uint16_t numObjptrs =0;
+  GC_objectTypeTag tag = ERROR_TAG;
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
@@ -205,8 +207,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     bool doit = true;
     if(s->mainBooted)
     {
-        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
-        GC_thread th = (GC_thread)(p + offsetofThread (s));
+        pointer p_ = objptrToPointer(s->currentThread[0], s->heap.start);
+        GC_thread th = (GC_thread)(p_ + offsetofThread (s));
 
         GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
         

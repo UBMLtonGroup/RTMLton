@@ -29,10 +29,10 @@ size_t sizeofStackNoHeader (__attribute__ ((unused)) GC_state s,
 }
 
 size_t sizeofObject (GC_state s, pointer p) {
-  size_t headerBytes, objectBytes;
+  size_t headerBytes, objectBytes =0;
   GC_header header;
-  GC_objectTypeTag tag;
-  uint16_t bytesNonObjptrs, numObjptrs;
+  GC_objectTypeTag tag = ERROR_TAG;
+  uint16_t bytesNonObjptrs, numObjptrs =0;
 
   header = getHeader (p);
   splitHeader (s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);

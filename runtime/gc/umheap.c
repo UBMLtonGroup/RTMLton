@@ -3,8 +3,8 @@
 
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
-#define LOCK IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
 
 #define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
@@ -68,7 +68,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 
 GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 {
-    LOCK;
+    LOCK_FL;
 
     if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) 
         {
@@ -108,7 +108,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
         }
     }
     
-    UNLOCK;
+    UNLOCK_FL;
 
     return head;
 }
@@ -117,7 +117,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_heap h) {
    
-   LOCK; 
+   LOCK_FL; 
     if (s->fl_chunks <= 3) {
        
         if(DEBUG_RTGC)
@@ -159,14 +159,14 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     }
     s->fl_chunks -= 1;
     s->cGCStats.numChunksAllocated++;
-    UNLOCK;
+    UNLOCK_FL;
     return c;
 }
 
 
 void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
 {
-    LOCK;
+    LOCK_FL;
 
     if(DEBUG_RTGC)
         fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
@@ -185,7 +185,7 @@ void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
     if(!(s->fl_chunks > chunksNeeded))
         die("allocNextChunk: No more memory available\n");
     
-    UNLOCK;
+    UNLOCK_FL;
 }
 
 
@@ -201,7 +201,7 @@ void insertFreeChunk(GC_state s,
     s->fl_chunks += 1;*/
    
 
-    LOCK;
+    LOCK_FL;
 
    /*Insert free chunk to back of free list*/ 
     UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
@@ -222,7 +222,7 @@ void insertFreeChunk(GC_state s,
         s->fl_chunks += 1;
     }
 
-    UNLOCK;
+    UNLOCK_FL;
     
 }
 /*void insertFreeChunkArr(GC_state s,

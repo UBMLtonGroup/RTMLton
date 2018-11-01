@@ -38,7 +38,7 @@ CPPFLAGS :=
 CFLAGS := -D_GNU_SOURCE -D_USE_GNU 
 
 WARNXCFLAGS :=
-WARNXCFLAGS += -pedantic -Wall
+WARNXCFLAGS += -pedantic -Wall -Werror
 ifeq ($(findstring $(GCC_MAJOR_VERSION), 3),$(GCC_MAJOR_VERSION))
 WARNXCFLAGS += -W
 endif

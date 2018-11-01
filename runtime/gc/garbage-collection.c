@@ -31,10 +31,9 @@ struct thrctrl
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
 
-#define LOCK IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL_FROMGC IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock))
 
-#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 #define BROADCAST IFED(pthread_cond_broadcast(&s->fl_empty_cond))
 
 #define RTSYNC_LOCK IFED(pthread_mutex_lock(&s->rtSync_lock))
@@ -195,17 +194,16 @@ void
 maybe_growstack (GC_state s)
 {
     bool stackTopOk;
-    size_t stackBytesRequested;
     if (isStackEmpty (getStackCurrent (s)))
         return;
     stackTopOk = invariantForMutatorStack (s);
-    stackBytesRequested =
+    /*stackBytesRequested =
         stackTopOk
         ? 0
         : sizeofStackWithHeader (s,
                                  sizeofStackGrowReserved (s,
                                                           getStackCurrent
-                                                          (s)));
+                                                          (s)));*/
     unless (stackTopOk) growStackCurrent (s);
 }
 
@@ -244,11 +242,6 @@ leaveGC (GC_state s)
 
 #undef GCTHRDEBUG
 
-#ifdef GCTHRDEBUG
-#define DBG(X) fprintf X
-#else
-#define DBG(X)
-#endif
 
 #define MYASSERT(T, X, COMP, RV) {                               \
 	  T __rv__ = (T)X;                                           \
@@ -263,37 +256,37 @@ leaveGC (GC_state s)
 #define COPYOUT(EL) s->EL[TC.requested_by] = s->EL[1]
 #define SANITY(EL) if (s->EL[TC.requested_by] == s->EL[1]) if (DEBUG) fprintf(stderr,"%d] " #EL " changed!\n", PTHREAD_NUM);
 
-static void
+inline static void
 setup_for_gc (GC_state s)
 {
     COPYIN (stackTop);
-    if (DEBUG)
+    /*if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy stackBottom = %" PRIuMAX
-                 " , should become = %" PRIuMAX " , actually = %" PRIuMAX
+                 "%d] GCREqBy = %d , before copy stackBottom = " FMTPTR
+                 " , should become = " FMTPTR " , actually = " FMTPTR
                  " \n", PTHREAD_NUM, TC.requested_by, s->stackBottom[1],
-                 s->stackBottom[TC.requested_by], s->stackBottom[0]);
+                 s->stackBottom[TC.requested_by], s->stackBottom[0]);*/
     COPYIN (stackBottom);
-    if (DEBUG)
+    /*if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy StackBottom = %" PRIuMAX " \n",
-                 PTHREAD_NUM, TC.requested_by, s->stackBottom[1]);
+                 "%d] GCReqBy= %d,  after copy StackBottom = "FMTPTR  " \n",
+                 PTHREAD_NUM, TC.requested_by, s->stackBottom[1]);*/
     COPYIN (stackLimit);
     COPYIN (exnStack);
-    if (DEBUG)
+    /*if (DEBUG)
         fprintf (stderr,
-                 "%d] GCREqBy = %d , before copy currentThread = %x , should become = %x , main thread = %x \n", PTHREAD_NUM, TC.requested_by,
-                 s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);
+                 "%d] GCREqBy = %d , before copy currentThread = "FMTPTR" , should become = "FMTPTR" , main thread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,
+                 s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);*/
     COPYIN (currentThread);
-    if (DEBUG)
+    /*if (DEBUG)
         fprintf (stderr,
-                 "%d] GCReqBy= %d,  after copy currentThread = %x \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);
+                 "%d] GCReqBy= %d,  after copy currentThread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);*/
     COPYIN (savedThread);
     COPYIN (signalHandlerThread);
     COPYIN (ffiOpArgsResPtr);
 }
 
-static void
+inline static void
 sanity_check_array (GC_state s)
 {
     SANITY (stackTop);
@@ -306,7 +299,7 @@ sanity_check_array (GC_state s)
     SANITY (ffiOpArgsResPtr);
 }
 
-static void
+inline static void
 finish_for_gc (GC_state s)
 {
     sanity_check_array (s);
@@ -384,9 +377,9 @@ __attribute__ ((noreturn))
         s->rtSync[0] = false;
      
        /*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/ 
-        LOCK;
+        LOCK_FL_FROMGC;
         BROADCAST;
-        UNLOCK; 
+        UNLOCK_FL_FROMGC; 
 
         s->isGCRunning = false;
         RTSYNC_UNLOCK;
@@ -508,7 +501,7 @@ performGC (GC_state s,
     COMPLETEGC;
 
 #else
-    DBG ((stderr, "non-threaded mode, passing thru to performGC_helper\n"));
+    fprintf(stderr, "non-threaded mode, passing thru to performGC_helper\n");
 
     s->rtSync[PTHREAD_NUM]= true;
     //performGC_helper (s, oldGenBytesRequested, nurseryBytesRequested,
@@ -597,7 +590,6 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     for (pchunk=s->umheap.start;
          pchunk < s->umheap.limit;
          pchunk+=step) {
-        assert(pchunk != s->umheap.limit);
         if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
         {
         GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+sizeof(UM_header)); /*account for size of chunktype*/
@@ -659,6 +651,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     }
 
 
+    /*Training wheels. Makes sure that at the end of sweep, pchunk is at heap limit.
+     * which indicates that i counted right in the for loop*/
     assert(pchunk == s->umheap.limit);
 
     s->cGCStats.numSweeps++;
@@ -712,10 +706,9 @@ void performGC_helper (GC_state s,
                 bool forceMajor,
                 __attribute__ ((unused)) bool mayResize) {
   uintmax_t gcTime;
-  bool stackTopOk;
-  size_t stackBytesRequested;
+  //bool stackTopOk;
+  //size_t stackBytesRequested;
   struct rusage ru_start;
-  size_t totalBytesRequested;
 //  if (s->gc_module == GC_UM) {
 //      performUMGC(s);
 //	  return;
@@ -775,7 +768,6 @@ if (needGCTime (s))
     ? 0
     : sizeofStackWithHeader (s, sizeofStackGrowReserved (s, getStackCurrent (s)));
 #endif
-  totalBytesRequested = oldGenBytesRequested + nurseryBytesRequested + stackBytesRequested;
 
   /*if (forceMajor
       or totalBytesRequested > s->heap.size - s->heap.oldGenSize) {
@@ -830,7 +822,7 @@ if (needGCTime (s))
   }
   /* Send a GC signal. */
   if (s->signalsInfo.gcSignalHandled
-      and s->signalHandlerThread != BOGUS_OBJPTR) {
+      and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
     if (DEBUG_SIGNALS)
       fprintf (stderr, "GC Signal pending.\n");
     s->signalsInfo.gcSignalPending = TRUE;

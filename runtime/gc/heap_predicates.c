@@ -7,9 +7,9 @@
  */
 
 void displayHeapInfo(GC_state s) {
-	fprintf(stderr, "start %x -> from-start %x  -> nursery %x -> frontier %x\n",
-			s->heap.start, s->heap.start+s->heap.oldGenSize,
-			s->heap.nursery, s->frontier);
+	fprintf(stderr, "start "FMTPTR" -> from-start "FMTPTR"  -> nursery "FMTPTR" -> frontier "FMTPTR"\n",
+			(uintptr_t)s->heap.start, (uintptr_t)s->heap.start+s->heap.oldGenSize,
+			(uintptr_t)s->heap.nursery, (uintptr_t)s->frontier);
 }
 
 bool isPointerInOldGen (GC_state s, pointer p) {
@@ -43,10 +43,6 @@ bool isObjptrInNursery (GC_state s, objptr op) {
 
 #if ASSERT
 bool isObjptrInFromSpace (GC_state s, objptr op) {
-  if (0 && DEBUG) {
-	fprintf(stderr, "%d] isObjprtInFromSpace: isObjptr:%x op:%x p:%x\n",PTHREAD_NUM,
-			isObjptr(op), op, isObjptr(op)? objptrToPointer (op, s->heap.start) : 0);
-  }
 
   return (isObjptrInOldGen (s, op) 
           or isObjptrInNursery (s, op));
