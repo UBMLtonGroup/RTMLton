@@ -56,9 +56,9 @@ void splitHeader(GC_state s, GC_header header,
   bool hasIdentity;
   uint16_t bytesNonObjptrs, numObjptrs;
 
-  //assert (1 == (header & GC_VALID_HEADER_MASK)); 
-  if (1 != (header & GC_VALID_HEADER_MASK))
-      return;
+  assert (1 == (header & GC_VALID_HEADER_MASK)); 
+  //if (1 != (header & GC_VALID_HEADER_MASK))
+      //return;
   objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT; 
   assert (objectTypeIndex < s->objectTypesLength); 
   objectType = &(s->objectTypes[objectTypeIndex]);
