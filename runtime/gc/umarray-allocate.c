@@ -1,3 +1,18 @@
+
+int getLengthOfList(GC_UM_Array_Chunk head)
+{
+    GC_UM_Array_Chunk current = head;
+    int i = 0;
+    while(current!=NULL)
+    {
+        current = current->next_chunk;
+        i++;
+
+    }
+
+    return i;
+}
+
 pointer GC_arrayAllocate (GC_state s,
                           __attribute__ ((unused)) size_t ensureBytesFree,
                           GC_arrayLength numElements,
@@ -17,6 +32,7 @@ pointer GC_arrayAllocate (GC_state s,
     size_t chunkNumObjs = UM_CHUNK_ARRAY_PAYLOAD_SIZE / bytesPerElement;
     size_t numChunks = numElements / chunkNumObjs + (numElements % chunkNumObjs != 0);
     
+#if 0
     if (s->fl_chunks < numChunks * 2) {
     /*This fn blocks for GC to run. If the GC doesn't free needed chunks, it dies. 
      * Reasoning: Array needs atleast as many chunks. So if GC cannot free as much, why continue? 
@@ -26,13 +42,42 @@ pointer GC_arrayAllocate (GC_state s,
      * TODO: Maybe allocate needed chunks upfront when this fn returns? */
         blockOnInsuffucientChunks(s,numChunks*2);
     }
-
+#endif
     if (DEBUG_MEM) {
         fprintf(stderr, "numElements: %d, chunkNumObjs: %d, numChunks: %d\n",
                 numElements, chunkNumObjs, numChunks);
     }
+        
+    /* Calculate number of chunks the array representation
+     * is going ot use. 
+     * numChunksToRequest = numChunks for leaf + number of chunks for 1st group internal nodes + .... + 1 chunk for root node*/    
+    size_t numChunksToRequest = numChunks;
+    int x = numChunks;
+    while(x != 1 && numChunksToRequest > 1)
+    {
+        if(x < 32)
+            x = 1;
+        else
+            x= 1+ ((x-1)/UM_CHUNK_ARRAY_INTERNAL_POINTERS);
 
-    GC_UM_Array_Chunk parray_header = allocNextArrayChunk(s, &s->umheap);
+        numChunksToRequest += x;
+    }
+
+    assert(numChunksToRequest >= numChunks);
+
+    /*Will block if there aren't enough chunks*/    
+    GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap),numChunksToRequest);
+    
+    if(DEBUG_CHUNK_ARRAY)
+        fprintf(stderr,"%d] Initial allocHead length: %d, numChunks = %d\n",PTHREAD_NUM,getLengthOfList(allocHead),numChunks);
+
+    GC_UM_Array_Chunk new = allocHead;
+    allocHead = allocHead->next_chunk;
+    new->next_chunk = NULL;
+
+    GC_UM_Array_Chunk parray_header = new;
+    
+
     parray_header->array_chunk_counter = 0;
     parray_header->array_chunk_length = numElements;
     parray_header->array_chunk_ml_header = header;
@@ -51,48 +96,74 @@ pointer GC_arrayAllocate (GC_state s,
     int i;
 
     for (i=0; i<numChunks - 1; i++) {
-        cur_chunk->next_chunk = allocNextArrayChunk(s, &s->umheap);
+        
+        assert(allocHead != NULL);
+        GC_UM_Array_Chunk tmp = allocHead;
+        allocHead = allocHead->next_chunk;
+        tmp->next_chunk = NULL;
+
+        cur_chunk->next_chunk = tmp;
         cur_chunk->next_chunk->array_chunk_fan_out = chunkNumObjs;
         cur_chunk = cur_chunk->next_chunk;
         cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
         cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
     }
 
+    if(DEBUG_CHUNK_ARRAY)
+        fprintf(stderr,"%d] allocHead length after Leaf alloc: %d\n",PTHREAD_NUM,getLengthOfList(allocHead));
+
     GC_UM_Array_Chunk root = UM_Group_Array_Chunk(s,
                                                   parray_header,
+                                                  &allocHead,
                                                   UM_CHUNK_ARRAY_INTERNAL_POINTERS,
                                                   1);
                                                   //chunkNumObjs);
 
-    if (DEBUG_MEM)
-        fprintf(stderr, "1st group created array with chunk_fan_out: %d\n",
-                root->array_chunk_fan_out);
+
+    if(DEBUG_CHUNK_ARRAY)
+    {
+       fprintf(stderr,"%d] allocHead length after 1st group alloc: %d\n",PTHREAD_NUM,getLengthOfList(allocHead));
+       fprintf(stderr, "%d] 1st group created array with chunk_fan_out: %d\n",PTHREAD_NUM,root->array_chunk_fan_out);
+    }
 
     while (root->next_chunk) {
-        root = UM_Group_Array_Chunk(s, root, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
-                                    root->array_chunk_fan_out *
-                                    UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+        root = UM_Group_Array_Chunk(s, root,&allocHead, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+                                    root->array_chunk_fan_out * UM_CHUNK_ARRAY_INTERNAL_POINTERS);
     }
+
+    if(DEBUG_CHUNK_ARRAY)
+        fprintf(stderr,"%d] allocHead length after all alloc: %d\n",PTHREAD_NUM,getLengthOfList(allocHead));
 
     root->array_chunk_numObjs = parray_header->array_chunk_numObjs;
     root->array_chunk_length = parray_header->array_chunk_length;
     parray_header->root = root;
 
-    if (DEBUG_MEM)
-        fprintf(stderr, "Created array with chunk_fan_out: %d\n",
-                root->array_chunk_fan_out);
+    if (DEBUG_CHUNK_ARRAY)
+        fprintf(stderr, "%d] Created array with chunk_fan_out: %d\n",PTHREAD_NUM,root->array_chunk_fan_out);
+
+    /*ensure that no chunks remain in the initially allocated list*/
+    assert(allocHead == NULL);
+
     return (pointer)&(parray_header->ml_array_payload);
 }
 
 GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
                                        GC_UM_Array_Chunk head,
+                                       GC_UM_Array_Chunk* allocHead,
                                        size_t num,
                                        size_t fan_out)
 {
     if (head->next_chunk == NULL)
         return head;
 
-    GC_UM_Array_Chunk start = allocNextArrayChunk(s, &(s->umheap));
+    assert(*allocHead != NULL);
+    
+    GC_UM_Array_Chunk new = *allocHead;
+    *allocHead = (*allocHead)->next_chunk;
+    new->next_chunk = NULL;
+    
+    GC_UM_Array_Chunk start = new;
+
     GC_UM_Array_Chunk cur_chunk = start;
     cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
     cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
@@ -104,7 +175,14 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
         head = head->next_chunk;
         cur_index++;
         if (cur_index >= num && head) {
-            cur_chunk->next_chunk = allocNextArrayChunk(s, &(s->umheap));
+            assert(*allocHead != NULL);
+            
+            GC_UM_Array_Chunk tmp = *allocHead;
+            *allocHead = (*allocHead)->next_chunk;
+            tmp->next_chunk = NULL;
+            
+            cur_chunk->next_chunk = tmp;
+
             cur_chunk = cur_chunk->next_chunk;
             cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
             cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;

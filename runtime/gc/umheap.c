@@ -87,7 +87,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
             if(DEBUG_RTGC)
                 fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
             
-            if(!(s->fl_chunks > fc_BeforeBlock))
+            if(!(s->fl_chunks > fc_BeforeBlock) || !(s->fl_chunks > numChunks))
                 die("allocNextChunk: No more memory available\n");
 
         }
@@ -116,9 +116,37 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
                                       GC_UM_heap h) {
-   
+  
+
+   /*should be called only from allocateArrayChunks to keep sanity of fl_lock*/ 
+
+    /*Allocate next chunk from start of list*/
+    h->fl_head->chunkType = UM_ARRAY_CHUNK;
+    struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
+    assert(nc != NULL);
+    GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h,((pointer)h->fl_head + sizeof(UM_header) )); /*pass pointer to area after chunktype*/
+    h->fl_head = nc;
+    c->next_chunk = NULL;
+    c->array_chunk_magic = 9998;
+    c->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    if(s->rtSync[PTHREAD_NUM])
+    {
+        c->array_chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+    }
+    int i;
+    for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
+        c->ml_array_payload.um_array_pointers[i] = NULL;
+    }
+    s->fl_chunks -= 1;
+    s->cGCStats.numChunksAllocated++;
+    return c;
+}
+
+GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks)
+{
+
    LOCK_FL; 
-    if (s->fl_chunks <= 3) {
+    if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) {
        
         if(DEBUG_RTGC)
            fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
@@ -135,33 +163,36 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
       if(DEBUG_RTGC)
           fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
        
-      if(!(s->fl_chunks > fc_BeforeBlock))
+      if(!(s->fl_chunks > fc_BeforeBlock) || !(s->fl_chunks > numChunks))
           die("allocNextArrayChunk: No more memory available\n");
 
        // die("allocNextArrayChunk: No more memory available\n");
     }
-
-    /*Allocate next chunk from start of list*/
-    h->fl_head->chunkType = UM_ARRAY_CHUNK;
-    struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
-    GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h,((pointer)h->fl_head + 4)); /*pass pointer to area after chunktype*/
-    h->fl_head = nc;
-    c->next_chunk = NULL;
-    c->array_chunk_magic = 9998;
-    c->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
-    if(s->rtSync[PTHREAD_NUM])
+   
+    
+    GC_UM_Array_Chunk head = allocNextArrayChunk(s,&(s->umheap));
+    
+    if(numChunks > 1)
     {
-        c->array_chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+        int i;
+        GC_UM_Array_Chunk current = head;
+        for (i=0; i< (numChunks -1);i++)
+        {
+            
+            current->next_chunk = allocNextArrayChunk(s, &(s->umheap));
+            current = current->next_chunk;
+        }
     }
-    int i;
-    for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
-        c->ml_array_payload.um_array_pointers[i] = NULL;
-    }
-    s->fl_chunks -= 1;
-    s->cGCStats.numChunksAllocated++;
+    
     UNLOCK_FL;
-    return c;
+
+    return head;
+    
+    
+    
 }
+
+
 
 
 void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)

@@ -87,6 +87,7 @@ bool createUMHeap(GC_state s, GC_UM_heap h,
                   size_t minSize);
 static GC_UM_Chunk allocNextChunk(GC_state s,GC_UM_heap h);
 
+GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks);
 static GC_UM_Chunk insertFreeUMChunk(GC_state s,GC_UM_heap h, pointer c);
 /*bool createUMArrayHeap(GC_state s, GC_UM_heap h,
                        size_t diredSize,
