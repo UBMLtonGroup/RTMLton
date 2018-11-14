@@ -115,3 +115,15 @@ pointer advanceToObjectData (ARG_USED_FOR_ASSERT GC_state s, pointer p) {
              (uintptr_t)res, (uintptr_t)p);
   return res;
 }
+
+
+
+bool isObjectOnUMHeap(GC_state s,pointer p)
+{
+    if (p >= s->umheap.start && p < s->umheap.limit)
+        return true;
+    else
+        return false;
+}
+
+

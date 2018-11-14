@@ -721,7 +721,7 @@ void performGC_helper (GC_state s,
 
   enterGC (s);
   s->cumulativeStatistics.numGCs++;
-  if (DEBUG or s->controls.messages) {
+  if (s->controls.messages) {
     size_t nurserySize = s->heap.size - ((size_t)(s->heap.nursery - s->heap.start));
     size_t nurseryUsed = (size_t)(s->frontier - s->heap.nursery);
     fprintf (stderr,
@@ -800,7 +800,7 @@ if (needGCTime (s))
       max (s->cumulativeStatistics.maxPauseTime, gcTime);
   } else
     gcTime = 0;  /* Assign gcTime to quell gcc warning. */
-  if (DEBUG or s->controls.messages) {
+  if (s->controls.messages) {
     size_t nurserySize = s->heap.size - (size_t)(s->heap.nursery - s->heap.start);
     fprintf (stderr,
              "[GC: Finished gc #%s; time %s ms,]\n",

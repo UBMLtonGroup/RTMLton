@@ -161,11 +161,19 @@ void writeBarrier(GC_state s,Pointer dst, Pointer src)
 {
     if(!s->dirty)
         return;
-
-    if((dst >s->umheap.start && dst < s->umheap.end) && (src >s->umheap.start && src < s->umheap.end))
-    {
     
-       fprintf(stderr,"In writebarrier \n");
+
+   if(isObjectOnUMHeap(s,dst) || isObjectOnUMHeap(s,src))
+   {
+    
+    bool dstMarked = (dst == NULL)?false:(isContainerChunkMarkedByMode(dst,MARK_MODE,getObjectType(s,dst)));
+    bool srcMarked = (src == NULL)?false:(isContainerChunkMarkedByMode(src,MARK_MODE,getObjectType(s,src)));
+
+    fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
+   }
+
+         
+
 
     /*    if(isPointerMarkedByMode(dst, MARK_MODE))
             fprintf(stderr,"Marked\n");
@@ -174,7 +182,6 @@ void writeBarrier(GC_state s,Pointer dst, Pointer src)
         else
             fprintf(stderr,"Grey mode ?\n");
             */
-    }
 }
 
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,

@@ -22,39 +22,18 @@ void umShadeObject(GC_state s,objptr *opp){
 
 }
 
-void getObjectType(GC_state s, objptr *opp) {
-    pointer p = objptrToPointer(*opp, s->heap.start);
-    GC_header* headerp = getHeaderp(p);
+GC_objectTypeTag getObjectType(GC_state s, pointer p) {
+    //pointer p = objptrToPointer(*opp, s->heap.start);
+   GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
-    uint16_t bytesNonObjptrs;
-    uint16_t numObjptrs;
-    GC_objectTypeTag tag;
+    uint16_t bytesNonObjptrs = 0;
+    uint16_t numObjptrs =0;
+    GC_objectTypeTag tag = ERROR_TAG;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
+    
+    return tag;
 
-    if (DEBUG_DFS_MARK) {
-        switch (tag) {
-        case NORMAL_TAG:
-            fprintf(stderr, "NORMAL!\n");
-            if (p >= s->umheap.start &&
-                p < s->umheap.start + s->umheap.size) {
-                fprintf(stderr, "  ON UM HEAP!\n");
-            } else {
-                fprintf(stderr, "  NOT ON UM HEAP\n");
-            }
-            break;
-        case WEAK_TAG:
-            fprintf(stderr, "WEAK!\n");
-            break;
-        case ARRAY_TAG:
-            fprintf(stderr, "ARRAY!\n");
-            break;
-        case STACK_TAG:
-            fprintf(stderr, "STACK\n");
-            break;
-        default:
-            die("getObjetctType: swith: Shouldn't be here!\n");
-        }
-    }
+        
 }
 
 static
@@ -209,7 +188,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 //    if (DEBUG_DFS_MARK)
-    getObjectType(s, opp);
+    //getObjectType(s, opp);
 
 
 
