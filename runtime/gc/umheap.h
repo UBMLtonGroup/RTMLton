@@ -13,6 +13,15 @@ typedef union GC_UM_Chunktype{
 
 } GC_UM_Chunktype;
 
+
+/*typedef struct GC_worklist{
+    objptr* item;
+    struct GC_worklist *next; 
+} *GC_worklist;*/
+
+
+typedef objptr** GC_worklist;
+
 typedef struct UM_Mem_Chunk{
   // GC_UM_Chunktype chunkType;
    UM_header chunkType;

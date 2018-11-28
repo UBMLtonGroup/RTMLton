@@ -93,6 +93,10 @@ struct GC_state {
   struct GC_chunkedGCStatistics cGCStats;
   size_t maxChunksAvailable;
   bool isGCRunning;
+  GC_worklist worklist;
+  size_t wl_size;
+  size_t wl_length;
+  pthread_mutex_t wl_lock;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
  

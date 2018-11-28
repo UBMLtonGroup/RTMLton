@@ -18,6 +18,19 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
         fprintf(stderr, "  callIfIsObjptr: Not objptr 0x%x\n", *opp);
 }
 
+
+void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f)
+{
+
+  if (DEBUG_DETAILED)
+    fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
+  callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);
+  callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
+  callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
+  callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
+}
+
+
 /* foreachGlobalObjptr (s, f)
  *
  * Apply f to each global object pointer into the heap.
@@ -28,12 +41,9 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
       fprintf (stderr, "%d] foreachGlobal %u\n", PTHREAD_NUM, i);
     callIfIsObjptr (s, f, &s->globals [i]);
   }
-  if (DEBUG_DETAILED)
-    fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
-  callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);
-  callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
-  callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
-  callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
+  
+  //foreachGlobalThreadObjptr(s,f);
+  
 }
 
 

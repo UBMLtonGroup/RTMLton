@@ -48,4 +48,10 @@ typedef void (*GC_foreachStackFrameFun) (GC_state s, GC_frameIndex i);
  */
 static inline void foreachStackFrame (GC_state s, GC_foreachStackFrameFun f);
 
+/*foreachGlobalThreadObjptr(s,f)
+ *
+ * Apply f to each object global to each thread
+ * */
+static inline void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f);
+
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */

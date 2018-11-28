@@ -7,6 +7,12 @@
  * See the file MLton-LICENSE for details.
  */
 
+#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+#define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
+
+#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+
 static void displayCol (FILE *out, size_t width, const char *s) {
   size_t extra;
   size_t i;
@@ -37,20 +43,45 @@ static void displayCollectionStats (FILE *out, const char *name, struct rusage *
   fprintf (out, "\n");
 }
 
-
-void RTGC_done(GC_state s)
+static void displayChunkedGCStats(GC_state s, FILE *out)
 {
-    FILE *out;
-    out = stderr;
     fprintf (out, "-------------\t-------\t-------\t---------------\t---------------\n");
     fprintf(out,"GC Statistics\n");
     fprintf (out, "-------------\t-------\t-------\t---------------\t---------------\n");
     fprintf(out,"Number of Chunks allocated = %s\n",uintmaxToCommaString (s->cGCStats.numChunksAllocated));
     fprintf(out,"Number of Chunks Freed = %s\n",uintmaxToCommaString (s->cGCStats.numChunksFreed));
     fprintf(out,"Number of GC Sweeps = %s\n",uintmaxToCommaString (s->cGCStats.numSweeps));
+
+}
+
+void RTGC_done(GC_state s)
+{
+    FILE *out;
+    out = stderr;
+
+    /*If GC is running wait till its done*/
+    if(s->isGCRunning)
+    {
+        LOCK_FL;
+        if(DEBUG_RTGC)
+            fprintf(stderr,"%d] Main thread blocking until GC is done\n",PTHREAD_NUM);
+
+        BLOCK;
+        
+        if(DEBUG_RTGC)
+            fprintf(stderr,"%d] Main thread Unblocked by GC\n",PTHREAD_NUM);
+        UNLOCK_FL;
+    }
+
+    free(s->worklist);
+
+
+    displayChunkedGCStats(s,out);
 }
 
 void GC_done (GC_state s) {
+
+
   if (s->gc_module == GC_NONE ||
       s->gc_module == GC_UM) {
       return;

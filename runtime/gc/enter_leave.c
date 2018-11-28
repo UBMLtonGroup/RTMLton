@@ -16,29 +16,29 @@
 void enter (GC_state s) {
   CHECKDISABLEGC;
 
-  if (DEBUG)
+  if (DEBUG_OLD)
     fprintf (stderr, "%d] enter\n", PTHREAD_NUM);
   /* used needs to be set because the mutator has changed s->stackTop. */
   getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
   getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
-  if (DEBUG) 
+  if (DEBUG_OLD) 
     displayGCState (s, stderr);
   beginAtomic (s);
   assert (invariantForGC (s));
-  if (DEBUG)
+  if (DEBUG_OLD)
     fprintf (stderr, "%d] enter ok\n", PTHREAD_NUM);
 }
 
 void leave (GC_state s) {
   CHECKDISABLEGC;
 
-  if (DEBUG)
+  if (DEBUG_OLD)
     fprintf (stderr, "%d] leave\n", PTHREAD_NUM);
   /* The mutator frontier invariant may not hold
    * for functions that don't ensureBytesFree.
    */
   assert (invariantForMutator (s, FALSE, TRUE));
   endAtomic (s);
-  if (DEBUG)
+  if (DEBUG_OLD)
     fprintf (stderr, "%d] leave ok\n", PTHREAD_NUM);
 }

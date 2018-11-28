@@ -159,7 +159,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 
 void writeBarrier(GC_state s,Pointer dst, Pointer src)
 {
-    if(!s->dirty)
+    if(!s->rtSync[PTHREAD_NUM])
         return;
     
 
@@ -169,7 +169,8 @@ void writeBarrier(GC_state s,Pointer dst, Pointer src)
     bool dstMarked = (dst == NULL)?false:(isContainerChunkMarkedByMode(dst,MARK_MODE,getObjectType(s,dst)));
     bool srcMarked = (src == NULL)?false:(isContainerChunkMarkedByMode(src,MARK_MODE,getObjectType(s,src)));
 
-    fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
+    if(DEBUG_OLD)
+        fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
    }
 
          

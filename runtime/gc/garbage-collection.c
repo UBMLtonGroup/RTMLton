@@ -110,7 +110,7 @@ void minorGC (GC_state s) {
     CHECKDISABLEGC;
     
     if(DEBUG)
-    fprintf (stderr, "%d] [GC: Starting Major GC...]\n", PTHREAD_NUM);
+        fprintf (stderr, "%d] [GC: Starting Major GC...]\n", PTHREAD_NUM);
 
     s->lastMajorStatistics.numMinorGCs = 0;
     numGCs =
@@ -362,7 +362,10 @@ __attribute__ ((noreturn))
 
 
         if(DEBUG_RTGC)
-            fprintf(stderr,"%d] GC going to sweep, free chunks = %d\n",PTHREAD_NUM,s->fl_chunks);
+        {
+            fprintf(stderr,"%d] [RTGC: Starting cycle #%s]\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numGCCycles+1));
+            fprintf(stderr,"%d] [RTGC: Number of Chunks; Free: %d Allocated: %s]\n",PTHREAD_NUM,s->fl_chunks,uintmaxToCommaString(s->cGCStats.numChunksAllocated));
+        }
         
         s->isGCRunning = true;
         performGC_helper (s,
@@ -370,7 +373,14 @@ __attribute__ ((noreturn))
                           s->nurseryBytesRequested,
                           s->forceMajor, s->mayResize);
         
+        s->cGCStats.numGCCycles += 1;
+      
 
+        if(DEBUG_RTGC)
+        {
+            fprintf(stderr,"%d] [RTGC: GC cycle #%s completed]\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numGCCycles));
+        }
+        
 
         s->dirty = false;
         /*Change this to reset all rtSync values for all RT threads*/
@@ -393,65 +403,6 @@ __attribute__ ((noreturn))
     
 
 
-#ifdef THREADED
-    while (1) {
-        if (DEBUG)
-            fprintf (stderr, "%d] GCrunner: waiting for GC request.\n",
-                     PTHREAD_NUM);
-
-        TC_LOCK;
-        do {
-            do {
-                if (DEBUG)
-                    fprintf (stderr,
-                             "%d] TC_UNLOCK (implied) thr:%d boot:%d\n",
-                             PTHREAD_NUM, TC.running_threads, TC.booted);
-                pthread_cond_wait (&TC.cond, &TC.lock); // implicit TC_UNLOCK
-            }
-            while (TC.booted && TC.running_threads);
-        }
-        while (!TC.gc_needed);
-
-        // TC_LOCK is re-acquired here as a result of cond_wait succeeding
-
-        if (DEBUG)
-            fprintf (stderr,
-                     "%d] GCrunner: GC requested. all threads should be paused.\n",
-                     PTHREAD_NUM);
-
-        // at this point, all threads should be paused and the GC can proceed    
-
-        if (s->isRealTimeThreadInitialized) {
-            if (DEBUG) {
-                fprintf (stderr,
-                         "%d] GCrunner: threads paused. GC'ing\n",
-                         PTHREAD_NUM);
-                fprintf (stderr,
-                         "%d] GC running needed=%d threads=%d\n",
-                         PTHREAD_NUM, TC.gc_needed, TC.running_threads);
-            }
-            performUMGC(s, 3000, 0, true);
-            //performGC_helper (s,
-            //                  s->oldGenBytesRequested,
-            //                  s->nurseryBytesRequested,
-            //                  s->forceMajor, s->mayResize);
-
-            if (DEBUG)
-                fprintf (stderr,
-                         "%d] GCrunner: finished. unpausing threads.\n",
-                         PTHREAD_NUM);
-
-            TC.gc_needed = 0;
-            pthread_cond_broadcast (&TC.safepoint_cond);        // unpause all threads
-            TC_UNLOCK;
-        }
-        else {
-            fprintf (stderr,
-                     "%d] GCrunner: skipping thread pause bc RTT is not yet initialized\n",
-                     PTHREAD_NUM);
-        }
-    }
-#endif
 
     pthread_exit (NULL);
  /*NOTREACHED*/}
@@ -516,12 +467,40 @@ void markStack(GC_state s,GC_stack currentStack)
             //fprintf(stderr,"%d] Marking stack \n",PTHREAD_NUM);
             assert(!s->dirty);
 
-            foreachGlobalObjptr (s, umDfsMarkObjectsMark);
-            foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);
+            //foreachGlobalObjptr (s, umDfsMarkObjectsMark);
+            
+            foreachGlobalThreadObjptr(s,umDfsMarkObjectsMarkToWL);
+            foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMarkToWL, FALSE);
+
+            /*foreachGlobalThreadObjptr(s,umDfsMarkObjectsMark);
+            foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);*/
+            /*foreachGlobalThreadObjptr(s,addToWorklist);
+            foreachObjptrInObject(s, (pointer) currentStack, addToWorklist, FALSE);*/
     
             //fprintf(stderr,"%d] Marked its stack,FC=%d. dirty=%d\n",PTHREAD_NUM,s->fl_chunks,s->dirty?1:0) ;
 
 }
+
+
+void startMarking(GC_state s)
+{
+    
+    /*Marking globals*/
+
+    //fprintf(stderr,"%d] GC marking started. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
+
+    foreachGlobalObjptr (s, umDfsMarkObjectsMark);
+
+
+    fprintf(stderr,"%d] GC finished marking globals. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
+    /*Marking worklist*/
+    markWorklist(s) ;
+
+    fprintf(stderr,"%d] GC marked %s chunks\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksMarked));
+    s->cGCStats.numChunksMarked = 0;
+}
+
+
 
 void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                  size_t ensureArrayChunksAvailable,
@@ -533,58 +512,15 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     size_t step = sizeof(struct GC_UM_Chunk)+sizeof(UM_header); /*account for size of chunktype header*/
     //pointer end = s->umheap.start + s->umheap.size - step;
 
-
+    int marked =0;
+    int grey = 0;
+    int visited = 0;
     int freed  = 0;
 
     assert(PTHREAD_NUM ==1);
 
-#if 0
-    //    if (s->umheap.fl_chunks <= 2000) {
-    for (pchunk=s->umheap.start;
-         pchunk < end;
-         pchunk+=step) {
-        GC_UM_Chunk pc = (GC_UM_Chunk)pchunk;
-        if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->chunk_header & UM_CHUNK_MARK_MASK))) {
-            if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
-                        (uintptr_t)pc, pc->sentinel, pc->chunk_header);
-            }
-            insertFreeChunk(s, &(s->umheap), pchunk);
-        }
 
-        if (!fullGC && s->fl_chunks >= ensureObjectChunksAvailable) {
-            break;
-        }
-    }
-        //    }
-
-    step = sizeof(struct GC_UM_Array_Chunk);
-    end = s->umarheap.start + s->umarheap.size - step;
-
-    for (pchunk=s->umarheap.start;
-         pchunk < end;
-         pchunk += step) {
-        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)pchunk;
-        if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK))) {
-            if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
-                        (uintptr_t)pc, pc->array_chunk_magic,
-                        pc->array_chunk_header);
-            }
-            insertFreeChunk(s, &(s->umarheap), pchunk);
-        }
-
-        /* if (!fullGC && */
-        /*     s->fl_chunks >= ensureArrayChunksAvailable) { */
-        /*     fprintf(stderr, "Array chunk ensured\n"); */
-        /*     break; */
-        /* } */
-    }
-
-#endif
-
+    fprintf(stderr,"%d] GC sweep started. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
     //dumpUMHeap(s);
 
     for (pchunk=s->umheap.start;
@@ -592,60 +528,83 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
          pchunk+=step) {
         if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
         {
-        GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+sizeof(UM_header)); /*account for size of chunktype*/
-        if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->chunk_header & UM_CHUNK_MARK_MASK) && !(pc->chunk_header & UM_CHUNK_GREY_MASK))) {
-            if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
-                        (uintptr_t)pc, pc->sentinel, pc->chunk_header);
+            GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+sizeof(UM_header)); /*account for size of chunktype*/
+            if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
+                (!(pc->chunk_header & UM_CHUNK_MARK_MASK) && !(pc->chunk_header & UM_CHUNK_GREY_MASK))) {
+                if (DEBUG_MEM) {
+                    fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
+                            (uintptr_t)pc, pc->sentinel, pc->chunk_header);
+                }
+                insertFreeChunk(s, &(s->umheap), pchunk);
+                s->cGCStats.numChunksFreed++;
+                freed++;
             }
-            insertFreeChunk(s, &(s->umheap), pchunk);
-            s->cGCStats.numChunksFreed++;
-            freed++;
-        }
-        else if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-            ((pc->chunk_header & UM_CHUNK_MARK_MASK) || (pc->chunk_header & UM_CHUNK_GREY_MASK))) {
+            else if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
+                ((pc->chunk_header & UM_CHUNK_MARK_MASK) || (pc->chunk_header & UM_CHUNK_GREY_MASK))) {
+    
+                    if(pc->chunk_header & UM_CHUNK_MARK_MASK)
+                    {
+                        marked++;
+                    }
+                    else if(pc->chunk_header & UM_CHUNK_GREY_MASK)
+                    {
+                        grey++;
+                    }
 
-               /*Unmark Chunk*/ 
-                    pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
-                /*Unmark MLton Object*/
-                    /*pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
-                    GC_header* headerp = getHeaderp(p);
-                    GC_header header = *headerp;
-                    header = header & ~MARK_MASK;
-                    (*headerp) = header;*/
-        }
 
+                   /*Unmark Chunk*/ 
+                        pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
+                    /*Unmark MLton Object*/
+                        /*pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
+                        GC_header* headerp = getHeaderp(p);
+                        GC_header header = *headerp;
+                        header = header & ~MARK_MASK;
+                        (*headerp) = header;*/
+            }
+            
+            visited++;
         }
         else if(((UM_Mem_Chunk)pchunk)->chunkType == UM_ARRAY_CHUNK)
         {
 
-        GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + sizeof(UM_header)); /*account for size of chunktype*/
-        if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-            (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK) && !(pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
-            if (DEBUG_MEM) {
-                fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
-                        (uintptr_t)pc, pc->array_chunk_magic,
-                        pc->array_chunk_header);
+            GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + sizeof(UM_header)); /*account for size of chunktype*/
+            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
+                (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK) && !(pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
+                if (DEBUG_MEM) {
+                    fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
+                            (uintptr_t)pc, pc->array_chunk_magic,
+                            pc->array_chunk_header);
+                }
+                insertFreeChunk(s, &(s->umheap), pchunk);
+                s->cGCStats.numChunksFreed++;
+                freed++;
             }
-            insertFreeChunk(s, &(s->umheap), pchunk);
-            s->cGCStats.numChunksFreed++;
-            freed++;
-        }
-       if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-            ((pc->array_chunk_header & UM_CHUNK_MARK_MASK) || (pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
+           if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
+                ((pc->array_chunk_header & UM_CHUNK_MARK_MASK) || (pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
 
-            /*Unmark Array chunk*/
-            pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
-           
-            /*Unmark MLton Object*/
-            /*pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
-            GC_header* headerp = getHeaderp(p);
-            GC_header header = *headerp;
-            header = header & ~MARK_MASK;
-            (*headerp) = header;*/
+               if(pc->array_chunk_header & UM_CHUNK_MARK_MASK)
+                    {
+                        marked++;
+                    }
+                    else if(pc->array_chunk_header & UM_CHUNK_GREY_MASK)
 
-        }
+                    {
+                        grey++;
+                    }
+
+                /*Unmark Array chunk*/
+                pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
+               
+                /*Unmark MLton Object*/
+                /*pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
+                GC_header* headerp = getHeaderp(p);
+                GC_header header = *headerp;
+                header = header & ~MARK_MASK;
+                (*headerp) = header;*/
+
+            }
+
+           visited++;
         }
 
     }
@@ -658,7 +617,11 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     s->cGCStats.numSweeps++;
 
     if(DEBUG_RTGC)
+    {
         fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,freed);
+
+        fprintf(stderr,"%d]Chunks; Visited: %d, Marked: %d, Greys: %d\n",PTHREAD_NUM,visited,marked,grey);
+    }
 
 }
 
@@ -675,27 +638,39 @@ void performUMGC(GC_state s,
 
 #ifdef PROFILE_UMGC
     long t_start = getCurrentTime();
-    fprintf(stderr, "[GC] Free chunk: %d, Free array chunk: %d\n",
-            s->fl_chunks,
-            s->fl_chunks);
+    fprintf(stderr, "[GC] Free chunk: %d\n",s->fl_chunks);
 #endif
-    
-   // GC_stack currentStack = getStackCurrent(s);
+   
 
+
+
+
+    //assert(isWorklistShaded(s));
+
+    if(1)
+    {
 // Mark phase
-    //markStack(s,currentStack);
+    startMarking(s);
+
+    
+   /*Enforce Invariant:
+     * Worklist has no more grey references
+     * (If objptr is not in worklist, then it has been marked and removed)*/
+    if(!isEmptyWorklist(s))
+        die("Worklist not empty after Mark Phase of GC\n");
+    }
+
 //Sweep phase
     sweep(s,ensureObjectChunksAvailable,ensureArrayChunksAvailable,fullGC);
 
 
+
+
 #ifdef PROFILE_UMGC
     long t_end = getCurrentTime();
-    fprintf(stderr, "[GC] Time: %ld, Free chunk: %d, Free array chunk: %d, "
-            "ensureArrayChunk: %d\n",
+    fprintf(stderr, "[GC] Time: %ld, Free chunk: %d\n",
             t_end - t_start,
-            s->fl_chunks,
-            s->fl_chunks,
-            ensureArrayChunksAvailable);
+            s->fl_chunks);
 #endif
 
 }
@@ -829,7 +804,7 @@ if (needGCTime (s))
     unless (s->signalsInfo.amInSignalHandler)
       s->signalsInfo.signalIsPending = TRUE;
   }
-  if (DEBUG)
+  if (DEBUG_OLD)
     displayGCState (s, stderr);
   
   //assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
@@ -926,7 +901,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
 
     if(!force)
     {
-        /*Try to get RTSync lock, if success means a) GC not Sweeping, b) no other thread is in GC_collect
+        /*Try to get RTSync lock, if success means a) GC not Running, b) no other thread is in GC_collect
          * if fails: dont execute section, continue with work
          * pthread_mutex_trylock returns 0 when mutex is acquired*/
         if(RTSYNC_TRYLOCK == 0)

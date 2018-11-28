@@ -255,7 +255,7 @@ int processAtMLton (GC_state s, int start, int argc, char **argv,
 
 int GC_init (GC_state s, int argc, char **argv) {
   char *worldFile;
-  int res, __i;
+  int res, __i,__j;
 
   assert (s->alignment >= GC_MODEL_MINALIGN);
   assert (isAligned (sizeof (struct GC_stack), s->alignment));
@@ -312,12 +312,27 @@ int GC_init (GC_state s, int argc, char **argv) {
   rusageZero (&s->cumulativeStatistics.ru_gcCopying);
   rusageZero (&s->cumulativeStatistics.ru_gcMarkCompact);
   rusageZero (&s->cumulativeStatistics.ru_gcMinor);
-  
+
   s->cGCStats.numChunksAllocated = 0;
   s->cGCStats.numChunksFreed =0;
   s->cGCStats.numSweeps = 0;
+  s->cGCStats.numChunksMarked = 0;
+  s->cGCStats.numGCCycles = 0;
+
   s->maxChunksAvailable = 0;
   s->isGCRunning = false;
+  
+  
+  s->wl_size = 100;
+  s->wl_length = 0;
+
+  pthread_mutex_init (&s->wl_lock, NULL);
+  s->worklist = malloc(s->wl_size * sizeof(objptr *));
+
+  for(__j = 0; __j < s->wl_size ; __j++)
+  {
+      s->worklist[__j] = NULL;
+  }
 
   for (__i = 0 ; __i < MAXPRI ; __i++) {
 	  s->currentThread[__i] = BOGUS_OBJPTR;
