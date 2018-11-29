@@ -26,6 +26,14 @@ void addToWorklist(GC_state s,objptr *opp)
 
 
    assert(isObjptr(*opp));
+
+   /*Objptr on Worklist is not shaded when :
+    * 1. its pointing to object on old heap
+    * 2. its pointing to a stack or weak object
+    * For now this assertion will return true for these elements. But these elements
+    * will not be collected by the collector(since on old heap) so its ok to let it pass the assertion
+    * TODO: Handle objects on oldheap and stacks */
+
    assert(isObjectShaded(s,opp));
 
     
@@ -69,8 +77,10 @@ bool isObjectShaded(GC_state s, objptr *opp)
     GC_objectTypeTag tag = ERROR_TAG;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
-
-    return isContainerChunkMarkedByMode (p,GREY_MODE,tag);
+    if(!isObjectOnUMHeap(s,p))
+        return true;
+    else
+        return isContainerChunkMarkedByMode (p,GREY_MODE,tag);
 }
 
 bool isObjectMarked(GC_state s, objptr *opp)
@@ -161,8 +171,10 @@ static void markWorklist(GC_state s)
             //umDfsMarkObjectsMark(s, s->worklist[i]);
         }
 
-        /*If object has beebn marked, remove from worklist*/
-        if(1 || isObjectMarked(s,s->worklist[i]))
+        /*Remove from worklist if:
+         * 1. item is not an objptr (deleted by mutator) 
+         * 2. or If item has been marked*/
+        if(!isObjptr(*(s->worklist[i])) || isObjectMarked(s,s->worklist[i]))
             s->worklist[i] = NULL;
         
 
@@ -333,7 +345,8 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag)
 static bool isChunkShaded(pointer p, GC_objectTypeTag tag)
 {
     /*Treat shaded objects as unmarked*/
-    if(tag == NORMAL_TAG)
+
+       if(tag == NORMAL_TAG)
     {
             GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
             if ((pc->chunk_header & UM_CHUNK_IN_USE) && (pc->chunk_header & UM_CHUNK_GREY_MASK))
@@ -353,8 +366,8 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag)
     }
     else if(tag == STACK_TAG || tag == WEAK_TAG)
     {
-        return true;
-        //die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
+        //return true;
+        die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
     }
     else
     {

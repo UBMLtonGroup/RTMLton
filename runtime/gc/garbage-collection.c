@@ -645,7 +645,7 @@ void performUMGC(GC_state s,
 
 
 
-    //assert(isWorklistShaded(s));
+    assert(isWorklistShaded(s));
 
     if(1)
     {
