@@ -114,7 +114,9 @@ struct GC_state {
   pthread_mutex_t fl_lock;
   pthread_cond_t fl_empty_cond;
   pthread_mutex_t rtSync_lock;
+  pthread_mutex_t rtThreads_lock;
   pthread_cond_t rtSync_cond;
+  pthread_cond_t rtThreads_cond;
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];

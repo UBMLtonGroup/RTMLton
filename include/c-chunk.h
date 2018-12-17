@@ -86,7 +86,8 @@
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
 #define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
-#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
+//#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
+#define WB(ty,db,sb,op) writeBarrier(GCState,(db),(sb)); op 
 
 #endif
 

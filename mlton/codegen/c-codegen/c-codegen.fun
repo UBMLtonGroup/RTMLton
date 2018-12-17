@@ -684,16 +684,13 @@ fun output {program as Machine.Program.T {chunks,
          concat ["/*BeginCriticalSection 3*/", CType.toString (Type.toCType ty),
                  "_store(", addr dst, ", ", src, ");\n"]
 
-      fun writeBarrier ({dst,src},{dstbase:string,srcbase:string},ty) = 
-            case (Type.isObjptr ty) of
-                true => 
-                    (case (hd(String.explode dst),hd(String.explode src)) of
-                         (#"O" ,_ ) => concat ["WB(",CType.toString(Type.toCType ty),",",dst,",",src,",",dstbase,",",srcbase,");/*NotInCriticalSection,"," true,"," true","*/\n"]
-                        | (_,_) => concat [dst, " = ", src, ";/*NotInCriticalSection,"," true,"," true","*/\n"]
-                    )
-            |   false => concat [dst, " = ", src, ";/*NotInCriticalSection,"," true,"," true","*/\n"]
 
-            
+
+      fun writeBarrier( {dbase,sbase} ,ty :Type.t,oper :string) :string = 
+        case(Type.isObjptr ty)
+          of true => concat ["WB(",CType.toString (Type.toCType
+                        ty),",",dbase,",",sbase,", {",oper,"} );"]
+        |   false => oper
       
       (* If the dst is Frontier, then we are entering a critical section
       where we've extended the frontier and are going to now write into 
@@ -709,7 +706,8 @@ fun output {program as Machine.Program.T {chunks,
       *)
       fun move {dst: string, dstIsMem: bool,
                 src: string, srcIsMem: bool,
-                ty: Type.t, inCrit : bool ref, dstbase:string, srcbase:string }: string =
+                dbase:string, sbase:string,
+                ty: Type.t, inCrit : bool ref}: string =
          case dst of
          "Frontier" => 
 	         if handleMisaligned ty then (
@@ -735,7 +733,8 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else (
 			            inCrit := false ;
-			            concat [dst, " = ", src, ";/*InCriticalSection*/\n"]
+			            writeBarrier({dbase = dbase, sbase = sbase},ty,concat [dst, " = ", src,
+                        ";/*InCriticalSection*/\n"])
 			         )
 			       )
 		        | false =>
@@ -746,13 +745,8 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, false) => store ({dst = dst, src = src}, ty)
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else
-                        case(dstIsMem,srcIsMem) of
-                            (false,false) =>concat [dst, " = ", src, ";/*NotInCriticalSection,"," false,"," false","*/\n"]
-                        |   (false,true) => concat [dst, " = ", src, ";/*NotInCriticalSection,"," false,"," true","*/\n"]
-                        |   (true,false) =>
-                            writeBarrier({dst=dst,src=src},{dstbase=dstbase,srcbase=srcbase},ty) (*concat [dst, " = ", src, ";/*NotInCriticalSection,"," true,"," false","*/\n"]*)
-                        |   (true,true) =>
-                            writeBarrier({dst=dst,src=src},{dstbase=dstbase,srcbase=srcbase},ty) (*concat [dst, " = ", src, ";/*NotInCriticalSection,"," true,"," true, Type: ",CType.toString(Type.toCType ty),"*/\n"]*)
+			            writeBarrier({dbase = dbase, sbase = sbase},ty,concat [dst, " = ", src,
+                        ";/*NotInCriticalSection*/\n"])
       local
          datatype z = datatype Operand.t
          fun toString (z: Operand.t): string =
@@ -795,6 +789,8 @@ fun output {program as Machine.Program.T {chunks,
              | StackOffset s => StackOffset.toString s
              | StackTop => "StackTop"
              | Word w => WordX.toC w
+
+
         fun getbase(x: Operand.t):string = 
           case x of 
                Offset {base, offset, ty} => 
@@ -803,11 +799,10 @@ fun output {program as Machine.Program.T {chunks,
                     toString base
             |   ChunkedOffset {base, offset, ty, size} =>
                     toString base
-            |   _ => "NULL"
-
+            | _ => toString x
       in
          val operandToString = toString
-         val getBase = getbase
+         val getBase = getbase 
       end
       fun fetchOperand (z: Operand.t): string =
          if handleMisaligned (Operand.ty z) andalso Operand.isMem z then
@@ -827,12 +822,12 @@ fun output {program as Machine.Program.T {chunks,
                             print
                             (move {dst = operandToString dst,
                                    dstIsMem = Operand.isMem dst,
+                                   dbase = getBase dst,
                                    src = operandToString src,
                                    srcIsMem = Operand.isMem src,
+                                   sbase = getBase src,
                                    ty = Operand.ty dst,
-                                   inCrit = inCritical,
-                                   dstbase= getBase dst,
-                                   srcbase= getBase src})
+                                   inCrit = inCritical})
                        | Noop => ()
                        | PrimApp {args, dst, prim} =>
                             let
@@ -859,12 +854,12 @@ fun output {program as Machine.Program.T {chunks,
                                 | SOME dst =>
                                      print (move {dst = operandToString dst,
                                                   dstIsMem = Operand.isMem dst,
+                                                  dbase = getBase dst,
                                                   src = app (),
                                                   srcIsMem = false,
+                                                  sbase = app (),
                                                   ty = Operand.ty dst,
-                                                  inCrit = inCritical,
-                                                  dstbase=getBase dst,
-                                                  srcbase="NULL" (*getBase (app())*)})
+                                                  inCrit = inCritical})
                             end
                        | ProfileLabel l =>
                             C.call ("ProfileLabel", [ProfileLabel.toString l],
@@ -944,11 +939,14 @@ fun output {program as Machine.Program.T {chunks,
                                        {offset = Bytes.- (size, Runtime.labelSize ()),
                                         ty = Type.label return})),
                                dstIsMem = true,
+                               dbase = (StackOffset.toString
+                                      (StackOffset.T
+                                       {offset = Bytes.- (size, Runtime.labelSize ()),
+                                        ty = Type.label return})),
                                src = operandToString (Operand.Label return),
                                srcIsMem = false,
-                               ty = Type.label return, inCrit = inCritical,
-                               dstbase= "NULL" (*getBase dst*),
-                               srcbase = "NULL" (*getBase src*)})
+                               sbase = getBase (Operand.Label return),
+                               ty = Type.label return, inCrit = inCritical})
                 ; C.push (size, print)
                 ; if amTimeProfiling
                      then print "\tFlushStackTop();\n"
@@ -1061,11 +1059,11 @@ fun output {program as Machine.Program.T {chunks,
                                     ["\t",
                                      move {dst = operandToString x,
                                            dstIsMem = Operand.isMem x,
+                                           dbase = getBase x,
                                            src = creturn ty,
                                            srcIsMem = false,
-                                           ty = ty, inCrit = inCritical,
-                                           dstbase = getBase x,
-                                           srcbase = "NULL"}])
+                                           sbase = creturn ty,
+                                           ty = ty, inCrit = inCritical}])
                                 end)))
                       | Kind.Func => ()
                       | Kind.Handler {frameInfo, ...} => pop frameInfo

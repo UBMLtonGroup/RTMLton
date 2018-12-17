@@ -102,14 +102,22 @@ static
 void umShadeObject(GC_state s,objptr *opp){
     
     pointer p = objptrToPointer(*opp, s->heap.start);
-    GC_header* headerp = getHeaderp(p);
-    GC_header header = *headerp;
-    uint16_t bytesNonObjptrs=0;
-    uint16_t numObjptrs =0;
-    GC_objectTypeTag tag = ERROR_TAG;
-    splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-    
-    markChunk(p,tag,GREY_MODE,s,numObjptrs);
+  
+    /*Shade the object only if it is on the UM heap. If not it doesn't
+   * matter if the object is shaded or not since GC 
+   * will not collect it. This check will also ensure we aren't trying 
+   * to shade if *opp has been cleared by mutator (is null) */
+    if(isObjectOnUMHeap(s,p))
+    {
+        GC_header* headerp = getHeaderp(p);
+        GC_header header = *headerp;
+        uint16_t bytesNonObjptrs=0;
+        uint16_t numObjptrs =0;
+        GC_objectTypeTag tag = ERROR_TAG;
+        splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
+       
+        markChunk(p,tag,GREY_MODE,s,numObjptrs);
+    }
 
 
 }
@@ -522,6 +530,7 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 
 
 
+
 void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
     pointer p = objptrToPointer(*opp, s->heap.start);
     if (DEBUG_DFS_MARK)
@@ -532,6 +541,12 @@ void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
     uint16_t bytesNonObjptrs = 0;
     uint16_t numObjptrs =0;
     GC_objectTypeTag tag = ERROR_TAG;
+
+    if(header == 0)
+    {
+        fprintf(stderr,"invalid header for obj: 0x%x\n",(uintptr_t)p);
+    }
+
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 //    if (DEBUG_DFS_MARK)

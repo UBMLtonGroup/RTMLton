@@ -352,6 +352,9 @@ int GC_init (GC_state s, int argc, char **argv) {
 
   pthread_mutex_init (&s->rtSync_lock, NULL);
   pthread_cond_init (&s->rtSync_cond,NULL);
+
+  pthread_mutex_init (&s->rtThreads_lock, NULL);
+  pthread_cond_init (&s->rtThreads_cond,NULL);
   
   s->dirty = false;
   

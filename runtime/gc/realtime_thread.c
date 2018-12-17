@@ -3,8 +3,11 @@
 
 #include "realtime_thread.h"
 
-#define LOCK(X) { MYASSERT(int, pthread_mutex_lock(&X), ==, 0); }
-#define UNLOCK(X) { MYASSERT(int, pthread_mutex_unlock(&X), ==, 0); }
+
+#define LOCK_RT_THREADS IFED(pthread_mutex_lock(&state->rtThreads_lock))
+#define UNLOCK_RT_THREADS IFED(pthread_mutex_unlock(&state->rtThreads_lock))
+#define SIGNAL_RT_THREADS IFED(pthread_cond_signal(&state->rtThreads_cond))
+#define BLOCK_RT_THREADS IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
 
 #define CONCURRENT
 //#define DEBUG true
@@ -100,15 +103,28 @@ realtimeRunner (void *paramsPtr)
     int tNum = params->tNum;
 
     set_pthread_num (params->tNum);
+      
+    state->rtSync[PTHREAD_NUM]= true;
 
-    while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
+
+    if((state->callFromCHandlerThread != BOGUS_OBJPTR))
+    {
+        /*This will be unblocked in GC_setcallFromCHandlerThread */
+        if(DEBUG)
+            fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
+        LOCK_RT_THREADS;
+        BLOCK_RT_THREADS;
+        UNLOCK_RT_THREADS;
+    }
+
+    /*while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
         if (DEBUG) {
             fprintf (stderr,
                      "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
         }
         state->rtSync[PTHREAD_NUM]= true;
         ssleep (1, 0);
-    }
+    }*/
 
     if (DEBUG)
         fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
@@ -124,13 +140,23 @@ realtimeRunner (void *paramsPtr)
      switchToThread (state, pointerToObjptr((pointer)thread - offsetofThread (state), state->heap.start));
  }*/
   
+    /*Using same lock to BLOCK again. This time it wont be unblocked. 
+     * TODO: Define what RT threads should do*/
+     if(DEBUG)
+            fprintf(stderr,"%d] Blocking RT-Thread.FOREVA.\n",tNum);
+        LOCK_RT_THREADS;
+        BLOCK_RT_THREADS;
+        UNLOCK_RT_THREADS;
+
  while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
   {
-      state->rtSync[PTHREAD_NUM]= true;
+     
+     state->rtSync[PTHREAD_NUM]= true;
       if(DEBUG_THREADS)
           fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
 
       sched_yield();
+    
   }
 
    /* fprintf(stderr,"%d] RT thread\n",PTHREAD_NUM)   ;

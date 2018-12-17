@@ -472,6 +472,9 @@ void markStack(GC_state s,GC_stack currentStack)
             foreachGlobalThreadObjptr(s,umDfsMarkObjectsMarkToWL);
             foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMarkToWL, FALSE);
 
+            if(DEBUG_RTGC)
+                fprintf(stderr,"%d] Completed marking stack\n",PTHREAD_NUM);
+
             /*foreachGlobalThreadObjptr(s,umDfsMarkObjectsMark);
             foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);*/
             /*foreachGlobalThreadObjptr(s,addToWorklist);
@@ -910,7 +913,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
              * This assert should never fail*/
             assert(!s->isGCRunning);
             /*Mark stack and the rest if the dirty but has been set by another mutator or enough chunks are available and 
-             * own thread's rtsync has not been set i.e. it hasnt marked its stack already*/
+             * own thread's rtsync has not been set i.e. it hasnt marked its stack already */
             if((s->dirty || !ensureChunksAvailable(s)) && !s->rtSync[PTHREAD_NUM])
             {
                 if(DEBUG_RTGC)
@@ -930,6 +933,9 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
                 if(i == MAXPRI)
                 {
                     RTSYNC_SIGNAL;
+                    if(DEBUG_RTGC)
+                        fprintf(stderr,"%d] Signal sent to wake GC\n",PTHREAD_NUM);
+
                 }
                 else
                 {

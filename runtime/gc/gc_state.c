@@ -7,6 +7,8 @@
  * See the file MLton-LICENSE for details.
  */
 
+#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&s->rtThreads_cond))
+
 void displayGCState (GC_state s, FILE *stream) {
 
     if(PTHREAD_NUM ==1)
@@ -167,8 +169,10 @@ pointer GC_getCallFromCHandlerThread (GC_state s) {
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   objptr op = pointerToObjptr (p, s->heap.start);
   s->callFromCHandlerThread = op;
-  if (DEBUG_THREADS) fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
+  if (DEBUG_THREADS) 
+      fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
   GC_copyCurrentThread(s);
+  BROADCAST_RT_THREADS;
 }
 
 pointer GC_getCurrentThread (GC_state s) {

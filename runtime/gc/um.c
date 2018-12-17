@@ -34,7 +34,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 {
     GC_UM_Chunk chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks);
    
-
+    assert(header !=0);
 
     uint32_t *alias = (uint32_t *) (chunk->ml_object) ;
     *alias = header;
@@ -50,7 +50,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         assert(current->chunk_header & UM_CHUNK_IN_USE);
         current = current->next_chunk;
     }
-    
+   
     return (Pointer)(chunk->ml_object + s);
 }
 
@@ -161,18 +161,45 @@ void writeBarrier(GC_state s,Pointer dst, Pointer src)
 {
     if(!s->rtSync[PTHREAD_NUM])
         return;
+
+    beginAtomic(s);
+
+    bool srcMarked,dstMarked = false;
+    bool isSrcOnUMHeap = isObjectOnUMHeap(s,src);
+    bool isDstOnUMHeap = isObjectOnUMHeap(s,dst);
+
+
+    if(isDstOnUMHeap)
+        dstMarked = (dst == NULL)?false:(isContainerChunkMarkedByMode(dst,MARK_MODE,getObjectType(s,dst)));
     
+    if(isSrcOnUMHeap)
+        srcMarked = (src == NULL)?false:(isContainerChunkMarkedByMode(src,MARK_MODE,getObjectType(s,src)));
 
-   if(isObjectOnUMHeap(s,dst) || isObjectOnUMHeap(s,src))
-   {
-    
-    bool dstMarked = (dst == NULL)?false:(isContainerChunkMarkedByMode(dst,MARK_MODE,getObjectType(s,dst)));
-    bool srcMarked = (src == NULL)?false:(isContainerChunkMarkedByMode(src,MARK_MODE,getObjectType(s,src)));
+    if(dstMarked)
+    {
+        if(isSrcOnUMHeap && !srcMarked)
+        {
+           //objptr opp = pointerToObjptr((pointer)src,s->heap.start);
+           //die("We got one! \n");
+           GC_header* headerp = getHeaderp(src);
+            GC_header header = *headerp;
+            uint16_t bytesNonObjptrs=0;
+            uint16_t numObjptrs =0;
+            GC_objectTypeTag tag = ERROR_TAG;
+            splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
+            
+            markChunk(src,tag,GREY_MODE,s,numObjptrs);
+        }
+    }
 
-    if(DEBUG_OLD)
-        fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
-   }
+    if(DEBUG)
+    {
+        if(isSrcOnUMHeap || isDstOnUMHeap)
+            fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
+    }
+   
 
+  endAtomic (s);
          
 
 
