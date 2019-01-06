@@ -5,15 +5,9 @@ sudo: required
 matrix:
   include:
   - os:   linux
-    env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen amd64"  REGRESSION=true
-  - os:   linux
-    env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=false
+    env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=true
   - os:   linux
     env:  CC=clang  MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=false
-  - os:   linux
-    env:  CC=clang  MLTON_COMPILE_ARGS="-codegen llvm"   REGRESSION=false
-  - os: osx
-    env:  CC=clang  MLTON_COMPILE_ARGS="-codegen amd64"  REGRESSION=false
   - os: osx
     env:  CC=clang  MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=false
 
@@ -25,6 +19,8 @@ install:
 
 script:
   - ./compile.sh
+  - if [ "$REGRESSION" == "true" ]; then echo "Running regression tests...";./bin/regression $MLTON_COMPILE_ARGS; fi
+
 
 notifications:
   email: false
