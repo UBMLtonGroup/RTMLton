@@ -18,8 +18,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew install mlton; fi
 
 script:
-  - ./compile.sh
-  - if [ "$REGRESSION" == "true" ]; then echo "Running regression tests...";./bin/regression $MLTON_COMPILE_ARGS; fi
+  - ./bin/travis-ci
 
 
 notifications:
