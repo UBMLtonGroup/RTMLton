@@ -16,6 +16,7 @@ llc -version
 echo
 fi
 
+
 echo "Building MLton..."
 make CC="$CC" MLTON_COMPILE_ARGS="$MLTON_COMPILE_ARGS" all
 
