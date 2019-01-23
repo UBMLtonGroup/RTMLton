@@ -796,7 +796,8 @@ fun output {program as Machine.Program.T {chunks,
                Offset {base, offset, ty} => 
                     toString base
             |   ArrayOffset {base, index, offset, scale, ty} =>
-                    toString base
+                    toString x (*we want to inspect the contents of X macro not
+                    base of array. Thus just spits out the X macro.*)
             |   ChunkedOffset {base, offset, ty, size} =>
                     toString base
             | _ => toString x
