@@ -192,7 +192,7 @@ void writeBarrier(GC_state s,Pointer dst, Pointer src)
         }
     }
 
-    if(DEBUG)
+    if(DEBUG_WB)
     {
         if(isSrcOnUMHeap || isDstOnUMHeap)
             fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );

@@ -31,7 +31,7 @@
 #define DEBUG_CCODEGEN FALSE
 #endif
 
-#define WORDWIDTH 8 /* use gcState->alignment */
+#define WORDWIDTH 4 /* use gcState->alignment */
 
 #define NO_CACHE_STACK
 #define NO_CACHE_FRONTIER

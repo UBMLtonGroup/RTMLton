@@ -376,24 +376,26 @@ __attribute__ ((noreturn))
         s->cGCStats.numGCCycles += 1;
       
 
+        s->dirty = false;
+        /*Change this to reset all rtSync values for all RT threads*/
+        s->rtSync[0] = false;
+     
+       
+        s->isGCRunning = false;
+       
         if(DEBUG_RTGC)
         {
             fprintf(stderr,"%d] [RTGC: GC cycle #%s completed]\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numGCCycles));
         }
         
 
-        s->dirty = false;
-        /*Change this to reset all rtSync values for all RT threads*/
-        s->rtSync[0] = false;
-     
-       /*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/ 
+        RTSYNC_UNLOCK;
+        
+        /*sending out singals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
+        /*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/ 
         LOCK_FL_FROMGC;
         BROADCAST;
         UNLOCK_FL_FROMGC; 
-
-        s->isGCRunning = false;
-        RTSYNC_UNLOCK;
-        
         
     
     }
@@ -494,12 +496,13 @@ void startMarking(GC_state s)
 
     foreachGlobalObjptr (s, umDfsMarkObjectsMark);
 
-
-    fprintf(stderr,"%d] GC finished marking globals. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
+    if(DEBUG_RTGC_MARKING)
+        fprintf(stderr,"%d] GC finished marking globals. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
     /*Marking worklist*/
     markWorklist(s) ;
 
-    fprintf(stderr,"%d] GC marked %s chunks\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksMarked));
+    if(DEBUG_RTGC_MARKING)
+        fprintf(stderr,"%d] GC marked %s chunks\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksMarked));
     s->cGCStats.numChunksMarked = 0;
 }
 
@@ -522,8 +525,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
     assert(PTHREAD_NUM ==1);
 
-
-    fprintf(stderr,"%d] GC sweep started. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
+    
+    if(DEBUG_RTGC_MARKING)
+        fprintf(stderr,"%d] GC sweep started. Worklist length: %d\n",PTHREAD_NUM,s->wl_length);
     //dumpUMHeap(s);
 
     for (pchunk=s->umheap.start;
