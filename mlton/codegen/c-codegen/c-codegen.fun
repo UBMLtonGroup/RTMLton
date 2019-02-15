@@ -686,10 +686,10 @@ fun output {program as Machine.Program.T {chunks,
 
 
 
-      fun writeBarrier( {dbase,sbase} ,ty :Type.t,oper :string) :string = 
+      fun writeBarrier( {dbase,sbase},{dst,src},ty :Type.t,oper :string) :string = 
         case(Type.isObjptr ty)
           of true => concat ["WB(",CType.toString (Type.toCType
-                        ty),",",dbase,",",sbase,", {",oper,"} );"]
+                        ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
         |   false => oper
       
       (* If the dst is Frontier, then we are entering a critical section
@@ -733,7 +733,7 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else (
 			            inCrit := false ;
-			            writeBarrier({dbase = dbase, sbase = sbase},ty,concat [dst, " = ", src,
+			            writeBarrier({dbase = dbase, sbase = sbase},{dst = dst,src = src},ty,concat [dst, " = ", src,
                         ";/*InCriticalSection*/\n"])
 			         )
 			       )
@@ -745,7 +745,8 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, false) => store ({dst = dst, src = src}, ty)
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else
-			            writeBarrier({dbase = dbase, sbase = sbase},ty,concat [dst, " = ", src,
+			            writeBarrier({dbase = dbase, sbase = sbase},{dst =
+                        dst,src = src}, ty,concat [dst, " = ", src,
                         ";/*NotInCriticalSection*/\n"])
       local
          datatype z = datatype Operand.t
@@ -1294,7 +1295,8 @@ fun output {program as Machine.Program.T {chunks,
                  ("FrontierOffset", GCField.Frontier),
                  ("UMFrontierOffset", GCField.UMFrontier),
                  ("StackBottomOffset", GCField.StackBottom),
-                 ("StackTopOffset", GCField.StackTop)],
+                 ("StackTopOffset", GCField.StackTop),
+                 ("RTSyncOffset",GCField.RTSync)],
                 fn (name, f) =>
                 print (concat ["#define ", name, " ",
                                Bytes.toString (GCField.offset f), "\n"]))

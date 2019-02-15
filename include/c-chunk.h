@@ -10,6 +10,8 @@
 #define _C_CHUNK_H_
 
 #include <stdio.h>
+#include <stdbool.h>
+#include <stdatomic.h>
 
 #ifndef PTHREAD_NUM
 # define PTHREAD_NUM get_pthread_num()
@@ -48,7 +50,12 @@
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
 
+#define RTSync *(bool*)(GCState + RTSyncOffset + (PTHREAD_NUM *WORDWIDTH)) 
+
 #define StackTop StackTopMem
+
+#define CASLOCK CompareAndSet(GCState,1)
+#define CASUNLOCK CompareAndSet(GCState,0)
 
 /* ------------------------------------------------- */
 /*                      Memory                       */
@@ -87,7 +94,17 @@
 #define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
 //#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
-#define WB(ty,db,sb,op) writeBarrier(GCState,(db),(sb)); op 
+#define WB(ty,db,sb,d,s,op)                                         \
+            do {                                                    \
+                    if(!RTSync)                                     \
+                        d=s;                                        \
+                    else                                            \
+                    {   CASLOCK;                                    \
+                        writeBarrier(GCState,(db),(sb));            \
+                        d=s;                                        \
+                        CASUNLOCK;                                  \
+                    }                                               \
+                } while(0)                                          \
 
 #endif
 

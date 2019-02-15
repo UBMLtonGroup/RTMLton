@@ -5,6 +5,7 @@ hello.1.c:(.text+0xb912): undefined reference to `UM_Payload_alloc'
 hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
 */
 
+
 #undef DBG
 #define DBG(x,y,z,m) fprintf (stderr, "%s:%d: %s("FMTPTR", %d, %d): %s\n", \
 		__FILE__, __LINE__, __func__, (uintptr_t)(x), (int)y, (int)z, m?m:"na")
@@ -157,55 +158,51 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 }
 
 
-void writeBarrier(GC_state s,Pointer dst, Pointer src)
+void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
 {
-    if(!s->rtSync[PTHREAD_NUM])
-        return;
 
-    beginAtomic(s);
+
 
     bool srcMarked,dstMarked = false;
-    bool isSrcOnUMHeap = isObjectOnUMHeap(s,src);
-    bool isDstOnUMHeap = isObjectOnUMHeap(s,dst);
+    bool isSrcOnUMHeap = isObjectOnUMHeap(s,srcbase);
+    bool isDstOnUMHeap = isObjectOnUMHeap(s,dstbase);
 
 
     if(isDstOnUMHeap)
-        dstMarked = (dst == NULL)?false:(isContainerChunkMarkedByMode(dst,MARK_MODE,getObjectType(s,dst)));
+        dstMarked = (dstbase == NULL)?false:(isContainerChunkMarkedByMode(dstbase,MARK_MODE,getObjectType(s,dstbase)));
     
     if(isSrcOnUMHeap)
-        srcMarked = (src == NULL)?false:(isContainerChunkMarkedByMode(src,MARK_MODE,getObjectType(s,src)));
+        srcMarked = (srcbase == NULL)?false:(isContainerChunkMarkedByMode(srcbase,MARK_MODE,getObjectType(s,srcbase)));
 
     if(dstMarked)
     {
         if(isSrcOnUMHeap && !srcMarked)
         {
-           //objptr opp = pointerToObjptr((pointer)src,s->heap.start);
+           //objptr opp = pointerToObjptr((pointer)srcbase,s->heap.start);
            //die("We got one! \n");
-           GC_header* headerp = getHeaderp(src);
+           GC_header* headerp = getHeaderp(srcbase);
             GC_header header = *headerp;
             uint16_t bytesNonObjptrs=0;
             uint16_t numObjptrs =0;
             GC_objectTypeTag tag = ERROR_TAG;
             splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
             
-            markChunk(src,tag,GREY_MODE,s,numObjptrs);
+            markChunk(srcbase,tag,GREY_MODE,s,numObjptrs);
         }
     }
 
     if(DEBUG_WB)
     {
         if(isSrcOnUMHeap || isDstOnUMHeap)
-            fprintf(stderr,"%d]In writebarrier, src= "FMTPTR", dst= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)src,(uintptr_t)dst, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
+            fprintf(stderr,"%d]In writebarrier, srcbase= "FMTPTR", dstbase= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)srcbase,(uintptr_t)dstbase, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
     }
    
 
-  endAtomic (s);
-         
 
 
-    /*    if(isPointerMarkedByMode(dst, MARK_MODE))
+    /*    if(isPointerMarkedByMode(dstbase, MARK_MODE))
             fprintf(stderr,"Marked\n");
-        else if(!isPointerMarkedByMode(dst, MARK_MODE))
+        else if(!isPointerMarkedByMode(dstbase, MARK_MODE))
             fprintf(stderr,"UnMarked\n");
         else
             fprintf(stderr,"Grey mode ?\n");
@@ -285,4 +282,49 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     }
 
     die("UM_Array_Offset: shouldn't be here!");
+}
+
+/*When Compare and swap is called with lockOrUnlock =1, 
+ * We check to see if mem location caslock is -1: 
+ *  - If it is, we set it to pthread_num
+ *  - if it isn't , we spinwait till caslock can be set
+ * When called with lockorUnlock = 0 
+ * We check to see if mem location caslock is set to current PTHREAD_NUM
+ *  - If it is, we set it to -1
+ *  - If it isn't we just return cause obviously the calling thread didnt lock it
+ */
+void CompareAndSet(GC_state s, int lockOrUnlock)
+{
+    if(lockOrUnlock ==1)
+    {
+        /*Case when you want to lock*/
+        while(!CompareExchange((int *)&(s->casLock),-1,PTHREAD_NUM))
+        {
+            //NOP
+            
+        }
+    }
+    else if(lockOrUnlock == 0)
+    {
+        /*Case when you want to unlock*/
+
+        if(!CompareExchange((int*)&(s->casLock),PTHREAD_NUM,-1))
+            return;
+
+    }
+}
+
+
+/*bool __atomic_compare_exchange_n (type *ptr, type *expected, type desired, bool weak, int success_memorder, int failure_memorder)
+This built-in function implements an atomic compare and exchange operation. This compares the contents of *ptr with the contents of *expected. If equal, the operation is a read-modify-write operation that writes desired into *ptr. If they are not equal, the operation is a read and the current contents of *ptr are written into *expected. weak is true for weak compare_exchange, which may fail spuriously, and false for the strong variation, which never fails spuriously. Many targets only offer the strong variation and ignore the parameter. When in doubt, use the strong variation.
+If desired is written into *ptr then true is returned and memory is affected according to the memory order specified by success_memorder. There are no restrictions on what memory order can be used here.
+
+Otherwise, false is returned and memory is affected according to failure_memorder. This memory order cannot be __ATOMIC_RELEASE nor __ATOMIC_ACQ_REL. It also cannot be a stronger order than that specified by success_memorder.
+
+ * */
+bool CompareExchange(int *ptr, int expected, int desired)
+{
+    
+    return  __atomic_compare_exchange_n (ptr, &expected,desired, false, __ATOMIC_CONSUME, __ATOMIC_CONSUME);
+    
 }

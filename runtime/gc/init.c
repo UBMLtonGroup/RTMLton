@@ -329,6 +329,8 @@ int GC_init (GC_state s, int argc, char **argv) {
   pthread_mutex_init (&s->wl_lock, NULL);
   s->worklist = malloc(s->wl_size * sizeof(objptr *));
 
+  s->casLock = -1;
+
   for(__j = 0; __j < s->wl_size ; __j++)
   {
       s->worklist[__j] = NULL;
@@ -355,6 +357,7 @@ int GC_init (GC_state s, int argc, char **argv) {
 
   pthread_mutex_init (&s->rtThreads_lock, NULL);
   pthread_cond_init (&s->rtThreads_cond,NULL);
+  
   
   s->dirty = false;
   

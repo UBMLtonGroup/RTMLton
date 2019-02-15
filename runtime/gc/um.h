@@ -9,5 +9,8 @@ Pointer UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header,
                         C_Size_t s);
 
 
+void CompareAndSet(GC_state s, int lockOrUnlock);
+bool CompareExchange(int *ptr, int expected, int desired);
 
-void writeBarrier(GC_state s,Pointer dst, Pointer src);
+
+void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase);

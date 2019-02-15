@@ -97,6 +97,7 @@ struct GC_state {
   size_t wl_size;
   size_t wl_length;
   pthread_mutex_t wl_lock;
+  volatile int casLock;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
  
