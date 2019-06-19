@@ -121,21 +121,18 @@ void umShadeObject(GC_state s,objptr *opp){
 
 
 }
-
 GC_objectTypeTag getObjectType(GC_state s, pointer p) {
-    //pointer p = objptrToPointer(*opp, s->heap.start);
+     //pointer p = objptrToPointer(*opp, s->heap.start);
    GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;
-    uint16_t bytesNonObjptrs = 0;
-    uint16_t numObjptrs =0;
-    GC_objectTypeTag tag = ERROR_TAG;
+     uint16_t bytesNonObjptrs = 0;
+     uint16_t numObjptrs =0;
+     GC_objectTypeTag tag = ERROR_TAG;
     splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-    
-    return tag;
-
-        
+     
+     return tag;
+ 
 }
-
 
 bool isWorklistShaded(GC_state s)
 {
@@ -167,6 +164,9 @@ static void markWorklist(GC_state s)
     
     LOCK_WL;
 
+    if(DEBUG_RTGC_MARKING)
+        fprintf(stderr,"%d] markWorkList: Started\n",PTHREAD_NUM);
+
     tmplength = s->wl_length;
     for(i=0;i<s->wl_length;i++)
     {
@@ -193,6 +193,10 @@ static void markWorklist(GC_state s)
 
     /*All items in the worklist have been marked*/
     assert(s->wl_length == 0);  
+
+    if(DEBUG_RTGC_MARKING)
+        fprintf(stderr,"%d] %d markWorkList: Done\n",PTHREAD_NUM,i);
+
 
     UNLOCK_WL;
 
@@ -343,6 +347,7 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag)
     }
     else
     {
+        /*stack,weak or error tags*/
         return false;
         //die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
     }
@@ -414,7 +419,7 @@ bool isContainerChunkMarkedByMode (pointer p, GC_markMode m,GC_objectTypeTag tag
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
     pointer p = objptrToPointer(*opp, s->heap.start);
     if (DEBUG_DFS_MARK)
-        fprintf(stderr, "original obj: 0x%x, obj: 0x%x\n",
+        fprintf(stderr, "umDFSMarkObjects: original obj: 0x%x, obj: 0x%x\n",
                 (uintptr_t)*opp, (uintptr_t)p);
     GC_header* headerp = getHeaderp(p);
     GC_header header = *headerp;

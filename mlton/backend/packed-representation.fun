@@ -981,7 +981,7 @@ structure ObjptrRep =
                 end)
             val objSize = Bytes.+ (Type.bytes componentsTy, Runtime.headerSize ())
          in
-            ChunkedObject {
+            Dummy :: ChunkedObject {
                 dst = (dst, ty)
               , header = Runtime.typeIndexToHeader (ObjptrTycon.index tycon)
               , size = objSize

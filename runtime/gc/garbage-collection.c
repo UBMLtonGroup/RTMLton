@@ -542,6 +542,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                     fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
                             (uintptr_t)pc, pc->sentinel, pc->chunk_header);
                 }
+                
+                //Set header of cleared object to magic number
+                //*(pchunk +sizeof(UM_header)) = 42;
+                
+                memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+
                 insertFreeChunk(s, &(s->umheap), pchunk);
                 s->cGCStats.numChunksFreed++;
                 freed++;
@@ -582,6 +588,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                             (uintptr_t)pc, pc->array_chunk_magic,
                             pc->array_chunk_header);
                 }
+                
+                //Set header of cleared object to magic number
+               // *(pchunk +sizeof(UM_header)) = 42;
+                
+                memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+                
                 insertFreeChunk(s, &(s->umheap), pchunk);
                 s->cGCStats.numChunksFreed++;
                 freed++;
@@ -860,8 +872,8 @@ ensureInvariantForMutator (GC_state s, bool force)
 
 bool ensureChunksAvailable(GC_state s)
 {
-  if(DEBUG_RTGC)
-    fprintf(stderr,"%d]ensureChunksAvailable: FC = %d, Max Chunks = %d\n",PTHREAD_NUM,s->fl_chunks,s->maxChunksAvailable);
+  //if(DEBUG_RTGC)
+    //fprintf(stderr,"%d]ensureChunksAvailable: FC = %d, Max Chunks = %d\n",PTHREAD_NUM,s->fl_chunks,s->maxChunksAvailable);
   
   if(s->fl_chunks > (size_t)((30 * s->maxChunksAvailable)/100 ))
       return true;
@@ -889,6 +901,13 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   if (DEBUG_MEM) {
       fprintf(stderr, "GC_collect done\n");
   }
+}
+
+
+void dummyCFunc ()
+{
+   if(0) 
+    fprintf(stderr,"%d] Dummy call \n",PTHREAD_NUM);
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {

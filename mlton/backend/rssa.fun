@@ -203,6 +203,7 @@ structure Statement =
                           , header: word
                           , size: Bytes.t
                           , numChunks: word }
+       | Dummy
        | PrimApp of {args: Operand.t vector,
                      dst: (Var.t * Type.t) option,
                      prim: Type.t Prim.t}
@@ -223,6 +224,7 @@ structure Statement =
              | Move {dst, src} => useOperand (src, useOperand (dst, a))
              | Object {dst = (dst, ty), ...} => def (dst, ty, a)
              | ChunkedObject {dst = (dst, ty), ...} => def (dst, ty, a)
+             | Dummy => a
              | PrimApp {dst, args, ...} =>
                   Vector.fold (args,
                                Option.fold (dst, a, fn ((x, t), a) =>
@@ -264,6 +266,7 @@ structure Statement =
              | Move {dst, src} => Move {dst = oper dst, src = oper src}
              | Object _ => s
              | ChunkedObject _  => s
+             | Dummy => s
              | PrimApp {args, dst, prim} =>
                   PrimApp {args = Vector.map (args, oper),
                            dst = dst,
@@ -298,6 +301,7 @@ structure Statement =
                         record [("header", seq [str "0x", Word.layout header]),
                                 ("size", Bytes.layout size),
                                 ("numChunks", Word.layout numChunks)]]]
+             | Dummy => str "DummyStatement"
              | PrimApp {dst, prim, args, ...} =>
                   let
                      val rest =
@@ -1592,6 +1596,7 @@ structure Program =
                             andalso Operand.isLocation dst))
                    (* Ensure type safety in my rssa statements *)
                    | ChunkedObject _  => true
+                   | Dummy => true
                    | Object {dst = (_, ty), header, size} =>
                         let
                            val tycon =

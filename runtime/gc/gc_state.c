@@ -11,6 +11,8 @@
 
 void displayGCState (GC_state s, FILE *stream) {
 
+  if(DEBUG_DETAILED)
+  {
     if(PTHREAD_NUM ==1)
     {
         fprintf(stream,"%d] Cannot display GC_state in GC thread\n",PTHREAD_NUM);
@@ -35,6 +37,7 @@ void displayGCState (GC_state s, FILE *stream) {
            (uintptr_t)s->limit,
            (uintptr_t)s->stackBottom[PTHREAD_NUM],
            (uintptr_t)s->stackTop[PTHREAD_NUM]);
+  }
 }
 
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {

@@ -55,7 +55,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     h->fl_head = nc;
     c->next_chunk = NULL;
     c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
-    if(s->rtSync[PTHREAD_NUM])
+    if( s->rtSync[PTHREAD_NUM])
     {
         c->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
     }
@@ -104,7 +104,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 {
     LOCK_FL;
 
-    if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) 
+    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) 
         {
           blockAllocator(s,numChunks); 
         }
@@ -163,7 +163,7 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks)
 {
 
    LOCK_FL; 
-    if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) {
+    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) {
 
         blockAllocator(s,numChunks);
     }
@@ -330,6 +330,9 @@ bool createUMHeap(GC_state s,
         fprintf(stderr,
                 "[GC: mapped freelist over the heap\n]");
     }
+
+
+    
 
     return TRUE;
 }

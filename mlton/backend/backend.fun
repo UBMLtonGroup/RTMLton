@@ -583,6 +583,7 @@ let
                                          , header = header
                                          , size = size
                                          , numChunks = numChunks }
+             | Dummy => Vector.new1 (M.Statement.Noop)
              | Object {dst, header, size} =>
                   M.Statement.object {dst = varOperand (#1 dst),
                                       header = header,
