@@ -52,7 +52,18 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     h->fl_head->chunkType= UM_NORMAL_CHUNK;
     struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
     GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head + sizeof(UM_header) )); /*pass pointer to area after chunktype*/
-    h->fl_head = nc;
+    
+    if(nc == NULL )
+    {
+        h->fl_head = NULL;
+        h->fl_tail = NULL;
+    }
+    else
+    {
+        h->fl_head = nc;
+    }
+    
+
     c->next_chunk = NULL;
     c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
     if(s->rtSync[PTHREAD_NUM])
@@ -104,7 +115,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 {
     LOCK_FL;
 
-    if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) 
+    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) 
         {
           blockAllocator(s,numChunks); 
         }
@@ -142,7 +153,19 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
     assert(nc != NULL);
     GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h,((pointer)h->fl_head + sizeof(UM_header) )); /*pass pointer to area after chunktype*/
-    h->fl_head = nc;
+    
+   if(nc == NULL )
+    {
+        h->fl_head = NULL;
+        h->fl_tail = NULL;
+    }
+    else
+    {
+        h->fl_head = nc;
+    }
+ 
+    
+    
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
     c->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
@@ -163,7 +186,7 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks)
 {
 
    LOCK_FL; 
-    if (s->fl_chunks <= 3 || s->fl_chunks < numChunks) {
+    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) {
 
         blockAllocator(s,numChunks);
     }
@@ -222,15 +245,6 @@ void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
 void insertFreeChunk(GC_state s,
                      GC_UM_heap h,
                      pointer c) {
-    /*GC_UM_Chunk pc = (GC_UM_Chunk) c;
-    //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
-    pc->next_chunk = h->fl_head;
-    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header |= UM_CHUNK_HEADER_CLEAN;
-    h->fl_head = pc;
-    s->fl_chunks += 1;*/
-   
-
     LOCK_FL;
 
    /*Insert free chunk to back of free list*/ 

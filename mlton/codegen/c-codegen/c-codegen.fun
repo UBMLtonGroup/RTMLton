@@ -688,9 +688,13 @@ fun output {program as Machine.Program.T {chunks,
 
       fun writeBarrier( {dbase,sbase},{dst,src},ty :Type.t,oper :string) :string = 
         case(Type.isObjptr ty)
-          of true => concat ["WB(",CType.toString (Type.toCType
-                        ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
-        |   false => oper
+        of true => 
+          ( case hd(String.explode dst) of
+                 #"S" => oper
+               | #"P" => oper
+               | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
+          )
+	|   false => oper
       
       (* If the dst is Frontier, then we are entering a critical section
       where we've extended the frontier and are going to now write into 

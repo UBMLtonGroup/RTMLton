@@ -180,8 +180,7 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
         {
            //objptr opp = pointerToObjptr((pointer)srcbase,s->heap.start);
            //die("We got one! \n");
-           GC_header* headerp = getHeaderp(srcbase);
-            GC_header header = *headerp;
+	    GC_header header = getHeader(srcbase);
             uint16_t bytesNonObjptrs=0;
             uint16_t numObjptrs =0;
             GC_objectTypeTag tag = ERROR_TAG;

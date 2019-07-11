@@ -542,6 +542,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                     fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
                             (uintptr_t)pc, pc->sentinel, pc->chunk_header);
                 }
+            
+	        //        memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+	
                 insertFreeChunk(s, &(s->umheap), pchunk);
                 s->cGCStats.numChunksFreed++;
                 freed++;
@@ -582,6 +585,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                             (uintptr_t)pc, pc->array_chunk_magic,
                             pc->array_chunk_header);
                 }
+		
+		//memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
                 insertFreeChunk(s, &(s->umheap), pchunk);
                 s->cGCStats.numChunksFreed++;
                 freed++;

@@ -11,7 +11,7 @@
 
 void displayGCState (GC_state s, FILE *stream) {
 
-    if(PTHREAD_NUM ==1)
+    if(DEBUG_DETAILED && (PTHREAD_NUM ==1))
     {
         fprintf(stream,"%d] Cannot display GC_state in GC thread\n",PTHREAD_NUM);
         return;
