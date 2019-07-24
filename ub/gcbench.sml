@@ -193,6 +193,17 @@ struct
   fun doit () = gcbench 18
 end
 
-val _ = Main.doit ()
+
+fun timeit f x = let
+  val tmr = Timer.startRealTimer ()
+  val result = f x
+in
+  (Real.toString((Time.toReal(Timer.checkRealTimer tmr)) *1000.0)^"\n",result)
+end
+
+val (s,_) = timeit Main.doit ()
+
+val _ = print ("Time taken :"^s^"\n")
+
 
 val _ = print "Done\n"
