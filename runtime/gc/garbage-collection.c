@@ -546,7 +546,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                 //Set header of cleared object to magic number
                 //*(pchunk +sizeof(UM_header)) = 42;
                 
-                memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+                //memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
 
                 insertFreeChunk(s, &(s->umheap), pchunk);
                 s->cGCStats.numChunksFreed++;
@@ -592,7 +592,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                 //Set header of cleared object to magic number
                // *(pchunk +sizeof(UM_header)) = 42;
                 
-                memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+                //memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
                 
                 insertFreeChunk(s, &(s->umheap), pchunk);
                 s->cGCStats.numChunksFreed++;

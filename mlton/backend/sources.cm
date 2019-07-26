@@ -48,6 +48,7 @@ implement-handlers.fun
 implement-profiling.sig
 implement-profiling.fun
 chunked-allocation.fun
+split-blocks.fun
 limit-check.fun
 signal-check.fun
 live.sig
