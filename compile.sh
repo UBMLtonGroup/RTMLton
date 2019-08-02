@@ -13,8 +13,12 @@ make $arch_flags constants
 
 cat <<EOF
 Try:
-./build/bin/mlton -codegen c -keep g -gc-module none -verbose 3 hello.sml 
-./hello
+ ./build/bin/mlton  -codegen c -keep g -debug true -expert true -verbose 3 -keep ssa -keep ssa2 -keep rssa -keep machine -cc-opt -O0 ub/justprint.sml
+ ./justprint
+
+ adjust STACKLET_DEBUG in include/c-chunk.h and
+ cp include/c-chunk.h build/lib/include/
+ to debug stacklets
 EOF
 
 

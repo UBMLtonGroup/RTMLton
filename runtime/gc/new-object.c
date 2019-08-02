@@ -56,7 +56,8 @@ objptr newStack_um (GC_state s) {
 	pointer um_stack;
 	uint32_t need_chunks = frameLayouts_len;
 
-	fprintf(stderr, "newStack_um chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
+	if (DEBUG_STACKS)
+		fprintf(stderr, "newStack_um chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
 			need_chunks, s->maxFrameSize,
 			sizeof(struct GC_UM_Chunk));
 
@@ -84,7 +85,8 @@ GC_stack newStack (GC_state s,
                    size_t reserved,
                    bool allocInOldGen) {
   GC_stack stack;
-  fprintf(stderr, "*** warn should not be called\n");
+  fprintf(stderr, RED("*** warn newStack should not be called\n"));
+  die("newstack called");
   reserved = 100 * 1024 * 1024;
   assert (isStackReservedAligned (s, reserved));
   if (reserved > s->cumulativeStatistics.maxStackSize)
