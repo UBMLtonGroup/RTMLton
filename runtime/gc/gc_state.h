@@ -21,13 +21,15 @@ struct GC_state {
    * referenced, and having them at smaller offsets may decrease code
    * size and improve cache performance.
    */
-  pointer frontier; /* heap.start <= frontier < limit */
-  pointer umfrontier;
-  pointer umarfrontier;
-  pointer limit; /* limit = heap.start + heap.size */
-  pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
-  pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
-  size_t exnStack[MAXPRI];
+/*0*/  pointer frontier; /* heap.start <= frontier < limit */
+/*4*/  pointer umfrontier;
+/*8*/  pointer umarfrontier;
+/*12*/  pointer limit; /* limit = heap.start + heap.size */
+/*16*/  pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
+/*28*/  pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+/*40*/  size_t exnStack[MAXPRI];
+
+/*52*/  objptr currentFrame[MAXPRI];
 
   size_t fl_chunks;
 
@@ -130,6 +132,7 @@ struct GC_state {
 static void displayGCState (GC_state s, FILE *stream);
 
 static inline size_t sizeofGCStateCurrentStackUsed (GC_state s);
+static inline size_t sizeofGCStateCurrentUMStackUsed (GC_state s);
 static inline void setGCStateCurrentThreadAndStack (GC_state s);
 static void setGCStateCurrentHeap (GC_state s,
                                    size_t oldGenBytesRequested,

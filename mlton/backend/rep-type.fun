@@ -425,16 +425,25 @@ structure ObjectType =
                      Bits.toBytes (Control.Target.Size.header ())
                   val bytesCSize =
                      Bits.toBytes (Control.Target.Size.csize ())
-                  val bytesExnStack =
+                  val bytesExnStack = (* TODO type is now cpointer *)
                      Bits.toBytes (Type.width (Type.exnStack ()))
-                  val bytesStack =
+                  val bytesStack = (* TODO remove - not used anymore *)
                      Bits.toBytes (Type.width (Type.stack ()))
+                  val bytesFirstFrame =
+                     Bits.toBytes (Type.width (Type.cpointer ()))
+                  val bytesCurrentFrame =
+                     Bits.toBytes (Type.width (Type.cpointer ()))
 
                   val bytesObject =
                      Bytes.+ (bytesHeader,
-                     Bytes.+ (bytesCSize,
-                     Bytes.+ (bytesExnStack,
-                              bytesStack)))
+                      Bytes.+ (bytesCSize,
+                       Bytes.+ (bytesExnStack,
+                        Bytes.+ (bytesFirstFrame,
+                         Bytes.+ (bytesCurrentFrame, bytesStack)
+                        )
+                       )
+                      )
+                     )
                   val bytesTotal =
                      Bytes.align (bytesObject, {alignment = align})
                   val bytesPad = Bytes.- (bytesTotal, bytesObject)
@@ -443,10 +452,13 @@ structure ObjectType =
                end
          in
             Normal {hasIdentity = true,
-                    ty = Type.seq (Vector.new4 (padding,
+                    ty = Type.seq (Vector.new6 (padding,
                                                 Type.csize (),
                                                 Type.exnStack (),
-                                                Type.stack ()))}
+                                                Type.stack (),
+                                                Type.cpointer (), (* stacklet bottom *)
+                                                Type.cpointer () (* stacklet top *)
+                                                ))}
          end
 
       (* Order in the following vector matters.  The basic pointer tycons must
@@ -530,6 +542,8 @@ fun ofGCField (f: GCField.t): t =
        | StackLimit => cpointer ()
        | StackTop => cpointer ()
        | FLChunks => csize ()
+       | CurrentFrame => cpointer ()
+       | RTSync => cpointer()
    end
 
 fun castIsOk {from, to, tyconTy = _} =

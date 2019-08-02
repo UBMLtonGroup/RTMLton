@@ -1,7 +1,7 @@
 #0  0x0000000000413de5 in setGCStateCurrentThreadAndStack (s=0x638720 <gcState>) at gc/gc_state.c:43
 #1  0x000000000041f2fa in switchToThread (s=0x638720 <gcState>, op=1) at gc/switch-thread.c:23
 #2  0x000000000041f3a3 in GC_switchToThread (s=0x638720 <gcState>, p=0x1 <error: Cannot access memory at address 0x1>, ensureBytesFree=0)
-    at gc/switch-thread.c:52
+at gc/switch-thread.c:52
 #3  0x000000000040ce53 in MLton_callFromC () at ub/primthread0.0.c:1019
 #4  Parallel_run () at ub/primthread0.0.c:165
 #5  0x000000000041398b in realtimeRunner (paramsPtr=0x63a200) at gc/realtime_thread.c:325
@@ -11,51 +11,110 @@
 
 
 PUBLIC void Parallel_run () {
-        Pointer localOpArgsRes[1];
-        MLton_FFI_opArgsResPtr = (Pointer)(localOpArgsRes);
-        Int32 localOp = 0;
-        localOpArgsRes[0] = (Pointer)(&localOp);
-        MLton_callFromC ();
+	Pointer localOpArgsRes[1];
+	MLton_FFI_opArgsResPtr = (Pointer)(localOpArgsRes);
+	Int32 localOp = 0;
+	localOpArgsRes[0] = (Pointer)(&localOp);
+	MLton_callFromC ();
 }
 
 #define S(ty, i) *(ty*)(StackTop + (i))
 
 case 41:
-        Push (-120);
-        S(Objptr, 88) = S(Objptr, 120);
-        {
-        Objptr tmp0 = S(Objptr, 88);
-        CPointer tmp1 = S(CPointer, 32);
-        S(CPointer, 112) = 42;
-        Push (120);
-        FlushFrontier();
-        FlushStackTop();
-        GC_setCallFromCHandlerThread (tmp1, tmp0);
-        }
-        CacheFrontier();
-        CacheStackTop();
-        goto L_201;
-        
+Push (-120);
+S(Objptr, 88) = S(Objptr, 120);
+{
+Objptr tmp0 = S(Objptr, 88);
+CPointer tmp1 = S(CPointer, 32);
+S(CPointer, 112) = 42;
+Push (120);
+FlushFrontier();
+FlushStackTop();
+GC_setCallFromCHandlerThread (tmp1, tmp0);
+}
+CacheFrontier();
+CacheStackTop();
+goto L_201;
+
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
-  objptr op = pointerToObjptr (p, s->heap.start);
-  s->callFromCHandlerThread = op;
+	objptr op = pointerToObjptr (p, s->heap.start);
+	s->callFromCHandlerThread = op;
 }
 
 
 case 37:
-        Push (-176);
-        S(Objptr, 16) = S_RB(Objptr, 176);
-        {
-        Objptr tmp0 = S_RB(Objptr, 16);
-        CPointer tmp1 = S(CPointer, 48);
-        S(Word64, 168) = 38;
-        Push (176);
-        FlushFrontier();
-        FlushStackTop();
-        GC_setCallFromCHandlerThread (tmp1, tmp0);
-        }
-        CacheFrontier();
-        CacheStackTop();
-        goto L_179;
-        
-        
+Push (-176);
+S(Objptr, 16) = S_RB(Objptr, 176);
+{
+Objptr tmp0 = S_RB(Objptr, 16);
+CPointer tmp1 = S(CPointer, 48);
+S(Word64, 168) = 38;
+Push (176);
+FlushFrontier();
+FlushStackTop();
+GC_setCallFromCHandlerThread (tmp1, tmp0);
+}
+CacheFrontier();
+CacheStackTop();
+goto L_179;
+
+
+
+
+; print (move {dst = (StackOffset.toString
+		(StackOffset.T
+		{offset = Bytes.- (Bytes.fromInt 200, Bytes.fromInt 0),
+			(* JCM XXX sizeof(GC_UM_Chunk) is 208,
+					so we stash the return address at 200. orig code is above *)
+			ty = Type.label return})),
+		dstIsMem = true,
+		src = operandToString (Operand.Label return),
+		srcIsMem = false,
+		ty = Type.label return, inCrit = inCritical,
+		dstbase= "NULL" (*getBase dst*),
+		srcbase = "NULL" (*getBase src*)})
+
+
+
+read model.h
+
+
+		$ ub/try7 5 10
+r = 13  <-- exception result
+		$ ub/try7 10 5
+r = 15
+
+
+supposedly a stack frame, but has 'aa's in it which indicates
+it was recently on the free chunk list. this could occur if this
+is the first frame. added memset to newStack_um.
+
+(gdb) x /32wx 2010693836
+0x77d8c0cc:	0x00000000	0x00000008	0x3758cb98	0x77d8c18c
+0x77d8c0dc:	0x77d8c3d8	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+0x77d8c0ec:	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+0x77d8c0fc:	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+0x77d8c10c:	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+0x77d8c11c:	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+0x77d8c12c:	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+0x77d8c13c:	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa	0xaaaaaaaa
+
+
+
+memset sentinels:
+
+new stack frame       AC
+		freechunk             AA
+		free array chunk      AE
+
+
+		exnStack gets set by calculating stackTop-stackBottom:
+
+Q_190 = CPointer_add (StackTop, (Word32)(0x4ull)); /* Q_190 = stackTop + 4 */
+/* stackBottom_Offset = 1296 */
+W32_9 = CPointer_diff (Q_190, O(CPointer, GCState, 1296));/*NotInCriticalSection*/
+O(Word32, GCState, 40) = (Word32)W32_9;/*NotInCriticalSection*/
+/* exnStack_Offset = 40 */
+
+since we dont advance stackTop anymore via Push(), the calculation is wrong.
+

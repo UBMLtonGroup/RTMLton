@@ -496,6 +496,8 @@ let
       val exnStackOp = runtimeOp GCField.ExnStack
       val stackBottomOp = runtimeOp GCField.StackBottom
       val stackTopOp = runtimeOp GCField.StackTop
+      val currentFrameOp = runtimeOp GCField.CurrentFrame
+
       fun translateOperand (oper: R.Operand.t): M.Operand.t =
          let
             datatype z = datatype R.Operand.t
@@ -611,29 +613,48 @@ let
                      val tmp1 =
                         M.Operand.Register
                         (Register.new (Type.cpointer (), NONE))
+                     val tmp4 =
+                        M.Operand.Register
+                        (Register.new (Type.cpointer (), NONE))
                      val tmp2 =
                         M.Operand.Register
                         (Register.new (Type.csize (), NONE))
+                     val tmp3 = M.Operand.Word
+                                        (WordX.fromIntInf
+                                         (Int.toIntInf
+                                          (Bytes.toInt
+                                           (Bytes.+ (handlerOffset (), Runtime.labelSize ()))),
+                                          WordSize.cpointer ()))
+                     val label_size = Bytes.toInt (Runtime.labelSize ())
+                     val offset = Bytes.toInt (handlerOffset ())
                   in
-                     Vector.new3
-                     (M.Statement.PrimApp
-                      {args = (Vector.new2
-                               (stackTopOp,
-                                M.Operand.Word
-                                (WordX.fromIntInf
-                                 (Int.toIntInf
-                                  (Bytes.toInt
-                                   (Bytes.+ (handlerOffset (), Runtime.labelSize ()))),
-                                  WordSize.cpointer ())))),
-                       dst = SOME tmp1,
-                       prim = Prim.cpointerAdd},
-                      M.Statement.PrimApp
-                      {args = Vector.new2 (tmp1, stackBottomOp),
-                       dst = SOME tmp2,
-                       prim = Prim.cpointerDiff},
-                      M.Statement.move
-                      {dst = exnStackOp,
-                       src = M.Operand.Cast (tmp2, Type.exnStack ())})
+                    (
+                       if offset = 0 then (
+                         (* gcState->exnStack = gcState->currentFrame *)
+                         Vector.new1
+                           (M.Statement.move
+                            {dst = exnStackOp,
+                             src = currentFrameOp})
+                       ) else (
+                         (* gcState->exnStack = gcState->currentFrame->next *)
+                         Vector.new2
+                           (M.Statement.PrimApp
+                                  {args = (Vector.new2
+                                           (currentFrameOp,
+                                            M.Operand.Word
+                                            (WordX.fromIntInf
+                                             (Int.toIntInf 154 + 16 + 4 + 4 + 4, (* next ptr *)
+                                              WordSize.cpointer ())))),
+                                   dst = SOME tmp1,
+                                   prim = Prim.cpointerAdd},
+
+
+                            M.Statement.move
+                                    {dst = exnStackOp,
+                                     src = tmp1})
+                       )
+                    )
+
                   end
              | SetExnStackSlot =>
                   (* ExnStack = *(uint* )(stackTop + offset); *)
@@ -643,11 +664,15 @@ let
                     src = M.Operand.stackOffset {offset = linkOffset (),
                                                  ty = Type.exnStack ()}})
              | SetHandler h =>
-                  Vector.new1
-                  (M.Statement.move
-                   {dst = M.Operand.stackOffset {offset = handlerOffset (),
-                                                 ty = Type.label h},
-                    src = M.Operand.Label h})
+                  Vector.new2
+                    (M.Statement.move
+                     {dst = M.Operand.stackOffset {offset = handlerOffset (),
+                                                   ty = Type.label h},
+                      src = M.Operand.Label h}
+                      ,
+                     M.Statement.move
+                     {dst = M.Operand.ChunkExnHandler h,
+                      src = M.Operand.Label h})
              | SetSlotExnStack =>
                   (* *(uint* )(stackTop + offset) = ExnStack; *)
                   Vector.new1

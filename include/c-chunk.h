@@ -9,6 +9,9 @@
 #ifndef _C_CHUNK_H_
 #define _C_CHUNK_H_
 
+#define STACKLETS
+#define STACKLET_DEBUG TRUE
+
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdatomic.h>
@@ -91,7 +94,7 @@
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 // #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
-#define S(ty, i) *(ty*)(StackTop + (i))
+//#define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
 //#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
 #define WB(ty,db,sb,d,s,op)                                         \
@@ -105,6 +108,45 @@
                         CASUNLOCK;                                  \
                     }                                               \
                 } while(0)                                          \
+
+
+#define CurrentFrameOffset 52
+#define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
+
+#define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))
+#define MLTON_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p i=%d Val=%018p\n", __FILE__, __LINE__, PTHREAD_NUM, \
+                                (void*) StackTop, \
+                               (void*)(StackTop + (i)), i, \
+                               *(ty*)(StackTop + (i)))) , \
+                        (ty*)(StackTop + (i))))
+
+#define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i) + WORDWIDTH)
+#define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
+                                 __FILE__, __LINE__, PTHREAD_NUM, \
+                                (void*)CurrentFrame, i, \
+                                (void*)(CurrentFrame + (i) + WORDWIDTH), \
+                               *(ty*)(CurrentFrame + (i)  + WORDWIDTH))) , \
+                                (ty*)(CurrentFrame + (i)  + WORDWIDTH)))
+
+#if STACKLET_DEBUG == TRUE
+# define STACKWRITE(A, V) fprintf(stderr, "%s:%d %d] WRITE: cur:%x new:%x\n", __FILE__, __LINE__, PTHREAD_NUM, A, V)
+#else
+# define STACKWRITE(A, V)
+#endif
+
+#define ChunkExnHandler ((struct GC_UM_Chunk*)CurrentFrame)->handler
+#define ChunkExnLink ((struct GC_UM_Chunk*)CurrentFrame)->link
+
+
+#ifdef STACKLETS
+# if STACKLET_DEBUG == TRUE
+#  define S(ty, i) STACKLET_DBG_S(ty, i)
+# else
+#  define S(ty, i) STACKLET_S(ty, i)
+# endif
+#else
+# define S(ty, i) MLTON_S(ty, i)
+#endif
 
 #endif
 
@@ -239,31 +281,175 @@
 /*                       Stack                       */
 /* ------------------------------------------------- */
 
-#define Push(bytes)                                                     \
+
+/* this comes from umheap.h which isnt available outside of the runtime
+ * .. need to find a better way to handle this
+ */
+
+#define UM_CHUNK_PAYLOAD_SIZE 154
+#define UM_CHUNK_PAYLOAD_SAFE_REGION 16
+#define CURRENTTHREAD_OFFSET 588
+
+typedef uintptr_t GC_returnAddress;
+typedef uintptr_t pointer;
+
+typedef struct GC_UM_Chunk {
+	unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
+	Word32_t chunk_header;
+	size_t sentinel;
+	GC_returnAddress ra;
+	GC_returnAddress handler;
+	GC_returnAddress link;
+	void *memcpy_addr;
+	size_t memcpy_size;
+	struct GC_UM_Chunk* next_chunk;
+	struct GC_UM_Chunk* prev_chunk;
+};
+
+void dump_hex(char *str, int len);
+
+/* end of umheap.h copy/paste */
+
+/* if we were to store the currentFrame in the gc_thread struct
+
+    CF = *(*(gcstate + ct_offset + pt_num*width) + gct_ff_offset)
+    where gct_ff_offset = sizeof(size_t)*2 + width
+
+    which 'feels' right, but since stack bottom/top tracking is
+    deep in the runtime, we will leave currentFrame in gc state
+    for now
+
+  when stacklet_push(N) is called, we likely have already written
+  into the next frame (eg arguments and/or returnvalue object pointers)
+  but in the chunked model those have been written into the current
+  chunk. we need to move those to the next chunk so that they are in
+  the correct stack frame. we will XXX FIX inefficiently memcpy as follows:
+
+  memcpy(curchunk+N, nextchunk+wordwidth, UM_CHUNK_PAYLOAD_SIZE-N-WORDWIDTH)
+*/
+
+
+#define RED(x) "\033[1;31m"x"\033[0m"
+#define YELLOW(x) "\033[1;33m"x"\033[0m"
+#define GREEN(x) "\033[1;32m"x"\033[0m"
+#define FW "08"
+
+#define STACKLET_Push(bytes)                                                     \
         do {                                                            \
-                if (DEBUG_CCODEGEN)                                     \
-                        fprintf (stderr, "%s:%d: Push (%d)\n",          \
-                                        __FILE__, __LINE__, bytes);     \
-                StackTop += (bytes);                                    \
+                if (bytes < 0) {                                        \
+                     struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
+                     struct GC_UM_Chunk *xx = cf; \
+                     for ( ; xx && xx->prev_chunk ; xx = xx->prev_chunk); /* find the 1st chunk just so we can print the addr */ \
+                     \
+                     \
+                     if (STACKLET_DEBUG) fprintf(stderr, "%s:%d: SKLT_Push (%4d)\tbase %"FW"lx cur %"FW"lx prev %"FW"lx " \
+                                                "SB[%"FW"lx] ST[%"FW"lx] ", \
+                                __FILE__, __LINE__, bytes, xx, \
+                                cf, cf->prev_chunk, StackBottom, StackTop); \
+                     if (cf->prev_chunk) { \
+                         CurrentFrame = cf->prev_chunk; \
+                         if (STACKLET_DEBUG) fprintf(stderr, "   ra=%d ", cf->prev_chunk->ra); \
+                     } else {                                                \
+                         if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant retreat to prev frame"));      \
+                     }    if (STACKLET_DEBUG) fprintf(stderr, "\n");                                  \
+                } else if (bytes > 0) { \
+                     struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
+                     struct GC_UM_Chunk *xx = cf; \
+                     cf->ra = bytes; \
+                     for ( ; xx && xx->prev_chunk ; xx = xx->prev_chunk); /* find the 1st chunk just so we can print the addr */ \
+                     \
+                     if (STACKLET_DEBUG) fprintf(stderr, "%s:%d: SKLT_Push (%4d)\tbase %"FW"lx cur %"FW"lx next %"FW"lx SB[%"FW"lx] ST[%"FW"lx]\n", \
+                             __FILE__, __LINE__, bytes, xx, \
+                             cf, cf->next_chunk, StackBottom, StackTop); \
+                     if (STACKLET_DEBUG) fprintf(stderr, YELLOW("current chunk:\n")); \
+                     if (STACKLET_DEBUG) dump_hex(cf, bytes+WORDWIDTH+32);\
+                     if (cf->next_chunk) { \
+                         if (UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH < WORDWIDTH) die("impossible no room in next chunk"); \
+                         if (STACKLET_DEBUG) fprintf(stderr, RED("memcpy: ") "src %"FW"lx dst %"FW"lx\n", cf->ml_object+bytes+WORDWIDTH, cf->next_chunk->ml_object+WORDWIDTH ); \
+                         if (STACKLET_DEBUG) fprintf(stderr, "cf %"FW"lx cf->next %"FW"lx bytes %d len %d\n", cf, cf->next_chunk, bytes,UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH ); \
+                         memcpy(cf->next_chunk->ml_object+WORDWIDTH, cf->ml_object+bytes+WORDWIDTH, UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH); \
+                         cf->next_chunk->memcpy_addr = cf->ml_object+bytes+WORDWIDTH; \
+                         cf->next_chunk->memcpy_size = UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH; \
+                         CurrentFrame = cf->next_chunk; \
+                         if(STACKLET_DEBUG) fprintf(stderr, YELLOW("\nnext_chunk:\n"));\
+                         if(STACKLET_DEBUG) dump_hex(cf->next_chunk, 100);\
+                     } else {                                                \
+                         if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant advance to next frame"));      \
+                     } if (STACKLET_DEBUG) fprintf(stderr, "\n"); \
+                } else { if (STACKLET_DEBUG) fprintf(stderr, RED("???SKLT_Push(0)\n")); } \
         } while (0)
 
-#define Return()                                                                \
+#define STACKLET_Return()                                                                \
+        do {                                                                    \
+                struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
+                if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n")); \
+                else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n")); \
+                else { \
+                    memcpy(cf->memcpy_addr, cf->ml_object+WORDWIDTH, cf->memcpy_size); \
+                    l_nextFun = (cf->prev_chunk->ml_object[cf->prev_chunk->ra]); \
+                    if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
+                            fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_Return()")"  l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx ra %d\n"),   \
+                                            __FILE__, __LINE__, (int)l_nextFun,           \
+                                            cf, cf->prev_chunk, cf->prev_chunk->ra);    \
+                    goto top;                                                       \
+                } \
+        } while (0)
+
+#define STACKLET_Raise()                                                                \
+        do {                                                                    \
+                struct GC_UM_Chunk *cf = ExnStack;  \
+                if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
+                         __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
+                if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
+                else if (cf->handler == 0) fprintf(stderr, RED("Raise handler zero??\n")); \
+                else { \
+                    l_nextFun = cf->handler; CurrentFrame = ((struct GC_UM_Chunk *)ExnStack)->next_chunk; \
+                    if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
+                            fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_RaiseReturn()")"  l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx\n"),   \
+                                            __FILE__, __LINE__, (int)l_nextFun,           \
+                                            cf, cf->prev_chunk);    \
+                    goto top;                                                       \
+                } \
+        } while (0)
+
+#define MLTON_Push(bytes)                                                     \
+        do {                                                                  \
+                if (1 || DEBUG_CCODEGEN)    {                                 \
+                        int used = StackTop - StackBottom; \
+                        fprintf (stderr, "%s:%d: MLTON_Push (%d) %d %"FW"lx %"FW"lx %"FW"lx\n",          \
+                                        __FILE__, __LINE__, bytes, used, StackBottom, \
+                                        StackTop, StackTop+bytes );     \
+                } if(bytes > 0) {dump_hex(StackTop, bytes); fprintf(stderr, "\n");}StackTop += (bytes);                                    \
+        } while (0);
+
+#define MLTON_Return()                                                                \
         do {                                                                    \
                 l_nextFun = *(uintptr_t*)(StackTop - sizeof(void*));            \
-                if (DEBUG_CCODEGEN)                                             \
-                        fprintf (stderr, "%s:%d: Return()  l_nextFun = %d\n",   \
+                if (1 || DEBUG_CCODEGEN)                                             \
+                        fprintf (stderr, "%s:%d: "GREEN("MLTON_Return()")"  l_nextFun = %d\n",   \
                                         __FILE__, __LINE__, (int)l_nextFun);    \
                 goto top;                                                       \
         } while (0)
 
-#define Raise()                                                                 \
+#define MLTON_Raise()                                                                 \
         do {                                                                    \
-                if (DEBUG_CCODEGEN)                                             \
-                        fprintf (stderr, "%s:%d: Raise\n",                      \
+                if (1 || DEBUG_CCODEGEN)                                        \
+                        fprintf (stderr, "%s:%d: "RED("MLTON_Raise")"\n",             \
                                         __FILE__, __LINE__);                    \
                 StackTop = StackBottom + ExnStack;                              \
                 Return();                                                       \
-        } while (0)                                                             \
+        } while (0)
+
+#ifdef STACKLETS
+#define Push STACKLET_Push
+#define Return STACKLET_Return
+#define Raise STACKLET_Raise
+#else
+#define Push MLTON_Push
+#define Return MLTON_Return
+#define Raise MLTON_Raise
+#endif
+
 
 /* ------------------------------------------------- */
 /*                       Primitives                  */

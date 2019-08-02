@@ -18,30 +18,49 @@ void displayGCState (GC_state s, FILE *stream) {
         fprintf(stream,"%d] Cannot display GC_state in GC thread\n",PTHREAD_NUM);
         return;
     }
-    
+
   fprintf (stream, "%d] GC state\n", PTHREAD_NUM);
   fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
-                                + offsetofThread (s)), 
+                                + offsetofThread (s)),
                  stream);
   fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
-  displayGenerationalMaps (s, &s->generationalMaps, 
+  displayGenerationalMaps (s, &s->generationalMaps,
                            stream);
   fprintf (stream, "%d] \theap\n", PTHREAD_NUM);
-  displayHeap (s, &s->heap, 
+  displayHeap (s, &s->heap,
                stream);
   fprintf (stream,
-           "%d] \tlimit = "FMTPTR"\n"
-           "\tstackBottom = "FMTPTR"\n"
-           "\tstackTop = "FMTPTR"\n", PTHREAD_NUM,
-           (uintptr_t)s->limit,
-           (uintptr_t)s->stackBottom[PTHREAD_NUM],
-           (uintptr_t)s->stackTop[PTHREAD_NUM]);
+		   "%d] \tlimit = "FMTPTR"\n"
+		   "\tstackBottom = "FMTPTR"\n"
+		   "\tstackTop = "FMTPTR"\n"
+		   "\tcurrentFrame = "FMTPTR"\n",
+		   PTHREAD_NUM,
+		   (uintptr_t)s->limit,
+		   (uintptr_t)s->stackBottom[PTHREAD_NUM],
+		   (uintptr_t)s->stackTop[PTHREAD_NUM],
+		   (uintptr_t)s->currentFrame[PTHREAD_NUM]
+           );
   }
 }
 
+/* in the previous mlton stack implementation, stacktop
+ * pointed to the first word of the top most frame, and a
+ * stack write (eg S(x)=y) was equivalent to *(stacktop+x) = y
+ *
+ * so used was stacktop - stackbottom
+ *
+ * in the stacklet implementation, stacktop is the currentframe (chunk)
+ * and stackbottom is the first frame (chunk) and so "used"
+ * doesnt have a trivial arithmetic correlation anymore.
+ * firstframe and currentframe are kept in the thread structure.
+ */
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
-  return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
+	fprintf(stderr, "***WARN*** sizeofGCStateCurrentStackUsed needs to be removed?\n");
+	return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
+}
+size_t sizeofGCStateCurrentUMStackUsed (GC_state s) {
+	return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
 
 void setGCStateCurrentThreadAndStack (GC_state s) {
@@ -49,11 +68,23 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   GC_stack stack;
 
   thread = getThreadCurrent (s);
+
+  objptr currentFrame = thread->currentFrame;
+
   s->exnStack[PTHREAD_NUM] = thread->exnStack;
   stack = getStackCurrent (s);
   s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
   s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
   s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
+  s->currentFrame[PTHREAD_NUM] = currentFrame;
+  if(DEBUG_DETAILED)
+		fprintf(stderr, "%d] "
+				GREEN("setGCStateCurrentThreadAndStack")
+				" currentFrame "FMTPTR" stackBottom "FMTPTR"\n",
+				PTHREAD_NUM,
+				(uintptr_t)s->currentFrame[PTHREAD_NUM],
+				(uintptr_t)s->stackBottom[PTHREAD_NUM]);
+
   markCard (s, (pointer)stack);
 }
 

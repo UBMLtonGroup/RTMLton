@@ -335,7 +335,8 @@ fun outputDeclarations
                         name: string,
                         v: 'a vector,
                         toString: int * 'a -> string) =
-         (print (concat ["static ", ty, " ", name, "[] = {\n"])
+         (print (concat ["uint32_t ", name, "_len = ", Int.toString(Vector.length v), ";\n"]) (* frameLayouts_len *)
+          ; print (concat ["static ", ty, " ", name, "[] = {\n"])
           ; Vector.foreachi (v, fn (i, x) =>
                              print (concat ["\t", toString (i, x), ",\n"]))
           ; print "};\n")
@@ -685,6 +686,22 @@ fun output {program as Machine.Program.T {chunks,
                  "_store(", addr dst, ", ", src, ");\n"]
 
 
+      fun stackletWrite({dbase,sbase}, ty :Type.t, dst, src) :string =
+        (
+          case (hd(String.explode dbase)) of
+          #"S" => (concat [
+
+                           "\n\tSTACKWRITE(",
+                           dbase,
+                           ", ",
+                           src,
+                           ");\n"
+
+                           ])(*
+                           "\n\tSTACKLET_",
+                           dbase, " = ", src, ";\n" ] )*)
+         | _   => ""
+        )
 
       fun writeBarrier( {dbase,sbase},{dst,src},ty :Type.t,oper :string) :string = 
         case(Type.isObjptr ty)
@@ -695,19 +712,7 @@ fun output {program as Machine.Program.T {chunks,
                | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
           )
         |   false => oper
-      
-      (* If the dst is Frontier, then we are entering a critical section
-      where we've extended the frontier and are going to now write into 
-      that extension. 
-      
-      // critical starts just before the next statement
-      Frontier = CPointer_add (Frontier, (Word64)(0x18ull)); // Frontier += 24 bytes
-      O(Word64, G(Objptr, 0), 0) = (Word64)(0x0ull);         // (*(Word64 *)(globalObjptr[0] + 0) = (Word64)(0x0ull)
-      O(Word64, G(Objptr, 0), 8) = (Word64)(0x0ull);         // (*(Word64 *)(globalObjptr[0] + 8) = (Word64)(0x0ull)
-      C(Word64, Frontier) = (Word64)(0x71ull);               // (*(Word64 *)(Frontier) = (Word64)(0x71ull) 
-      // critical ends just after the C() statement (?)
-      
-      *)
+
       fun move {dst: string, dstIsMem: bool,
                 src: string, srcIsMem: bool,
                 dbase:string, sbase:string,
@@ -717,19 +722,20 @@ fun output {program as Machine.Program.T {chunks,
 	         if handleMisaligned ty then (
 	            inCrit := true ;
 	            case (dstIsMem, srcIsMem) of
-	               (false, false) => concat ["/*BeginCriticalSection 1*/", dst, " = ", src, ";\n"]
-	             | (false, true) => concat ["/*BeginCriticalSection 2*/", dst, " = ", fetch (src, ty), ";\n"]
+	               (false, false) => concat [dst, " = ", src, ";\n"]
+	             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
 	             | (true, false) => store ({dst = dst, src = src}, ty)
 	             | (true, true) => move' ({dst = dst, src = src}, ty)
 	         ) else (
 	            inCrit := true ;
-	            concat ["/*BeginCriticalSection 5*/", dst, " = ", src, ";\n"]
+	            print "Weird Frontier write?" ;
+	            concat [dst, " = ", src, ";\n"]
 	         )
 	        | _ => 
 	          case !inCrit of
 	          true => (
 	              inCrit := false ;
-			        	if handleMisaligned ty then
+			         if handleMisaligned ty then
 			            case (dstIsMem, srcIsMem) of
 			               (false, false) => concat [dst, " = ", src, ";\n"]
 			             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
@@ -737,8 +743,11 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else (
 			            inCrit := false ;
-			            writeBarrier({dbase = dbase, sbase = sbase},{dst = dst,src = src},ty,concat [dst, " = ", src,
-                        ";/*InCriticalSection*/\n"])
+			            concat["\n\t", writeBarrier({dbase = dbase, sbase = sbase},
+			                                        {dst = dst,src = src},
+			                                        ty,
+			                                        concat [dst, " = ", src, ";\n"])
+			                  ]
 			         )
 			       )
 		        | false =>
@@ -748,10 +757,16 @@ fun output {program as Machine.Program.T {chunks,
 			             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
 			             | (true, false) => store ({dst = dst, src = src}, ty)
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
-			         else
-			            writeBarrier({dbase = dbase, sbase = sbase},{dst =
-                        dst,src = src}, ty,concat [dst, " = ", src,
-                        ";/*NotInCriticalSection*/\n"])
+			         else (
+			            concat["\n\t",
+                       	       stackletWrite({dbase=dbase, sbase=sbase}, ty, dst, src),
+                               "\t",
+                               writeBarrier({dbase = dbase, sbase = sbase},
+                                            {dst = dst,src = src},
+                                            ty,
+                                            concat [dst, " = ", src, ";\n"])
+			                   , "\n"]
+			         )
       local
          datatype z = datatype Operand.t
          fun toString (z: Operand.t): string =
@@ -794,7 +809,8 @@ fun output {program as Machine.Program.T {chunks,
              | StackOffset s => StackOffset.toString s
              | StackTop => "StackTop"
              | Word w => WordX.toC w
-
+             | ChunkExnHandler h => concat ["ChunkExnHandler"]
+             | ChunkExnLink => concat ["ChunkExnLink"]
 
         fun getbase(x: Operand.t):string = 
           case x of 
@@ -939,7 +955,7 @@ fun output {program as Machine.Program.T {chunks,
                      | Switch s => Switch.foreachLabel (s, jump)
                  end)
             fun push (return: Label.t, size: Bytes.t) =
-               (print "\t"
+               (print ("\t /*push-return: " ^ (Label.toString return) ^ " */")
                 ; print (move {dst = (StackOffset.toString
                                       (StackOffset.T
                                        {offset = Bytes.- (size, Runtime.labelSize ()),

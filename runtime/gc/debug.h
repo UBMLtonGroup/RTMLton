@@ -43,3 +43,7 @@ enum {
   DEBUG_RTGC_MARKING = FALSE,
   DEBUG_WB=FALSE,
 };
+
+#define RED(x) "\033[1;31m"x"\033[0m"
+#define YELLOW(x) "\033[1;33m"x"\033[0m"
+#define GREEN(x) "\033[1;32m"x"\033[0m"

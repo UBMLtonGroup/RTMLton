@@ -34,7 +34,13 @@ typedef struct GC_UM_Chunk {
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
     UM_header chunk_header;
     size_t sentinel;
+    GC_returnAddress ra;
+    GC_returnAddress handler;
+    GC_returnAddress link;
+    void *memcpy_addr;
+    size_t memcpy_size;
     struct GC_UM_Chunk* next_chunk;
+    struct GC_UM_Chunk* prev_chunk;
 } *GC_UM_Chunk;
 
 typedef struct GC_UM_heap {

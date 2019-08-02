@@ -223,6 +223,8 @@ structure Operand =
        | StackOffset of StackOffset.t
        | StackTop
        | Word of WordX.t
+       | ChunkExnHandler of Label.t
+       | ChunkExnLink
 
     val ty =
        fn ArrayOffset {ty, ...} => ty
@@ -241,6 +243,8 @@ structure Operand =
         | StackOffset s => StackOffset.ty s
         | StackTop => Type.cpointer ()
         | Word w => Type.ofWordX w
+        | ChunkExnHandler l => Type.label l
+        | ChunkExnLink => Type.cpointer ()
 
     fun layout (z: t): Layout.t =
          let
@@ -281,6 +285,8 @@ structure Operand =
              | StackOffset so => StackOffset.layout so
              | StackTop => str "<StackTop>"
              | Word w => WordX.layout w
+             | ChunkExnHandler h => seq [str (concat ["ChunkExnHandler"])]
+             | ChunkExnLink => seq [str (concat ["ChunkExnLink"])]
          end
 
     val toString = Layout.toString o layout
@@ -306,6 +312,8 @@ structure Operand =
            | (Register r, Register r') => Register.equals (r, r')
            | (StackOffset so, StackOffset so') => StackOffset.equals (so, so')
            | (Word w, Word w') => WordX.equals (w, w')
+           | (ChunkExnHandler h, ChunkExnHandler h') => Label.equals (h, h')
+           | (ChunkExnLink, ChunkExnLink) => (print "ChunkExnLink TODO/set!"; false)
            | _ => false
 
       val stackOffset = StackOffset o StackOffset.T
@@ -1133,6 +1141,9 @@ structure Program =
                       | Null => true
                       (* Very weak type checking for chunked offset *)
                       | ChunkedOffset _ => true
+                      | ChunkExnHandler l =>
+                           (let val _ = labelBlock l in true end handle _ => false)
+                      | ChunkExnLink => true
                       | Offset {base, offset, ty} =>
                            (checkOperand (base, alloc)
                             ; (Operand.isLocation base

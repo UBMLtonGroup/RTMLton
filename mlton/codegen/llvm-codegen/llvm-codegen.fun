@@ -604,6 +604,8 @@ and getOperandValue (cxt, operand) =
           | Operand.StackOffset _ => loadOperand ()
           | Operand.StackTop => loadOperand()
           | Operand.Word word => ("", (llws o WordX.size) word, llwordx word)
+          | Operand.ChunkExnHandler _ => Error.bug ("ChunkExnHandler notimplemented")
+          | Operand.ChunkExnLink => Error.bug ("ChunkExnLink notimplemented")
     end
 
 (* Returns (instruction, ty) pair for the given prim operation *)

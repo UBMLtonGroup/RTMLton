@@ -20,7 +20,12 @@ void enter (GC_state s) {
     fprintf (stderr, "%d] enter\n", PTHREAD_NUM);
   /* used needs to be set because the mutator has changed s->stackTop. */
   getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
+
+  /* these are objptrs, we adjust in c-chunk.h to get the actual point to the start of frame */
+  getThreadCurrent(s)->currentFrame = s->currentFrame[PTHREAD_NUM];
+
   getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
+
   if (DEBUG_OLD) 
     displayGCState (s, stderr);
   beginAtomic (s);

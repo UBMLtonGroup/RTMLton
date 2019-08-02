@@ -519,6 +519,7 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              stackLimit = get "stackLimit_Offset",
              stackTop = get "stackTop_Offset",
              flChunks = get "fl_chunks_Offset",
+             currentFrame = get "currentFrame_Offset",
              rtSync = get "rtSync_Offset"
              };
             Runtime.GCField.setSizes
@@ -538,6 +539,7 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              stackLimit = get "stackLimit_Size",
              stackTop = get "stackTop_Size",
              flChunks = get "fl_chunks_Size",
+    	     currentFrame = get "currentFrame_Size",
              rtSync = get "rtSync_Size"
              }
          end

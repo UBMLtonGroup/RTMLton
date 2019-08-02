@@ -29,6 +29,7 @@
 //#include "gc/array-allocate.c"
 #include "gc/umarray-allocate.c"
 #include "gc/ssleep.c"
+#include "gc/dumphex.c"
 
 #include "gc/array.c"
 #include "gc/atomic.c"
@@ -72,6 +73,7 @@
 #include "gc/size.c"
 #include "gc/sources.c"
 #include "gc/stack.c"
+#include "gc/umstack.c"
 #include "gc/switch-thread.c"
 #include "gc/thread.c"
 #include "gc/translate.c"

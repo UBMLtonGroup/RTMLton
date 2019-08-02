@@ -37,20 +37,18 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
    
     assert(header !=0);
 
-    uint32_t *alias = (uint32_t *) (chunk->ml_object) ;
-    *alias = header;
+	// apply object header to all chunks in the chain
+	GC_UM_Chunk current = chunk;
+	for(int i=0; i < num_chunks; i++)
+	{
+		//violates C aliasing rules (undefined behavior)
+		//*((uint32_t*) chunk->ml_object) = header;
 
-    //violates C aliasing rules (undefined behavior)
-    //*((uint32_t*) chunk->ml_object) = header;
-    
-    /*training wheels. Remove once confident. Use assert loop to verify other properties that must hold*/
-    int i;
-    GC_UM_Chunk current = chunk;
-    for(i=0;i< num_chunks;i++)
-    {
-        assert(current->chunk_header & UM_CHUNK_IN_USE);
-        current = current->next_chunk;
-    }
+		uint32_t *alias = (uint32_t *) (current->ml_object);
+		*alias = header;
+		assert(current->chunk_header & UM_CHUNK_IN_USE);
+		current = current->next_chunk;
+	}
    
     return (Pointer)(chunk->ml_object + s);
 }

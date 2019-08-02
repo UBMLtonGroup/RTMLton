@@ -33,6 +33,7 @@ signature RUNTIME =
              | StackLimit (* Must have StackTop <= StackLimit *)
              | StackTop (* Points at the next available byte on the stack. *)
              | FLChunks
+             | CurrentFrame
              | RTSync
 
             val layout: t -> Layout.t
@@ -52,6 +53,7 @@ signature RUNTIME =
                              stackLimit: Bytes.t,
                              stackTop: Bytes.t,
                              flChunks: Bytes.t,
+                             currentFrame: Bytes.t,
                              rtSync: Bytes.t} -> unit
             val setSizes: {atomicState: Bytes.t,
                            cardMapAbsolute: Bytes.t,
@@ -68,6 +70,7 @@ signature RUNTIME =
                            stackLimit: Bytes.t,
                            stackTop: Bytes.t,
                            flChunks: Bytes.t,
+                           currentFrame: Bytes.t,
                            rtSync:Bytes.t } -> unit
             val size: t -> Bytes.t (* Field size in struct GC_state. *)
             val toString: t -> string

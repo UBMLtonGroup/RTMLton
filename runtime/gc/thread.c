@@ -9,15 +9,21 @@
 void displayThread (GC_state s,
                     GC_thread thread,
                     FILE *stream) {
-  fprintf(stream,
-          "\t\texnStack = %"PRIuMAX"\n"
-          "\t\tbytesNeeded = %"PRIuMAX"\n"
-          "\t\tstack = "FMTOBJPTR"\n",
-          (uintmax_t)thread->exnStack,
-          (uintmax_t)thread->bytesNeeded,
-          thread->stack);
-  displayStack (s, (GC_stack)(objptrToPointer (thread->stack, s->heap.start)),
-                stream);
+	fprintf(stream, "\t\texnStack = "FMTPTR"\n", (uintptr_t)thread->exnStack);
+	fprintf(stream, "\t\tbytesNeeded = %"PRIuMAX"\n", (uintmax_t)thread->bytesNeeded);
+	fprintf(stream, "\t\tstack = "FMTOBJPTR"\n", thread->stack);
+	fprintf(stream,
+			"\t\tcurrentFrame = "FMTPTR"\n"
+									   "\t\tfirstFrame = "FMTPTR"\n",
+			(uintptr_t)thread->firstFrame,
+			(uintptr_t)thread->currentFrame);
+
+	displayStack (s, (GC_stack)(objptrToPointer (thread->stack, s->heap.start)),
+				  stream);
+
+	fprintf(stream, "\tUM Stack:\n");
+	um_displayStack (s, (GC_stack)(objptrToPointer (thread->stack, s->heap.start)),
+					 stream);
 }
 
 size_t sizeofThread (GC_state s) {

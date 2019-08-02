@@ -99,6 +99,8 @@ signature MACHINE =
              | StackOffset of StackOffset.t
              | StackTop
              | Word of WordX.t
+             | ChunkExnHandler of Label.t
+             | ChunkExnLink
 
             val equals: t * t -> bool
             val interfere: t * t -> bool

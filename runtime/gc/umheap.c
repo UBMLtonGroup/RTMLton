@@ -20,24 +20,19 @@ void initUMHeap(GC_state s,
     s->fl_chunks = 0;
 }
 
-/*void initUMArrayHeap(GC_state s,
-                     GC_UM_heap h) {
-    h->start = NULL;
-    h->size = 0;
-    s->fl_chunks = 0;
-    h->fl_head = NULL;
-}*/
+
+extern GC_UM_Chunk stack_list[];
+extern unsigned int stack_list_end;
 
 GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
 
     GC_UM_Chunk pc = (GC_UM_Chunk) c;
-    //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
-    pc->next_chunk = NULL;
-    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
+
+    pc->next_chunk = NULL; // TODO is this correct? pc is c+offset so struct mapping is invalid now
+	pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
     pc->chunk_header |= UM_CHUNK_HEADER_CLEAN;
-    //h->fl_head = pc;
-   // s->fl_chunks += 1;
-   return pc;
+
+    return pc;
 }
 
 
@@ -63,7 +58,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
         	h->fl_head = nc;
     	}
     
-    c->next_chunk = NULL;
+    c->next_chunk = c->prev_chunk = NULL; // TODO is this correct? c is pc+offset now
     c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
     if( s->rtSync[PTHREAD_NUM])
     {
@@ -131,7 +126,8 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
             
             current->next_chunk = allocNextChunk(s, &(s->umheap));
             current->next_chunk->chunk_header |= UM_CHUNK_IN_USE;
-            current = current->next_chunk;
+			current->next_chunk->prev_chunk = current;
+			current = current->next_chunk;
         }
     }
     
@@ -242,18 +238,9 @@ void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
 void insertFreeChunk(GC_state s,
                      GC_UM_heap h,
                      pointer c) {
-    /*GC_UM_Chunk pc = (GC_UM_Chunk) c;
-    //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
-    pc->next_chunk = h->fl_head;
-    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header |= UM_CHUNK_HEADER_CLEAN;
-    h->fl_head = pc;
-    s->fl_chunks += 1;*/
-   
-
     LOCK_FL;
 
-   /*Insert free chunk to back of free list*/ 
+    /*Insert free chunk to back of free list*/
     UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
     if(s->fl_chunks == 0)
     {
@@ -272,19 +259,24 @@ void insertFreeChunk(GC_state s,
         s->fl_chunks += 1;
     }
 
+#if 0
+	fprintf(stderr, YELLOW("add %8x to free list (clear using 0xAA) %d\n"),
+            (unsigned int)pc, UM_CHUNK_PAYLOAD_SIZE);
+    memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE);
+#endif
+
+	// TODO jeff - sanity check to make sure stacks are not collected (yet)
+	// TODO remove before benchmarking
+	if (DEBUG_STACKS) {
+		for (unsigned int i = 0; i < stack_list_end; i++) {
+			if (stack_list[i] == (GC_UM_Chunk) pc) {
+				fprintf(stderr, RED("stack frame added to free list\n"));
+			}
+		}
+	}
     UNLOCK_FL;
     
 }
-/*void insertFreeChunkArr(GC_state s,
-                     GC_UM_heap h,
-                     pointer c) {
-
-    UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
-    pc->next_chunk = h->fl_head;
-    h->fl_head = pc;
-    s->fl_chunks += 1;
-    
-}*/
 
 
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,

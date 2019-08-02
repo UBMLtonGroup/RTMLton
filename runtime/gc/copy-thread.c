@@ -30,6 +30,10 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
              (GC_stack)(objptrToPointer(to->stack, s->heap.start)));
   to->bytesNeeded = from->bytesNeeded;
   to->exnStack = from->exnStack;
+  if (DEBUG_THREADS)
+	fprintf(stderr, "exnStack is %d\n", from->exnStack);
+
+  um_copyStack(s, from, to); // note we pass in GC_threads not the actual stacklets
 
   return to;
 }
@@ -41,7 +45,7 @@ void GC_copyCurrentThread (GC_state s) {
   //LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
   if (DEBUG_THREADS)
-    fprintf (stderr, "GC_copyCurrentThread\n");
+  	fprintf (stderr, GREEN("GC_copyCurrentThread\n"));
   enter (s);
   fromThread = (GC_thread)(objptrToPointer(s->currentThread[PTHREAD_NUM], s->heap.start)
                            + offsetofThread (s));
@@ -63,7 +67,7 @@ pointer GC_copyThread (GC_state s, pointer p) {
   //LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
   if (DEBUG_THREADS)
-    fprintf (stderr, "GC_copyThread ("FMTPTR", pthread=%u)\n", (uintptr_t)p, PTHREAD_NUM);
+  	fprintf (stderr, GREEN("GC_copyThread")" ("FMTPTR", pthread=%u)\n", (uintptr_t)p, PTHREAD_NUM);
   enter (s);
   fromThread = (GC_thread)(p + offsetofThread (s));
   fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));

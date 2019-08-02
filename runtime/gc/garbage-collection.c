@@ -159,7 +159,7 @@ growStackCurrent (GC_state s)
     reserved = sizeofStackGrowReserved (s, getStackCurrent (s));
     if (DEBUG_STACKS or s->controls.messages)
         fprintf (stderr,
-                 "[GC: Growing stack of size %s bytes to size %s bytes, using %s bytes.]\n",
+                 YELLOW("[GC: Growing stack of size %s bytes to size %s bytes, using %s bytes.]\n"),
                  uintmaxToCommaString (getStackCurrent (s)->reserved),
                  uintmaxToCommaString (reserved),
                  uintmaxToCommaString (getStackCurrent (s)->used));
