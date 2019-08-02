@@ -7,11 +7,7 @@
 void um_displayStack (__attribute__ ((unused)) GC_state s,
                    GC_stack stack,
                    FILE *stream) {
-  fprintf(stream,
-          "\t\treserved = %"PRIuMAX"\n"
-          "\t\tused = %"PRIuMAX"\n",
-          (uintmax_t)stack->reserved,
-          (uintmax_t)stack->used);
+	return;
 }
 
 

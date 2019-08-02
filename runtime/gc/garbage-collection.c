@@ -156,6 +156,10 @@ growStackCurrent (GC_state s)
     size_t reserved;
     GC_stack stack;
 
+
+	fprintf(stderr, RED("*** warn: growCurrentStack disabled\n"));
+	return;
+
     reserved = sizeofStackGrowReserved (s, getStackCurrent (s));
     if (DEBUG_STACKS or s->controls.messages)
         fprintf (stderr,
@@ -193,18 +197,7 @@ growStackCurrent (GC_state s)
 void
 maybe_growstack (GC_state s)
 {
-    bool stackTopOk;
-    if (isStackEmpty (getStackCurrent (s)))
-        return;
-    stackTopOk = invariantForMutatorStack (s);
-    /*stackBytesRequested =
-        stackTopOk
-        ? 0
-        : sizeofStackWithHeader (s,
-                                 sizeofStackGrowReserved (s,
-                                                          getStackCurrent
-                                                          (s)));*/
-    unless (stackTopOk) growStackCurrent (s);
+    return;
 }
 
 void
@@ -462,7 +455,7 @@ performGC (GC_state s,
 #endif
 }
 
-void markStack(GC_state s,GC_stack currentStack)
+void markStack(GC_state s, pointer currentStack)
 {
     
 
@@ -471,7 +464,7 @@ void markStack(GC_state s,GC_stack currentStack)
 
             //foreachGlobalObjptr (s, umDfsMarkObjectsMark);
             
-            foreachGlobalThreadObjptr(s,umDfsMarkObjectsMarkToWL);
+            foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
             foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMarkToWL, FALSE);
 
             if(DEBUG_RTGC)
@@ -827,7 +820,7 @@ if (needGCTime (s))
     displayGCState (s, stderr);
   
   //assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
-  //assert (invariantForGC (s));
+	//assert (invariantForGC (s));
   assert(invariantForRTGC(s));
   
 
@@ -838,7 +831,8 @@ if (needGCTime (s))
 
 void ensureInvariantForMutator (GC_state s, bool force) {
     force = true;
-    markStack(s,getStackCurrent(s)); 
+    // we start at the current frame and move down to stack bottom
+    markStack(s, um_getStackCurrentFrame(s));
     //performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
 
     //assert (invariantForMutatorFrontier(s));
@@ -988,7 +982,8 @@ void ensureHasHeapBytesFree (GC_state s,
     }
 
     if (not hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested)) {
-        markStack(s,getStackCurrent(s));
+		// we start at the current frame and move down to stack bottom
+		markStack(s, um_getStackCurrentFrame(s));
         //performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE,TRUE);
         if (DEBUG) {
             fprintf (stderr,

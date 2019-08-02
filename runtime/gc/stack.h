@@ -55,7 +55,7 @@ typedef struct GC_stack {
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
-static void displayStack (GC_state s, GC_stack stack, FILE *stream);
+static void displayStack (GC_state s, GC_stack stack, FILE *stream) __attribute__ ((unused));
 
 static inline bool isStackEmpty (GC_stack stack);
 #if ASSERT

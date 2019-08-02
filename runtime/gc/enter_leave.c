@@ -19,7 +19,7 @@ void enter (GC_state s) {
   if (DEBUG_OLD)
     fprintf (stderr, "%d] enter\n", PTHREAD_NUM);
   /* used needs to be set because the mutator has changed s->stackTop. */
-  getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
+  //getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
 
   /* these are objptrs, we adjust in c-chunk.h to get the actual point to the start of frame */
   getThreadCurrent(s)->currentFrame = s->currentFrame[PTHREAD_NUM];

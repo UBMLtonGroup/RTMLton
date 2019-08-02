@@ -37,21 +37,30 @@ GC_stack getStackCurrent (GC_state s) {
  * a frame is just a pointer, it has no intrinsic structure.
  * the frame layout structure describes the eventual layout of
  * a given frame, but that is not known until after compilation.
- * also, there is no gc_header associated with a frame at this time,
- * so the returned pointer points directly to the frame.
+ *
+ * the frame does have a gc header though: it uses the stack header (0x1)
+ * this enables us to detect stack frames when we do a foreach in the GC
  *
  * also, this returns the stackBottom, not the stackTop.
  *
- * also, the stacklet is not an object, so there is no
- * objptr, just a pointer
  */
 
-objptr um_getStackCurrentObjptr (GC_state s) {
+objptr um_getStackCurrentFrameObjptr (GC_state s) {
 	GC_thread thread = getThreadCurrent(s);
 	return thread->currentFrame;
 }
 
+objptr um_getStackCurrentObjptr (GC_state s) {
+	GC_thread thread = getThreadCurrent(s);
+	return thread->firstFrame;
+}
+
 pointer um_getStackCurrent (GC_state s) {
-	pointer p = objptrToPointer(um_getStackCurrentObjptr(s), s->heap.start) + GC_STACK_HEADER_SIZE;
+	pointer p = objptrToPointer(um_getStackCurrentObjptr(s), s->heap.start);
+	return p;
+}
+
+pointer um_getStackCurrentFrame (GC_state s) {
+	pointer p = objptrToPointer(um_getStackCurrentFrameObjptr(s), s->heap.start);
 	return p;
 }

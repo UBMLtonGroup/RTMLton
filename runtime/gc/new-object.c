@@ -114,7 +114,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
   assert (isStackReservedAligned (s, reserved));
   ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
-  stack = newStack (s, reserved, FALSE);
+  stack = NULL; //newStack (s, reserved, FALSE);
 
   C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
   assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits

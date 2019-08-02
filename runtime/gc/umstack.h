@@ -12,7 +12,7 @@
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
-static void um_displayStack (GC_state s, GC_stack stack, FILE *stream);
+static void um_displayStack (GC_state s, GC_stack stack, FILE *stream) __attribute__ ((unused));
 
 static inline bool um_isStackEmpty (GC_stack stack);
 

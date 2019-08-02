@@ -124,6 +124,8 @@ bool invariantForGC (GC_state s) {
   foreachObjptrInRange (s, s->heap.nursery, &s->frontier, 
                         assertIsObjptrInFromSpace, FALSE);
   /* Current thread. */
+  // TODO stacklets modifications needed
+#if 0
   GC_stack stack = getStackCurrent(s);
   assert (isStackReservedAligned (s, stack->reserved));
   assert (s->stackBottom[PTHREAD_NUM] == getStackBottom (s, stack));
@@ -132,6 +134,7 @@ bool invariantForGC (GC_state s) {
   assert (s->stackBottom[PTHREAD_NUM] <= s->stackTop[PTHREAD_NUM]);
   assert (stack->used == sizeofGCStateCurrentStackUsed (s));
   assert (stack->used <= stack->reserved);
+#endif
   if (DEBUG)
     fprintf (stderr, "invariantForGC passed\n");
   return TRUE;

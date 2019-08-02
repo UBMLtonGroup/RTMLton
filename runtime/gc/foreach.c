@@ -199,70 +199,71 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
                   cur_chunk = cur_chunk->next_chunk;
           }
       }
-  }else { /* stack */
-    GC_stack stack;
-    pointer top, bottom;
+  } else { /* stack */
+    GC_UM_Chunk stackFrame;
     unsigned int i;
     GC_returnAddress returnAddress;
     GC_frameLayout frameLayout;
     GC_frameOffsets frameOffsets;
 
-    fprintf(stderr, RED("marking stack\n"));
+    fprintf(stderr, GREEN("marking stack\n"));
     assert (STACK_TAG == tag);
-    stack = (GC_stack)p;
-    bottom = getStackBottom (s, stack); // TODO
-    top = getStackTop (s, stack);  // TODO
-    if(DEBUG_STACKS)
-    	fprintf(stderr,"%d] Checking Stack "FMTPTR" \n",PTHREAD_NUM,(uintptr_t)stack);
-    /* we avoid checking the main thread's stack when the main calls into user code*/ 
+    stackFrame = (GC_UM_Chunk)p;
+	assert (stackFrame->next_chunk != NULL); // we will be starting at the chunk just after currentFrame
+
+    if (DEBUG_STACKS)
+    	fprintf(stderr,"%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t)stackFrame);
+
+    /* we avoid checking the main thread's stack when the main calls into user code
+     */
     bool doit = true;
-    if(s->mainBooted)
+
+    if (s->mainBooted)
     {
         pointer p_ = objptrToPointer(s->currentThread[0], s->heap.start);
         GC_thread th = (GC_thread)(p_ + offsetofThread (s));
-
+		if ((pointer)stackFrame == (pointer)th->currentFrame)
+			doit = false;
+#if 0
         GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
         
         if (st == stack)
             doit = false;
-
+#endif
     }
-    if(doit)
-    {
-		if (DEBUG_STACKS) {
-		  fprintf (stderr, "%d]  bottom = "FMTPTR"  top = "FMTPTR"\n",
-				   PTHREAD_NUM,
-				   (uintptr_t)bottom, (uintptr_t)top);
-		}
-		assert (stack->used <= stack->reserved);
-		while (top > bottom) { // TODO
-		  /* Invariant: top points just past a "return address". */
-		  returnAddress = *((GC_returnAddress*)(top - GC_RETURNADDRESS_SIZE)); // TODO
-		  if (DEBUG_STACKS) {
-			fprintf (stderr, "%d]  top = "FMTPTR"  return address = "FMTRA"\n",
-					 PTHREAD_NUM,
-					 (uintptr_t)top, returnAddress);
-		  }
-		  frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
-		  frameOffsets = frameLayout->offsets;
-		  top -= frameLayout->size; // TODO
 
-		  if (DEBUG_STACKS)
+    if (doit)
+    {
+		GC_UM_Chunk top = stackFrame->next_chunk;
+
+		while (top->prev_chunk) {
+			assert (top->prev_chunk->ra != 0);
+			returnAddress = *((GC_returnAddress*)(uintptr_t)(top->prev_chunk->ml_object[top->prev_chunk->ra]));
+
+			if (DEBUG_STACKS) {
+				fprintf (stderr, "%d]  top = "FMTPTR"  return address = "FMTRA"\n",
+						 PTHREAD_NUM,
+						 (uintptr_t)top, returnAddress);
+			}
+			frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
+			frameOffsets = frameLayout->offsets;
+			top = top->prev_chunk;
+
+			if (DEBUG_STACKS)
 			   fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
 					   PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
-		  for (i = 0 ; i < frameOffsets[0] ; ++i) {
-			if (DEBUG_STACKS)
-			  fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR"\n",
-					  PTHREAD_NUM,
-					  frameOffsets[i + 1],
-					  *(objptr*)(top + frameOffsets[i + 1]));
-			callIfIsObjptr (s, f, (objptr*)(top + frameOffsets[i + 1]));
-		  }
+			for (i = 0 ; i < frameOffsets[0] ; ++i) {
+				if (DEBUG_STACKS)
+					fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR"\n",
+						  PTHREAD_NUM,
+						  frameOffsets[i + 1],
+						  *(objptr*)(top + frameOffsets[i + 1]));
+				callIfIsObjptr (s, f, (objptr*)(top + frameOffsets[i + 1]));
+			}
 		}
-    	assert(top == bottom);
     }
-    p += sizeof (struct GC_stack) + stack->reserved; // TODO
+    p = (pointer) stackFrame->next_chunk;
   }
   return p;
 }

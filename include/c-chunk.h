@@ -310,15 +310,7 @@ void dump_hex(char *str, int len);
 
 /* end of umheap.h copy/paste */
 
-/* if we were to store the currentFrame in the gc_thread struct
-
-    CF = *(*(gcstate + ct_offset + pt_num*width) + gct_ff_offset)
-    where gct_ff_offset = sizeof(size_t)*2 + width
-
-    which 'feels' right, but since stack bottom/top tracking is
-    deep in the runtime, we will leave currentFrame in gc state
-    for now
-
+/*
   when stacklet_push(N) is called, we likely have already written
   into the next frame (eg arguments and/or returnvalue object pointers)
   but in the chunked model those have been written into the current
@@ -339,13 +331,13 @@ void dump_hex(char *str, int len);
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
                      struct GC_UM_Chunk *xx = cf; \
-                     for ( ; xx && xx->prev_chunk ; xx = xx->prev_chunk); /* find the 1st chunk just so we can print the addr */ \
-                     \
-                     \
-                     if (STACKLET_DEBUG) fprintf(stderr, "%s:%d: SKLT_Push (%4d)\tbase %"FW"lx cur %"FW"lx prev %"FW"lx " \
+                     if (STACKLET_DEBUG) { \
+                        for ( ; xx && xx->prev_chunk ; xx = xx->prev_chunk); /* find the 1st chunk just so we can print the addr */ \
+                        fprintf(stderr, "%s:%d: SKLT_Push (%4d)\tbase %"FW"lx cur %"FW"lx prev %"FW"lx " \
                                                 "SB[%"FW"lx] ST[%"FW"lx] ", \
                                 __FILE__, __LINE__, bytes, xx, \
                                 cf, cf->prev_chunk, StackBottom, StackTop); \
+                     } \
                      if (cf->prev_chunk) { \
                          CurrentFrame = cf->prev_chunk; \
                          if (STACKLET_DEBUG) fprintf(stderr, "   ra=%d ", cf->prev_chunk->ra); \
@@ -356,13 +348,14 @@ void dump_hex(char *str, int len);
                      struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
                      struct GC_UM_Chunk *xx = cf; \
                      cf->ra = bytes; \
-                     for ( ; xx && xx->prev_chunk ; xx = xx->prev_chunk); /* find the 1st chunk just so we can print the addr */ \
-                     \
-                     if (STACKLET_DEBUG) fprintf(stderr, "%s:%d: SKLT_Push (%4d)\tbase %"FW"lx cur %"FW"lx next %"FW"lx SB[%"FW"lx] ST[%"FW"lx]\n", \
+                     if (STACKLET_DEBUG)  { \
+                        for ( ; xx && xx->prev_chunk ; xx = xx->prev_chunk); /* find the 1st chunk just so we can print the addr */ \
+                        fprintf(stderr, "%s:%d: SKLT_Push (%4d)\tbase %"FW"lx cur %"FW"lx next %"FW"lx SB[%"FW"lx] ST[%"FW"lx]\n", \
                              __FILE__, __LINE__, bytes, xx, \
                              cf, cf->next_chunk, StackBottom, StackTop); \
-                     if (STACKLET_DEBUG) fprintf(stderr, YELLOW("current chunk:\n")); \
-                     if (STACKLET_DEBUG) dump_hex(cf, bytes+WORDWIDTH+32);\
+                        fprintf(stderr, YELLOW("current chunk:\n")); \
+                        dump_hex(cf, bytes+WORDWIDTH+32);\
+                     } \
                      if (cf->next_chunk) { \
                          if (UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH < WORDWIDTH) die("impossible no room in next chunk"); \
                          if (STACKLET_DEBUG) fprintf(stderr, RED("memcpy: ") "src %"FW"lx dst %"FW"lx\n", cf->ml_object+bytes+WORDWIDTH, cf->next_chunk->ml_object+WORDWIDTH ); \

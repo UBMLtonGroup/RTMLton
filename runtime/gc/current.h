@@ -13,6 +13,9 @@ static inline GC_thread getThreadCurrent (GC_state s);
 static inline objptr getStackCurrentObjptr (GC_state s);
 static inline GC_stack getStackCurrent (GC_state s);
 
+static inline objptr um_getStackCurrentFrameObjptr (GC_state s);
+static inline pointer um_getStackCurrentFrame (GC_state s);
+
 static inline objptr um_getStackCurrentObjptr (GC_state s);
 static inline pointer um_getStackCurrent (GC_state s);
 

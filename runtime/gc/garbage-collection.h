@@ -32,7 +32,7 @@ static void performGC_helper (GC_state s,
 								bool forceMajor,
 								bool mayResize);
 
-static void markStack(GC_state s, GC_stack currentStack);
+static void markStack(GC_state s, pointer currentStack);
 static void startMarking(GC_state s);
 
 static void sweep(GC_state s, size_t ensureObjectChunksAvailable,size_t ensureArrayChunksAvailable,

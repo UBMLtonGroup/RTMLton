@@ -65,17 +65,20 @@ size_t sizeofGCStateCurrentUMStackUsed (GC_state s) {
 
 void setGCStateCurrentThreadAndStack (GC_state s) {
   GC_thread thread;
-  GC_stack stack;
+  //C_stack stack;
 
   thread = getThreadCurrent (s);
 
   objptr currentFrame = thread->currentFrame;
+  objptr firstFrame = thread->firstFrame;
 
   s->exnStack[PTHREAD_NUM] = thread->exnStack;
-  stack = getStackCurrent (s);
-  s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
-  s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
-  s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
+
+  //TODO clean up stack = getStackCurrent (s);
+  //s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
+  //s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
+  //s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
+
   s->currentFrame[PTHREAD_NUM] = currentFrame;
   if(DEBUG_DETAILED)
 		fprintf(stderr, "%d] "
@@ -83,9 +86,9 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
 				" currentFrame "FMTPTR" stackBottom "FMTPTR"\n",
 				PTHREAD_NUM,
 				(uintptr_t)s->currentFrame[PTHREAD_NUM],
-				(uintptr_t)s->stackBottom[PTHREAD_NUM]);
+				(uintptr_t)firstFrame);
 
-  markCard (s, (pointer)stack);
+  //markCard (s, (pointer)stack);
 }
 
 void setGCStateCurrentHeap (GC_state s, 
