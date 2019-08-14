@@ -50,6 +50,8 @@
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
 
+#define StackTopStash (*(Pointer*)(GCState + StackTopStashOffset +(PTHREAD_NUM*WORDWIDTH)))
+
 #define RTSync *(bool*)(GCState + RTSyncOffset + (PTHREAD_NUM *WORDWIDTH)) 
 
 #define StackTop StackTopMem
@@ -244,6 +246,7 @@
                 if (DEBUG_CCODEGEN)                                     \
                         fprintf (stderr, "%s:%d: Push (%d)\n",          \
                                         __FILE__, __LINE__, bytes);     \
+                StackTopStash = StackTop;                               \
                 StackTop += (bytes);                                    \
         } while (0)
 
