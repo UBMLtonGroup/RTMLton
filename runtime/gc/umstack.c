@@ -24,9 +24,10 @@ pointer um_getStackBottom (ARG_USED_FOR_ASSERT GC_state s, objptr stack) {
 
     res = ((pointer)stack) + GC_STACK_HEADER_SIZE;
 
-    fprintf(stderr, "getUMStackBottom is aligned? %zu %zu %zu\n",
-            (size_t)res, s->alignment,
-            (size_t)res / s->alignment);
+    if (DEBUG_CCODEGEN)
+	fprintf(stderr, "getUMStackBottom is aligned? %zu %zu %zu\n",
+		(size_t)res, s->alignment,
+		(size_t)res / s->alignment);
     assert (isAligned ((size_t)res, s->alignment));
     return res;
 }
@@ -61,31 +62,36 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
     GC_UM_Chunk t = (GC_UM_Chunk)to->firstFrame;
     to->currentFrame = BOGUS_OBJPTR;
 
-    fprintf(stderr, "%08x -> %08x init\n", (unsigned int) f, (unsigned int)t);
+    if (DEBUG_CCODEGEN)
+        fprintf(stderr, "%08x -> %08x init\n", (unsigned int) f, (unsigned int)t);
 
     for( ; f ; f = (GC_UM_Chunk)f->next_chunk, t = (GC_UM_Chunk)t->next_chunk) {
         GC_memcpy((pointer)f, (pointer)t, copyamt);
         if (from->currentFrame == (objptr)f) {
-            fprintf(stderr, "found cf: ");
-            fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
+            if (DEBUG_CCODEGEN) {
+		fprintf(stderr, "found cf: ");
+		fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
+            }
             to->currentFrame = (objptr)t;
         }
         if (to->currentFrame == BOGUS_OBJPTR) {
-            fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
+            if (DEBUG_CCODEGEN)
+                fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
         }
         cc++;
     }
 
-    fprintf(stderr, YELLOW("copyStacklet") " [Thr %d] copied %d chunks,"
-                                          " old-first %08x"
-                                          " old-cur %08x"
-                                          " new-first %08x"
-                                          " new-cur %08x\n",
-            PTHREAD_NUM, cc,
-            (unsigned int)from->firstFrame,
-            (unsigned int)from->currentFrame,
-            (unsigned int)to->firstFrame,
-            (unsigned int)to->currentFrame);
+    if (DEBUG_CCODEGEN)
+	fprintf(stderr, YELLOW("copyStacklet") " [Thr %d] copied %d chunks,"
+					      " old-first %08x"
+					      " old-cur %08x"
+					      " new-first %08x"
+					      " new-cur %08x\n",
+		PTHREAD_NUM, cc,
+		(unsigned int)from->firstFrame,
+		(unsigned int)from->currentFrame,
+		(unsigned int)to->firstFrame,
+		(unsigned int)to->currentFrame);
 
 
     if (to->currentFrame == BOGUS_OBJPTR)
