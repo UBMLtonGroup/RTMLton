@@ -1234,9 +1234,10 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                     (CFunction.ffiGetOpArgsResPtr ())
                                | GC_collect =>
                                     ccall
-                                    {args = (Vector.new3
+                                    {args = (Vector.new4
                                              (GCState,
                                               Operand.zero (WordSize.csize ()),
+                                              Operand.bool true,
                                               Operand.bool true)),
                                      func = (CFunction.gc
                                              {maySwitchThreads = handlesSignals})}
@@ -1393,10 +1394,11 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                             Goto {args = Vector.new0 (),
                                                   dst = continue}}
                                         val args =
-                                           Vector.new3
+                                           Vector.new4
                                            (GCState,
                                             Operand.zero (WordSize.csize ()),
-                                            Operand.bool false)
+                                            Operand.bool false,
+                                            Operand.bool true)
                                         val switchToHandler =
                                            newBlock
                                            {args = Vector.new0 (),

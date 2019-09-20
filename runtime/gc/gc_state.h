@@ -99,6 +99,8 @@ struct GC_state {
   pthread_mutex_t wl_lock;
   volatile int casLock;
 
+  bool collectAll;
+
   pointer stackTopStash; 
 
   /* -------------------------- */

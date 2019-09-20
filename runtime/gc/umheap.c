@@ -34,7 +34,7 @@ GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
     //    memset(pc->ml_object, 0, UM_CHUNK_PAYLOAD_SIZE);
     pc->next_chunk = NULL;
     pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
     //h->fl_head = pc;
    // s->fl_chunks += 1;
    return pc;
@@ -64,10 +64,14 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     	}
     
     c->next_chunk = NULL;
-    c->chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    c->chunk_header = UM_CHUNK_HEADER_CLEAN;
     if( s->rtSync[PTHREAD_NUM])
     {
         c->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+    }
+    else
+    {
+        c->chunk_header |= UM_CHUNK_RED_MASK;
     }
     s->fl_chunks -= 1;
     s->cGCStats.numChunksAllocated++;
@@ -86,7 +90,7 @@ void blockAllocator(GC_state s,size_t numChunks)
 
   /*If RTSync has not been set, a.k.a thread has not been marked, mark it*/ 
     if(!s->rtSync[PTHREAD_NUM])
-        GC_collect(s,0,false) ;
+        GC_collect(s,0,false,false) ;
   
  /*If GC is not running before mutator sleeps, keep sending signal till GC wakes up
   * Race occurs when GC is not running and mutator sleeps.*/ 
@@ -165,10 +169,14 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
     
     c->next_chunk = NULL;
     c->array_chunk_magic = 9998;
-    c->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
     if(s->rtSync[PTHREAD_NUM])
     {
         c->array_chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+    }
+    else
+    {
+         c->array_chunk_header |= UM_CHUNK_RED_MASK; 
     }
     int i;
     for (i=0; i<UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
@@ -224,7 +232,7 @@ void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
   
     /*If RTSync has not been set, a.k.a thread has not been marked, mark it*/ 
     if(!s->rtSync[PTHREAD_NUM])
-        GC_collect(s,0,false) ;
+        GC_collect(s,0,false,false) ;
   
     /*Blocks on cond variable , autamatically unlocks s->fl_lock*/
     BLOCK;
@@ -295,7 +303,7 @@ GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
     GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) c;
     //    memset(pc->ml_array_payload.ml_object, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE);
     pc->next_chunk = NULL;
-    pc->array_chunk_header |= UM_CHUNK_HEADER_CLEAN;
+    pc->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
     //h->fl_head = pc;
     //s->fl_chunks += 1;
     return pc;

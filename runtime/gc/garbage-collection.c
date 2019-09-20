@@ -520,6 +520,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
     int marked =0;
     int grey = 0;
+    int red = 0;
     int visited = 0;
     int freed  = 0;
 
@@ -536,44 +537,72 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
         if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
         {
             GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+sizeof(UM_header)); /*account for size of chunktype*/
-            if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-                (!(pc->chunk_header & UM_CHUNK_MARK_MASK) && !(pc->chunk_header & UM_CHUNK_GREY_MASK))) {
-                if (DEBUG_MEM) {
-                    fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
-                            (uintptr_t)pc, pc->sentinel, pc->chunk_header);
+           
+            UM_header header = pc->chunk_header;
+
+            if(ISINUSE(header))
+            {
+            
+                if (ISRED(header))
+                {
+                    /*If the chunk is marked Red, then collect if collect ALl is set to true.
+                     * If it were reachable, then the Red would have been marked or Shaded*/
+                    if(s->collectAll)
+                    {
+                        header = UM_CHUNK_HEADER_CLEAN;
+                        insertFreeChunk(s, &(s->umheap), pchunk);
+                        s->cGCStats.numChunksFreed++;
+                        freed++;
+                    }
+                    else
+                    {
+                        red++;
+                    }
                 }
-                
-                //Set header of cleared object to magic number
-                //*(pchunk +sizeof(UM_header)) = 42;
-                
-                //memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+                else if (ISMARKED(header)) 
+                {
+                    marked++;
+                    /*Unmark Chunk*/ 
+                            pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
+                        /*Unmark MLton Object*/
+                            /*pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
+                            GC_header* headerp = getHeaderp(p);
+                            GC_header header = *headerp;
+                            header = header & ~MARK_MASK;
+                            (*headerp) = header;*/
 
-                insertFreeChunk(s, &(s->umheap), pchunk);
-                s->cGCStats.numChunksFreed++;
-                freed++;
-            }
-            else if ((pc->chunk_header & UM_CHUNK_IN_USE) &&
-                ((pc->chunk_header & UM_CHUNK_MARK_MASK) || (pc->chunk_header & UM_CHUNK_GREY_MASK))) {
-    
-                    if(pc->chunk_header & UM_CHUNK_MARK_MASK)
-                    {
-                        marked++;
+                }
+                else if(ISGREY(header)) 
+                {
+        
+                    grey++;
+                    /*Unmark Chunk*/ 
+                     pc->chunk_header &= ~UM_CHUNK_GREY_MASK;
+
+                }
+                else /*Unmarked Chunk*/
+                {
+                    assert(ISUNMARKED(header));
+                    
+                    if (DEBUG_MEM) {
+                        fprintf(stderr, "Collecting: "FMTPTR", %d, %d\n",
+                                (uintptr_t)pc, pc->sentinel, pc->chunk_header);
                     }
-                    else if(pc->chunk_header & UM_CHUNK_GREY_MASK)
-                    {
-                        grey++;
-                    }
+                    
+                    //Set header of cleared object to magic number
+                    //*(pchunk +sizeof(UM_header)) = 42;
+                    
+                    //memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+                    
+                    header = UM_CHUNK_HEADER_CLEAN;
+                    insertFreeChunk(s, &(s->umheap), pchunk);
+                    s->cGCStats.numChunksFreed++;
+                    freed++;
 
+                }
 
-                   /*Unmark Chunk*/ 
-                        pc->chunk_header &= ~UM_CHUNK_MARK_MASK;
-                    /*Unmark MLton Object*/
-                        /*pointer p  =  (pointer)(pc + GC_NORMAL_HEADER_SIZE);
-                        GC_header* headerp = getHeaderp(p);
-                        GC_header header = *headerp;
-                        header = header & ~MARK_MASK;
-                        (*headerp) = header;*/
             }
+            
             
             visited++;
         }
@@ -581,48 +610,75 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
         {
 
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + sizeof(UM_header)); /*account for size of chunktype*/
-            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-                (!(pc->array_chunk_header & UM_CHUNK_MARK_MASK) && !(pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
-                if (DEBUG_MEM) {
-                    fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
-                            (uintptr_t)pc, pc->array_chunk_magic,
-                            pc->array_chunk_header);
+            UM_header header = pc->array_chunk_header;
+            
+            if (ISINUSE(header)) 
+            {
+            
+                if (ISRED(header))
+                {
+                    /*If the chunk is marked Red, then collect if collect ALl is set to true.
+                     * If it were reachable, then the Red would have been marked or Shaded*/
+                    if(s->collectAll)
+                    {
+                        header = UM_CHUNK_HEADER_CLEAN;
+                        insertFreeChunk(s, &(s->umheap), pchunk);
+                        s->cGCStats.numChunksFreed++;
+                        freed++;
+                    }
+                    else
+                    {
+                        red++;
+                    }
                 }
                 
-                //Set header of cleared object to magic number
-               // *(pchunk +sizeof(UM_header)) = 42;
-                
-                //memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
-                
-                insertFreeChunk(s, &(s->umheap), pchunk);
-                s->cGCStats.numChunksFreed++;
-                freed++;
-            }
-           if ((pc->array_chunk_header & UM_CHUNK_IN_USE) &&
-                ((pc->array_chunk_header & UM_CHUNK_MARK_MASK) || (pc->array_chunk_header & UM_CHUNK_GREY_MASK))) {
+                else if (ISMARKED(header))
+                   {
+                     marked++;
+                     /*Unmark Array chunk*/
+                    pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
+                   
+                    /*Unmark MLton Object*/
+                    /*pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
+                    GC_header* headerp = getHeaderp(p);
+                    GC_header header = *headerp;
+                    header = header & ~MARK_MASK;
+                    (*headerp) = header;*/
 
-               if(pc->array_chunk_header & UM_CHUNK_MARK_MASK)
-                    {
-                        marked++;
+                   
+                   }
+                else if (ISGREY(header)) 
+                {
+                    grey++;
+                    /*Unmark Array chunk*/
+                    pc->array_chunk_header &= ~UM_CHUNK_GREY_MASK;
+
+                        
+                }
+                else
+                {
+                     if (DEBUG_MEM) {
+                        fprintf(stderr, "Collecting array: "FMTPTR", %d, %d\n",
+                                (uintptr_t)pc, pc->array_chunk_magic,
+                                pc->array_chunk_header);
                     }
-                    else if(pc->array_chunk_header & UM_CHUNK_GREY_MASK)
+                    
+                    //Set header of cleared object to magic number
+                   // *(pchunk +sizeof(UM_header)) = 42;
+                    
+                    //memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
+                   
+                    header = UM_CHUNK_HEADER_CLEAN; 
+                    insertFreeChunk(s, &(s->umheap), pchunk);
+                    s->cGCStats.numChunksFreed++;
+                    freed++;
 
-                    {
-                        grey++;
-                    }
 
-                /*Unmark Array chunk*/
-                pc->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
-               
-                /*Unmark MLton Object*/
-                /*pointer p  =  (pointer)(pc + GC_HEADER_SIZE+GC_HEADER_SIZE);
-                GC_header* headerp = getHeaderp(p);
-                GC_header header = *headerp;
-                header = header & ~MARK_MASK;
-                (*headerp) = header;*/
+                }
 
+                    
             }
-
+            
            visited++;
         }
 
@@ -639,7 +695,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     {
         fprintf(stderr,"%d] Finished one sweep cycle and freed %d chunks\n",PTHREAD_NUM,freed);
 
-        fprintf(stderr,"%d]Chunks; Visited: %d, Marked: %d, Greys: %d\n",PTHREAD_NUM,visited,marked,grey);
+        fprintf(stderr,"%d]Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n",PTHREAD_NUM,visited,marked,grey,red);
     }
 
 }
@@ -910,7 +966,7 @@ void dummyCFunc ()
     fprintf(stderr,"%d] Dummy call \n",PTHREAD_NUM);
 }
 
-void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) {
     /*if (!force) {
         if ((s->fl_chunks > 2000))// &&
             //(s->fl_array_chunks > 1000000))
@@ -935,6 +991,12 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
             /*Assert if GC has aquired RTSync lock and is running
              * This assert should never fail*/
             assert(!s->isGCRunning);
+
+            if(collectRed)
+               s->collectAll = true;
+            else
+                s->collectAll = false;
+
             /*Mark stack and the rest if the dirty but has been set by another mutator or enough chunks are available and 
              * own thread's rtsync has not been set i.e. it hasnt marked its stack already */
             if((s->dirty || !ensureChunksAvailable(s)) && !s->rtSync[PTHREAD_NUM])

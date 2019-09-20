@@ -360,6 +360,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   
   
   s->dirty = false;
+  s->collectAll = true;
   
   s->hashConsDuringGC = FALSE;
   initHeap (s, &s->heap);

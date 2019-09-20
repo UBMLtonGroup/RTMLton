@@ -105,9 +105,10 @@ fun insertInFunction (f: Function.t): Function.t =
                     statements = Vector.new0 (),
                     transfer =
                     Transfer.CCall
-                    {args = Vector.new3 (Operand.GCState,
+                    {args = Vector.new4 (Operand.GCState,
                                          Operand.word (WordX.zero (WordSize.csize ())),
-                                         Operand.bool false),
+                                         Operand.bool false,
+                                         Operand.bool true),
                      func = func,
                      return = SOME collectReturn}})
                :: (Block.T

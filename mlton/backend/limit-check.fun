@@ -281,9 +281,16 @@ fun insertFunction (f: Function.t,
                                label = collect,
                                statements = Vector.new0 (),
                                transfer = (Transfer.CCall
-                                           {args = Vector.new3 (Operand.GCState,
+                                           {args = Vector.new4 (Operand.GCState,
                                                                 amount,
-                                                                force),
+                                                                force,
+                                                                Operand.bool
+                                                                true), (*always
+                                                                collect red
+                                                                unless
+                                                                manually calling
+                                                                GC from alloc
+                                                                point in runtime*)
                                             func = func,
                                             return = SOME collectReturn})}
                       :: (Block.T

@@ -214,16 +214,24 @@ void markChunk(pointer p, GC_objectTypeTag tag,GC_markMode m,GC_state s,uint16_t
         {
             GC_UM_Chunk pchunk = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
             if (m == MARK_MODE) {
+                pchunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
                 pchunk->chunk_header |= UM_CHUNK_MARK_MASK;  /*mark chunk header*/
                 s->cGCStats.numChunksMarked +=1;
             }
             else if(m == GREY_MODE)
             {
                 /*shade chunk only if not shaded*/
-                if(!(pchunk->chunk_header & UM_CHUNK_GREY_MASK) && !(pchunk->chunk_header & UM_CHUNK_MARK_MASK)) 
+                if(!(ISGREY(pchunk->chunk_header)) && !(ISMARKED(pchunk->chunk_header)))
+                {
+                    pchunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
+                                    
                     pchunk->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+                }
             }
             else {
+                /*Dont ever run Unmark mode*/
+                die("Why are you unmarking from markChunks?\n");
+                
                 pchunk->chunk_header &= ~UM_CHUNK_MARK_MASK; /*leave chunk header as it is*/
             }
 
@@ -237,14 +245,19 @@ void markChunk(pointer p, GC_objectTypeTag tag,GC_markMode m,GC_state s,uint16_t
             /*Mark linked chunk if there is a linked chunk*/
             if (NULL != pchunk->next_chunk) {
                 if (m == MARK_MODE) {
+                    pchunk->next_chunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
+                    
                     pchunk->next_chunk->chunk_header |= UM_CHUNK_MARK_MASK;
                     s->cGCStats.numChunksMarked +=1;
                 }
                 else if(m == GREY_MODE)
                 {
                     /*shade chunk only if not shaded*/
-                    if(!(pchunk->next_chunk->chunk_header & UM_CHUNK_GREY_MASK) && !(pchunk->next_chunk->chunk_header & UM_CHUNK_MARK_MASK)) 
+                    if(!(ISGREY(pchunk->next_chunk->chunk_header)) && !(ISMARKED(pchunk->next_chunk->chunk_header))) 
+                    {
+                        pchunk->next_chunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
                         pchunk->next_chunk->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+                    }
                 }
                 else {
                     pchunk->next_chunk->chunk_header &= ~UM_CHUNK_MARK_MASK;
@@ -330,20 +343,15 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag)
     if(tag == NORMAL_TAG)
     {
             GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
-            if ((pc->chunk_header & UM_CHUNK_IN_USE) && (pc->chunk_header & UM_CHUNK_MARK_MASK))
-            {
-                return true;
-            }
-            else
-                return false;
+            
+            return (ISINUSE(pc->chunk_header) && ISMARKED(pc->chunk_header));
+            
     }
     else if(tag == ARRAY_TAG)
     {
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) && (pc->array_chunk_header & UM_CHUNK_MARK_MASK))
-                return true;
-            else
-                return false;
+
+            return (ISINUSE(pc->array_chunk_header) && ISMARKED(pc->array_chunk_header));
     }
     else
     {
@@ -362,20 +370,23 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag)
        if(tag == NORMAL_TAG)
     {
             GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
-            if ((pc->chunk_header & UM_CHUNK_IN_USE) && (pc->chunk_header & UM_CHUNK_GREY_MASK))
-            {
+            
+            
+            if(ISINUSE(pc->chunk_header) && ISGREY(pc->chunk_header))
                 return true;
-            }
-            else
+            else 
                 return false;
+            
     }
     else if(tag == ARRAY_TAG)
     {
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk) (p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) && (pc->array_chunk_header & UM_CHUNK_GREY_MASK))
-                return true;
+           
+            if (ISINUSE(pc->array_chunk_header) && ISGREY(pc->array_chunk_header))
+                return true ;
             else
                 return false;
+           
     }
     else if(tag == STACK_TAG || tag == WEAK_TAG)
     {
@@ -510,16 +521,24 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 
     if (m == MARK_MODE)
     {
+        p->array_chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
         p->array_chunk_header |= UM_CHUNK_MARK_MASK;
         s->cGCStats.numChunksMarked +=1;
     }
     else if (m == GREY_MODE)
     {       /*shade chunk only if not shaded*/
         if(!(p->array_chunk_header & UM_CHUNK_GREY_MASK) && !(p->array_chunk_header & UM_CHUNK_MARK_MASK))
+        {
+            p->array_chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
+            
             p->array_chunk_header |= UM_CHUNK_GREY_MASK;
+        }
     }
     else
+    {
+        die("Why are you unmarking from markUMArrayChunks?\n");
         p->array_chunk_header &= ~UM_CHUNK_MARK_MASK;
+    }
 
     if (p->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
         int i = 0;

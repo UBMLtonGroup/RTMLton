@@ -40,7 +40,7 @@ static void sweep(GC_state s, size_t ensureObjectChunksAvailable,size_t ensureAr
 
 static inline void ensureInvariantForMutator (GC_state s, bool force);
 bool ensureChunksAvailable(GC_state s);
-void GC_collect_real(GC_state s, size_t bytesREquested,bool force);
+void GC_collect_real(GC_state s, size_t bytesRequested,bool force);
 static inline void ensureHasHeapBytesFree (GC_state s,
                                            size_t oldGenBytesRequested,
                                            size_t nurseryBytesRequested);
@@ -49,7 +49,7 @@ static inline void ensureHasHeapBytesFree (GC_state s,
 
 #if (defined (MLTON_GC_INTERNAL_BASIS))
 PRIVATE void dummyCFunc (void);
-PRIVATE void GC_collect (GC_state s, size_t bytesRequested, bool force);
+PRIVATE void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed);
 void maybe_growstack(GC_state s);
 
 #endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */
