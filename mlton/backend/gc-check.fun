@@ -124,7 +124,17 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
         in
             (s, transfer)
         end
+    
+   
+     val lockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime
+     FLLock),
+                                            dst = NONE,
+                                            prim = Prim.lockfl}
 
+    val unlockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime
+    FLLock),
+                                            dst = NONE,
+                                            prim = Prim.unlockfl}
 
      fun blockingGC blLbl  check= 
      let
@@ -137,7 +147,7 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
         [ Block.T {args = Vector.new0 (),
                        kind = Kind.Jump,
                        label = blLbl,
-                       statements = Vector.new0 (),
+                       statements = Vector.new1 (unlockstmt),
                        transfer = (Transfer.CCall
                                        {args = Vector.new4 (Operand.GCState,
                                                             (Operand.word
@@ -149,7 +159,7 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
             , Block.T { args = Vector.new0 ()
                       , kind = Kind.CReturn {func = func}
                       , label = return
-                      , statements = Vector.new1 ss
+                      , statements = Vector.new2 (lockstmt,ss)
                       , transfer = ts} ]
 
 
@@ -170,21 +180,22 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
                               Operand.Runtime FLChunks,
                               Operand.Runtime MaxChunksAvailable,
                               {ifTrue=collect, ifFalse=dontCollect})
-
+          
           
 
         in
           [ Block.T { args = args
                        , kind = kind
                        , label = label
-                       , statements = Vector.new1 ss 
+                       , statements = Vector.new2 (lockstmt,ss) 
                        , transfer = ts }
         ,
             Block.T { args = Vector.new0 ()
                        , kind = Kind.Jump
                        , label = check
                        , statements = Vector.fromList ([ss2] @ (decFreeChunks
-                                                                chunksNeeded))
+                                                                chunksNeeded)
+                                                                @[ unlockstmt])
                        , transfer = ts2 }
          ] @ blockingGC block check
          

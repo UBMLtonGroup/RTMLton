@@ -95,7 +95,14 @@
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
 #define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
+
+
+/* ------------------------------------------------- */
+/*                       RTMLton                     */
+/* ------------------------------------------------- */
+
 //#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
+
 #define WB(ty,db,sb,d,s,op)                                         \
             do {                                                    \
                     if(!RTSync)                                     \
@@ -109,6 +116,11 @@
                 } while(0)                                          \
 
 #endif
+
+#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0) 
+#define Lock_fl(s) IFED(pthread_mutex_lock(&s))
+#define Unlock_fl(s) IFED(pthread_mutex_unlock(&s))
+
 
 /* ------------------------------------------------- */
 /*                       Tests                       */

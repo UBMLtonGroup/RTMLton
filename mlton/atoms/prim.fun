@@ -85,6 +85,7 @@ datatype 'a t =
  | IntInf_toVector (* ssa to rssa *)
  | IntInf_toWord (* ssa to rssa *)
  | IntInf_xorb (* ssa to rssa *)
+ | Lock_fl (* gc-check *)
  | MLton_bogus (* ssa to rssa *)
  (* of type unit -> 'a.
   * Makes a bogus value of any type.
@@ -160,6 +161,7 @@ datatype 'a t =
  | TopLevel_getSuffix (* implement suffix *)
  | TopLevel_setHandler (* implement exceptions *)
  | TopLevel_setSuffix (* implement suffix *)
+ | Unlock_fl (* gc-check *)
  | Vector_length (* ssa to rssa *)
  | Vector_sub (* ssa to rssa *)
  | Weak_canGet (* ssa to rssa *)
@@ -273,6 +275,7 @@ fun toString (n: 'a t): string =
        | IntInf_toVector => "IntInf_toVector"
        | IntInf_toWord => "IntInf_toWord"
        | IntInf_xorb => "IntInf_xorb"
+       | Lock_fl => "Lock_fl"
        | MLton_bogus => "MLton_bogus"
        | MLton_bug => "MLton_bug"
        | MLton_deserialize => "MLton_deserialize"
@@ -329,6 +332,7 @@ fun toString (n: 'a t): string =
        | TopLevel_getSuffix => "TopLevel_getSuffix"
        | TopLevel_setHandler => "TopLevel_setHandler"
        | TopLevel_setSuffix => "TopLevel_setSuffix"
+       | Unlock_fl => "Unlock_fl"
        | Vector_length => "Vector_length"
        | Vector_sub => "Vector_sub"
        | Weak_canGet => "Weak_canGet"
@@ -418,6 +422,7 @@ val equals: 'a t * 'a t -> bool =
     | (IntInf_toVector, IntInf_toVector) => true
     | (IntInf_toWord, IntInf_toWord) => true
     | (IntInf_xorb, IntInf_xorb) => true
+    | (Lock_fl,Lock_fl) =>true
     | (MLton_bogus, MLton_bogus) => true
     | (MLton_bug, MLton_bug) => true
     | (MLton_deserialize, MLton_deserialize) => true
@@ -480,6 +485,7 @@ val equals: 'a t * 'a t -> bool =
     | (TopLevel_getSuffix, TopLevel_getSuffix) => true
     | (TopLevel_setHandler, TopLevel_setHandler) => true
     | (TopLevel_setSuffix, TopLevel_setSuffix) => true
+    | (Unlock_fl,Unlock_fl) => true
     | (Vector_length, Vector_length) => true
     | (Vector_sub, Vector_sub) => true
     | (Weak_canGet, Weak_canGet) => true
@@ -586,6 +592,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | IntInf_toVector => IntInf_toVector
     | IntInf_toWord => IntInf_toWord
     | IntInf_xorb => IntInf_xorb
+    | Lock_fl => Lock_fl
     | MLton_bogus => MLton_bogus
     | MLton_bug => MLton_bug
     | MLton_deserialize => MLton_deserialize
@@ -642,6 +649,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | TopLevel_getSuffix => TopLevel_getSuffix
     | TopLevel_setHandler => TopLevel_setHandler
     | TopLevel_setSuffix => TopLevel_setSuffix
+    | Unlock_fl => Unlock_fl 
     | Vector_length => Vector_length
     | Vector_sub => Vector_sub
     | Weak_canGet => Weak_canGet
@@ -692,6 +700,8 @@ val umcPointerOffset = UM_CPointer_offset
 val cpointerAdd = CPointer_add
 val cpointerDiff = CPointer_diff
 val cpointerEqual = CPointer_equal
+val lockfl = Lock_fl
+val unlockfl = Unlock_fl
 fun cpointerGet ctype =
    let datatype z = datatype CType.t
    in
@@ -844,6 +854,7 @@ val kind: 'a t -> Kind.t =
        | IntInf_toVector => Functional
        | IntInf_toWord => Functional
        | IntInf_xorb => Functional
+       | Lock_fl => Functional
        | MLton_bogus => Functional
        | MLton_bug => SideEffect
        | MLton_deserialize => Moveable
@@ -900,6 +911,7 @@ val kind: 'a t -> Kind.t =
        | TopLevel_getSuffix => DependsOnState
        | TopLevel_setHandler => SideEffect
        | TopLevel_setSuffix => SideEffect
+       | Unlock_fl =>Functional
        | Vector_length => Functional
        | Vector_sub => Functional
        | Weak_canGet => DependsOnState
@@ -1048,6 +1060,7 @@ in
        IntInf_toVector,
        IntInf_toWord,
        IntInf_xorb,
+       Lock_fl,
        MLton_bogus,
        MLton_bug,
        MLton_deserialize,
@@ -1076,6 +1089,7 @@ in
        TopLevel_getSuffix,
        TopLevel_setHandler,
        TopLevel_setSuffix,
+       Unlock_fl,
        Vector_length,
        Vector_sub,
        Weak_canGet,
@@ -1318,6 +1332,7 @@ fun 'a checkApp (prim: 'a t,
             noTargs (fn () => (oneArg intInf, vector bigIntInfWord))
        | IntInf_toWord => noTargs (fn () => (oneArg intInf, smallIntInfWord))
        | IntInf_xorb => intInfBinary ()
+       | Lock_fl => oneTarg (fn t => (oneArg t, unit))
        | MLton_bogus => oneTarg (fn t => (noArgs, t))
        | MLton_bug => noTargs (fn () => (oneArg string, unit))
        | MLton_deserialize => oneTarg (fn t => (oneArg word8Vector, t))
@@ -1380,6 +1395,7 @@ fun 'a checkApp (prim: 'a t,
             noTargs (fn () => (oneArg (arrow (unit, unit)), unit))
        | String_toWord8Vector =>
             noTargs (fn () => (oneArg string, word8Vector))
+       | Unlock_fl =>oneTarg (fn t => (oneArg t, unit))
        | Vector_length => oneTarg (fn t => (oneArg (vector t), seqIndex))
        | Vector_sub => oneTarg (fn t => (twoArgs (vector t, seqIndex), t))
        | Weak_canGet => oneTarg (fn t => (oneArg (weak t), bool))

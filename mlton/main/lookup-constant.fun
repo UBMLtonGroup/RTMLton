@@ -68,7 +68,8 @@ val gcFields =
     "fl_chunks",
     "maxChunksAvailable",
     "rtSync",
-    "stackTopStash"
+    "stackTopStash",
+    "fl_lock"
     ]
 
 val gcFieldsOffsets =

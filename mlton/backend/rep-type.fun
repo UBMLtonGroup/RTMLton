@@ -533,6 +533,7 @@ fun ofGCField (f: GCField.t): t =
        | RTSync => word32
        | StackTopStash => cpointer ()
        | MaxChunksAvailable => csize ()
+       | FLLock => cpointer () 
    end
 
 fun castIsOk {from, to, tyconTy = _} =
