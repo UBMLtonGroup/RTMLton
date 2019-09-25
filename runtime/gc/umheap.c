@@ -18,6 +18,7 @@ void initUMHeap(GC_state s,
     h->fl_head = NULL;
     h->fl_tail = NULL;
     s->fl_chunks = 0;
+    s->maxChunksAvailable = 0;
 }
 
 /*void initUMArrayHeap(GC_state s,

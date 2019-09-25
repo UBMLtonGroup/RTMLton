@@ -30,6 +30,7 @@ struct GC_state {
   size_t exnStack[MAXPRI];
 
   size_t fl_chunks;
+  size_t maxChunksAvailable;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
@@ -91,7 +92,6 @@ struct GC_state {
   bool forceMajor;
   bool mayResize;
   struct GC_chunkedGCStatistics cGCStats;
-  size_t maxChunksAvailable;
   bool isGCRunning;
   GC_worklist worklist;
   size_t wl_size;

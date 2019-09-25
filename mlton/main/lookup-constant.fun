@@ -66,6 +66,7 @@ val gcFields =
     "stackLimit",
     "stackTop",
     "fl_chunks",
+    "maxChunksAvailable",
     "rtSync",
     "stackTopStash"
     ]

@@ -39,6 +39,7 @@ local
    implement-profiling.fun
    chunked-allocation.fun
    split-blocks.fun
+   gc-check.fun 
    limit-check.fun
    signal-check.fun
    live.sig
