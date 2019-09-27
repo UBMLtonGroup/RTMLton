@@ -97,6 +97,11 @@ GC_thread newThread (GC_state s, size_t reserved) {
   stack = newStack (s, reserved, FALSE);
 
   C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
+
+  LOCK_FL;
+  s->reserved += numchunks;
+  UNLOCK_FL;
+
   res = UM_Object_alloc(s,numchunks,GC_THREAD_HEADER,GC_NORMAL_HEADER_SIZE);
 
   /*res = newUMObject (s, GC_THREAD_HEADER,

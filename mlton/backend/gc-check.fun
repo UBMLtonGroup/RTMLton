@@ -52,7 +52,6 @@ end
 
 
 
-
 fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
  let
     
@@ -108,6 +107,22 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
             Statement.Move {dst = flChunks,
                                   src = Operand.Var {ty = resTy, var = res}}]
         end
+
+
+    fun incReserved n =
+        let
+          val reserved = Operand.Runtime Reserved
+          val res = Var.newNoname ()
+          val resTy = Operand.ty reserved
+        in
+          [Statement.PrimApp {args = (Vector.new2
+                                        (reserved, Operand.constWord n (WordSize.word32))),
+                                  dst = SOME (res, resTy),
+                                  prim = Prim.wordAdd WordSize.word32},
+            Statement.Move {dst = reserved,
+                                  src = Operand.Var {ty = resTy, var = res}}]
+        end
+
     
    fun primApp (prim, op1, op2, {ifTrue, ifFalse}) =
         let
@@ -152,7 +167,7 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
                                        {args = Vector.new4 (Operand.GCState,
                                                             (Operand.word
                                                                  (WordX.zero (WordSize.csize ()))),
-                                                            Operand.bool false,
+                                                            Operand.bool true,
                                                             Operand.bool true),
                                         func = func,
                                         return = SOME return})}
@@ -171,14 +186,26 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
         let 
           val check = Label.newNoname ()
           val block = Label.newNoname ()
+
+          val reserved = Operand.Runtime Reserved
+          val res = Var.newNoname ()
+          val resTy = Operand.ty reserved
+
+
+
+          val sAdd = Statement.PrimApp {args = (Vector.new2
+                                        (reserved, Operand.constWord chunksNeeded (WordSize.word32))),
+                                  dst = SOME (res, resTy),
+                                  prim = Prim.wordAdd WordSize.word32}
+
           val (ss, ts) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
                               Operand.Runtime FLChunks,
-                              Operand.constWord chunksNeeded (WordSize.csize ()),
+                              Operand.Var {var = res, ty = resTy},
                               {ifTrue=block, ifFalse=check})
           
           val (ss2, ts2) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
                               Operand.Runtime FLChunks,
-                              Operand.Runtime MaxChunksAvailable,
+                              Operand.Runtime HeuristicChunks,
                               {ifTrue=collect, ifFalse=dontCollect})
           
           
@@ -187,13 +214,13 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
           [ Block.T { args = args
                        , kind = kind
                        , label = label
-                       , statements = Vector.new2 (lockstmt,ss) 
+                       , statements = Vector.new3 (lockstmt,sAdd,ss) 
                        , transfer = ts }
         ,
             Block.T { args = Vector.new0 ()
                        , kind = Kind.Jump
                        , label = check
-                       , statements = Vector.fromList ([ss2] @ (decFreeChunks
+                       , statements = Vector.fromList ([ss2] @ (incReserved
                                                                 chunksNeeded)
                                                                 @[ unlockstmt])
                        , transfer = ts2 }

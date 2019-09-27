@@ -19,6 +19,7 @@ void initUMHeap(GC_state s,
     h->fl_tail = NULL;
     s->fl_chunks = 0;
     s->maxChunksAvailable = 0;
+    s->heuristicChunks =0;
 }
 
 /*void initUMArrayHeap(GC_state s,
@@ -75,12 +76,13 @@ GC_UM_Chunk allocNextChunk(GC_state s,
         c->chunk_header |= UM_CHUNK_RED_MASK;
     }
     s->fl_chunks -= 1;
+    s->reserved -= 1;
     s->cGCStats.numChunksAllocated++;
 
     return c;
 }
 
-
+#if 0
 /*Should be called only from allocNextchunk or allocNextArray Chunk because it unlocks fl_lock*/
 void blockAllocator(GC_state s,size_t numChunks)
 {
@@ -113,16 +115,21 @@ void blockAllocator(GC_state s,size_t numChunks)
         die("allocNextChunk: No more memory available\n");
 
 }
-
+#endif 
 
 GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 {
     LOCK_FL;
 
-    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) 
+    /*if (s->fl_chunks < 1 || s->fl_chunks < numChunks) 
         {
           blockAllocator(s,numChunks); 
         }
+
+    */
+
+
+    assert(numChunks <= s->reserved);
 
     GC_UM_Chunk head = allocNextChunk(s,&(s->umheap));
     head->chunk_header |= UM_CHUNK_IN_USE;
@@ -184,6 +191,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
         c->ml_array_payload.um_array_pointers[i] = NULL;
     }
     s->fl_chunks -= 1;
+    s->reserved -= 1;
     s->cGCStats.numChunksAllocated++;
     return c;
 }
@@ -192,10 +200,14 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks)
 {
 
    LOCK_FL; 
-    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) {
+    
+   /*if (s->fl_chunks < 1 || s->fl_chunks < numChunks) {
 
         blockAllocator(s,numChunks);
-    }
+    }*/
+
+   
+    assert(numChunks <= s->reserved);
    
     
     GC_UM_Array_Chunk head = allocNextArrayChunk(s,&(s->umheap));
@@ -223,29 +235,6 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks)
 
 
 
-void blockOnInsuffucientChunks(GC_state s,size_t chunksNeeded)
-{
-    LOCK_FL;
-
-    if(DEBUG_RTGC)
-        fprintf(stderr,"%d] Going to block for GC, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
-   
-  
-    /*If RTSync has not been set, a.k.a thread has not been marked, mark it*/ 
-    if(!s->rtSync[PTHREAD_NUM])
-        GC_collect(s,0,false,false) ;
-  
-    /*Blocks on cond variable , autamatically unlocks s->fl_lock*/
-    BLOCK;
-   
-    if(DEBUG_RTGC)
-        fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
-   
-    if(!(s->fl_chunks > chunksNeeded))
-        die("allocNextChunk: No more memory available\n");
-    
-    UNLOCK_FL;
-}
 
 
 void insertFreeChunk(GC_state s,
@@ -346,6 +335,9 @@ bool createUMHeap(GC_state s,
 
     /*Total number of Chunks in the Chunked heap*/
     s->maxChunksAvailable = s->fl_chunks;
+
+    /*Heuristic chunks = 30% of total chunks created on the chunked heap*/
+    s->heuristicChunks =(size_t)((30 * s->maxChunksAvailable)/100 );
 
 #ifdef PROFILE_UMGC
     fprintf(stderr, "[GC] Created heap of %d chunks\n", s->fl_chunks);

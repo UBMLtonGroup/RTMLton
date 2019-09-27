@@ -30,7 +30,8 @@ struct GC_state {
   size_t exnStack[MAXPRI];
 
   size_t fl_chunks;
-  size_t maxChunksAvailable;
+  size_t reserved;
+  size_t heuristicChunks;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
@@ -92,6 +93,7 @@ struct GC_state {
   bool forceMajor;
   bool mayResize;
   struct GC_chunkedGCStatistics cGCStats;
+  size_t maxChunksAvailable;
   bool isGCRunning;
   GC_worklist worklist;
   size_t wl_size;
@@ -123,6 +125,8 @@ struct GC_state {
   pthread_mutex_t rtThreads_lock;
   pthread_cond_t rtSync_cond;
   pthread_cond_t rtThreads_cond;
+  int threadsBlockedForGC;
+  int attempts;
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];

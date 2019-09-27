@@ -31,8 +31,9 @@ structure GCField =
        | FLChunks
        | RTSync
        | StackTopStash
-       | MaxChunksAvailable
+       | HeuristicChunks
        | FLLock
+       | Reserved
 
       val atomicStateOffset: Bytes.t ref = ref Bytes.zero
       val cardMapAbsoluteOffset: Bytes.t ref = ref Bytes.zero
@@ -51,13 +52,15 @@ structure GCField =
       val flChunksOffset: Bytes.t ref = ref Bytes.zero
       val rtSyncOffset :Bytes.t ref = ref Bytes.zero
       val stackTopStashOffset : Bytes.t ref = ref Bytes.zero
-      val maxChunksAvailableOffset: Bytes.t ref = ref Bytes.zero
+      val heuristicChunksOffset: Bytes.t ref = ref Bytes.zero
       val flLockOffset: Bytes.t ref = ref Bytes.zero
+      val reservedOffset: Bytes.t ref = ref Bytes.zero
+      
 
       fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
                       exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
                       signalIsPending, stackBottom, stackLimit, stackTop,
-                      flChunks,rtSync,stackTopStash,maxChunksAvailable,flLock} =
+                      flChunks,rtSync,stackTopStash,heuristicChunks,flLock,reserved} =
          (atomicStateOffset := atomicState
           ; cardMapAbsoluteOffset := cardMapAbsolute
           ; currentThreadOffset := currentThread
@@ -75,8 +78,9 @@ structure GCField =
           ; flChunksOffset := flChunks
           ; rtSyncOffset := rtSync
           ; stackTopStashOffset := stackTopStash
-          ; maxChunksAvailableOffset:= maxChunksAvailable
-          ; flLockOffset := flLock)
+          ; heuristicChunksOffset:= heuristicChunks
+          ; flLockOffset := flLock
+          ; reservedOffset := reserved)
 
       val offset =
          fn AtomicState => !atomicStateOffset
@@ -96,8 +100,9 @@ structure GCField =
           | FLChunks => !flChunksOffset
           | RTSync => !rtSyncOffset
           | StackTopStash => !stackTopStashOffset
-          | MaxChunksAvailable => !maxChunksAvailableOffset
+          | HeuristicChunks => !heuristicChunksOffset
           | FLLock => !flLockOffset
+          | Reserved => !reservedOffset
 
       val atomicStateSize: Bytes.t ref = ref Bytes.zero
       val cardMapAbsoluteSize: Bytes.t ref = ref Bytes.zero
@@ -115,13 +120,15 @@ structure GCField =
       val flChunksSize: Bytes.t ref = ref Bytes.zero
       val rtSyncSize: Bytes.t ref = ref Bytes.zero
       val stackTopStashSize: Bytes.t ref = ref Bytes.zero
-      val maxChunksAvailableSize: Bytes.t ref = ref Bytes.zero
+      val heuristicChunksSize: Bytes.t ref = ref Bytes.zero
       val flLockSize: Bytes.t ref = ref Bytes.zero
+      val reservedSize: Bytes.t ref = ref Bytes.zero
+
 
       fun setSizes {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
                     exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
                     signalIsPending, stackBottom, stackLimit, stackTop,
-                    flChunks,rtSync,stackTopStash,maxChunksAvailable,flLock} =
+                    flChunks,rtSync,stackTopStash,heuristicChunks,flLock,reserved} =
          (atomicStateSize := atomicState
           ; cardMapAbsoluteSize := cardMapAbsolute
           ; currentThreadSize := currentThread
@@ -138,8 +145,9 @@ structure GCField =
           ; flChunksSize := flChunks
           ; rtSyncSize := rtSync
           ; stackTopStashSize := stackTopStash
-          ; maxChunksAvailableSize := maxChunksAvailable
-          ; flLockSize := flLock)
+          ; heuristicChunksSize := heuristicChunks
+          ; flLockSize := flLock
+          ; reservedSize := reserved)
 
       val size =
          fn AtomicState => !atomicStateSize
@@ -159,8 +167,9 @@ structure GCField =
           | FLChunks => !flChunksSize
           | RTSync => !rtSyncSize
           | StackTopStash => !stackTopStashSize
-          | MaxChunksAvailable => !maxChunksAvailableSize
+          | HeuristicChunks => !heuristicChunksSize
           | FLLock => !flLockSize
+          | Reserved => !reservedSize
 
       val toString =
          fn AtomicState => "AtomicState"
@@ -180,8 +189,9 @@ structure GCField =
           | FLChunks => "FLChunks"
           | RTSync => "RTSync"
           | StackTopStash => "StackTopStash"
-          | MaxChunksAvailable => "MaxChunksAvailable"
+          | HeuristicChunks => "HeuristicChunks"
           | FLLock => "FLLock"
+          | Reserved => "Reserved"
 
       val layout = Layout.str o toString
    end

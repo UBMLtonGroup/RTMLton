@@ -33,6 +33,10 @@ UM_Header_alloc(GC_state gc_stat,
 Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
 {
+
+
+    //fprintf(stderr,"%d] UM_Object_Alloc:  Reserved = %d, NumChunks = %d\n",PTHREAD_NUM,gc_stat->reserved,num_chunks);
+
     GC_UM_Chunk chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks);
    
     assert(header !=0);

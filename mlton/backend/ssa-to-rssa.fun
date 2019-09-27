@@ -1237,7 +1237,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                     {args = (Vector.new4
                                              (GCState,
                                               Operand.zero (WordSize.csize ()),
-                                              Operand.bool true,
+                                              Operand.bool false,
                                               Operand.bool true)),
                                      func = (CFunction.gc
                                              {maySwitchThreads = handlesSignals})}

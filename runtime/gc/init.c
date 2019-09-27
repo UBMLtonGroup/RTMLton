@@ -362,6 +362,10 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->dirty = false;
   s->collectAll = true;
   
+  s->threadsBlockedForGC = 0;
+  s->attempts = 0;
+  s->reserved = 0;
+
   s->hashConsDuringGC = FALSE;
   initHeap (s, &s->heap);
   initUMHeap (s, &s->umheap);

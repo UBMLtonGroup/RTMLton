@@ -36,6 +36,10 @@ struct thrctrl
 
 #define BROADCAST IFED(pthread_cond_broadcast(&s->fl_empty_cond))
 
+#define BROADCAST_EMPTY IFED(pthread_cond_broadcast(&s->fl_empty_cond))
+#define BLOCK_EMPTY IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+
+
 #define RTSYNC_LOCK IFED(pthread_mutex_lock(&s->rtSync_lock))
 #define RTSYNC_UNLOCK IFED(pthread_mutex_unlock(&s->rtSync_lock))
 #define RTSYNC_SIGNAL IFED(pthread_cond_signal(&s->rtSync_cond))
@@ -354,8 +358,9 @@ __attribute__ ((noreturn))
        
        /* GC sweep is performed under RTSYNC_LOCK because this lock also prevents the mutators from marking their stacks*/ 
         RTSYNC_LOCK;
-        
-        RTSYNC_BLOCK;
+       
+       while(!s->dirty)
+          RTSYNC_BLOCK;
         
 
         assert(s->dirty);
@@ -368,6 +373,22 @@ __attribute__ ((noreturn))
         }
         
         s->isGCRunning = true;
+
+        /* 2 less than MAXPRI because: 
+         * GC thread is never blocked 
+         * RT thread is always blocked*/
+        if(s->threadsBlockedForGC == (MAXPRI-2))
+            s->attempts++;
+        else
+            s->attempts=0;
+
+        if(s->attempts > 2)
+        {
+            die("Insuffient Memory\n");
+
+        }
+
+        
         performGC_helper (s,
                           s->oldGenBytesRequested,
                           s->nurseryBytesRequested,
@@ -379,7 +400,8 @@ __attribute__ ((noreturn))
         s->dirty = false;
         /*Change this to reset all rtSync values for all RT threads*/
         s->rtSync[0] = false;
-     
+        
+        s->threadsBlockedForGC = 0; 
        
         s->isGCRunning = false;
        
@@ -388,7 +410,6 @@ __attribute__ ((noreturn))
             fprintf(stderr,"%d] [RTGC: GC cycle #%s completed]\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numGCCycles));
         }
         
-
         RTSYNC_UNLOCK;
         
         /*sending out singals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
@@ -871,14 +892,14 @@ if (needGCTime (s))
              100.0 * ((double)(nurserySize) / (double)(s->heap.size)));
   }
   /* Send a GC signal. */
-  if (s->signalsInfo.gcSignalHandled
+ /* if (s->signalsInfo.gcSignalHandled
       and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
     if (DEBUG_SIGNALS)
       fprintf (stderr, "GC Signal pending.\n");
     s->signalsInfo.gcSignalPending = TRUE;
     unless (s->signalsInfo.amInSignalHandler)
       s->signalsInfo.signalIsPending = TRUE;
-  }
+  }*/
   if (DEBUG_OLD)
     displayGCState (s, stderr);
   
@@ -967,74 +988,111 @@ void dummyCFunc ()
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) {
-    /*if (!force) {
-        if ((s->fl_chunks > 2000))// &&
-            //(s->fl_array_chunks > 1000000))
-            return;
-    }
-
-    if (s->gc_module == GC_NONE) {
-        return;
-    }
     
-    //fprintf(stderr,"%d] called GC-collect requesting %d bytes, free chunks = %d\n",PTHREAD_NUM,bytesRequested,s->fl_chunks);
-    GC_collect_real(s, bytesRequested, true);
-    */
+   /*The gc-check pass ensures that when the mutator executes this function, either :
+    * free chunks < 30% of total chunks available
+    * or 
+    * No free chunks available to staisfy subsequent code block allocations. So need to block mutator until woken up by GC*/
+    
+    
+    //fprintf(stderr,"%d]Hit GC_collect. ChunksAllocated = %s, FC = %d\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksAllocated),s->fl_chunks);
+    
 
-    if(!force)
+    if(s->rtSync[PTHREAD_NUM] && force)
     {
-        /*Try to get RTSync lock, if success means a) GC not Running, b) no other thread is in GC_collect
-         * if fails: dont execute section, continue with work
-         * pthread_mutex_trylock returns 0 when mutex is acquired*/
-        if(RTSYNC_TRYLOCK == 0)
+        if(DEBUG_RTGC)
         {
-            /*Assert if GC has aquired RTSync lock and is running
-             * This assert should never fail*/
-            assert(!s->isGCRunning);
-
-            if(collectRed)
-               s->collectAll = true;
-            else
-                s->collectAll = false;
-
-            /*Mark stack and the rest if the dirty but has been set by another mutator or enough chunks are available and 
-             * own thread's rtsync has not been set i.e. it hasnt marked its stack already */
-            if((s->dirty || !ensureChunksAvailable(s)) && !s->rtSync[PTHREAD_NUM])
-            {
-                if(DEBUG_RTGC)
-                    fprintf(stderr,"%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n",PTHREAD_NUM,s->dirty?"Y":"N",ensureChunksAvailable(s)?"Y":"N");
-                GC_collect_real(s,bytesRequested,true); /*marks stack*/
-                s->dirty= true;
-                s->rtSync[PTHREAD_NUM] = true;
-                /*Check if all  other RT threads have set their values*/
-                int i;
-                for(i=0;i<MAXPRI;i++)
-                {
-                    if(i==1 || i == PTHREAD_NUM)
-                        continue;
-                    if(!s->rtSync[i])
-                        break;
-                }
-                if(i == MAXPRI)
-                {
-                    RTSYNC_SIGNAL;
-                    if(DEBUG_RTGC)
-                        fprintf(stderr,"%d] Signal sent to wake GC\n",PTHREAD_NUM);
-
-                }
-                else
-                {
-                    fprintf(stderr,"%d] All Threads not synced\n",PTHREAD_NUM);
-                } 
-            }
-            RTSYNC_UNLOCK;
+            fprintf(stderr,"%d] Came to block until GC finishes. ChunksAllocated = %s, FC = %d\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksAllocated),s->fl_chunks);
         }
-    }
-    else
-    {
-        die("Why are you forcing GC_collect?\n");
+
     }
 
+    /*If stack is not marked already */
+    if(!s->rtSync[PTHREAD_NUM])
+    {
+    
+        /*Try to get RTSync lock, if success means a) GC not Running, b) no other thread is in GC_collect
+         * if fails: wait till available
+         * pthread_mutex_trylock returns 0 when mutex is acquired*/
+        
+
+        RTSYNC_LOCK;
+        /*Assert if GC has aquired RTSync lock and is running
+         * This assert should never fail*/
+        assert(!s->isGCRunning);
+
+        if(collectRed)
+           s->collectAll = true;
+        else
+            s->collectAll = false;
+
+               
+        if(DEBUG_RTGC)
+        {
+            fprintf(stderr,"%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n",PTHREAD_NUM,s->dirty?"Y":"N",ensureChunksAvailable(s)?"Y":"N");
+            fprintf(stderr,"%d]ChunksAllocated = %s, FC = %d\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksAllocated),s->fl_chunks);
+
+        }
+        
+        GC_collect_real(s,bytesRequested,true); /*marks stack*/
+        
+        s->rtSync[PTHREAD_NUM] = true;
+        /*Check if all  other RT threads have set their values*/
+        int i;
+        for(i=0;i<MAXPRI;i++)
+        {
+            if(i==1 || i == PTHREAD_NUM)
+                continue;
+            
+            if(!s->rtSync[i])
+                break;
+        }
+
+        /*Increment count when current thread will block. Must be done before signalling GC. */
+        if(force)
+            s->threadsBlockedForGC++;
+            
+        if(i == MAXPRI) /*Last thread to sync before GC*/
+        {
+           
+            s->dirty= true;          
+            RTSYNC_SIGNAL;
+            if(DEBUG_RTGC)
+                fprintf(stderr,"%d] Signal sent to wake GC\n",PTHREAD_NUM);
+
+        }
+        else
+        {
+            fprintf(stderr,"%d] All Threads not synced\n",PTHREAD_NUM);
+        } 
+    
+        
+
+
+        
+        RTSYNC_UNLOCK;
+
+               
+        
+    }
+
+     /*if have to block till woken by GC*/
+    if(force)
+    {
+
+        if(DEBUG_RTGC)
+            fprintf(stderr,"%d] Going to block till woken up by GC\n",PTHREAD_NUM);
+        
+        LOCK_FL_FROMGC;
+        BLOCK_EMPTY;
+        UNLOCK_FL_FROMGC;
+
+        if(DEBUG_RTGC)
+            fprintf(stderr,"%d] Woken up by GC. FC = %d\n",PTHREAD_NUM,s->fl_chunks);
+    }
+
+    
+       
 }
 
 void ensureHasHeapBytesFree (GC_state s,
