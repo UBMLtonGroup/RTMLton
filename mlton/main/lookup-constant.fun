@@ -68,7 +68,6 @@ val gcFields =
     "fl_chunks",
     "heuristicChunks",
     "rtSync",
-    "stackTopStash",
     "fl_lock",
     "reserved"
     ]

@@ -531,7 +531,6 @@ fun ofGCField (f: GCField.t): t =
        | StackTop => cpointer ()
        | FLChunks => csize ()
        | RTSync => word32
-       | StackTopStash => cpointer ()
        | HeuristicChunks => csize ()
        | FLLock => cpointer ()
        | Reserved => csize ()

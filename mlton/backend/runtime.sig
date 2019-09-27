@@ -34,7 +34,6 @@ signature RUNTIME =
              | StackTop (* Points at the next available byte on the stack. *)
              | FLChunks
              | RTSync
-             | StackTopStash
              | HeuristicChunks
              | FLLock
              | Reserved
@@ -57,7 +56,6 @@ signature RUNTIME =
                              stackTop: Bytes.t,
                              flChunks: Bytes.t,
                              rtSync: Bytes.t ,
-                             stackTopStash: Bytes.t,
                              heuristicChunks: Bytes.t,
                              flLock: Bytes.t,
                              reserved: Bytes.t} -> unit
@@ -77,7 +75,6 @@ signature RUNTIME =
                            stackTop: Bytes.t,
                            flChunks: Bytes.t,
                            rtSync:Bytes.t ,
-                           stackTopStash : Bytes.t,
                            heuristicChunks:Bytes.t,
                            flLock: Bytes.t,
                            reserved: Bytes.t} -> unit

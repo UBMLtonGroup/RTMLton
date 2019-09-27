@@ -103,7 +103,6 @@ struct GC_state {
 
   bool collectAll;
 
-  pointer stackTopStash; 
 
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */

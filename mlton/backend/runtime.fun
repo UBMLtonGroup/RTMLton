@@ -30,7 +30,6 @@ structure GCField =
        | StackTop
        | FLChunks
        | RTSync
-       | StackTopStash
        | HeuristicChunks
        | FLLock
        | Reserved
@@ -51,7 +50,6 @@ structure GCField =
       val umfrontierOffset: Bytes.t ref = ref Bytes.zero
       val flChunksOffset: Bytes.t ref = ref Bytes.zero
       val rtSyncOffset :Bytes.t ref = ref Bytes.zero
-      val stackTopStashOffset : Bytes.t ref = ref Bytes.zero
       val heuristicChunksOffset: Bytes.t ref = ref Bytes.zero
       val flLockOffset: Bytes.t ref = ref Bytes.zero
       val reservedOffset: Bytes.t ref = ref Bytes.zero
@@ -60,7 +58,7 @@ structure GCField =
       fun setOffsets {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
                       exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
                       signalIsPending, stackBottom, stackLimit, stackTop,
-                      flChunks,rtSync,stackTopStash,heuristicChunks,flLock,reserved} =
+                      flChunks,rtSync,heuristicChunks,flLock,reserved} =
          (atomicStateOffset := atomicState
           ; cardMapAbsoluteOffset := cardMapAbsolute
           ; currentThreadOffset := currentThread
@@ -77,7 +75,6 @@ structure GCField =
           ; stackTopOffset := stackTop
           ; flChunksOffset := flChunks
           ; rtSyncOffset := rtSync
-          ; stackTopStashOffset := stackTopStash
           ; heuristicChunksOffset:= heuristicChunks
           ; flLockOffset := flLock
           ; reservedOffset := reserved)
@@ -99,7 +96,6 @@ structure GCField =
           | StackTop => !stackTopOffset
           | FLChunks => !flChunksOffset
           | RTSync => !rtSyncOffset
-          | StackTopStash => !stackTopStashOffset
           | HeuristicChunks => !heuristicChunksOffset
           | FLLock => !flLockOffset
           | Reserved => !reservedOffset
@@ -119,7 +115,6 @@ structure GCField =
       val stackTopSize: Bytes.t ref = ref Bytes.zero
       val flChunksSize: Bytes.t ref = ref Bytes.zero
       val rtSyncSize: Bytes.t ref = ref Bytes.zero
-      val stackTopStashSize: Bytes.t ref = ref Bytes.zero
       val heuristicChunksSize: Bytes.t ref = ref Bytes.zero
       val flLockSize: Bytes.t ref = ref Bytes.zero
       val reservedSize: Bytes.t ref = ref Bytes.zero
@@ -128,7 +123,7 @@ structure GCField =
       fun setSizes {atomicState, cardMapAbsolute, currentThread, curSourceSeqsIndex,
                     exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
                     signalIsPending, stackBottom, stackLimit, stackTop,
-                    flChunks,rtSync,stackTopStash,heuristicChunks,flLock,reserved} =
+                    flChunks,rtSync,heuristicChunks,flLock,reserved} =
          (atomicStateSize := atomicState
           ; cardMapAbsoluteSize := cardMapAbsolute
           ; currentThreadSize := currentThread
@@ -144,7 +139,6 @@ structure GCField =
           ; stackTopSize := stackTop
           ; flChunksSize := flChunks
           ; rtSyncSize := rtSync
-          ; stackTopStashSize := stackTopStash
           ; heuristicChunksSize := heuristicChunks
           ; flLockSize := flLock
           ; reservedSize := reserved)
@@ -166,7 +160,6 @@ structure GCField =
           | StackTop => !stackTopSize
           | FLChunks => !flChunksSize
           | RTSync => !rtSyncSize
-          | StackTopStash => !stackTopStashSize
           | HeuristicChunks => !heuristicChunksSize
           | FLLock => !flLockSize
           | Reserved => !reservedSize
@@ -188,7 +181,6 @@ structure GCField =
           | StackTop => "StackTop"
           | FLChunks => "FLChunks"
           | RTSync => "RTSync"
-          | StackTopStash => "StackTopStash"
           | HeuristicChunks => "HeuristicChunks"
           | FLLock => "FLLock"
           | Reserved => "Reserved"

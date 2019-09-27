@@ -212,10 +212,6 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     bottom = getStackBottom (s, stack);
     top = getStackTop (s, stack);
 
-    if(s->stackTopStash > top) //Only possible when push by negative num of bytes done before the mark
-    {
-        top = s->stackTopStash; 
-    }
 
 
     if(DEBUG_STACKS)
