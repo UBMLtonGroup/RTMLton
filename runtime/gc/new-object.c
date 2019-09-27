@@ -98,9 +98,9 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
   C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
 
-  LOCK_FL;
-  s->reserved += numchunks;
-  UNLOCK_FL;
+  /*Reserve the allocation before actually allocating. 
+   * Will block if not enough chunks availabale.*/
+  reserveAllocation(s,numchunks);
 
   res = UM_Object_alloc(s,numchunks,GC_THREAD_HEADER,GC_NORMAL_HEADER_SIZE);
 

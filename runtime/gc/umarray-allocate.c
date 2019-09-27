@@ -1,12 +1,5 @@
 
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
-#define LOCK_FL_FROM_ARRAYALLOC(s) IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL_FROM_ARRAYALLOC(s) IFED(pthread_mutex_unlock(&s->fl_lock))
-
-#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
-
-
 int getLengthOfList(GC_UM_Array_Chunk head)
 {
     GC_UM_Array_Chunk current = head;
@@ -20,6 +13,10 @@ int getLengthOfList(GC_UM_Array_Chunk head)
 
     return i;
 }
+
+
+
+
 
 pointer GC_arrayAllocate (GC_state s,
                           __attribute__ ((unused)) size_t ensureBytesFree,
@@ -63,29 +60,10 @@ pointer GC_arrayAllocate (GC_state s,
 
     assert(numChunksToRequest >= numChunks);
 
-    /*This what the gc-check pass inserts for all objects allcoated in basic block.
-     * SInce the number of chunks for an array is caluclated at runtime, it becomes necessary to do
-     * the gc-check at runtime as well. This is different from the other allocations because
-     * array allocation is treated as a CCall and therefore all temp registers are pushed to stack before 
-     * this function is called, thus allowing us to perform this check at runtime while preserving the 
-     * temporaries in the generated C code from being wrongfully collected. */
-    LOCK_FL_FROM_ARRAYALLOC(s);
-    while (s->fl_chunks < (s->reserved + numChunksToRequest))
-    {   
-        UNLOCK_FL_FROM_ARRAYALLOC(s);
-        GC_collect(s,0,true,true);
-        LOCK_FL_FROM_ARRAYALLOC(s);
-    }
-
-    if(s->fl_chunks < s->heuristicChunks)
-    {
-        GC_collect(s,0,false,true);
-    }
-
-    s->reserved += (numChunksToRequest==0?1:numChunksToRequest);
-    UNLOCK_FL_FROM_ARRAYALLOC(s);
-
+   
     /*Will block if there aren't enough chunks*/    
+    reserveAllocation(s,numChunksToRequest);
+
     GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap),numChunksToRequest);
     
     if(DEBUG_CHUNK_ARRAY)
