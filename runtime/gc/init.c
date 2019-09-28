@@ -327,6 +327,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->cGCStats.numSweeps = 0;
   s->cGCStats.numChunksMarked = 0;
   s->cGCStats.numGCCycles = 0;
+  s->cGCStats.totalGCTime = 0;
 
   s->maxChunksAvailable = 0;
   s->isGCRunning = false;

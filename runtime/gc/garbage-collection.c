@@ -323,6 +323,7 @@ __attribute__ ((noreturn))
      void *GCrunner (void *_s)
 {
     GC_state s = (GC_state) _s;
+    struct timeval t0, t1;
 
     set_pthread_num (1);        // by definition
     TC.running_threads = 1;     // main thr
@@ -373,7 +374,9 @@ __attribute__ ((noreturn))
         }
         
         s->isGCRunning = true;
-
+        
+        gettimeofday(&t0, NULL);
+        
         /* 2 less than MAXPRI because: 
          * GC thread is never blocked 
          * RT thread is always blocked*/
@@ -395,7 +398,10 @@ __attribute__ ((noreturn))
                           s->forceMajor, s->mayResize);
         
         s->cGCStats.numGCCycles += 1;
-      
+        
+        gettimeofday(&t1, NULL);
+
+        s->cGCStats.totalGCTime += ((t1.tv_sec-t0.tv_sec)*1000000 + t1.tv_usec-t0.tv_usec)/1000;
 
         s->dirty = false;
         /*Change this to reset all rtSync values for all RT threads*/

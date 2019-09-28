@@ -49,6 +49,7 @@ struct GC_chunkedGCStatistics {
   uintmax_t numSweeps;
   uintmax_t numChunksMarked; 
   uintmax_t numGCCycles; 
+  uintmax_t totalGCTime;
 };
 
 

@@ -51,6 +51,8 @@ static void displayChunkedGCStats(GC_state s, FILE *out)
     fprintf(out,"Number of Chunks allocated = %s\n",uintmaxToCommaString (s->cGCStats.numChunksAllocated));
     fprintf(out,"Number of Chunks Freed = %s\n",uintmaxToCommaString (s->cGCStats.numChunksFreed));
     fprintf(out,"Number of GC Sweeps = %s\n",uintmaxToCommaString (s->cGCStats.numSweeps));
+    fprintf(out,"Total GC Time = %s\n",uintmaxToCommaString (s->cGCStats.totalGCTime));
+    
 
 }
 
