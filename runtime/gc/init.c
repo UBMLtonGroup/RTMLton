@@ -236,6 +236,14 @@ int processAtMLton (GC_state s, int start, int argc, char **argv,
           unless (0.0 <= s->controls.ratios.stackShrink
                   and s->controls.ratios.stackShrink <= 1.0)
             die ("@MLton stack-shrink-ratio argument must be between 0.0 and 1.0.");
+        }else if (0 == strcmp (arg, "hpercent")) {
+          i++;
+          if (i == argc)
+            die ("@MLton hPercent missing argument.");
+          s->hPercent = stringToFloat (argv[i++]);
+          unless (0.0 <= s->hPercent
+                  and s->hPercent <= 1.0)
+            die ("@MLton hpercent argument must be between 0.0 and 1.0.");
         } else if (0 == strcmp (arg, "use-mmap")) {
           i++;
           if (i == argc)
@@ -293,6 +301,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->controls.ratios.stackMaxReserved = 8.0f;
   s->controls.ratios.stackShrink = 0.5f;
   s->controls.summary = FALSE;
+  s->hPercent = 0.3f; /**/
   s->cumulativeStatistics.bytesAllocated = 0;
   s->cumulativeStatistics.bytesCopied = 0;
   s->cumulativeStatistics.bytesCopiedMinor = 0;

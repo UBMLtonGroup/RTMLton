@@ -337,7 +337,7 @@ bool createUMHeap(GC_state s,
     s->maxChunksAvailable = s->fl_chunks;
 
     /*Heuristic chunks = 30% of total chunks created on the chunked heap*/
-    s->heuristicChunks =(size_t)((30 * s->maxChunksAvailable)/100 );
+    s->heuristicChunks =(size_t)( s->hPercent * s->maxChunksAvailable );
 
 #ifdef PROFILE_UMGC
     fprintf(stderr, "[GC] Created heap of %d chunks\n", s->fl_chunks);
