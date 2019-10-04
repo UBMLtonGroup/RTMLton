@@ -971,14 +971,17 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
   /* When the mutator requests zero bytes, it may actually need as
    * much as GC_HEAP_LIMIT_SLOP.
    */
-  if (0 == bytesRequested)
+  /*if (0 == bytesRequested)
     bytesRequested = GC_HEAP_LIMIT_SLOP;
   getThreadCurrent(s)->bytesNeeded = bytesRequested;
   switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
   ensureInvariantForMutator (s, force);
 
   assert (invariantForMutatorFrontier(s));
-  assert (invariantForMutatorStack(s));
+  assert (invariantForMutatorStack(s));*/
+
+  markStack(s,getStackCurrent(s));
+
   leave (s);
 
   if (DEBUG_MEM) {
@@ -1003,6 +1006,10 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) 
     
     //fprintf(stderr,"%d]Hit GC_collect. ChunksAllocated = %s, FC = %d\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numChunksAllocated),s->fl_chunks);
     
+    struct timeval t0, t1;
+
+    gettimeofday(&t0, NULL);
+
 
     if(s->rtSync[PTHREAD_NUM] && force)
     {
@@ -1041,6 +1048,9 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) 
         }
         
         GC_collect_real(s,bytesRequested,true); /*marks stack*/
+
+         
+        
         
         s->rtSync[PTHREAD_NUM] = true;
         /*Check if all  other RT threads have set their values*/
@@ -1081,11 +1091,12 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) 
                
         
     }
+    
 
      /*if have to block till woken by GC*/
     if(force)
     {
-
+        s->blocked++;
         if(DEBUG_RTGC)
             fprintf(stderr,"%d] Going to block till woken up by GC\n",PTHREAD_NUM);
         
@@ -1096,8 +1107,15 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) 
         if(DEBUG_RTGC)
             fprintf(stderr,"%d] Woken up by GC. FC = %d\n",PTHREAD_NUM,s->fl_chunks);
     }
-
     
+    gettimeofday(&t1, NULL);
+
+    uintmax_t tmp = ((t1.tv_sec-t0.tv_sec)*1000000 + t1.tv_usec-t0.tv_usec)/1000;
+    
+    if(tmp > s->cGCStats.maxMutatorPauseTime)
+        s->cGCStats.maxMutatorPauseTime = tmp;
+
+   
        
 }
 

@@ -50,6 +50,7 @@ struct GC_chunkedGCStatistics {
   uintmax_t numChunksMarked; 
   uintmax_t numGCCycles; 
   uintmax_t totalGCTime;
+  uintmax_t maxMutatorPauseTime;
 };
 
 

@@ -145,7 +145,10 @@ realtimeRunner (void *paramsPtr)
      if(DEBUG)
             fprintf(stderr,"%d] Blocking RT-Thread.FOREVA.\n",tNum);
         LOCK_RT_THREADS;
-        BLOCK_RT_THREADS;
+
+        while(state->rtSync[PTHREAD_NUM])
+            BLOCK_RT_THREADS;
+
         UNLOCK_RT_THREADS;
 
  while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)

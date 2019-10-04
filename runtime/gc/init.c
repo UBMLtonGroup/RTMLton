@@ -328,10 +328,11 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->cGCStats.numChunksMarked = 0;
   s->cGCStats.numGCCycles = 0;
   s->cGCStats.totalGCTime = 0;
+  s->cGCStats.maxMutatorPauseTime =0;
 
   s->maxChunksAvailable = 0;
   s->isGCRunning = false;
-  
+  s->blocked = 0; 
   
   s->wl_size = 100;
   s->wl_length = 0;

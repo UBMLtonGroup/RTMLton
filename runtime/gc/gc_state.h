@@ -127,7 +127,7 @@ struct GC_state {
   int threadsBlockedForGC;
   int attempts;
   float hPercent; /*Percentage of total chunks to consider for signalling GC*/
-
+  int blocked;
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];
