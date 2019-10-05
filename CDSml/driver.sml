@@ -77,11 +77,17 @@ struct
             val jTime = (Array.sub(ts,i) - Array.sub(tr,i))
             val rTime = (cTime + jTime)
         in
-          (*print(IntInf.toString(cTime)^": comp time \n");
+        (*  print(IntInf.toString(cTime)^": comp time \n");
           print(IntInf.toString(jTime)^": jitter time \n");
+          print(IntInf.toString(rTime)^" : response time\n"); 
 
-          print(IntInf.toString(Array.sub(tr,i))^": ideal release time \n");*)
-          (*print(IntInf.toString(rTime)^"\n");*)
+          print(IntInf.toString(Array.sub(ts,i))^": start time \n");
+          print(IntInf.toString(Array.sub(tc,i))^": Completeion time \n");
+
+          print(IntInf.toString(Array.sub(tr,i))^": ideal release time \n");
+
+          *)
+
           Array.update(responseList,i,rTime);
           Array.update(compList,i,cTime); 
           Array.update(jitList,i,jTime) 
@@ -124,7 +130,7 @@ struct
     let 
       (*val frameBuffer = Frames.readFromFile("frames_col.txt")*)
 
-      val maxFrames = 200
+      val maxFrames = 10
      
 
       val frameBuffer = Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(899.995000,100.000000,5.000000),(909.995000,100.000000,5.000000),(919.995000,100.000000,5.000000),(929.995000,100.000000,5.000000),(939.995000,100.000000,5.000000),(949.995000,100.000000,5.000000),(959.995000,100.000000,5.000000),(969.995000,100.000000,5.000000),(979.995000,100.000000,5.000000),(989.995000,100.000000,5.000000),(899.995000,120.000000,5.000000),(909.995000,120.000000,5.000000),(919.995000,120.000000,5.000000),(929.995000,120.000000,5.000000),(939.995000,120.000000,5.000000),(949.995000,120.000000,5.000000),(959.995000,120.000000,5.000000),(969.995000,120.000000,5.000000),(979.995000,120.000000,5.000000),(989.995000,120.000000,5.000000),(502.000000,100.000000,5.000000),(512.000000,100.000000,5.000000),(522.000000,100.000000,5.000000),(532.000000,100.000000,5.000000),(542.000000,100.000000,5.000000),(552.000000,100.000000,5.000000),(562.000000,100.000000,5.000000),(572.000000,100.000000,5.000000),(582.000000,100.000000,5.000000),(592.000000,100.000000,5.000000),(502.000000,120.000000,5.000000),(512.000000,120.000000,5.000000),(522.000000,120.000000,5.000000),(532.000000,120.000000,5.000000),(542.000000,120.000000,5.000000),(552.000000,120.000000,5.000000),(562.000000,120.000000,5.000000),(572.000000,120.000000,5.000000),(582.000000,120.000000,5.000000),(592.000000,120.000000,5.000000)] )) 
@@ -527,7 +533,7 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
  :: 
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(716.120900,100.000000,5.000000),(726.120900,100.000000,5.000000),(736.120900,100.000000,5.000000),(746.120900,100.000000,5.000000),(756.120900,100.000000,5.000000),(766.120900,100.000000,5.000000),(776.120900,100.000000,5.000000),(786.120900,100.000000,5.000000),(796.120900,100.000000,5.000000),(806.120900,100.000000,5.000000),(716.120900,120.000000,5.000000),(726.120900,120.000000,5.000000),(736.120900,120.000000,5.000000),(746.120900,120.000000,5.000000),(756.120900,120.000000,5.000000),(766.120900,120.000000,5.000000),(776.120900,120.000000,5.000000),(786.120900,120.000000,5.000000),(796.120900,120.000000,5.000000),(806.120900,120.000000,5.000000),(836.588400,100.000000,5.000000),(846.588400,100.000000,5.000000),(856.588400,100.000000,5.000000),(866.588400,100.000000,5.000000),(876.588400,100.000000,5.000000),(886.588400,100.000000,5.000000),(896.588400,100.000000,5.000000),(906.588400,100.000000,5.000000),(916.588400,100.000000,5.000000),(926.588400,100.000000,5.000000),(836.588400,120.000000,5.000000),(846.588400,120.000000,5.000000),(856.588400,120.000000,5.000000),(866.588400,120.000000,5.000000),(876.588400,120.000000,5.000000),(886.588400,120.000000,5.000000),(896.588400,120.000000,5.000000),(906.588400,120.000000,5.000000),(916.588400,120.000000,5.000000),(926.588400,120.000000,5.000000)] )) 
  :: []
-
+ 
            
       val ts = Array.array(maxFrames,Time.toMicroseconds (Time.zeroTime)) 
       val tc = Array.array(maxFrames,Time.toMicroseconds(Time.zeroTime) )
@@ -537,7 +543,16 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
     fun populateIdealTime(t0) = 
         for(0 to (Array.length(tr)-1) ) (fn i => Array.update(tr,i, (t0 + (Time.toMicroseconds(period)* Int.toLarge(i))) ) ) 
 
-           
+          
+      fun maybeSleep start =
+        let 
+          val elapsed = Time.toMicroseconds(Time.now()) - start
+          val sleeptime = Time.toMicroseconds(period) - elapsed
+        in
+          if sleeptime > 0 then (print(IntInf.toString(sleeptime) ^ " : sleep time us\n");sleepForPeriod (Time.fromMicroseconds sleeptime))
+          else ()
+        end
+     
       val responseTimeList : Time.time list ref  = ref [];
       
       fun loop ([],i) = ()
@@ -546,7 +561,7 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
                                                         TransientDetector.TRANSIENTDETECTOR_run(x) ; 
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
                                                         (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
-                                                        sleepForPeriod(period);
+                                                        maybeSleep (Array.sub(ts,i));
                                                         loop(xs,(i+1)) ) 
                           else
                             ()
