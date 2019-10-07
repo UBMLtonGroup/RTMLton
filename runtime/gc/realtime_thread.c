@@ -107,12 +107,12 @@ realtimeRunner (void *paramsPtr)
     state->rtSync[PTHREAD_NUM]= true;
 
 
-    if((state->callFromCHandlerThread != BOGUS_OBJPTR))
+    LOCK_RT_THREADS;
+    while(!(state->callFromCHandlerThread != BOGUS_OBJPTR))
     {
         /*This will be unblocked in GC_setcallFromCHandlerThread */
         if(DEBUG)
             fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
-        LOCK_RT_THREADS;
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
@@ -142,22 +142,38 @@ realtimeRunner (void *paramsPtr)
   
     /*Using same lock to BLOCK again. This time it wont be unblocked. 
      * TODO: Define what RT threads should do*/
-     if(DEBUG)
+     
+    if(state->numAllocedByRT <= 0)
+    {
+    if(DEBUG)
             fprintf(stderr,"%d] Blocking RT-Thread.FOREVA.\n",tNum);
-        LOCK_RT_THREADS;
+        
+       LOCK_RT_THREADS;
 
         while(state->rtSync[PTHREAD_NUM])
             BLOCK_RT_THREADS;
 
-        UNLOCK_RT_THREADS;
+        UNLOCK_RT_THREADS; 
+    }
 
+     fprintf(stderr,"%d] RT thread ALLOCATING\n",tNum);
  while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
   {
-     
+    pointer res; 
      state->rtSync[PTHREAD_NUM]= true;
       if(DEBUG_THREADS)
           fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
+  
+      reserveAllocation(state,state->numAllocedByRT);
 
+      res = UM_Object_alloc(state,state->numAllocedByRT,(GC_header)3,GC_NORMAL_HEADER_SIZE);  
+
+      state->allocedByRT+=state->numAllocedByRT; 
+     
+
+      if(DEBUG_THREADS)
+          fprintf(stderr, "Empty chunk: "FMTPTR" \n", (uintptr_t) res);
+   
       sched_yield();
     
   }

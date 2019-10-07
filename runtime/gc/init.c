@@ -67,6 +67,23 @@ bad:
   die ("Invalid @MLton memory amount: %s.", s);
 }
 
+
+static size_t stringToBytesNum (char *s) {
+  double d;
+  char *endptr;
+
+  d = strtod (s, &endptr);
+  if (s == endptr)
+    goto bad;
+  unless (*endptr == '\0'
+          and 0.0 <= d
+          and d <= (double)SIZE_MAX)
+    goto bad;
+  return (size_t)d;
+bad:
+  die ("Invalid @MLton memory amount: %s.", s);
+}
+
 /* ---------------------------------------------------------------- */
 /*                             GC_init                              */
 /* ---------------------------------------------------------------- */
@@ -244,6 +261,11 @@ int processAtMLton (GC_state s, int start, int argc, char **argv,
           unless (0.0 <= s->hPercent
                   and s->hPercent <= 1.0)
             die ("@MLton hpercent argument must be between 0.0 and 1.0.");
+        }else if (0 == strcmp (arg, "rtobj")) {
+          i++;
+          if (i == argc)
+            die ("@MLton rtobj missing argument.");
+          s->numAllocedByRT = stringToBytesNum (argv[i++]);
         } else if (0 == strcmp (arg, "use-mmap")) {
           i++;
           if (i == argc)
@@ -333,6 +355,9 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->maxChunksAvailable = 0;
   s->isGCRunning = false;
   s->blocked = 0; 
+
+  s->allocedByRT=0;
+  s->numAllocedByRT = 0;
   
   s->wl_size = 100;
   s->wl_length = 0;

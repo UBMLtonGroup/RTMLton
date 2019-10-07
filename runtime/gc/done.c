@@ -54,6 +54,8 @@ static void displayChunkedGCStats(GC_state s, FILE *out)
     fprintf(out,"Total GC Time = %s\n",uintmaxToCommaString (s->cGCStats.totalGCTime));
     fprintf(out,"Mutator was blocked %d times\n",s->blocked);
     fprintf(out,"Max mutator pause time = %s\n",uintmaxToCommaString (s->cGCStats.maxMutatorPauseTime));
+    fprintf(out,"Allocted by RT thread = %s\n",uintmaxToCommaString (s->allocedByRT));
+
 
 }
 

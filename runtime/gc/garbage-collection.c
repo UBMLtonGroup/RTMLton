@@ -1096,7 +1096,8 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) 
      /*if have to block till woken by GC*/
     if(force)
     {
-        s->blocked++;
+        if(PTHREAD_NUM == 0)
+            s->blocked++;
         if(DEBUG_RTGC)
             fprintf(stderr,"%d] Going to block till woken up by GC\n",PTHREAD_NUM);
         
@@ -1111,8 +1112,10 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force,bool collectRed) 
     gettimeofday(&t1, NULL);
 
     uintmax_t tmp = ((t1.tv_sec-t0.tv_sec)*1000000 + t1.tv_usec-t0.tv_usec)/1000;
-    
-    if(tmp > s->cGCStats.maxMutatorPauseTime)
+   
+
+    if( (tmp > s->cGCStats.maxMutatorPauseTime) && 
+            (PTHREAD_NUM == 0))
         s->cGCStats.maxMutatorPauseTime = tmp;
 
    

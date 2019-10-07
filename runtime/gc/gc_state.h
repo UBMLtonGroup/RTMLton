@@ -128,6 +128,8 @@ struct GC_state {
   int attempts;
   float hPercent; /*Percentage of total chunks to consider for signalling GC*/
   int blocked;
+  uintmax_t allocedByRT;
+  size_t numAllocedByRT; 
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];
