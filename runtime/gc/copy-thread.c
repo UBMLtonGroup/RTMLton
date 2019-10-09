@@ -16,7 +16,7 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
   /* newThread may do a GC, which invalidates from.
    * Hence we need to stash from someplace that the GC can find it.
    */
-  assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+ // assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
   s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
   to = newThread (s, alignStackReserved(s, used));
   from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->heap.start) + offsetofThread (s));

@@ -359,7 +359,7 @@ int GC_init (GC_state s, int argc, char **argv) {
   s->allocedByRT=0;
   s->numAllocedByRT = 0;
   
-  s->wl_size = 100;
+  s->wl_size = 500;
   s->wl_length = 0;
 
   pthread_mutex_init (&s->wl_lock, NULL);

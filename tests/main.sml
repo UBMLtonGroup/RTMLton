@@ -12,10 +12,13 @@ end
 
 structure FibTest = BenchTest(Fib)
 structure MandelbrotTest = BenchTest(Mandelbrot)
-structure Md5Test = BenchTest(Md5)
 structure MatrixTest = BenchTest(MatrixMultiply)
+structure Md5Test = BenchTest(Md5)
+structure NucleicTest = BenchTest(Nucleic)
 
+
+val () = NucleicTest.run 5
 val () = FibTest.run 5
-val () = MandelbrotTest.run 5
 val () = Md5Test.run 5
+val () = MandelbrotTest.run 5
 val () = MatrixTest.run 5

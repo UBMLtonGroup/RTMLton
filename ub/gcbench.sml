@@ -201,7 +201,17 @@ in
   (Real.toString((Time.toReal(Timer.checkRealTimer tmr)) *1000.0)^"\n",result)
 end
 
-val (s,_) = timeit Main.doit ()
+fun timeme f x = 
+let 
+  val start = Time.toMicroseconds(Time.now ())
+ in
+  ( (f x) ; IntInf.toString(Time.toMicroseconds(Time.now()) - start))
+end
+
+
+(*val (s,_) = timeit Main.doit ()*)
+
+val s = timeme Main.doit ()
 
 val _ = print ("Time taken :"^s^"\n")
 

@@ -5,6 +5,7 @@ local
     mandelbrot.sml
     md5.sml
     matrix-multiply.sml
+    nucleic.sml
 in
     main.sml
 end
