@@ -2,155 +2,7 @@
 structure Driver = 
 struct
 
-datatype Tree = Dummy
-              | Node of { left: Tree ref, right: Tree ref, i: int, j: int }
-
-fun make_empty_node () =
-  Node { left= ref Dummy, right= ref Dummy, i= 0, j= 0 }
-
-fun make_node (l, r) =
-  Node { left= ref l, right= ref r, i= 0, j= 0 }
-
-fun PrintDiagnostics () = ()
-
-fun gcbench kStretchTreeDepth =
-
-  let open Int
-
-      fun expt (m:int, n:int) =
-        if n = 0 then 1 else m * expt (m, n - 1)
-  
-      (*  Nodes used by a tree of a given size  *)
-      fun TreeSize i =
-        expt (2, i + 1) - 1
-  
-      (*  Number of iterations to use for a given tree depth  *)
-      fun NumIters i =
-        (2 * (TreeSize kStretchTreeDepth)) div (TreeSize i)
-
-      (*
-      ;  Parameters are determined by kStretchTreeDepth.
-      ;  In Boehm's version the parameters were fixed as follows:
-      ;    public static final int kStretchTreeDepth    = 18;  // about 16Mb
-      ;    public static final int kLongLivedTreeDepth  = 16;  // about 4Mb
-      ;    public static final int kArraySize  = 500000;       // about 4Mb
-      ;    public static final int kMinTreeDepth = 4;
-      ;    public static final int kMaxTreeDepth = 16;
-      ;  In Larceny the storage numbers above would be 12 Mby, 3 Mby, 6 Mby.
-      *)
-
-      val kLongLivedTreeDepth = kStretchTreeDepth - 2
-      val kArraySize          = 4 * (TreeSize kLongLivedTreeDepth)
-      val kMinTreeDepth       = 4
-      val kMaxTreeDepth       = kLongLivedTreeDepth
-    
-      (*  Build tree top down, assigning to older objects.  *)
-      fun Populate (iDepth, Node { left=lr, right=rr, i, j }) =
-            if iDepth <= 0
-                then false
-                else let val iDepth = iDepth - 1
-                     in
-                     (
-                         lr := make_empty_node();
-                         rr := make_empty_node();
-                         Populate (iDepth, !lr);
-                         Populate (iDepth, !rr)
-                     )
-                     end
-         | Populate (_, Dummy) = (print "no"  ; false)
-
-      (*  Build tree bottom-up  *)
-      fun MakeTree iDepth =
-        if iDepth <= 0
-            then make_empty_node()
-            else make_node (MakeTree (iDepth - 1),
-                            MakeTree (iDepth - 1))
-      
-      fun TimeConstruction depth =
-        let val iNumIters = NumIters depth
-        in
-        (
-          (*print (concat ["Creating ",
-                         toString iNumIters,
-                         " trees of depth ",
-                         toString depth,
-                         "\n"]); *)
-          let fun loop i =
-                if i < iNumIters
-                  then (Populate (depth, make_empty_node());
-                        loop (i + 1))
-                  else ()
-          in loop 0
-          end;
-          let fun loop i =
-                if i < iNumIters
-                  then (MakeTree depth;
-                        loop (i + 1))
-                  else ()
-          in loop 0
-          end
-        )
-        end
-      
-      fun main () =
-        (
-       (* print "Garbage Collector Test\n";
-        print (concat [" Stretching memory with a binary tree of depth ",
-                       toString kStretchTreeDepth,
-                       "\n"]); *)
-        PrintDiagnostics();
-        (*  Stretch the memory space quickly  *)
-        MakeTree kStretchTreeDepth;
-                         
-        (*  Create a long lived object  *)
-        (*print (concat[" Creating a long-lived binary tree of depth ",
-                      toString kLongLivedTreeDepth,
-                      "\n"]);*)
-        let val longLivedTree = make_empty_node()
-        in
-        (
-          Populate (kLongLivedTreeDepth, longLivedTree);
-          
-          (*  Create long-lived array, filling half of it  *)
-          (*print (concat [" Creating a long-lived array of ",
-                         toString kArraySize,
-                         " inexact reals\n"]);*)
-          let open Array
-              val arr = array (kArraySize, 0.0)
-              fun loop1 i =
-                if i < (kArraySize div 2)
-                  then (update (arr, i, 1.0/(Real.fromInt(i)));
-                        loop1 (i + 1))
-                  else ()
-              fun loop2 d =
-                if d <= kMaxTreeDepth
-                  then (TimeConstruction d;
-                        loop2 (d + 2))
-                  else ()
-          in
-          (
-            loop1 0;
-            PrintDiagnostics();
-
-            loop2 kMinTreeDepth;
-
-            if (longLivedTree = Dummy)
-               orelse
-               let val n = min (1000, (length(arr) div 2) - 1)
-               in Real.!= (sub (arr, n), (1.0 / Real.fromInt(n)))
-               end
-              then () (*print "Failed\n"*)
-              else ()
-            (*  fake reference to LongLivedTree
-                and array to keep them from being optimized away
-            *)
-          )
-          end)
-        end;
-        PrintDiagnostics())
-  in main()
-  end
-
+    val maxF = 2000
 
   (*To do read properly from file*)
     datatype for = to of int * int
@@ -230,8 +82,8 @@ fun gcbench kStretchTreeDepth =
                         end
             val rTime = (cTime + jTime)
         in
-         (* print(IntInf.toString(cTime)^": comp time \n");
-          print(IntInf.toString(jTime)^": jitter time \n");
+          print(IntInf.toString(cTime)^",");
+         (* print(IntInf.toString(jTime)^": jitter time \n");
           print(IntInf.toString(rTime)^" : response time\n"); 
 
           print(IntInf.toString(Array.sub(ts,i))^": start time \n");
@@ -248,11 +100,14 @@ fun gcbench kStretchTreeDepth =
         
 
     in
+        print("\n @");
         for(0 to (Array.length(tr) -1)) (fn i => calculateTimes(i));
+        print("@");
         (*for(0 to (Array.length(tr) -1)) (fn i =>
         * print(IntInf.toString(Array.sub(responseList,i))^"\n"))*)
         (*printBenchmarkResults (Array.foldr (op ::) [] responseList,0)*)
-
+        
+        print("\n");
         print("Detector Completed\n");
         print("=============================================================\n");
         print("Max response time = "^IntInf.toString(IntInf.div((max_arr responseList),1000))^" ms \n");
@@ -283,7 +138,7 @@ fun gcbench kStretchTreeDepth =
     let 
       (*val frameBuffer = Frames.readFromFile("frames_col.txt")*)
 
-      val maxFrames = 200
+      val maxFrames = maxF
      
 
       val frameBuffer = Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(899.995000,100.000000,5.000000),(909.995000,100.000000,5.000000),(919.995000,100.000000,5.000000),(929.995000,100.000000,5.000000),(939.995000,100.000000,5.000000),(949.995000,100.000000,5.000000),(959.995000,100.000000,5.000000),(969.995000,100.000000,5.000000),(979.995000,100.000000,5.000000),(989.995000,100.000000,5.000000),(899.995000,120.000000,5.000000),(909.995000,120.000000,5.000000),(919.995000,120.000000,5.000000),(929.995000,120.000000,5.000000),(939.995000,120.000000,5.000000),(949.995000,120.000000,5.000000),(959.995000,120.000000,5.000000),(969.995000,120.000000,5.000000),(979.995000,120.000000,5.000000),(989.995000,120.000000,5.000000),(502.000000,100.000000,5.000000),(512.000000,100.000000,5.000000),(522.000000,100.000000,5.000000),(532.000000,100.000000,5.000000),(542.000000,100.000000,5.000000),(552.000000,100.000000,5.000000),(562.000000,100.000000,5.000000),(572.000000,100.000000,5.000000),(582.000000,100.000000,5.000000),(592.000000,100.000000,5.000000),(502.000000,120.000000,5.000000),(512.000000,120.000000,5.000000),(522.000000,120.000000,5.000000),(532.000000,120.000000,5.000000),(542.000000,120.000000,5.000000),(552.000000,120.000000,5.000000),(562.000000,120.000000,5.000000),(572.000000,120.000000,5.000000),(582.000000,120.000000,5.000000),(592.000000,120.000000,5.000000)] )) 
@@ -331,7 +186,7 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(897.582460,100.000000,5.000000),(907.582460,100.000000,5.000000),(917.582460,100.000000,5.000000),(927.582460,100.000000,5.000000),(937.582460,100.000000,5.000000),(947.582460,100.000000,5.000000),(957.582460,100.000000,5.000000),(967.582460,100.000000,5.000000),(977.582460,100.000000,5.000000),(987.582460,100.000000,5.000000),(897.582460,120.000000,5.000000),(907.582460,120.000000,5.000000),(917.582460,120.000000,5.000000),(927.582460,120.000000,5.000000),(937.582460,120.000000,5.000000),(947.582460,120.000000,5.000000),(957.582460,120.000000,5.000000),(967.582460,120.000000,5.000000),(977.582460,120.000000,5.000000),(987.582460,120.000000,5.000000),(543.911300,100.000000,5.000000),(553.911300,100.000000,5.000000),(563.911300,100.000000,5.000000),(573.911300,100.000000,5.000000),(583.911300,100.000000,5.000000),(593.911300,100.000000,5.000000),(603.911300,100.000000,5.000000),(613.911300,100.000000,5.000000),(623.911300,100.000000,5.000000),(633.911300,100.000000,5.000000),(543.911300,120.000000,5.000000),(553.911300,120.000000,5.000000),(563.911300,120.000000,5.000000),(573.911300,120.000000,5.000000),(583.911300,120.000000,5.000000),(593.911300,120.000000,5.000000),(603.911300,120.000000,5.000000),(613.911300,120.000000,5.000000),(623.911300,120.000000,5.000000),(633.911300,120.000000,5.000000)] )) 
  :: 
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(897.357900,100.000000,5.000000),(907.357900,100.000000,5.000000),(917.357900,100.000000,5.000000),(927.357900,100.000000,5.000000),(937.357900,100.000000,5.000000),(947.357900,100.000000,5.000000),(957.357900,100.000000,5.000000),(967.357900,100.000000,5.000000),(977.357900,100.000000,5.000000),(987.357900,100.000000,5.000000),(897.357900,120.000000,5.000000),(907.357900,120.000000,5.000000),(917.357900,120.000000,5.000000),(927.357900,120.000000,5.000000),(937.357900,120.000000,5.000000),(947.357900,120.000000,5.000000),(957.357900,120.000000,5.000000),(967.357900,120.000000,5.000000),(977.357900,120.000000,5.000000),(987.357900,120.000000,5.000000),(545.898700,100.000000,5.000000),(555.898700,100.000000,5.000000),(565.898700,100.000000,5.000000),(575.898700,100.000000,5.000000),(585.898700,100.000000,5.000000),(595.898700,100.000000,5.000000),(605.898700,100.000000,5.000000),(615.898700,100.000000,5.000000),(625.898700,100.000000,5.000000),(635.898700,100.000000,5.000000),(545.898700,120.000000,5.000000),(555.898700,120.000000,5.000000),(565.898700,120.000000,5.000000),(575.898700,120.000000,5.000000),(585.898700,120.000000,5.000000),(595.898700,120.000000,5.000000),(605.898700,120.000000,5.000000),(615.898700,120.000000,5.000000),(625.898700,120.000000,5.000000),(635.898700,120.000000,5.000000)] )) 
- ::  (* here *)
+ ::  (* here  *)
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(897.123500,100.000000,5.000000),(907.123500,100.000000,5.000000),(917.123500,100.000000,5.000000),(927.123500,100.000000,5.000000),(937.123500,100.000000,5.000000),(947.123500,100.000000,5.000000),(957.123500,100.000000,5.000000),(967.123500,100.000000,5.000000),(977.123500,100.000000,5.000000),(987.123500,100.000000,5.000000),(897.123500,120.000000,5.000000),(907.123500,120.000000,5.000000),(917.123500,120.000000,5.000000),(927.123500,120.000000,5.000000),(937.123500,120.000000,5.000000),(947.123500,120.000000,5.000000),(957.123500,120.000000,5.000000),(967.123500,120.000000,5.000000),(977.123500,120.000000,5.000000),(987.123500,120.000000,5.000000),(547.884900,100.000000,5.000000),(557.884900,100.000000,5.000000),(567.884900,100.000000,5.000000),(577.884900,100.000000,5.000000),(587.884900,100.000000,5.000000),(597.884900,100.000000,5.000000),(607.884900,100.000000,5.000000),(617.884900,100.000000,5.000000),(627.884900,100.000000,5.000000),(637.884900,100.000000,5.000000),(547.884900,120.000000,5.000000),(557.884900,120.000000,5.000000),(567.884900,120.000000,5.000000),(577.884900,120.000000,5.000000),(587.884900,120.000000,5.000000),(597.884900,120.000000,5.000000),(607.884900,120.000000,5.000000),(617.884900,120.000000,5.000000),(627.884900,120.000000,5.000000),(637.884900,120.000000,5.000000)] )) 
  :: 
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(896.879100,100.000000,5.000000),(906.879100,100.000000,5.000000),(916.879100,100.000000,5.000000),(926.879100,100.000000,5.000000),(936.879100,100.000000,5.000000),(946.879100,100.000000,5.000000),(956.879100,100.000000,5.000000),(966.879100,100.000000,5.000000),(976.879100,100.000000,5.000000),(986.879100,100.000000,5.000000),(896.879100,120.000000,5.000000),(906.879100,120.000000,5.000000),(916.879100,120.000000,5.000000),(926.879100,120.000000,5.000000),(936.879100,120.000000,5.000000),(946.879100,120.000000,5.000000),(956.879100,120.000000,5.000000),(966.879100,120.000000,5.000000),(976.879100,120.000000,5.000000),(986.879100,120.000000,5.000000),(549.869900,100.000000,5.000000),(559.869900,100.000000,5.000000),(569.869900,100.000000,5.000000),(579.869900,100.000000,5.000000),(589.869900,100.000000,5.000000),(599.869900,100.000000,5.000000),(609.869900,100.000000,5.000000),(619.869900,100.000000,5.000000),(629.869900,100.000000,5.000000),(639.869900,100.000000,5.000000),(549.869900,120.000000,5.000000),(559.869900,120.000000,5.000000),(569.869900,120.000000,5.000000),(579.869900,120.000000,5.000000),(589.869900,120.000000,5.000000),(599.869900,120.000000,5.000000),(609.869900,120.000000,5.000000),(619.869900,120.000000,5.000000),(629.869900,120.000000,5.000000),(639.869900,120.000000,5.000000)] )) 
@@ -385,7 +240,7 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(888.054930,100.000000,5.000000),(898.054930,100.000000,5.000000),(908.054930,100.000000,5.000000),(918.054930,100.000000,5.000000),(928.054930,100.000000,5.000000),(938.054930,100.000000,5.000000),(948.054930,100.000000,5.000000),(958.054930,100.000000,5.000000),(968.054930,100.000000,5.000000),(978.054930,100.000000,5.000000),(888.054930,120.000000,5.000000),(898.054930,120.000000,5.000000),(908.054930,120.000000,5.000000),(918.054930,120.000000,5.000000),(928.054930,120.000000,5.000000),(938.054930,120.000000,5.000000),(948.054930,120.000000,5.000000),(958.054930,120.000000,5.000000),(968.054930,120.000000,5.000000),(978.054930,120.000000,5.000000),(597.022500,100.000000,5.000000),(607.022500,100.000000,5.000000),(617.022500,100.000000,5.000000),(627.022500,100.000000,5.000000),(637.022500,100.000000,5.000000),(647.022500,100.000000,5.000000),(657.022500,100.000000,5.000000),(667.022500,100.000000,5.000000),(677.022500,100.000000,5.000000),(687.022500,100.000000,5.000000),(597.022500,120.000000,5.000000),(607.022500,120.000000,5.000000),(617.022500,120.000000,5.000000),(627.022500,120.000000,5.000000),(637.022500,120.000000,5.000000),(647.022500,120.000000,5.000000),(657.022500,120.000000,5.000000),(667.022500,120.000000,5.000000),(677.022500,120.000000,5.000000),(687.022500,120.000000,5.000000)] )) 
  :: 
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(887.564940,100.000000,5.000000),(897.564940,100.000000,5.000000),(907.564940,100.000000,5.000000),(917.564940,100.000000,5.000000),(927.564940,100.000000,5.000000),(937.564940,100.000000,5.000000),(947.564940,100.000000,5.000000),(957.564940,100.000000,5.000000),(967.564940,100.000000,5.000000),(977.564940,100.000000,5.000000),(887.564940,120.000000,5.000000),(897.564940,120.000000,5.000000),(907.564940,120.000000,5.000000),(917.564940,120.000000,5.000000),(927.564940,120.000000,5.000000),(937.564940,120.000000,5.000000),(947.564940,120.000000,5.000000),(957.564940,120.000000,5.000000),(967.564940,120.000000,5.000000),(977.564940,120.000000,5.000000),(598.961600,100.000000,5.000000),(608.961600,100.000000,5.000000),(618.961600,100.000000,5.000000),(628.961600,100.000000,5.000000),(638.961600,100.000000,5.000000),(648.961600,100.000000,5.000000),(658.961600,100.000000,5.000000),(668.961600,100.000000,5.000000),(678.961600,100.000000,5.000000),(688.961600,100.000000,5.000000),(598.961600,120.000000,5.000000),(608.961600,120.000000,5.000000),(618.961600,120.000000,5.000000),(628.961600,120.000000,5.000000),(638.961600,120.000000,5.000000),(648.961600,120.000000,5.000000),(658.961600,120.000000,5.000000),(668.961600,120.000000,5.000000),(678.961600,120.000000,5.000000),(688.961600,120.000000,5.000000)] )) 
- :: 
+ :: [] (*here  
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(887.065300,100.000000,5.000000),(897.065300,100.000000,5.000000),(907.065300,100.000000,5.000000),(917.065300,100.000000,5.000000),(927.065300,100.000000,5.000000),(937.065300,100.000000,5.000000),(947.065300,100.000000,5.000000),(957.065300,100.000000,5.000000),(967.065300,100.000000,5.000000),(977.065300,100.000000,5.000000),(887.065300,120.000000,5.000000),(897.065300,120.000000,5.000000),(907.065300,120.000000,5.000000),(917.065300,120.000000,5.000000),(927.065300,120.000000,5.000000),(937.065300,120.000000,5.000000),(947.065300,120.000000,5.000000),(957.065300,120.000000,5.000000),(967.065300,120.000000,5.000000),(977.065300,120.000000,5.000000),(600.898200,100.000000,5.000000),(610.898200,100.000000,5.000000),(620.898200,100.000000,5.000000),(630.898200,100.000000,5.000000),(640.898200,100.000000,5.000000),(650.898200,100.000000,5.000000),(660.898200,100.000000,5.000000),(670.898200,100.000000,5.000000),(680.898200,100.000000,5.000000),(690.898200,100.000000,5.000000),(600.898200,120.000000,5.000000),(610.898200,120.000000,5.000000),(620.898200,120.000000,5.000000),(630.898200,120.000000,5.000000),(640.898200,120.000000,5.000000),(650.898200,120.000000,5.000000),(660.898200,120.000000,5.000000),(670.898200,120.000000,5.000000),(680.898200,120.000000,5.000000),(690.898200,120.000000,5.000000)] )) 
  :: 
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(886.555970,100.000000,5.000000),(896.555970,100.000000,5.000000),(906.555970,100.000000,5.000000),(916.555970,100.000000,5.000000),(926.555970,100.000000,5.000000),(936.555970,100.000000,5.000000),(946.555970,100.000000,5.000000),(956.555970,100.000000,5.000000),(966.555970,100.000000,5.000000),(976.555970,100.000000,5.000000),(886.555970,120.000000,5.000000),(896.555970,120.000000,5.000000),(906.555970,120.000000,5.000000),(916.555970,120.000000,5.000000),(926.555970,120.000000,5.000000),(936.555970,120.000000,5.000000),(946.555970,120.000000,5.000000),(956.555970,120.000000,5.000000),(966.555970,120.000000,5.000000),(976.555970,120.000000,5.000000),(602.832200,100.000000,5.000000),(612.832200,100.000000,5.000000),(622.832200,100.000000,5.000000),(632.832200,100.000000,5.000000),(642.832200,100.000000,5.000000),(652.832200,100.000000,5.000000),(662.832200,100.000000,5.000000),(672.832200,100.000000,5.000000),(682.832200,100.000000,5.000000),(692.832200,100.000000,5.000000),(602.832200,120.000000,5.000000),(612.832200,120.000000,5.000000),(622.832200,120.000000,5.000000),(632.832200,120.000000,5.000000),(642.832200,120.000000,5.000000),(652.832200,120.000000,5.000000),(662.832200,120.000000,5.000000),(672.832200,120.000000,5.000000),(682.832200,120.000000,5.000000),(692.832200,120.000000,5.000000)] )) 
@@ -686,8 +541,7 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
  :: 
 Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","plane4","plane5","plane6","plane7","plane8","plane9","plane20","plane21","plane22","plane23","plane24","plane25","plane26","plane27","plane28","plane29","plane40","plane41","plane42","plane43","plane44","plane45","plane46","plane47","plane48","plane49","plane60","plane61","plane62","plane63","plane64","plane65","plane66","plane67","plane68","plane69" ] ), Array.fromList( [(716.120900,100.000000,5.000000),(726.120900,100.000000,5.000000),(736.120900,100.000000,5.000000),(746.120900,100.000000,5.000000),(756.120900,100.000000,5.000000),(766.120900,100.000000,5.000000),(776.120900,100.000000,5.000000),(786.120900,100.000000,5.000000),(796.120900,100.000000,5.000000),(806.120900,100.000000,5.000000),(716.120900,120.000000,5.000000),(726.120900,120.000000,5.000000),(736.120900,120.000000,5.000000),(746.120900,120.000000,5.000000),(756.120900,120.000000,5.000000),(766.120900,120.000000,5.000000),(776.120900,120.000000,5.000000),(786.120900,120.000000,5.000000),(796.120900,120.000000,5.000000),(806.120900,120.000000,5.000000),(836.588400,100.000000,5.000000),(846.588400,100.000000,5.000000),(856.588400,100.000000,5.000000),(866.588400,100.000000,5.000000),(876.588400,100.000000,5.000000),(886.588400,100.000000,5.000000),(896.588400,100.000000,5.000000),(906.588400,100.000000,5.000000),(916.588400,100.000000,5.000000),(926.588400,100.000000,5.000000),(836.588400,120.000000,5.000000),(846.588400,120.000000,5.000000),(856.588400,120.000000,5.000000),(866.588400,120.000000,5.000000),(876.588400,120.000000,5.000000),(886.588400,120.000000,5.000000),(896.588400,120.000000,5.000000),(906.588400,120.000000,5.000000),(916.588400,120.000000,5.000000),(926.588400,120.000000,5.000000)] )) 
  :: []
-
- 
+ *)
  
            
       val ts = Array.array(maxFrames,Time.toMicroseconds (Time.zeroTime)) 
@@ -722,30 +576,23 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
         
                                                         let
                                                           val st =
-                                                            MLton.GC.Statistics.bytesAllocated
+                                                            MLton.GC.Statistics.numMarkCompactGCs
                                                             ()
                                                         in
-        
+                                                        print
+                                                        ("Run"^Int.toString(i)^", "); 
                                                         Array.update(ts,i,Time.toMicroseconds (Time.now()));
                                                         (*print(IntInf.toString(Array.sub(ts,i))^"\n"); *)
                                                         
                                                         TransientDetector.TRANSIENTDETECTOR_run(x) ;
                                                         
-                                                       (* for(0 to
-                                                        (Array.length(testarr) -1)) 
-                                                        (fn j =>
-                                                        Array.update(testarr,j,
-                                                        SOME(Array.array(10000,i))));*)
 
-                                                        print(IntInf.toString( (MLton.GC.Statistics.bytesAllocated
-                                                            ()) - st )^"\n");
+                                                        print(IntInf.toString(
+                                                        (MLton.GC.Statistics.numMarkCompactGCs
+                                                            ()) - st )^", ");
 
-                                                        (*gcbench 15;*)
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
 
-                                                        (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
-                                                        (*maybeSleep
-                                                        * (Array.sub(ts,i));*)
 
 
                                                         if(i=0) then
@@ -762,14 +609,10 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
                           else
                             ()
     in
-      (*print (Int.toString(List.length(maxFrames)))*)
       loop(frameBuffer, 0,frameBuffer);
 
-      (*printArray(ts);*)
         
-     (*populateIdealTime(Array.sub(ts,0));
 
-     Array.sub(testarr,3);*)
 
       (benchmarkCD ts tc tr)
 
@@ -786,66 +629,88 @@ end;
 
 
 
-(*val _ = (NPThread.spawn(fn () => Driver.main()); NPThread.spawn(fn () =>
-Driver.loop 20); NPThread.run())*)
-
-(*val _ = Driver.main();*)
-
-
 
 
 
 
 let open Array
-        val kArraySize = 70000000 (*70000000 is Close to 1.12 gigs with the array filled with
-        real option objects*)
+        
+        
+        val s = List.hd (CommandLine.arguments ())
+        val kArraySize = 8655300 
+        (*70000000 is Close to 1.12 gigs with the array filled with
+        real option objects
+        8660000  filled array allocates 207,853,836 bytes
+        8656000 max-heap 204800k for 1000 runs*)
         val arr = array (kArraySize, NONE)
         fun loop1 i =
           if i < (kArraySize)
-            then (update (arr, i, SOME(Real.fromInt(i)));
+            then (update (arr, i, SOME(array(1,Real.fromInt(i))));
                   loop1 (i + 1))
             else ()
 
         fun loop2 i =
-          if i < (kArraySize div 2)
+          if i < (kArraySize div 1000 )
             then (update (arr, i, NONE);
                   loop1 (i + 1))
             else ()
        
         fun loop3 i =
-          if i < (kArraySize div 2)
-            then (update (arr, i, SOME(Real.fromInt(i)));
+          if i < (kArraySize div 1000 )
+            then (update (arr, i, SOME(array(1,Real.fromInt(i))));
                   loop1 (i + 1))
             else () 
-        
+       
+
+        fun loop4 i = 
+          if not (i = Driver.maxF) then 
+          (if (i mod (kArraySize div Driver.maxF) = 0) then NPThread.yield()
+          else (update (arr, i, SOME(array(1,Real.fromInt(i)*Math.pi)));
+                  loop1 (i + 1)))
+          else ()
+
         fun timeme f x = 
           let
             val start = Time.toMicroseconds(Time.now())
           in
             (f x); IntInf.toString(Time.toMicroseconds(Time.now())-start)
           end
-        
+        val rec delay =
+               fn 0 => ()
+                | n => delay (n - 1)
+
+
         val rec loop =
                fn 0 => ()
-                | n => ((*print ("loop" ^ Int.toString(n) ^"\n");*)
-                        if (n mod 2) = 0 
-                        then (*(timeme loop2 0)*)print ("Time to empty half array = "^ (timeme loop2 0) ^"\n")
-                        else (*(timeme loop3 0);*)print ("Time to fill full array = "^ (timeme loop1 0) ^"\n");
+                | n => (
+                        if ((n mod 2) = 0)
+                        then (timeme loop2 0) (*print ("Time to empty half array
+                        = "^ (timeme loop2 0) ^"\n")*)
+                        else (timeme loop3 0); (*print ("Time to fill full
+                        array = "^ (timeme loop1 0) ^"\n");*) 
  
-                        NPThread.yield(); loop (n - 1))
+                      NPThread.yield(); loop (n - 1))
 
 in
     (
-       (timeme loop1 0); (*print ("Time to fill array = "^ (timeme
+       (*(timeme loop1 0);*) (*print ("Time to fill array = "^ (timeme
                         loop1 0) ^"\n")*)
 
         NPThread.spawn(fn () => Driver.main());
-        NPThread.spawn(fn () =>loop 200);
+
+        if s="mem" then
+        NPThread.spawn(fn () => (loop1 0; loop4 0))
+        else () ;
+        (*
+        if s="mem" 
+        then NPThread.spawn(fn () =>loop 200)
+        else ();*)
+
         NPThread.run();
 
         if (let val n = Int.min (1000, (length(arr) div 2) - 1)
            in Real.!= ( let val v= sub (arr, n) in if Option.isSome v then
-             Option.valOf v else 0.0 end, (1.0 / Real.fromInt(n)))
+             sub (Option.valOf v,0) else 0.0 end, (1.0 / Real.fromInt(n)))
            end)
         then print "Failed\n"
         else print "Success\n"

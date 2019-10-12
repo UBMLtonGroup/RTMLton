@@ -112,7 +112,7 @@ void initWorld (GC_state s) {
 
   createHeap (s, &s->heap, MEM_AVAILABLE * MEGABYTES, MEM_AVAILABLE * MEGABYTES);
 
-  createHeap (s, &s->infHeap, 100*MEGABYTES, 100*MEGABYTES);
+  createHeap (s, &s->infHeap, 500*MEGABYTES, 500*MEGABYTES);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
 //               s->lastMajorStatistics.bytesLive);
 //              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
