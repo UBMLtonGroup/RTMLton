@@ -75,7 +75,7 @@ fun doit kArraySize =
        (*print(heapstats ());*)
 
 
-       allocateNewArray(kArraySize*20);
+       allocateNewArray(kArraySize*2);
        (*traverseArray (allocateNewArray(kArraySize*2)) 0 ;*)
        (*print(heapstats ()^"\n");*)
 
@@ -91,5 +91,5 @@ fun doit kArraySize =
 
 (*8660000  filled array allocates 207,853,836 bytes*)
 (*8669770 : ub/fragger @MLton max-heap 204793k  gc-summary --  for MLton *)
-val _ = doit 10000 (*(Option.valOf(Int.fromString(hd (CommandLine.arguments()))))*)
+val _ = doit 1000000 (*(Option.valOf(Int.fromString(hd (CommandLine.arguments()))))*)
 
