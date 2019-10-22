@@ -66,6 +66,13 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
     state->realtimeThreads[0] = main;
     state->realtimeThreads[1] = gc;
     initialized = 2;
+   
+   /*What I tried to do was use a different scheduling policy  to see if I get better performance. 
+    * But since I am trying to control the release of the noise thread effectively, I am unable to get a schedule where over time the allocation rate is constant.
+    * I would need to write a new scheduler to be more precise. RTlinux's default policy seems to do that better.
+    * Besides MLton cannot run on this linux scheduling policy and it is only fair to run both on a similar scheduler for comparison. 
+    * 
+    * */ 
 
     int tNum;
     for (tNum = 2; tNum < MAXPRI; tNum++) {
@@ -80,8 +87,42 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 
         pthread_t *pt = malloc (sizeof (pthread_t));
         memset (pt, 0, sizeof (pthread_t));
+        
+        pthread_attr_t rtattr;
+        struct sched_param rtparam;                                            
+        rtparam.sched_priority = 99;                                         
 
-        if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
+        int retVal;
+        
+        retVal = pthread_attr_init(&rtattr);
+        if (retVal)
+        {
+            fprintf(stderr, "pthread_attr_init error %d\n", retVal);
+            exit(1);
+        }
+
+        retVal = pthread_attr_setinheritsched(&rtattr, PTHREAD_EXPLICIT_SCHED);
+        if (retVal)
+        {
+            fprintf(stderr, "pthread_attr_setinheritsched error %d\n", retVal);
+            exit(1);
+        }
+
+        retVal = pthread_attr_setschedpolicy(&rtattr, SCHED_FIFO);
+        if (retVal)
+        {
+            fprintf(stderr, "pthread_attr_setschedpolicy error %d\n", retVal);
+            exit(1);
+        }
+
+        retVal = pthread_attr_setschedparam(&rtattr, &rtparam);
+        if (retVal)
+        {
+            fprintf(stderr, "pthread_attr_setschedparam error %d\n", retVal);
+            exit(1);
+        }
+
+        if (pthread_create (pt, &rtattr, &realtimeRunner, (void *) params)) {
             fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
             exit (-1);
         }
@@ -89,7 +130,45 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
             state->realtimeThreads[tNum] = pt;
             initialized++;
         }
+        pthread_attr_destroy(&rtattr);
     }
+
+    /*set scheduler and priorities*/
+   /* struct sched_param param1;
+
+    param1.sched_priority = 3;
+    int s1;
+    fprintf(stderr,"main pid= %lu\n",pthread_self());
+    s1 = sched_setscheduler(pthread_self(),SCHED_FIFO,&param1);
+    if(s1 !=0)
+    {
+        fprintf (stderr, "setsched failed for main: %s\n",strerror(errno));
+  //      exit (-1);
+
+    }
+   
+    fprintf(stderr,"GC pid= %lu\n",*gc);
+    s2 = sched_setscheduler(*gc,SCHED_FIFO,&param3);
+    if(s2 !=0)
+    {
+        fprintf (stderr, "setsched failed for GC: %s\n",strerror(errno));
+       // exit (-1);
+
+    }
+
+
+
+    fprintf(stderr,"GC pid= %lu\n",*state->realtimeThreads[2]);
+    s3 = sched_setscheduler(*state->realtimeThreads[2],SCHED_FIFO,&param2);
+
+    if(s3 !=0)
+    {
+        fprintf (stderr, "setsched failed for rt: %s\n",strerror(errno));
+        exit (-1);
+
+    }*/
+
+
     state->isRealTimeThreadInitialized = TRUE;
 }
 

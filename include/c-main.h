@@ -77,7 +77,16 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
 	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));             \
 	set_pthread_num(0);                                                 \
 	MYASSERT(GCrunner_thread, !=, NULL);                                \
-	MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
+    pthread_attr_t attr;                                                \
+    struct sched_param gcparam;                                             \
+    gcparam.sched_priority = 99;                                         \
+    MYASSERT(pthread_attr_init(&attr), ==, 0);                              \
+	MYASSERT(pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED), ==, 0);\
+    MYASSERT(pthread_attr_setschedpolicy(&attr, SCHED_FIFO), ==, 0);        \
+    MYASSERT(pthread_attr_setschedparam(&attr, &gcparam), ==, 0);             \
+    MYASSERT(pthread_create(GCrunner_thread, &attr, &GCrunner, (void*)&gcState), ==, 0); \
+    pthread_attr_destroy(&attr);                                        \
+    fprintf(stderr,"GC pid= %lu\n",*GCrunner_thread);\
 	while (!gcState.GCrunnerRunning){if (DEBUG) fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
 	realtimeThreadInit(&gcState, pthread_self(), GCrunner_thread);      \
 	realtimeThreadWaitForInit();                                        \

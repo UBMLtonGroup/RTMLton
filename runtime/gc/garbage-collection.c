@@ -252,6 +252,7 @@ leaveGC (GC_state s)
         if (!(__rv__ COMP (T)RV)) {                              \
                 fprintf(stderr, #X " failed, %x " #COMP " %x\n", \
                                 __rv__, (T)RV);                  \
+                fprintf(stderr,"error: %s\n",strerror(errno));                      \
                 exit(-1);                                        \
         }                                                        \
 }
