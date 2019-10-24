@@ -39,13 +39,22 @@ void addToWorklist(GC_state s,objptr *opp)
     
     if(s->wl_length >= s->wl_size)
     {
-        if(DEBUG_RTGC_MARKING)
+        if(1|| DEBUG_RTGC_MARKING)
             fprintf(stderr,"%d] addToWorklist: Allocating more space to worklist\n",PTHREAD_NUM);
-        GC_worklist new = malloc(s->wl_size*2);
+        GC_worklist new = malloc(s->wl_size*2* sizeof(objptr *));
         GC_worklist old = s->worklist;
         s->worklist = new;
         memcpy(new,old,s->wl_size*sizeof(objptr *));
         s->wl_size *= 2;
+        
+        if(DEBUG_RTGC_MARKING)
+        {
+            fprintf(stderr, "old: "FMTPTR" \n", (uintptr_t) old);
+            fprintf(stderr, "new: "FMTPTR" \n", (uintptr_t) new);
+            fprintf(stderr, "worklist: "FMTPTR" \n", (uintptr_t) s->worklist);
+            
+        }
+
         free(old);
     }
     
