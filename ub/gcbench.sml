@@ -55,9 +55,13 @@ fun gcbench kStretchTreeDepth =
         if n = 0 then 1 else m * expt (m, n - 1)
   
       (*  Nodes used by a tree of a given size  *)
-      fun TreeSize i =
+      fun TreeSize_orig i =
         expt (2, i + 1) - 1
   
+      fun TreeSize i =
+         (* (1 << (i + 1)) - 1 *)
+         IntInf.toInt(IntInf.<< (IntInf.fromInt 1, Word.fromInt (i+1))) - 1
+
       (*  Number of iterations to use for a given tree depth  *)
       fun NumIters i =
         (2 * (TreeSize kStretchTreeDepth)) div (TreeSize i)
@@ -95,10 +99,12 @@ fun gcbench kStretchTreeDepth =
 
       (*  Build tree bottom-up  *)
       fun MakeTree iDepth =
+      ( print (Int.toString iDepth ^ " In MakeTree\n");
         if iDepth <= 0
             then make_empty_node()
-            else make_node (MakeTree (iDepth - 1),
-                            MakeTree (iDepth - 1))
+            else (print "make node"; make_node (MakeTree (iDepth - 1),
+                            MakeTree (iDepth - 1)))
+      )
       
       fun TimeConstruction depth =
         let val iNumIters = NumIters depth
@@ -132,10 +138,12 @@ fun gcbench kStretchTreeDepth =
         print (concat [" Stretching memory with a binary tree of depth ",
                        toString kStretchTreeDepth,
                        "\n"]);
-        PrintDiagnostics();
+        (*PrintDiagnostics(); *)
+        print "Back from PrintDiagnostics\n";
         (*  Stretch the memory space quickly  *)
         MakeTree kStretchTreeDepth;
-                         
+        print "Back from MakeTres\n";
+
         (*  Create a long lived object  *)
         print (concat[" Creating a long-lived binary tree of depth ",
                       toString kLongLivedTreeDepth,
@@ -201,9 +209,10 @@ in
   (Real.toString((Time.toReal(Timer.checkRealTimer tmr)) *1000.0)^"\n",result)
 end
 
+(*
 val (s,_) = timeit Main.doit ()
-
 val _ = print ("Time taken :"^s^"\n")
-
+*)
+val _ = Main.doit ()
 
 val _ = print "Done\n"

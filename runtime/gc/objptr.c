@@ -7,6 +7,8 @@
 
 /* isObjptr returns true if p looks like an object pointer. */
 bool isObjptr (objptr p) {
+  //for 32bit, this is shift = 2 - 0
+  //so mask = 0b11
   unsigned int shift = GC_MODEL_MINALIGN_SHIFT - GC_MODEL_OBJPTR_SHIFT;
   objptr mask = ~((~((objptr)0)) << shift);
   return (0 == (p & mask));

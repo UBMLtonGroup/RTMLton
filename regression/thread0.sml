@@ -7,8 +7,7 @@ val _ =
 
 val _ =
    if 13 = 1 + switch(fn t =>
-                      prepare (new(fn () => switch(fn _ => prepare (t, 12))), 
-                      ()))
+                      prepare (new(fn () => switch(fn _ => prepare (t, 12))), ()))
       then print "2 succeeded\n"
    else ()
       

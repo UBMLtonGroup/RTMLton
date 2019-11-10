@@ -49,14 +49,16 @@ extern uint32_t frameLayouts_len;
  */
 
 // XXX jcm remove eventually
+#ifdef STACK_GC_SANITY
 GC_UM_Chunk stack_list[100000];
 unsigned int stack_list_end = 0;
+#endif
 
 objptr newStack_um (GC_state s) {
 	pointer um_stack;
-	uint32_t need_chunks = frameLayouts_len;
+	uint32_t need_chunks = frameLayouts_len * 20;
 
-	if (DEBUG_STACKS)
+	if (1 || DEBUG_STACKS)
 		fprintf(stderr, "newStack_um chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
 			need_chunks, s->maxFrameSize,
 			sizeof(struct GC_UM_Chunk));
@@ -67,12 +69,13 @@ objptr newStack_um (GC_state s) {
 
 	if (DEBUG_STACKS)
 	{
+#ifdef STACK_GC_SANITY
 		GC_UM_Chunk x = (GC_UM_Chunk) um_stack;
 		for ( ; x ; x = x->next_chunk) {
 			stack_list[stack_list_end] = x;
 			stack_list_end++;
 		}
-
+#endif
 		fprintf (stderr, FMTPTR " = newStack_um (%"PRIuMAX")\n",
 			(uintptr_t)um_stack,
 			(uintmax_t)need_chunks);

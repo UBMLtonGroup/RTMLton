@@ -5,10 +5,11 @@
  * MLton is released under a BSD-style license.
  * See the file MLton-LICENSE for details.
  */
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
+//#pragma GCC diagnostic push
+//#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
 
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
+	//fprintf(stderr, "callIfIsObjptr "FMTPTR"\n", (unsigned int)opp);
     if (isObjptr (*opp)) {
         f (s, opp);
         return;
@@ -22,11 +23,24 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
 void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f)
 {
 
-  if (DEBUG_DETAILED)
-    fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
-  callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);
+  //if (DEBUG_DETAILED)
+  //  fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
+
+
+  // in rtmlton i think it is safe to disable this feature
+  // where you can call SML /from/ C. our research is focused (?) on
+  // pure SML systems.
+
+  fprintf (stderr, "%d] callFromCHandlerThread\n", PTHREAD_NUM);
+  callIfIsObjptr (s, f, &s->callFromCHandlerThread);
+
+  fprintf (stderr, "%d] currentThread\n", PTHREAD_NUM);
   callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
+
+  fprintf (stderr, "%d] savedThread\n", PTHREAD_NUM);
   callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
+
+  fprintf (stderr, "%d] signalHandlerThread\n", PTHREAD_NUM);
   callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }
 
@@ -56,8 +70,8 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
  */
 pointer foreachObjptrInObject (GC_state s, pointer p,
                                GC_foreachObjptrFun f, bool skipWeaks) {
-  if (DEBUG_MEM) {
-      fprintf(stderr, "foreach object in 0x%x\n", (uintptr_t)p);
+  if (1 || DEBUG_MEM) {
+      fprintf(stderr, "%d] foreach object in 0x%x\n", PTHREAD_NUM, (uintptr_t)p);
   }
   GC_header header;
   uint16_t bytesNonObjptrs =0;
@@ -66,17 +80,19 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (DEBUG_DETAILED)
+  if (1 || DEBUG_DETAILED)
     fprintf (stderr,
-             "foreachObjptrInObject ("FMTPTR")"
+             "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
              "  tag = %s"
              "  bytesNonObjptrs = %d"
-             "  numObjptrs = %d\n",
+             "  numObjptrs = %d\n", PTHREAD_NUM,
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
-/*
+  	fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
+
+  	/*
       p += bytesNonObjptrs;
 
       pointer max = p + (numObjptrs * OBJPTR_SIZE);
@@ -126,7 +142,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 //      p += bytesNonObjptrs;
 
   } else if (WEAK_TAG == tag) {
-    p += bytesNonObjptrs;
+  	fprintf(stderr, "%d] "GREEN("marking weak\n"), PTHREAD_NUM);
+
+  	p += bytesNonObjptrs;
     if (1 == numObjptrs) {
       if (not skipWeaks)
         callIfIsObjptr (s, f, (objptr*)p);
@@ -139,6 +157,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     size_t dataBytes;
     pointer last;
     GC_arrayLength numElements;
+
+    fprintf(stderr, "%d] "GREEN("marking array (old heap)\n"), PTHREAD_NUM);
 
     numElements = getArrayLength (p);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
@@ -180,7 +200,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
-      GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
+	  fprintf(stderr, "%d] "GREEN("marking array (2)\n"), PTHREAD_NUM);
+
+	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
       if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
@@ -206,7 +228,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     GC_frameLayout frameLayout;
     GC_frameOffsets frameOffsets;
 
-    fprintf(stderr, GREEN("marking stack\n"));
+    fprintf(stderr, "%d] "GREEN("marking stack\n"), PTHREAD_NUM);
     assert (STACK_TAG == tag);
     stackFrame = (GC_UM_Chunk)p;
 	assert (stackFrame->next_chunk != NULL); // we will be starting at the chunk just after currentFrame
@@ -214,55 +236,61 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     if (DEBUG_STACKS)
     	fprintf(stderr,"%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t)stackFrame);
 
-    /* we avoid checking the main thread's stack when the main calls into user code
-     */
-    bool doit = true;
 
-    if (s->mainBooted)
-    {
-        pointer p_ = objptrToPointer(s->currentThread[0], s->heap.start);
-        GC_thread th = (GC_thread)(p_ + offsetofThread (s));
-		if ((pointer)stackFrame == (pointer)th->currentFrame)
-			doit = false;
-#if 0
-        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
-        
-        if (st == stack)
-            doit = false;
-#endif
-    }
+	GC_UM_Chunk top = stackFrame->next_chunk;
+	GC_UM_Chunk bottom = NULL;
 
-    if (doit)
-    {
-		GC_UM_Chunk top = stackFrame->next_chunk;
+	int counter = 0;
+	int depth = 0;
 
-		while (top->prev_chunk) {
-			assert (top->prev_chunk->ra != 0);
-			returnAddress = *((GC_returnAddress*)(uintptr_t)(top->prev_chunk->ml_object[top->prev_chunk->ra]));
+	// count the depth of the current stack
+	for (GC_UM_Chunk t = top ; t ; t = t->prev_chunk, depth++)
+		if (t->prev_chunk == NULL)
+			bottom = t;
 
-			if (DEBUG_STACKS) {
-				fprintf (stderr, "%d]  top = "FMTPTR"  return address = "FMTRA"\n",
-						 PTHREAD_NUM,
-						 (uintptr_t)top, returnAddress);
-			}
-			frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
-			frameOffsets = frameLayout->offsets;
-			top = top->prev_chunk;
+	assert (bottom != NULL);
+
+	// mark all of this stack's chunks
+	for( ; bottom->next_chunk ; bottom = bottom->next_chunk)
+		markChunk((pointer)&(bottom->ml_object), tag, MARK_MODE, s, 0);
+
+	fprintf(stderr, "%d] stack depth is %d\n", PTHREAD_NUM, depth);
+
+	while (top->prev_chunk) {
+		top = top->prev_chunk;
+
+		assert (top->ra != 0);
+		returnAddress = (uintptr_t)(top->ml_object[top->ra]);
+
+		if (DEBUG_STACKS) {
+			fprintf (stderr, "%d] frame %d:  top = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
+					 PTHREAD_NUM, depth-counter,
+					 (uintptr_t)top, returnAddress, returnAddress,
+					 top->ra);
+		}
+		frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
+		frameOffsets = frameLayout->offsets;
+		counter++;
+
+		if (DEBUG_STACKS)
+		   fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
+				   PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
+
+		for (i = 0 ; i < frameOffsets[0] ; ++i) {
+			uintptr_t x = (uintptr_t)(top->ml_object + frameOffsets[i + 1] + s->alignment);
+			unsigned int xv = *(objptr*)x;
 
 			if (DEBUG_STACKS)
-			   fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
-					   PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
+				fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
+					  PTHREAD_NUM,
+					  frameOffsets[i + 1], frameOffsets[i + 1],
+					  x,
+					  xv);
 
-			for (i = 0 ; i < frameOffsets[0] ; ++i) {
-				if (DEBUG_STACKS)
-					fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR"\n",
-						  PTHREAD_NUM,
-						  frameOffsets[i + 1],
-						  *(objptr*)(top + frameOffsets[i + 1]));
-				callIfIsObjptr (s, f, (objptr*)(top + frameOffsets[i + 1]));
-			}
+			callIfIsObjptr(s, f, (objptr * )x);
 		}
     }
+    fprintf(stderr, "%d] done checking stack\n", PTHREAD_NUM);
     p = (pointer) stackFrame->next_chunk;
   }
   return p;

@@ -1,0 +1,97 @@
+# GC_UM_Chunk umheap.h
+
+define listchunks
+    set $list = $arg0
+    set $e = $list
+    set $i = 0
+    while $e != 0x0
+        printf "rtml-debug: listchunks #%d: %p ", $i++, $e
+        set $e = (GC_UM_Chunk)$e->next_chunk
+        printf "\n"
+    end
+end
+
+def dumpchunk
+    set $tn = $arg0
+    print *((GC_UM_Chunk) $tn)
+end
+
+def dumpprevchunk
+    set $tn = $arg0
+    print *((GC_UM_Chunk) $tn)->prev_chunk
+end
+
+def dumpthread
+    set $tn = $arg0
+    if gcState.currentThread[$tn] == 1
+        print "not a valid thread"
+    else
+        print *((GC_thread) gcState.currentThread[$tn])
+    end
+end
+
+define dumpstack
+    set $tn = $arg0
+    if gcState.currentThread[$tn] == 1
+        print "not a valid thread"
+    else
+        set $e = ((GC_thread) gcState.currentThread[$tn])->firstFrame
+        set $i = 0
+        while $e != 0x0
+            printf "dumpstack: #%d: %p ", $i++, $e
+            set $e = ((GC_UM_Chunk)$e)->next_chunk
+            printf "\n"
+        end
+    end
+end
+
+define whichheap
+    set $a = $arg0
+    if gcState->heap.start <= $a && $a <= (gcState->heap.start + gcState->heap.size)
+        print "is on old heap"
+    end
+    if gcState->umheap.start <= $a && $a <= gcState->umheap.end
+        print "is on chunked heap"
+    end
+end
+document whichheap
+   whichheap(address)
+   determine which heap the address is on.
+end
+
+define isonstack
+    set $tn = $arg0
+    set $addr = $arg1
+    set $chunknum = 0
+    set $foundaddr = 0
+    if gcState.currentThread[$tn] == 1
+        print "not a valid thread"
+    else
+        set $framestartaddr = ((GC_thread) gcState.currentThread[$tn])->firstFrame
+        set $frameendaddr = $framestartaddr + sizeof(GC_UM_Chunk)
+        set $i = 0
+        set $found = 0
+        while $framestartaddr != 0x0 && $found == 0
+            set $chunknum = $chunknum + 1
+            if $framestartaddr <= $addr && $addr <= $frameendaddr
+                # print "is in stack"
+                set $found = 1
+                set $foundaddr = $framestartaddr
+            else
+                set $framestartaddr = ((GC_UM_Chunk)$framestartaddr)->next_chunk
+                set $frameendaddr = $framestartaddr + sizeof(GC_UM_Chunk)
+            end
+        end
+    end
+    if $found == 1
+        print "is on stack at chunk:"
+        print $chunknum
+        print $foundaddr
+    else
+        print "not on stack"
+    end
+end
+document isonstack
+   isonstack(thr_num, address)
+   if address is on the stack of thr_num
+end

@@ -295,7 +295,7 @@ void CompareAndSet(GC_state s, int lockOrUnlock)
     if(lockOrUnlock ==1)
     {
         /*Case when you want to lock*/
-        while(!CompareExchange((int *)&(s->casLock),-1,PTHREAD_NUM))
+        while(!CompareExchange(&(s->casLock),-1,PTHREAD_NUM))
         {
             //NOP
             
@@ -305,7 +305,7 @@ void CompareAndSet(GC_state s, int lockOrUnlock)
     {
         /*Case when you want to unlock*/
 
-        if(!CompareExchange((int*)&(s->casLock),PTHREAD_NUM,-1))
+        if(!CompareExchange(&(s->casLock),PTHREAD_NUM,-1))
             return;
 
     }
@@ -319,7 +319,7 @@ If desired is written into *ptr then true is returned and memory is affected acc
 Otherwise, false is returned and memory is affected according to failure_memorder. This memory order cannot be __ATOMIC_RELEASE nor __ATOMIC_ACQ_REL. It also cannot be a stronger order than that specified by success_memorder.
 
  * */
-bool CompareExchange(int *ptr, int expected, int desired)
+bool CompareExchange(volatile int *ptr, int expected, int desired)
 {
     
     return  __atomic_compare_exchange_n (ptr, &expected,desired, false, __ATOMIC_CONSUME, __ATOMIC_CONSUME);

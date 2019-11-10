@@ -233,7 +233,7 @@ fun implementsPrim (p: 'a Prim.t): bool =
    end
 
 fun creturn (t: Type.t): string =
-   concat ["CReturn", CType.name (Type.toCType t)]
+   concat ["CReturn", CType.name (Type.toCType t), "[PTHREAD_NUM]"]
 
 fun outputIncludes (includes, print) =
    (print "#define _ISOC99_SOURCE\n"
@@ -259,7 +259,7 @@ fun declareGlobals (prefix: string, print) =
           in
              print (concat [prefix, s, " global", s,
                             "[", C.int (Global.numberOfType t), "];\n"])
-             ; print (concat [prefix, s, " CReturn", CType.name t, ";\n"])
+             ; print (concat [prefix, s, " CReturn", CType.name t, "[PTHREAD_MAX];\n"])
           end)
       val _ =
          print (concat [prefix, "Pointer globalObjptrNonRoot [",
@@ -338,7 +338,7 @@ fun outputDeclarations
          (print (concat ["uint32_t ", name, "_len = ", Int.toString(Vector.length v), ";\n"]) (* frameLayouts_len *)
           ; print (concat ["static ", ty, " ", name, "[] = {\n"])
           ; Vector.foreachi (v, fn (i, x) =>
-                             print (concat ["\t", toString (i, x), ",\n"]))
+                             print (concat ["\t", toString (i, x), ", /* ", Int.toString(i), " */\n"]))
           ; print "};\n")
       fun declareFrameLayouts () =
          declareArray ("struct GC_frameLayout", "frameLayouts", frameLayouts,
@@ -805,7 +805,7 @@ fun output {program as Machine.Program.T {chunks,
              | Real r => RealX.toC r
              | Register r =>
                   concat [Type.name (Register.ty r), "_",
-                          Int.toString (Register.index r)]
+                          Int.toString (Register.index r), "[PTHREAD_NUM]"]
              | StackOffset s => StackOffset.toString s
              | StackTop => "StackTop"
              | Word w => WordX.toC w
@@ -969,7 +969,7 @@ fun output {program as Machine.Program.T {chunks,
                                srcIsMem = false,
                                sbase = getBase (Operand.Label return),
                                ty = Type.label return, inCrit = inCritical})
-                ; C.push (size, print)
+                ; C.push (size, print) ; print ("\t /*push-return:done */\n")
                 ; if amTimeProfiling
                      then print "\tFlushStackTop();\n"
                   else ())
@@ -1307,7 +1307,7 @@ fun output {program as Machine.Program.T {chunks,
                                      CType.name t, "_"]
                 in
                    Int.for (0, 1 + regMax t, fn i =>
-                            print (concat [pre, C.int i, ";\n"]))
+                            print (concat [pre, C.int i, "[PTHREAD_MAX];\n"]))
                 end)
             fun outputOffsets () =
                List.foreach

@@ -34,7 +34,7 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
 	return to;
 }
 
-void GC_copyCurrentThread (GC_state s) {
+void GC_copyCurrentThread (GC_state s, bool b) {
 	GC_thread fromThread;
 	//GC_stack fromStack;
 	GC_thread toThread;
@@ -53,7 +53,9 @@ void GC_copyCurrentThread (GC_state s) {
 	if (DEBUG_THREADS)
 		fprintf (stderr, FMTPTR" = GC_copyCurrentThread\n", (uintptr_t)toThread);
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
-	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)toThread - offsetofThread (s), s->heap.start);
+
+	if (b)
+		s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)toThread - offsetofThread (s), s->heap.start);
 }
 
 pointer GC_copyThread (GC_state s, pointer p) {

@@ -2,6 +2,7 @@
 #define _REALTIME_THREAD_H_
 
 #define MAXPRI 3 /* 0 = main, 1 = GC, also in include/c-common.h */
+#define PTHREAD_MAX MAXPRI  /* transitioning to this instead of MAXPRI */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 struct realtimeRunnerParameters {

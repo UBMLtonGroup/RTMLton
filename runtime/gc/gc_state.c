@@ -208,7 +208,7 @@ void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
   s->callFromCHandlerThread = op;
   if (DEBUG_THREADS) 
       fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
-  GC_copyCurrentThread(s);
+  GC_copyCurrentThread(s, false);
   BROADCAST_RT_THREADS;
 }
 

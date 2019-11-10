@@ -6,7 +6,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-pointer GC_arrayAllocate (GC_state s,
+pointer GC_arrayAllocate_oldheap (GC_state s,
                           size_t ensureBytesFree,
                           GC_arrayLength numElements,
                           GC_header header) {
@@ -19,9 +19,10 @@ pointer GC_arrayAllocate (GC_state s,
   pointer result;
 
   splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (DEBUG)
-    fprintf (stderr, "%d] GC_arrayAllocate (%"PRIuMAX", "FMTARRLEN", "FMTHDR")\n",
-		    PTHREAD_NUM,(uintmax_t)ensureBytesFree, numElements, header);
+  fprintf (stderr, "%d] "RED("OLDHEAP GC_arrayAllocate")" (%"PRIuMAX", "FMTARRLEN", "FMTHDR")\n",
+	    PTHREAD_NUM,(uintmax_t)ensureBytesFree, numElements, header);
+  die("cant allocate in old heap");
+
   bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
   /* Check for overflow when computing arraySize.
    * Note: bytesPerElement > 0

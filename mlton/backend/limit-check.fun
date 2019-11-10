@@ -234,7 +234,7 @@ fun insertFunction (f: Function.t,
                               return = return}
                        else transfer)
                  | _ => transfer
-             val stack = Label.equals (start, label)
+             val stack = false (* jcm disables stacklimit checking Label.equals (start, label) *)
              fun insert (amount: Operand.t (* of type word *)) =
                 let
                    val collect = Label.newNoname ()
@@ -342,6 +342,7 @@ fun insertFunction (f: Function.t,
                    (Vector.new1 s, transfer)
                 end
              datatype z = datatype Runtime.GCField.t
+             (* this needs to see if currentFrame->next is null and grow stack if true *)
              fun stackCheck (maybeFirst, z): Label.t =
                 let
                    val (statements, transfer) =

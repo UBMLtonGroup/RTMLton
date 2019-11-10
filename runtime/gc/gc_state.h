@@ -20,6 +20,10 @@ struct GC_state {
   /* These fields are at the front because they are the most commonly
    * referenced, and having them at smaller offsets may decrease code
    * size and improve cache performance.
+
+   nb.
+   runtime/gc/realtime_thread.h:4:#define MAXPRI 3
+
    */
 /*0*/  pointer frontier; /* heap.start <= frontier < limit */
 /*4*/  pointer umfrontier;
@@ -31,7 +35,8 @@ struct GC_state {
 
 /*52*/  objptr currentFrame[MAXPRI];
 
-  size_t fl_chunks;
+/*64*/  size_t fl_chunks;
+/*68*/  size_t stack_depth[MAXPRI];
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
@@ -40,7 +45,7 @@ struct GC_state {
   char **atMLtons; /* Initial @MLton args, processed before command line. */
   int atMLtonsLength;
   volatile uint32_t atomicState;
-  volatile objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
+  objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
   struct GC_callStackState callStackState;
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;

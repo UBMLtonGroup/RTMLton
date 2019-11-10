@@ -349,7 +349,11 @@ __attribute__ ((noreturn))
         RTSYNC_LOCK;
         
         RTSYNC_BLOCK;
-        
+
+		if(DEBUG)
+			fprintf(stderr,"%d] GC sweep starting: FC=%d \n", PTHREAD_NUM, s->fl_chunks);
+
+		//if (! s->dirty) goto not_dirty;
 
         assert(s->dirty);
 
@@ -381,7 +385,7 @@ __attribute__ ((noreturn))
             fprintf(stderr,"%d] [RTGC: GC cycle #%s completed]\n",PTHREAD_NUM,uintmaxToCommaString(s->cGCStats.numGCCycles));
         }
         
-
+    	//not_dirty:;
         RTSYNC_UNLOCK;
         
         /*sending out singals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
@@ -459,16 +463,16 @@ void markStack(GC_state s, pointer currentStack)
 {
     
 
-            //fprintf(stderr,"%d] Marking stack \n",PTHREAD_NUM);
+            fprintf(stderr,"%d] "YELLOW("Marking stack")" \n", PTHREAD_NUM);
             assert(!s->dirty);
 
             //foreachGlobalObjptr (s, umDfsMarkObjectsMark);
             
-            foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
+            //foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
             foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMarkToWL, FALSE);
 
             if(DEBUG_RTGC)
-                fprintf(stderr,"%d] Completed marking stack\n",PTHREAD_NUM);
+                fprintf(stderr,"%d] "YELLOW("Completed marking stack")"\n", PTHREAD_NUM);
 
             /*foreachGlobalThreadObjptr(s,umDfsMarkObjectsMark);
             foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMark, FALSE);*/
@@ -866,8 +870,8 @@ ensureInvariantForMutator (GC_state s, bool force)
 
 bool ensureChunksAvailable(GC_state s)
 {
-  //if(DEBUG_RTGC)
-    //fprintf(stderr,"%d]ensureChunksAvailable: FC = %d, Max Chunks = %d\n",PTHREAD_NUM,s->fl_chunks,s->maxChunksAvailable);
+  if(DEBUG_RTGC)
+    fprintf(stderr,"%d] ensureChunksAvailable: FC = %d, Max Chunks = %d\n",PTHREAD_NUM,s->fl_chunks,s->maxChunksAvailable);
   
   if(s->fl_chunks > (size_t)((30 * s->maxChunksAvailable)/100 ))
       return true;
@@ -905,6 +909,7 @@ void dummyCFunc ()
 }
 
 void GC_collect (GC_state s, size_t bytesRequested, bool force) {
+	fprintf(stderr, GREEN("GC_Collect")" called\n");
     /*if (!force) {
         if ((s->fl_chunks > 2000))// &&
             //(s->fl_array_chunks > 1000000))
@@ -934,7 +939,7 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
             if((s->dirty || !ensureChunksAvailable(s)) && !s->rtSync[PTHREAD_NUM])
             {
                 if(DEBUG_RTGC)
-                    fprintf(stderr,"%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n",PTHREAD_NUM,s->dirty?"Y":"N",ensureChunksAvailable(s)?"Y":"N");
+                    fprintf(stderr,"%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Available? %s\n",PTHREAD_NUM,s->dirty?"Y":"N",ensureChunksAvailable(s)?"Y":"N");
                 GC_collect_real(s,bytesRequested,true); /*marks stack*/
                 s->dirty= true;
                 s->rtSync[PTHREAD_NUM] = true;
@@ -959,7 +964,14 @@ void GC_collect (GC_state s, size_t bytesRequested, bool force) {
                     fprintf(stderr,"%d] All Threads not synced\n",PTHREAD_NUM);
                 } 
             }
+            else {
+            	fprintf(stderr, "skipped mutator marking: dirty=%d ensure=%d rtsync=%d\n",
+            			s->dirty, ensureChunksAvailable(s), s->rtSync[PTHREAD_NUM]);
+            }
             RTSYNC_UNLOCK;
+        }
+        else {
+        	fprintf(stderr, "GC_Collect: "RED("could not get lock")"\n");
         }
     }
     else

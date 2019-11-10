@@ -20,9 +20,10 @@ void initUMHeap(GC_state s,
     s->fl_chunks = 0;
 }
 
-
+#ifdef STACK_GC_SANITY
 extern GC_UM_Chunk stack_list[];
 extern unsigned int stack_list_end;
+#endif
 
 GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
 
@@ -99,8 +100,11 @@ void blockAllocator(GC_state s,size_t numChunks)
     if(DEBUG_RTGC)
         fprintf(stderr,"%d] Back from waiting for GC to clear chunks, FC =%d\n",PTHREAD_NUM,s->fl_chunks);
     
-    if(!(s->fl_chunks > fc_BeforeBlock) || !(s->fl_chunks > numChunks))
-        die("allocNextChunk: No more memory available\n");
+    if(!(s->fl_chunks > fc_BeforeBlock) || !(s->fl_chunks > numChunks)) {
+		fprintf(stderr, "fl_chunks %d beforeblock %d, numchunks %d\n",
+				s->fl_chunks, fc_BeforeBlock, numChunks);
+		die("allocNextChunk: No more memory available\n");
+	}
 
 }
 
@@ -109,7 +113,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 {
     LOCK_FL;
 
-    if (s->fl_chunks < 1 || s->fl_chunks < numChunks) 
+    if (s->fl_chunks < 1 || s->fl_chunks < numChunks)
         {
           blockAllocator(s,numChunks); 
         }
@@ -265,6 +269,7 @@ void insertFreeChunk(GC_state s,
     memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE);
 #endif
 
+#ifdef STACK_GC_SANITY
 	// TODO jeff - sanity check to make sure stacks are not collected (yet)
 	// TODO remove before benchmarking
 	if (DEBUG_STACKS) {
@@ -274,6 +279,7 @@ void insertFreeChunk(GC_state s,
 			}
 		}
 	}
+#endif
     UNLOCK_FL;
     
 }
@@ -311,15 +317,18 @@ bool createUMHeap(GC_state s,
     h->end = newStart + desiredSize;
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(UM_header);/*account for size of chunktype field*/ //TODO: reason if it should be sizeof(struct GC_UM_Chunk) + sizeof(struct UM_MEM_Chunk)
+    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(UM_header); /*account for size of chunktype field*/
     pointer end = h->start + h->size - step;
 
-
+    struct timeval t0, t1;
+	gettimeofday(&t0, NULL);
     for (pchunk=h->start;
          pchunk < end;
          pchunk+=step) {
         insertFreeChunk(s, h, pchunk);
     }
+	gettimeofday(&t1, NULL);
+	long elapsed = (t1.tv_sec-t0.tv_sec)*1000000 + t1.tv_usec-t0.tv_usec;
 
     assert(pchunk < h->end);
     assert(h->fl_tail > h->fl_head);
@@ -330,11 +339,10 @@ bool createUMHeap(GC_state s,
     /*Total number of Chunks in the Chunked heap*/
     s->maxChunksAvailable = s->fl_chunks;
 
-#ifdef PROFILE_UMGC
-    fprintf(stderr, "[GC] Created heap of %d chunks\n", s->fl_chunks);
-#endif
-
     if (DEBUG or s->controls.messages) {
+		fprintf(stderr, "[GC] Created heap of %d chunks in %lu us step=%d sz(umchunk)=%d sz(umhdr)=%d\n",
+				s->fl_chunks, elapsed,
+				step, sizeof(struct GC_UM_Chunk), sizeof(UM_header));
         fprintf (stderr,
                  "[GC: Created heap at "FMTPTR" of size %s bytes\n",
                  (uintptr_t)(h->start),
