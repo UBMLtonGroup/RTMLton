@@ -67,7 +67,10 @@ val gcFields =
     "stackTop",
     "fl_chunks",
     "currentFrame",
-    "rtSync"
+    "heuristicChunks",
+    "rtSync",
+    "fl_lock",
+    "reserved"
     ]
 
 val gcFieldsOffsets =

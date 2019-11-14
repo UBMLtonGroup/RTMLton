@@ -11,6 +11,7 @@ Pointer UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header,
 
 void CompareAndSet(GC_state s, int lockOrUnlock);
 bool CompareExchange(volatile int *ptr, int expected, int desired);
+void reserveAllocation(GC_state s, size_t numChunksTorequest);
 
 
 void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase);

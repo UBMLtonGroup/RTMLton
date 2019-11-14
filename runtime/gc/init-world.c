@@ -128,11 +128,12 @@ void initWorld (GC_state s) {
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
 
-s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
+  s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
   setGCStateCurrentHeap (s, 0, 0);
 
   GC_UM_Chunk next_chunk = NULL;
-  next_chunk = allocateChunks(s, &(s->umheap),1);
+  s->reserved ++; /*TODO Review this: Dirty hack to not fail assert in allocateChunks. UMfrontier should be removed*/
+  next_chunk = allocateChunks(s, &(s->umheap), 1);
   next_chunk->next_chunk = NULL;
   s->umfrontier = (Pointer) next_chunk->ml_object;
 

@@ -77,6 +77,7 @@ signature PRIM =
              | IntInf_toVector (* ssa to rssa *)
              | IntInf_toWord (* ssa to rssa *)
              | IntInf_xorb (* ssa to rssa *)
+             | Lock_fl (* gc-check *)
              | MLton_bogus (* ssa to rssa *)
              (* of type unit -> 'a.
               * Makes a bogus value of any type.
@@ -152,6 +153,7 @@ signature PRIM =
              | TopLevel_getSuffix (* implement suffix *)
              | TopLevel_setHandler (* implement exceptions *)
              | TopLevel_setSuffix (* implement suffix *)
+             | Unlock_fl (* gc-check *)
              | Vector_length (* ssa to ssa2 *)
              | Vector_sub (* ssa to ssa2 *)
              | Weak_canGet (* ssa to rssa *)
@@ -247,6 +249,8 @@ signature PRIM =
       val cpointerAdd: 'a t
       val cpointerDiff: 'a t
       val cpointerEqual: 'a t
+      val lockfl: 'a t
+      val unlockfl: 'a t
       val cpointerGet: CType.t -> 'a t
       val cpointerLt: 'a t
       val cpointerSet: CType.t -> 'a t

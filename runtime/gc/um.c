@@ -14,6 +14,31 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
  * define the free list
  */
 
+
+void reserveAllocation(GC_state s, size_t numChunksToRequest){
+
+	/*This what the gc-check pass inserts for all objects allcoated in basic block.
+		* SInce the number of chunks for an array is calculated at runtime, it becomes necessary to do
+		* the gc-check at runtime as well. This is different from the other allocations because
+		* array allocation is treated as a CCall and therefore all temp registers are pushed to stack before
+		* this function is called, thus allowing us to perform this check at runtime while preserving the
+		* temporaries in the generated C code from being wrongfully collected.
+		* I leave the heuristic check to the compiler inserted checkpoints */
+	LOCK_FL;
+	while (s->fl_chunks < (s->reserved + numChunksToRequest))
+	{
+		UNLOCK_FL;
+		GC_collect(s,0,true,true);
+		LOCK_FL;
+	}
+
+
+	s->reserved += (numChunksToRequest==0?1:numChunksToRequest);
+	UNLOCK_FL;
+
+}
+
+
 /*
  * header
  * - 4 bytes MLton header (initialized in the ML code)

@@ -281,9 +281,14 @@ fun insertFunction (f: Function.t,
                                label = collect,
                                statements = Vector.new0 (),
                                transfer = (Transfer.CCall
-                                           {args = Vector.new3 (Operand.GCState,
+                                           {args = Vector.new4 (Operand.GCState,
                                                                 amount,
-                                                                force),
+                                                                force,
+                                                                Operand.bool
+                                                                true), (* always
+                                                                collect red unless manually
+                                                                calling GC from alloc point in
+                                                                runtime *)
                                             func = func,
                                             return = SOME collectReturn})}
                       :: (Block.T
@@ -342,7 +347,7 @@ fun insertFunction (f: Function.t,
                    (Vector.new1 s, transfer)
                 end
              datatype z = datatype Runtime.GCField.t
-             (* this needs to see if currentFrame->next is null and grow stack if true *)
+             (* TODO this needs to see if currentFrame->next is null and grow stack if true *)
              fun stackCheck (maybeFirst, z): Label.t =
                 let
                    val (statements, transfer) =

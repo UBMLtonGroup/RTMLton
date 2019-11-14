@@ -35,6 +35,9 @@ signature RUNTIME =
              | FLChunks
              | CurrentFrame
              | RTSync
+             | HeuristicChunks
+             | FLLock
+             | Reserved
 
             val layout: t -> Layout.t
             val offset: t -> Bytes.t (* Field offset in struct GC_state. *)
@@ -54,7 +57,10 @@ signature RUNTIME =
                              stackTop: Bytes.t,
                              flChunks: Bytes.t,
                              currentFrame: Bytes.t,
-                             rtSync: Bytes.t} -> unit
+                             rtSync: Bytes.t ,
+                             heuristicChunks: Bytes.t,
+                             flLock: Bytes.t,
+                             reserved: Bytes.t} -> unit
             val setSizes: {atomicState: Bytes.t,
                            cardMapAbsolute: Bytes.t,
                            currentThread: Bytes.t,
@@ -71,7 +77,10 @@ signature RUNTIME =
                            stackTop: Bytes.t,
                            flChunks: Bytes.t,
                            currentFrame: Bytes.t,
-                           rtSync:Bytes.t } -> unit
+                           rtSync:Bytes.t ,
+                           heuristicChunks:Bytes.t,
+                           flLock: Bytes.t,
+                           reserved: Bytes.t} -> unit
             val size: t -> Bytes.t (* Field size in struct GC_state. *)
             val toString: t -> string
          end

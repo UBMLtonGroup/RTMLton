@@ -65,6 +65,10 @@ objptr newStack_um (GC_state s) {
 
 	assert(s->maxFrameSize < sizeof(struct GC_UM_Chunk));
 
+	/* Reserve the allocation before actually allocating.
+     * Will block if not enough chunks available.
+     */
+	reserveAllocation(s, need_chunks);
 	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
 	if (DEBUG_STACKS)
@@ -123,6 +127,11 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
   C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
   assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
+
+  /*Reserve the allocation before actually allocating.
+   * Will block if not enough chunks available.
+   */
+  reserveAllocation(s, numchunks);
 
   res = UM_Object_alloc(s,numchunks,GC_THREAD_HEADER,GC_NORMAL_HEADER_SIZE);
 

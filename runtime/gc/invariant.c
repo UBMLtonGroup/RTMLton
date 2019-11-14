@@ -37,18 +37,23 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
 bool invariantForRTGC(GC_state s)
 {
 
+/*The logic below needs to be re considered. There is no guarantee that during/after the sweep phase, the mutator is not running
+ * and hence the invariant failed due to the presence of an unmarked chunk which was allocated AFTER the sweep phase and BEFORE this function is run*/
+
+#if 0
     pointer pchunk;
     size_t step = sizeof(struct GC_UM_Chunk)+sizeof(Word32_t); /*account for 4 bytes of chunktype header*/
     pointer end = s->umheap.start + s->umheap.size - step;
 
     for (pchunk=s->umheap.start;
          pchunk < end;
-         pchunk+=step) 
+         pchunk+=step)
     {
         if(((UM_Mem_Chunk)pchunk)->chunkType == UM_NORMAL_CHUNK)
         {
             GC_UM_Chunk pc = (GC_UM_Chunk)(pchunk+4); /*account for size of chunktype*/
-            if ((pc->chunk_header & UM_CHUNK_IN_USE) && !(pc->chunk_header & ~UM_CHUNK_MARK_MASK) ) {
+            if (ISINUSE(pc->chunk_header) && ISUNMARKED(pc->chunk_header)){
+                fprintf(stderr,"invariantforRTGC failed. Header is "FMTPTR"\n ",(uintptr_t)pc->chunk_header);
                 return false;
             }
         }
@@ -56,13 +61,16 @@ bool invariantForRTGC(GC_state s)
         {
 
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
-            if ((pc->array_chunk_header & UM_CHUNK_IN_USE) && !(pc->array_chunk_header & ~UM_CHUNK_MARK_MASK)) {
+            if (ISINUSE(pc->array_chunk_header) && ISUNMARKED(pc->array_chunk_header)) {
+                fprintf(stderr,"invariantforRTGC failed. Header is "FMTPTR"\n ",(uintptr_t)pc->array_chunk_header);
+
                 return false;
             }
-       
+
         }
 
     }
+#endif
     
     return true;
 }

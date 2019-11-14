@@ -543,7 +543,10 @@ fun ofGCField (f: GCField.t): t =
        | StackTop => cpointer ()
        | FLChunks => csize ()
        | CurrentFrame => cpointer ()
-       | RTSync => cpointer()
+       | RTSync => word32
+       | HeuristicChunks => csize ()
+       | FLLock => cpointer ()
+       | Reserved => csize ()
    end
 
 fun castIsOk {from, to, tyconTy = _} =
@@ -880,7 +883,7 @@ structure BuiltInCFunction =
      
      local
          fun make b = fn () =>
-            T {args = Vector.new3 (Type.gcState (), Type.csize (), Type.bool),
+            T {args = Vector.new4 (Type.gcState (), Type.csize (), Type.bool, Type.bool),
                    convention = Cdecl,
                    kind = Kind.Runtime {bytesNeeded = NONE,
                                         ensuresBytesFree = true,
@@ -889,7 +892,7 @@ structure BuiltInCFunction =
                                         modifiesFrontier = true,
                                         readsStackTop = true,
                                         writesStackTop = true},
-                   prototype = (Vector.new3 (CType.cpointer, CType.csize (), CType.bool),
+                   prototype = (Vector.new4 (CType.cpointer, CType.csize (), CType.bool, CType.bool),
                                 NONE),
                    return = Type.unit,
                    symbolScope = SymbolScope.Private,

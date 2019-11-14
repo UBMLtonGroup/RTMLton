@@ -520,7 +520,10 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              stackTop = get "stackTop_Offset",
              flChunks = get "fl_chunks_Offset",
              currentFrame = get "currentFrame_Offset",
-             rtSync = get "rtSync_Offset"
+             rtSync = get "rtSync_Offset",
+             heuristicChunks = get "heuristicChunks_Offset",
+             flLock = get "fl_lock_Offset",
+             reserved = get "reserved_Offset"
              };
             Runtime.GCField.setSizes
             {
@@ -540,7 +543,10 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              stackTop = get "stackTop_Size",
              flChunks = get "fl_chunks_Size",
     	     currentFrame = get "currentFrame_Size",
-             rtSync = get "rtSync_Size"
+             rtSync = get "rtSync_Size",
+             heuristicChunks = get "heuristicChunks_Size",
+             flLock = get "fl_lock_Size",
+             reserved = get "reserved_Size"
              }
          end
       (* Setup endianness *)

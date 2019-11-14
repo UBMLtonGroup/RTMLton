@@ -134,6 +134,10 @@
 # define STACKWRITE(A, V)
 #endif
 
+#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+#define Lock_fl(s) IFED(pthread_mutex_lock(&s))
+#define Unlock_fl(s) IFED(pthread_mutex_unlock(&s))
+
 #define ChunkExnHandler ((struct GC_UM_Chunk*)CurrentFrame)->handler
 #define ChunkExnLink ((struct GC_UM_Chunk*)CurrentFrame)->link
 

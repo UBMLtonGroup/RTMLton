@@ -36,7 +36,9 @@ struct GC_state {
 /*52*/  objptr currentFrame[MAXPRI];
 
 /*64*/  size_t fl_chunks;
-/*68*/  size_t stack_depth[MAXPRI];
+/*68*/  size_t stack_depth[MAXPRI]; // TODO remove eventually
+  size_t reserved;
+  size_t heuristicChunks;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
@@ -105,6 +107,7 @@ struct GC_state {
   size_t wl_length;
   pthread_mutex_t wl_lock;
   volatile int casLock;
+  bool collectAll;
   /* -------------------------- */
   pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
  
@@ -125,6 +128,13 @@ struct GC_state {
   pthread_mutex_t rtThreads_lock;
   pthread_cond_t rtSync_cond;
   pthread_cond_t rtThreads_cond;
+  int threadsBlockedForGC;
+  int attempts;
+  float hPercent; /*Percentage of total chunks to consider for signalling GC*/
+  int blocked;
+  uintmax_t allocedByRT;
+  size_t numAllocedByRT;
+
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];
