@@ -973,7 +973,7 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 	struct timeval t0, t1;
 
 	gettimeofday(&t0, NULL);
-	assert(collectRed == FALSE);
+	//assert(collectRed == FALSE);
 
 	if (s->rtSync[PTHREAD_NUM] && force) {
 		if (DEBUG_RTGC) {

@@ -28,7 +28,7 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest){
 	while (s->fl_chunks < (s->reserved + numChunksToRequest))
 	{
 		UNLOCK_FL;
-		GC_collect(s,0,true,true);
+		GC_collect(s, 0, true, true);
 		LOCK_FL;
 	}
 

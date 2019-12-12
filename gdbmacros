@@ -30,6 +30,28 @@ def dumpthread
     end
 end
 
+define dumpcurrentframe
+    set $tn = $arg0
+    if gcState.currentThread[$tn] == 1
+        print "not a valid thread"
+    else
+        x /32wx gcState->currentFrame[$arg0]
+    end
+end
+document dumpcurrentframe
+    dumpcurrentframe [tn]
+    dump the current frame (first 32 words) as hex
+end
+
+define dumpstrings
+    set $a = $arg0
+    x /32sb $arg0
+end
+document dumpstrings
+    dumpstrings [addr]
+    dump the first 32 strings at the given address
+end
+
 define dumpstack
     set $tn = $arg0
     if gcState.currentThread[$tn] == 1
@@ -92,6 +114,14 @@ define isonstack
     end
 end
 document isonstack
-   isonstack(thr_num, address)
-   if address is on the stack of thr_num
+    isonstack(thr_num, address)
+    if address is on the stack of thr_num
+end
+
+define tohex
+    print /x $arg0
+end
+
+define todec
+    print /d $arg0
 end

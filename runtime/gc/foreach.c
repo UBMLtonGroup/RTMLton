@@ -136,7 +136,11 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 //          if((objptr*)p1 != (objptr*)p) {
 //              die("OBJ POINTER NOT EQUAL!!\n");
 //          }
-          callIfIsObjptr (s, f, (objptr*)todo);
+if (((unsigned int )(*todo)) == 0) {
+	fprintf(stderr, "TODO is null\n");
+} else {
+	callIfIsObjptr(s, f, (objptr *) todo);
+}
 //          p += OBJPTR_SIZE;
       }
 //      p += bytesNonObjptrs;
@@ -259,7 +263,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	while (top->prev_chunk) {
 		top = top->prev_chunk;
 
-		assert (top->ra != 0);
+		//assert (top->ra != 0);
 		returnAddress = (uintptr_t)(top->ml_object[top->ra]);
 
 		if (DEBUG_STACKS) {
