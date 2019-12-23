@@ -114,7 +114,7 @@ GC_stack newStack (GC_state s,
 }
 
 GC_thread newThread (GC_state s, size_t reserved) {
-  GC_stack stack;
+  //GC_stack stack;
   GC_thread thread;
   pointer res;
 
@@ -123,7 +123,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
 
   assert (isStackReservedAligned (s, reserved));
   ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
-  stack = NULL; //newStack (s, reserved, FALSE);
+  //stack = NULL; //newStack (s, reserved, FALSE);
 
   C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
   assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
@@ -141,7 +141,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread = (GC_thread)(res + offsetofThread (s));
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;
-  thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
+  thread->stack = BOGUS_OBJPTR; // pointerToObjptr((pointer)stack, s->heap.start);
   thread->firstFrame = newStack_um(s);
   thread->currentFrame = thread->firstFrame;
 

@@ -82,7 +82,7 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   //s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
 
   s->currentFrame[PTHREAD_NUM] = currentFrame;
-  if(DEBUG_DETAILED)
+  if(DEBUG_DETAILED || 1)
 		fprintf(stderr, "%d] "
 				GREEN("setGCStateCurrentThreadAndStack")
 				" currentFrame "FMTPTR" stackBottom "FMTPTR"\n",

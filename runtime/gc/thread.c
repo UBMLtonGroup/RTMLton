@@ -17,6 +17,27 @@ void displayThread (GC_state s,
 			(uintptr_t)thread->currentFrame,
 			(uintptr_t)thread->firstFrame);
 
+
+	GC_UM_Chunk c = (GC_UM_Chunk)thread->firstFrame;
+	assert(c->prev_chunk == NULL);
+
+
+	int count = 0, depth = 0, found = 0;
+	while (c->next_chunk != NULL) {
+		if (found == 0) {
+			if (c != (GC_UM_Chunk)thread->currentFrame)
+				depth++;
+			else
+				found = 1;
+		}
+		count++;
+		c = c->next_chunk;
+	}
+
+	fprintf(stream, "\t\tstack size = %d chunks\n", count);
+	fprintf(stream, "\t\tstack depth = %d chunks\n", count);
+
+
 #if 0
 	displayStack (s, (GC_stack)(objptrToPointer (thread->stack, s->heap.start)),
 				  stream);

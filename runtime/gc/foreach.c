@@ -92,18 +92,6 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   if (NORMAL_TAG == tag) {
   	fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
-  	/*
-      p += bytesNonObjptrs;
-
-      pointer max = p + (numObjptrs * OBJPTR_SIZE);
-
-      for ( ; p < max; p += OBJPTR_SIZE) {
-          fprintf (stderr,
-                   "Should have:  p = "FMTPTR"  *p = "FMTOBJPTR"\n",
-                   (uintptr_t)p, *(objptr*)p);
-          callIfIsObjptr (s, f, (objptr*)p);
-      }
-*/
       if(p > s->heap.start && p< (s->heap.start+s->heap.size))
       {
         die("Non stack Object in old heap");
@@ -113,37 +101,17 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           fprintf(stderr, "   foreachObjptrInObject, normal, bytesNonObjptrs: %d, "
                   "num ptrs: %d\n", bytesNonObjptrs, numObjptrs);
 
-//      pointer p_base = p;
-      //    p = p + bytesNonObjptrs;
-//      pointer p1;
-//      p += bytesNonObjptrs;
-//      pointer p1 = p;
 
       for (int i=0; i<numObjptrs; i++) {
           pointer todo = UM_CPointer_offset(s, p, bytesNonObjptrs + i * OBJPTR_SIZE,
                                             OBJPTR_SIZE);
-          /*
-          p = UM_CPointer_offset(s, p_base,
-                                 bytesNonObjptrs + i * OBJPTR_SIZE,
-                                 OBJPTR_SIZE);
 
-
-          if (DEBUG_MEM)
-              fprintf(stderr, "   foreachObjptrInObject, normal, todo: 0x%x,"
-                      " todoVal: "FMTOBJPTR"\n", (uintptr_t)p, (uintptr_t)
-                      *((objptr*)p));
-          */
-//          if((objptr*)p1 != (objptr*)p) {
-//              die("OBJ POINTER NOT EQUAL!!\n");
-//          }
-if (((unsigned int )(*todo)) == 0) {
-	fprintf(stderr, "TODO is null\n");
-} else {
-	callIfIsObjptr(s, f, (objptr *) todo);
-}
-//          p += OBJPTR_SIZE;
+		if (((unsigned int )(*todo)) == 0) {
+			fprintf(stderr, "TODO is null\n");
+		} else {
+			callIfIsObjptr(s, f, (objptr *) todo);
+		}
       }
-//      p += bytesNonObjptrs;
 
   } else if (WEAK_TAG == tag) {
   	fprintf(stderr, "%d] "GREEN("marking weak\n"), PTHREAD_NUM);
@@ -231,6 +199,7 @@ if (((unsigned int )(*todo)) == 0) {
     GC_returnAddress returnAddress;
     GC_frameLayout frameLayout;
     GC_frameOffsets frameOffsets;
+	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
 
     fprintf(stderr, "%d] "GREEN("marking stack\n"), PTHREAD_NUM);
     assert (STACK_TAG == tag);
@@ -240,6 +209,7 @@ if (((unsigned int )(*todo)) == 0) {
     if (DEBUG_STACKS)
     	fprintf(stderr,"%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t)stackFrame);
 
+    displayThread(s, thread, stderr);
 
 	GC_UM_Chunk top = stackFrame->next_chunk;
 	GC_UM_Chunk bottom = NULL;
@@ -255,8 +225,10 @@ if (((unsigned int )(*todo)) == 0) {
 	assert (bottom != NULL);
 
 	// mark all of this stack's chunks
-	for( ; bottom->next_chunk ; bottom = bottom->next_chunk)
-		markChunk((pointer)&(bottom->ml_object), tag, MARK_MODE, s, 0);
+	for( ; bottom->next_chunk ; bottom = bottom->next_chunk) {
+		markChunk((pointer) & (bottom->ml_object), tag, MARK_MODE, s, 0);
+		fprintf(stderr, "marked stack chunk %x\n", (unsigned int)bottom);
+	}
 
 	fprintf(stderr, "%d] stack depth is %d\n", PTHREAD_NUM, depth);
 

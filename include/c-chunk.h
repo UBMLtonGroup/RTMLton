@@ -367,11 +367,11 @@ void dump_hex(char *str, int len);
                          if (STACKLET_DEBUG) fprintf(stderr, RED("memcpy: ") "(%"FW"lx, %"FW"lx, %d)\n", \
                                                  cf->next_chunk->ml_object+WORDWIDTH, cf->ml_object+bytes+WORDWIDTH,\
                                                  UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH); \
-                         if (STACKLET_DEBUG) fprintf(stderr, "cf %"FW"lx cf->next %"FW"lx bytes %d len %d\n", \
-                                                 cf, cf->next_chunk, bytes, UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH ); \
                          memcpy(cf->next_chunk->ml_object+WORDWIDTH, cf->ml_object+bytes+WORDWIDTH, UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH); \
                          cf->next_chunk->memcpy_addr = cf->ml_object+bytes+WORDWIDTH; \
                          cf->next_chunk->memcpy_size = UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH; \
+                         if (STACKLET_DEBUG) fprintf(stderr, "cf %"FW"lx cf->next %"FW"lx bytes %d len %d\n", \
+                                                 cf, cf->next_chunk, bytes, UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH ); \
                          CurrentFrame = cf->next_chunk; \
                          if(STACKLET_DEBUG) fprintf(stderr, YELLOW("\nnext_chunk:\n"));\
                          if(STACKLET_DEBUG) dump_hex(cf->next_chunk, 100);\

@@ -31,7 +31,7 @@ void addToWorklist(GC_state s, objptr *opp) {
 	 * will not be collected by the collector(since on old heap) so its ok to let it pass the assertion
 	 * TODO: Handle objects on oldheap and stacks */
 
-	assert(isObjectShaded(s, opp));
+	assert(isObjectShaded(s, opp) || isObjectMarked(s, opp));
 
 	if (s->wl_length >= s->wl_size) {
 		if (1 || DEBUG_RTGC_MARKING)
@@ -204,12 +204,16 @@ static void markWorklist(GC_state s) {
 
 static
 void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint16_t numObjptrs) {
-	if (tag == NORMAL_TAG) {
+	if (tag == NORMAL_TAG || tag == STACK_TAG) {
 
 		if (p >= s->umheap.start &&
 			p < (s->umheap.start + s->umheap.size)) /*if object is on UM heap */
 		{
-			GC_UM_Chunk pchunk = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
+			GC_UM_Chunk pchunk;
+			if (tag == NORMAL_TAG)
+				pchunk = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
+			else
+				pchunk = (GC_UM_Chunk)(p);
 			if (m == MARK_MODE) {
 				pchunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
 				pchunk->chunk_header |= UM_CHUNK_MARK_MASK;  /*mark chunk header*/
@@ -236,22 +240,24 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 						pchunk->sentinel, m, numObjptrs);
 			}
 
-
-			/*Mark linked chunk if there is a linked chunk*/
-			if (NULL != pchunk->next_chunk) {
-				if (m == MARK_MODE) {
-					pchunk->next_chunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
-
-					pchunk->next_chunk->chunk_header |= UM_CHUNK_MARK_MASK;
-					s->cGCStats.numChunksMarked += 1;
-				} else if (m == GREY_MODE) {
-					/*shade chunk only if not shaded*/
-					if (!(ISGREY(pchunk->next_chunk->chunk_header)) && !(ISMARKED(pchunk->next_chunk->chunk_header))) {
+			if (tag == NORMAL_TAG) {
+				/*Mark linked chunk if there is a linked chunk*/
+				if (NULL != pchunk->next_chunk) {
+					if (m == MARK_MODE) {
 						pchunk->next_chunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
-						pchunk->next_chunk->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+
+						pchunk->next_chunk->chunk_header |= UM_CHUNK_MARK_MASK;
+						s->cGCStats.numChunksMarked += 1;
+					} else if (m == GREY_MODE) {
+						/*shade chunk only if not shaded*/
+						if (!(ISGREY(pchunk->next_chunk->chunk_header)) &&
+							!(ISMARKED(pchunk->next_chunk->chunk_header))) {
+							pchunk->next_chunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
+							pchunk->next_chunk->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
+						}
+					} else {
+						pchunk->next_chunk->chunk_header &= ~UM_CHUNK_MARK_MASK;
 					}
-				} else {
-					pchunk->next_chunk->chunk_header &= ~UM_CHUNK_MARK_MASK;
 				}
 			}
 		}
@@ -289,6 +295,7 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 		} else
 			markUMArrayChunks(s, fst_leaf, m);
 	} else {
+		fprintf(stderr, "markChunk is in weak or some strange tag %s\n", objectTypeTagToString(tag));
 		if (0) {
 			switch (tag) {
 				case STACK_TAG:
@@ -324,9 +331,16 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 static
 bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 	/*Treat shaded objects as unmarked*/
+	fprintf(stderr, "hi2 %d\n", tag);
+
 	if (tag == NORMAL_TAG) {
 		GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
+		fprintf(stderr, "%x\n", (unsigned int)pc);
+		return (ISINUSE(pc->chunk_header) && ISMARKED(pc->chunk_header));
+	} else if (tag == STACK_TAG) {
 
+		GC_UM_Chunk pc = (GC_UM_Chunk)(p); /*Get the chunk holding the mlton object*/
+		fprintf(stderr, "%x\n", (unsigned int)pc);
 		return (ISINUSE(pc->chunk_header) && ISMARKED(pc->chunk_header));
 
 	} else if (tag == ARRAY_TAG) {
@@ -334,9 +348,8 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 
 		return (ISINUSE(pc->array_chunk_header) && ISMARKED(pc->array_chunk_header));
 	} else {
-		/*stack,weak or error tags*/
-		return false;
-		//die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
+		/*weak or error tags*/
+		die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
 	}
 
 }
@@ -344,10 +357,21 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 
 static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 	/*Treat shaded objects as unmarked*/
-
+fprintf(stderr, "hi1 %d\n", tag);
 	if (tag == NORMAL_TAG) {
 		GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
 
+		fprintf(stderr, "%x\n", (unsigned int)pc);
+
+		if (ISINUSE(pc->chunk_header) && ISGREY(pc->chunk_header))
+			return true;
+		else
+			return false;
+
+	} else if (tag == STACK_TAG) {
+		GC_UM_Chunk pc = (GC_UM_Chunk)(p); /*Get the chunk holding the mlton object*/
+
+		fprintf(stderr, "%x\n", (unsigned int)pc);
 
 		if (ISINUSE(pc->chunk_header) && ISGREY(pc->chunk_header))
 			return true;
@@ -362,8 +386,7 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 		else
 			return false;
 
-	} else if (tag == STACK_TAG || tag == WEAK_TAG) {
-		//return true;
+	} else if (tag == WEAK_TAG) {
 		die("Why are you checking a %s object chunk??\n", (tag == STACK_TAG) ? "Stack" : "Weak");
 	} else {
 		return false;

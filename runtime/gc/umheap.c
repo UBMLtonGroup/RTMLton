@@ -264,8 +264,9 @@ void insertFreeChunk(GC_state s,
 	// TODO remove before benchmarking
 	if (DEBUG_STACKS) {
 		for (unsigned int i = 0; i < stack_list_end; i++) {
-			if (stack_list[i] == (GC_UM_Chunk) pc) {
+			if (stack_list[i] == ((GC_UM_Chunk) pc + sizeof(UM_header))) {
 				fprintf(stderr, RED("stack frame added to free list\n"));
+				die("abort");
 			}
 		}
 	}
