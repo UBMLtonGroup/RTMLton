@@ -19,7 +19,6 @@ signature RUNTIME =
          sig
             datatype t =
                AtomicState
-             | CardMapAbsolute
              | CurrentThread
              | CurSourceSeqsIndex
              | ExnStack
@@ -42,7 +41,6 @@ signature RUNTIME =
             val layout: t -> Layout.t
             val offset: t -> Bytes.t (* Field offset in struct GC_state. *)
             val setOffsets: {atomicState: Bytes.t,
-                             cardMapAbsolute: Bytes.t,
                              currentThread: Bytes.t,
                              curSourceSeqsIndex: Bytes.t,
                              exnStack: Bytes.t,
@@ -62,7 +60,6 @@ signature RUNTIME =
                              flLock: Bytes.t,
                              reserved: Bytes.t} -> unit
             val setSizes: {atomicState: Bytes.t,
-                           cardMapAbsolute: Bytes.t,
                            currentThread: Bytes.t,
                            curSourceSeqsIndex: Bytes.t,
                            exnStack: Bytes.t,

@@ -7,7 +7,11 @@
  * See the file MLton-LICENSE for details.
  */
 
-void GC_pack (GC_state s) {
+__attribute__((__noreturn__)) void GC_pack (GC_state s) {
+
+ die("trying to call GC_pack\n");
+
+#if 0
   size_t keep;
 
   enter (s);
@@ -35,9 +39,14 @@ void GC_pack (GC_state s) {
              (uintptr_t)(s->heap.start),
              uintmaxToCommaString(s->heap.size));
   leave (s);
+# endif
 }
 
-void GC_unpack (GC_state s) {
+__attribute__((__noreturn__)) void GC_unpack (GC_state s) {
+
+  die("Trying to GC_unpack \n");
+
+#if 0
   enter (s);
   if (DEBUG or s->controls.messages)
     fprintf (stderr, 
@@ -62,4 +71,5 @@ void GC_unpack (GC_state s) {
              (uintptr_t)(s->heap.start),
              uintmaxToCommaString(s->heap.size));
   leave (s);
+#endif 
 }

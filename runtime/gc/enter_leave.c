@@ -29,7 +29,7 @@ void enter (GC_state s) {
   if (DEBUG_OLD) 
     displayGCState (s, stderr);
   beginAtomic (s);
-  assert (invariantForGC (s));
+//  assert (invariantForGC (s));
   if (DEBUG_OLD)
     fprintf (stderr, "%d] enter ok\n", PTHREAD_NUM);
 }

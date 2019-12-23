@@ -70,7 +70,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
  */
 pointer foreachObjptrInObject (GC_state s, pointer p,
                                GC_foreachObjptrFun f, bool skipWeaks) {
-  if (1 || DEBUG_MEM) {
+  if (DEBUG_MEM) {
       fprintf(stderr, "%d] foreach object in 0x%x\n", PTHREAD_NUM, (uintptr_t)p);
   }
   GC_header header;
@@ -80,7 +80,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (1 || DEBUG_DETAILED)
+  if (DEBUG_DETAILED)
     fprintf (stderr,
              "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
@@ -92,7 +92,19 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   if (NORMAL_TAG == tag) {
   	fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
-      if(p > s->heap.start && p< (s->heap.start+s->heap.size))
+  	/*
+      p += bytesNonObjptrs;
+
+      pointer max = p + (numObjptrs * OBJPTR_SIZE);
+
+      for ( ; p < max; p += OBJPTR_SIZE) {
+          fprintf (stderr,
+                   "Should have:  p = "FMTPTR"  *p = "FMTOBJPTR"\n",
+                   (uintptr_t)p, *(objptr*)p);
+          callIfIsObjptr (s, f, (objptr*)p);
+      }
+*/
+      if(!isObjectOnUMHeap(s,p)) 
       {
         die("Non stack Object in old heap");
       }
@@ -130,7 +142,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     pointer last;
     GC_arrayLength numElements;
 
-    fprintf(stderr, "%d] "GREEN("marking array (old heap)\n"), PTHREAD_NUM);
+   // fprintf(stderr, "%d] "GREEN("marking array (old heap)\n"), PTHREAD_NUM);
 
     numElements = getArrayLength (p);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
@@ -227,7 +239,6 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	// mark all of this stack's chunks
 	for( ; bottom->next_chunk ; bottom = bottom->next_chunk) {
 		markChunk((pointer) & (bottom->ml_object), tag, MARK_MODE, s, 0);
-		fprintf(stderr, "marked stack chunk %x\n", (unsigned int)bottom);
 	}
 
 	fprintf(stderr, "%d] stack depth is %d\n", PTHREAD_NUM, depth);

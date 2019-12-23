@@ -6,7 +6,11 @@
  * See the file MLton-LICENSE for details.
  */
 
-void GC_share (GC_state s, pointer object) {
+__attribute__((__noreturn__)) void GC_share (GC_state s, pointer object) {
+
+  die("Trying to run GC_share\n");
+
+#if 0
   size_t bytesExamined;
   size_t bytesHashConsed;
 
@@ -26,4 +30,5 @@ void GC_share (GC_state s, pointer object) {
   if (DEBUG_SHARE or s->controls.messages)
     printBytesHashConsedMessage (bytesHashConsed, bytesExamined);
   leave (s);
+#endif
 }

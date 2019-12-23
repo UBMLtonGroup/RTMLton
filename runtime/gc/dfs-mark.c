@@ -41,10 +41,14 @@ bool isPointerMarkedByMode (pointer p, GC_markMode m) {
  *
  * It returns the total size in bytes of the objects marked.
  */
-size_t dfsMarkByMode (GC_state s, pointer root,
+__attribute__((__unused__)) size_t dfsMarkByMode (GC_state s, pointer root,
                       GC_markMode mode,
                       bool shouldHashCons,
                       bool shouldLinkWeaks) {
+
+ die ("Trying to do dfsMarkByMode \n");
+
+#if 0
   GC_header mark; /* Used to set or clear the mark bit. */
   size_t size; /* Total number of bytes marked. */
   pointer cur; /* The current object being marked. */
@@ -94,11 +98,11 @@ markNext:
   assert (nextHeaderp == getHeaderp (next));
   assert (nextHeader == getHeader (next));
   // assert (*(pointer*) todo == next);
-  assert (fetchObjptrToPointer (todo, s->heap.start) == next);
+  assert (fetchObjptrToPointer (todo, s->umheap.start) == next);
   headerp = nextHeaderp;
   header = nextHeader;
   // *(pointer*)todo = prev;
-  storeObjptrFromPointer (todo, prev, s->heap.start);
+  storeObjptrFromPointer (todo, prev, s->umheap.start);
   prev = cur;
   cur = next;
 mark:
@@ -163,7 +167,7 @@ markInNormal:
       fprintf (stderr, "markInNormal  objptrIndex = %"PRIu32"\n", objptrIndex);
     assert (objptrIndex < numObjptrs);
     // next = *(pointer*)todo;
-    next = fetchObjptrToPointer (todo, s->heap.start);
+    next = fetchObjptrToPointer (todo, s->umheap.start);
     if (not isPointer (next)) {
 markNextInNormal:
       assert (objptrIndex < numObjptrs);
@@ -244,7 +248,7 @@ markInArray:
     assert (objptrIndex < numObjptrs);
     assert (todo == indexArrayAtObjptrIndex (s, cur, arrayIndex, objptrIndex));
     // next = *(pointer*)todo;
-    next = fetchObjptrToPointer (todo, s->heap.start);
+    next = fetchObjptrToPointer (todo, s->umheap.start);
     if (not (isPointer(next))) {
 markNextInArray:
       assert (arrayIndex < getArrayLength (cur));
@@ -302,7 +306,7 @@ markInFrame:
     }
     todo = top - frameLayout->size + frameOffsets [objptrIndex + 1];
     // next = *(pointer*)todo;
-    next = fetchObjptrToPointer (todo, s->heap.start);
+    next = fetchObjptrToPointer (todo, s->umheap.start);
     if (DEBUG_DFS_MARK)
       fprintf (stderr,
                "    offset %u  todo "FMTPTR"  next = "FMTPTR"\n",
@@ -349,9 +353,9 @@ ret:
     objptrIndex = (header & COUNTER_MASK) >> COUNTER_SHIFT;
     todo += objptrIndex * OBJPTR_SIZE;
     // prev = *(pointer*)todo;
-    prev = fetchObjptrToPointer (todo, s->heap.start);
+    prev = fetchObjptrToPointer (todo, s->umheap.start);
     // *(pointer*)todo = next;
-    storeObjptrFromPointer (todo, next, s->heap.start);
+    storeObjptrFromPointer (todo, next, s->umheap.start);
     if (shouldHashCons)
       markIntergenerationalPointer (s, (pointer*)todo);
     goto markNextInNormal;
@@ -361,9 +365,9 @@ ret:
     objptrIndex = (header & COUNTER_MASK) >> COUNTER_SHIFT;
     todo += bytesNonObjptrs + objptrIndex * OBJPTR_SIZE;
     // prev = *(pointer*)todo;
-    prev = fetchObjptrToPointer (todo, s->heap.start);
+    prev = fetchObjptrToPointer (todo, s->umheap.start);
     // *(pointer*)todo = next;
-    storeObjptrFromPointer (todo, next, s->heap.start);
+    storeObjptrFromPointer (todo, next, s->umheap.start);
     if (shouldHashCons)
       markIntergenerationalPointer (s, (pointer*)todo);
     goto markNextInArray;
@@ -377,26 +381,37 @@ ret:
     frameOffsets = frameLayout->offsets;
     todo = top - frameLayout->size + frameOffsets [objptrIndex + 1];
     // prev = *(pointer*)todo;
-    prev = fetchObjptrToPointer (todo, s->heap.start);
+    prev = fetchObjptrToPointer (todo, s->umheap.start);
     // *(pointer*)todo = next;
-    storeObjptrFromPointer (todo, next, s->heap.start);
+    storeObjptrFromPointer (todo, next, s->umheap.start);
     if (shouldHashCons)
       markIntergenerationalPointer (s, (pointer*)todo);
     objptrIndex++;
     goto markInFrame;
   }
   assert (FALSE);
+#endif
 }
 
 void dfsMarkWithHashConsWithLinkWeaks (GC_state s, objptr *opp) {
+
+  die ("Trying to do dfsMarkWithHashConsWithLinkWeaks \n");
+
+#if 0
   pointer p;
 
-  p = objptrToPointer (*opp, s->heap.start);
+  p = objptrToPointer (*opp, s->umheap.start);
   dfsMarkByMode (s, p, MARK_MODE, TRUE, TRUE);
+#endif
 }
 
 void dfsMarkWithoutHashConsWithLinkWeaks (GC_state s, objptr *opp) {
+
+  die ("Trying to do dfsMarkWithoutHashConsWithLinkWeaks\n");
+
+#if 0
   pointer p;
-  p = objptrToPointer (*opp, s->heap.start);
+  p = objptrToPointer (*opp, s->umheap.start);
   dfsMarkByMode (s, p, MARK_MODE, FALSE, TRUE);
+#endif
 }

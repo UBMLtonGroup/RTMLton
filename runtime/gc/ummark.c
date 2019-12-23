@@ -75,7 +75,7 @@ bool isEmptyWorklist(GC_state s) {
 
 
 bool isObjectShaded(GC_state s, objptr *opp) {
-	pointer p = objptrToPointer(*opp, s->heap.start);
+	pointer p = objptrToPointer(*opp, s->umheap.start);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
 	uint16_t bytesNonObjptrs = 0;
@@ -90,7 +90,7 @@ bool isObjectShaded(GC_state s, objptr *opp) {
 }
 
 bool isObjectMarked(GC_state s, objptr *opp) {
-	pointer p = objptrToPointer(*opp, s->heap.start);
+	pointer p = objptrToPointer(*opp, s->umheap.start);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
 	uint16_t bytesNonObjptrs = 0;
@@ -106,7 +106,7 @@ bool isObjectMarked(GC_state s, objptr *opp) {
 static
 void umShadeObject(GC_state s, objptr *opp) {
 
-	pointer p = objptrToPointer(*opp, s->heap.start);
+	pointer p = objptrToPointer(*opp, s->umheap.start);
 
 	/*Shade the object only if it is on the UM heap. If not it doesn't
    * matter if the object is shaded or not since GC 
@@ -127,7 +127,7 @@ void umShadeObject(GC_state s, objptr *opp) {
 }
 
 GC_objectTypeTag getObjectType(GC_state s, pointer p) {
-	//pointer p = objptrToPointer(*opp, s->heap.start);
+	//pointer p = objptrToPointer(*opp, s->umheap.start);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
 	uint16_t bytesNonObjptrs = 0;
@@ -295,7 +295,6 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 		} else
 			markUMArrayChunks(s, fst_leaf, m);
 	} else {
-		fprintf(stderr, "markChunk is in weak or some strange tag %s\n", objectTypeTagToString(tag));
 		if (0) {
 			switch (tag) {
 				case STACK_TAG:
@@ -422,7 +421,7 @@ bool isContainerChunkMarkedByMode(pointer p, GC_markMode m, GC_objectTypeTag tag
  * */
 
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
-	pointer p = objptrToPointer(*opp, s->heap.start);
+	pointer p = objptrToPointer(*opp, s->umheap.start);
 	if (DEBUG_DFS_MARK)
 		fprintf(stderr, "umDFSMarkObjects: original obj: 0x%x, obj: 0x%x\n",
 				(uintptr_t) * opp, (uintptr_t) p);
@@ -540,7 +539,7 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 
 
 void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
-	pointer p = objptrToPointer(*opp, s->heap.start);
+	pointer p = objptrToPointer(*opp, s->umheap.start);
 	if (DEBUG_DFS_MARK)
 		fprintf(stderr, "original obj: 0x%x, obj: 0x%x\n",
 				(uintptr_t) * opp, (uintptr_t) p);

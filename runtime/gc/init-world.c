@@ -51,7 +51,7 @@ void initVectors (GC_state s) {
                            ? OBJPTR_SIZE
                            : dataBytes),
                         s->alignment);
-    assert (objectSize <= (size_t)(s->heap.start + s->heap.size - frontier));
+    assert (objectSize <= (size_t)(s->globalHeap.start + s->globalHeap.size - frontier));
     *((GC_arrayCounter*)(frontier)) = 0;
     frontier = frontier + GC_ARRAY_COUNTER_SIZE;
     *((GC_arrayLength*)(frontier)) = inits[i].length;
@@ -75,7 +75,7 @@ void initVectors (GC_state s) {
     }
     *((GC_header*)(frontier)) = buildHeaderFromTypeIndex (typeIndex);
     frontier = frontier + GC_HEADER_SIZE;
-    s->globals[inits[i].globalIndex] = pointerToObjptr(frontier, s->heap.start);
+    s->globals[inits[i].globalIndex] = pointerToObjptr(frontier, s->globalHeap.start);
     if (DEBUG_DETAILED)
       fprintf (stderr, "allocated vector at "FMTPTR"\n",
                (uintptr_t)(s->globals[inits[i].globalIndex]));
@@ -108,28 +108,26 @@ void initWorld (GC_state s) {
   size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
-  //createUMHeap (s, &s->umarheap, avail_mem, avail_mem);
 
-  createHeap (s, &s->heap, MEM_AVAILABLE * MEGABYTES, MEM_AVAILABLE * MEGABYTES);
+  //createHeap (s, &s->heap, MEM_AVAILABLE * MEGABYTES, MEM_AVAILABLE * MEGABYTES);
+
+  createHeap(s, &s->globalHeap, 100*MEGABYTES, 100*MEGABYTES);
 
   createHeap (s, &s->infHeap, 100*MEGABYTES, 100*MEGABYTES);
-//              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
-//               s->lastMajorStatistics.bytesLive);
-//              sizeofHeapDesired (s, s->lastMajorStatistics.bytesLive, 0),
-//              s->lastMajorStatistics.bytesLive);
+  
   s->gc_module = GC_UM;
-  setCardMapAndCrossMap (s);
-  start = alignFrontier (s, s->heap.start);
-  //s->umarfrontier = s->umarheap.start;
+  //setCardMapAndCrossMap (s);
+  start = alignFrontier (s, s->globalHeap.start);
   s->frontier = start;
   s->infFrontier = s->infHeap.start;
-  s->limitPlusSlop = s->heap.start + s->heap.size;
+  s->limitPlusSlop = s->globalHeap.start + s->globalHeap.size;
   s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
 
-  s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
-  setGCStateCurrentHeap (s, 0, 0);
+  /*Dont set current Heap cause you dont have one*/
+  //s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
+  //setGCStateCurrentHeap (s, 0, 0);
 
   GC_UM_Chunk next_chunk = NULL;
   s->reserved ++; /*TODO Review this: Dirty hack to not fail assert in allocateChunks. UMfrontier should be removed*/
@@ -140,7 +138,7 @@ void initWorld (GC_state s) {
 
   thread = newThread (s, sizeofStackInitialReserved (s)); // defaults to pri 0
 
-  switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->heap.start));
+  switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->umheap.start));
   if (DEBUG_MEM) {
       fprintf(stderr, "UMFrontier start: "FMTPTR"\n", (uintptr_t)(s->umfrontier));
   }

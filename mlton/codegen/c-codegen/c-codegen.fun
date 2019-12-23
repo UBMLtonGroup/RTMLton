@@ -703,15 +703,15 @@ fun output {program as Machine.Program.T {chunks,
          | _   => ""
         )
 
-      fun writeBarrier( {dbase,sbase},{dst,src},ty :Type.t,oper :string) :string =
-          case(Type.isObjptr ty)
-            of true =>
-            ( case hd(String.explode dst) of
-                  #"P" => oper
-                 | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
-            )
-          |   false => oper
 
+      fun writeBarrier( {dbase,sbase},{dst,src},ty :Type.t,oper :string) :string = 
+        case(Type.isObjptr ty)
+          of true => 
+          ( case hd(String.explode dst) of
+                #"P" => oper
+               | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
+          )
+        |   false => oper
 
       fun move {dst: string, dstIsMem: bool,
                 src: string, srcIsMem: bool,

@@ -6,6 +6,9 @@
  * See the file MLton-LICENSE for details.
  */
 
+/* Irrelevant in RTGC*/
+#if 0
+
 void displayHeapInfo(GC_state s) {
 	fprintf(stderr, "start "FMTPTR" -> from-start "FMTPTR"  -> nursery "FMTPTR" -> frontier "FMTPTR"\n",
 			(uintptr_t)s->heap.start, (uintptr_t)s->heap.start+s->heap.oldGenSize,
@@ -76,6 +79,7 @@ bool hasHeapBytesFree (GC_state s, size_t oldGen, size_t nursery) {
              uintmaxToCommaString(nursery));
   return res;
 }
+#endif 
 
 bool isHeapInit (GC_heap h) {
   return (0 == h->size);

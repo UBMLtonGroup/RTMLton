@@ -17,9 +17,9 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
 	 * Hence we need to stash from someplace that the GC can find it.
 	 */
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
-	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
+	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)from - offsetofThread (s), s->umheap.start);
 	to = newThread (s, alignStackReserved(s, used));
-	from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->heap.start) + offsetofThread (s));
+	from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread (s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
 	if (DEBUG_THREADS) {
 		fprintf (stderr, FMTPTR" = copyThread ("FMTPTR")\n",
@@ -43,11 +43,11 @@ void GC_copyCurrentThread (GC_state s, bool b) {
 	if (DEBUG_THREADS)
 		fprintf (stderr, GREEN("GC_copyCurrentThread\n"));
 	enter (s);
-	fromThread = (GC_thread)(objptrToPointer(s->currentThread[PTHREAD_NUM], s->heap.start)
+	fromThread = (GC_thread)(objptrToPointer(s->currentThread[PTHREAD_NUM], s->umheap.start)
 							 + offsetofThread (s));
-	//fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
+	//fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->umheap.start));
 	toThread = copyThread (s, fromThread, 0);
-	//toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
+	//toStack = (GC_stack)(objptrToPointer(toThread->stack, s->umheap.start));
 	//assert (toStack->reserved == alignStackReserved (s, toStack->used));
 	leave (s);
 	if (DEBUG_THREADS)
@@ -55,7 +55,7 @@ void GC_copyCurrentThread (GC_state s, bool b) {
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 
 	if (b)
-		s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)toThread - offsetofThread (s), s->heap.start);
+		s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)toThread - offsetofThread (s), s->umheap.start);
 }
 
 pointer GC_copyThread (GC_state s, pointer p) {
@@ -68,9 +68,9 @@ pointer GC_copyThread (GC_state s, pointer p) {
 		fprintf (stderr, GREEN("GC_copyThread")" ("FMTPTR", pthread=%u)\n", (uintptr_t)p, PTHREAD_NUM);
 	enter (s);
 	fromThread = (GC_thread)(p + offsetofThread (s));
-	//fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
+	//fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->umheap.start));
 	toThread = copyThread (s, fromThread, 0);
-	//toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
+	//toStack = (GC_stack)(objptrToPointer(toThread->stack, s->umheap.start));
 	//assert (toStack->reserved == alignStackReserved (s, toStack->used));
 	leave (s);
 	if (DEBUG_THREADS)

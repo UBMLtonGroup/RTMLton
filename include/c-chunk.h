@@ -10,7 +10,7 @@
 #define _C_CHUNK_H_
 
 #define STACKLETS
-#define STACKLET_DEBUG 1
+#define STACKLET_DEBUG 0
 
 #include <stdio.h>
 #include <stdbool.h>

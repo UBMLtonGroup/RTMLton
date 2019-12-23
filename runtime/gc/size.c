@@ -6,7 +6,10 @@
  * See the file MLton-LICENSE for details.
  */
 
-size_t GC_size (GC_state s, pointer root) {
+__attribute__((__noreturn__)) size_t GC_size (GC_state s, pointer root) {
+
+  die("Trying to do GC_size");
+#if 0
   size_t res;
   
   enter (s); /* update stack in heap, in case it is reached */
@@ -19,4 +22,5 @@ size_t GC_size (GC_state s, pointer root) {
   leave(s);
   
   return res;
+#endif
 }

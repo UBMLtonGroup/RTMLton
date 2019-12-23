@@ -101,7 +101,10 @@ struct thrctrl {
 #define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
 #endif
 
-void minorGC(GC_state s) {
+
+/*Mark compact GC files removed*/
+#if 0
+__attribute__ ((unused)) void minorGC(GC_state s) {
 	minorCheneyCopyGC(s);
 }
 
@@ -199,6 +202,8 @@ growStackCurrent(GC_state s) {
 	s->stackTop[PTHREAD_NUM] = getStackTop(s, stack);
 	s->stackLimit[PTHREAD_NUM] = getStackLimit(s, stack);
 }
+
+#endif
 
 void
 maybe_growstack(GC_state s) {
@@ -426,6 +431,7 @@ void *GCrunner(void *_s) {
 	pthread_exit(NULL);
 	/*NOTREACHED*/}
 
+#if 0
 void
 performGC(GC_state s,
 		  size_t oldGenBytesRequested,
@@ -477,6 +483,8 @@ performGC(GC_state s,
 	//                forceMajor, mayResize);
 #endif
 }
+#endif 
+
 
 void markStack(GC_state s, pointer currentStack) {
 
@@ -743,37 +751,7 @@ void performGC_helper(GC_state s,
 
 	enterGC(s);
 	s->cumulativeStatistics.numGCs++;
-	if (s->controls.messages) {
-		size_t nurserySize = s->heap.size - ((size_t)(s->heap.nursery - s->heap.start));
-		size_t nurseryUsed = (size_t)(s->frontier - s->heap.nursery);
-		fprintf(stderr,
-				"[GC: Starting gc #%s; requesting %s nursery bytes and %s old-gen bytes,]\n",
-				uintmaxToCommaString(s->cumulativeStatistics.numGCs),
-				uintmaxToCommaString(nurseryBytesRequested),
-				uintmaxToCommaString(oldGenBytesRequested));
-		fprintf(stderr,
-				"[GC:\theap at "
-		FMTPTR
-		" of size %s bytes (+ %s bytes card/cross map),]\n",
-				(uintptr_t)(s->heap.start),
-				uintmaxToCommaString(s->heap.size),
-				uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
-		fprintf(stderr,
-				"[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
-				uintmaxToCommaString(s->heap.oldGenSize),
-				100.0 * ((double) (s->heap.oldGenSize) / (double) (s->heap.size)));
-		fprintf(stderr,
-				"[GC:\tand nursery of size %s bytes (%.1f%% of heap),]\n",
-				uintmaxToCommaString(nurserySize),
-				100.0 * ((double) (nurserySize) / (double) (s->heap.size)));
-		fprintf(stderr,
-				"[GC:\tand nursery using %s bytes (%.1f%% of heap, %.1f%% of nursery).]\n",
-				uintmaxToCommaString(nurseryUsed),
-				100.0 * ((double) (nurseryUsed) / (double) (s->heap.size)),
-				100.0 * ((double) (nurseryUsed) / (double) (nurserySize)));
-	}
-
-
+	
 /*TODO: Assess invariant for GC check in chunked CMS GC*/
 	//assert (invariantForGC (s));
 
@@ -824,29 +802,7 @@ void performGC_helper(GC_state s,
 				max(s->cumulativeStatistics.maxPauseTime, gcTime);
 	} else
 		gcTime = 0;  /* Assign gcTime to quell gcc warning. */
-	if (s->controls.messages) {
-		size_t nurserySize = s->heap.size - (size_t)(s->heap.nursery - s->heap.start);
-		fprintf(stderr,
-				"[GC: Finished gc #%s; time %s ms,]\n",
-				uintmaxToCommaString(s->cumulativeStatistics.numGCs),
-				uintmaxToCommaString(gcTime));
-		fprintf(stderr,
-				"[GC:\theap at "
-		FMTPTR
-		" of size %s bytes (+ %s bytes card/cross map),]\n",
-				(uintptr_t)(s->heap.start),
-				uintmaxToCommaString(s->heap.size),
-				uintmaxToCommaString(s->heap.withMapsSize - s->heap.size));
-		fprintf(stderr,
-				"[GC:\twith old-gen of size %s bytes (%.1f%% of heap),]\n",
-				uintmaxToCommaString(s->heap.oldGenSize),
-				100.0 * ((double) (s->heap.oldGenSize) / (double) (s->heap.size)));
-		fprintf(stderr,
-				"[GC:\tand nursery of size %s bytes (%.1f%% of heap).]\n",
-				uintmaxToCommaString(nurserySize),
-				100.0 * ((double) (nurserySize) / (double) (s->heap.size)));
-	}
-	/* Send a GC signal. */
+		/* Send a GC signal. */
 	if (s->signalsInfo.gcSignalHandled
 		and
 	s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
@@ -982,10 +938,13 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 		 * This assert should never fail*/
 		assert(!s->isGCRunning);
 
-		if (collectRed)
+		/*if (collectRed)
 			s->collectAll = true;
 		else
 			s->collectAll = false;
+            */
+
+        s->collectAll = true;
 
 
 		if (DEBUG_RTGC) {
@@ -1057,7 +1016,8 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 }
 
-
+/* Irrelevant in RTGC*/
+#if 0
 void ensureHasHeapBytesFree(GC_state s,
 							size_t oldGenBytesRequested,
 							size_t nurseryBytesRequested) {
@@ -1085,4 +1045,4 @@ void ensureHasHeapBytesFree(GC_state s,
 	assert(hasHeapBytesFree
 				   (s, oldGenBytesRequested, nurseryBytesRequested));
 }
-
+#endif

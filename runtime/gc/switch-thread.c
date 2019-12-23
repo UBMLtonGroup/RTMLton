@@ -11,9 +11,9 @@ void switchToThread (GC_state s, objptr op) {
 		//GC_thread thread;
 		//GC_stack stack;
 
-		//thread = (GC_thread)(objptrToPointer (op, s->heap.start)
+		//thread = (GC_thread)(objptrToPointer (op, s->umheap.start)
 		//					 + offsetofThread (s));
-		//stack = (GC_stack)(objptrToPointer (thread->stack, s->heap.start));
+		//stack = (GC_stack)(objptrToPointer (thread->stack, s->umheap.start));
 
 		fprintf (stderr, "switchToThread ("FMTOBJPTR")\n",
 				op);
@@ -36,7 +36,7 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
 		die("dont do this branch, wheres the stack saving?");
 		enter (s);
 		getThreadCurrent(s)->bytesNeeded = ensureBytesFree;
-		switchToThread (s, pointerToObjptr(p, s->heap.start));
+		switchToThread (s, pointerToObjptr(p, s->umheap.start));
 		decAtomic(s); /* s->atomicState--; */
 		switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
 		ensureInvariantForMutator (s, FALSE);
@@ -60,7 +60,7 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
 		beginAtomic (s);
 		/* END: enter(s); */
 		getThreadCurrent(s)->bytesNeeded = ensureBytesFree;
-		switchToThread (s, pointerToObjptr(p, s->heap.start));
+		switchToThread (s, pointerToObjptr(p, s->umheap.start));
 		decAtomic(s); /* s->atomicState--; */
 		switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
 		/* BEGIN: ensureInvariantForMutator */

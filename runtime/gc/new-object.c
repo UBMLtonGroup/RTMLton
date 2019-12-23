@@ -26,6 +26,9 @@ pointer newUMObject (GC_state s,
     pointer frontier;
     pointer result;
 
+
+    die("invalid codepath : newUMObject\n");
+
     frontier = s->frontier;
     s->frontier += bytesRequested;
     *((GC_header*)frontier) = header;
@@ -85,7 +88,7 @@ objptr newStack_um (GC_state s) {
 			(uintmax_t)need_chunks);
 	}
 
-	return pointerToObjptr(um_stack, s->heap.start);
+	return pointerToObjptr(um_stack, s->umheap.start);
 }
 
 GC_stack newStack (GC_state s,
@@ -122,7 +125,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
 	  fprintf(stderr, GREEN("newThread\n"));
 
   assert (isStackReservedAligned (s, reserved));
-  ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
+  //ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
   //stack = NULL; //newStack (s, reserved, FALSE);
 
   C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;

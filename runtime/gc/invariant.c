@@ -9,6 +9,8 @@
  */
 
 #if ASSERT
+
+#if 0
 void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
     return;
   assert (isObjptrInFromSpace (s, *opp));
@@ -31,7 +33,7 @@ void assertIsObjptrInFromSpace (GC_state s, objptr *opp) {
          (uintptr_t)opp, *opp);
   }
 }
-
+#endif
 
 /*Check if all chunks have been unmarked at end of sweep phase*/
 bool invariantForRTGC(GC_state s)
@@ -95,6 +97,19 @@ bool invariantForGC (GC_state s) {
         assert (offsets[j + 1] < layout->size);
     }
   }
+
+/*Adding asserts for global heap
+ *TODO: maybe for IntInfheap too? */
+  assert (isAligned (s->globalHeap.size, s->sysvals.pageSize));
+    unless (0 == s->globalHeap.size) {
+    assert (s->frontier <= s->limitPlusSlop);
+    assert (s->limit == s->limitPlusSlop - GC_HEAP_LIMIT_SLOP);
+  }
+
+
+
+ /*These asserts make no sense with traditional MLton heap gone*/
+#if 0
   /* Generational */
   if (s->mutatorMarksCards) {
     assert (s->generationalMaps.cardMap == 
@@ -131,6 +146,7 @@ bool invariantForGC (GC_state s) {
     fprintf (stderr, "Checking nursery.\n");
   foreachObjptrInRange (s, s->heap.nursery, &s->frontier, 
                         assertIsObjptrInFromSpace, FALSE);
+#endif 
   /* Current thread. */
   // TODO stacklets modifications needed
 #if 0
@@ -171,10 +187,10 @@ bool invariantForMutatorStack (GC_state s) {
   
   if(s->mainBooted)
     {
-        pointer p = objptrToPointer(s->currentThread[0], s->heap.start);
+        pointer p = objptrToPointer(s->currentThread[0], s->umheap.start);
         GC_thread th = (GC_thread)(p + offsetofThread (s));
 
-        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->heap.start);
+        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->umheap.start);
         
         if (st == stack)
             return true;

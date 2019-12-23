@@ -38,6 +38,11 @@ void initHeap (__attribute__ ((unused)) GC_state s,
  * given that the current heap size is cs.
  */
 size_t sizeofHeapDesired (GC_state s, size_t liveSize, size_t currentSize) {
+
+
+  die("Trying to get sizeOfHeapDesired\n");
+
+#if 0
   size_t liveMapsSize, liveWithMapsSize;
   size_t currentMapsSize, currentWithMapsSize;
   size_t resSize, resWithMapsSize;
@@ -143,6 +148,7 @@ size_t sizeofHeapDesired (GC_state s, size_t liveSize, size_t currentSize) {
              uintmaxToCommaString(currentSize));
   assert (resSize >= liveSize);
   return resSize;
+#endif 
 }
 
 void releaseHeap (GC_state s, GC_heap h) {
@@ -160,7 +166,11 @@ void releaseHeap (GC_state s, GC_heap h) {
 
 /* shrinkHeap (s, h, keepSize)
  */
-void shrinkHeap (GC_state s, GC_heap h, size_t keepSize) {
+__attribute__ ((unused)) void shrinkHeap (GC_state s, GC_heap h, size_t keepSize) {
+
+  die("Trying to shrinkHeap\n");
+
+#if 0
   assert (keepSize <= h->size);
   if (0 == keepSize) {
     releaseHeap (s, h);
@@ -187,6 +197,7 @@ void shrinkHeap (GC_state s, GC_heap h, size_t keepSize) {
     h->size = keepSize;
     h->withMapsSize = keepWithMapsSize;
   }
+#endif
 }
 
 /* createHeap (s, h, desiredSize, minSize)
@@ -201,8 +212,6 @@ bool createHeap (GC_state s, GC_heap h,
                  size_t minSize) {
   size_t newSize;
   size_t newWithMapsSize;
-/* allocting heap size of 1.2 gigs initially */
-  //desiredSize = 122880000;
   if (DEBUG_MEM)
     fprintf (stderr, "createHeap  desired size = %s  min size = %s\n",
              uintmaxToCommaString(desiredSize),
@@ -229,7 +238,9 @@ bool createHeap (GC_state s, GC_heap h,
   while (lowSize <= highSize) {
     pointer newStart;
 
-    newWithMapsSize = newSize + sizeofCardMapAndCrossMap (s, newSize);
+    //newWithMapsSize = newSize + sizeofCardMapAndCrossMap (s, newSize);
+    /*No card mapping in RTGC*/
+    newWithMapsSize = newSize;
 
     assert (isAligned (newWithMapsSize, s->sysvals.pageSize));
 
@@ -290,6 +301,10 @@ bool createHeap (GC_state s, GC_heap h,
   return FALSE;
 }
 
+
+/*Not needed with RTGC*/
+#if 0
+
 /* createHeapSecondary (s, desiredSize)
  */
 bool createHeapSecondary (GC_state s, size_t desiredSize) {
@@ -308,6 +323,9 @@ bool createHeapSecondary (GC_state s, size_t desiredSize) {
   return createHeap (s, &s->secondaryHeap, desiredSize, s->heap.oldGenSize);
 }
 
+#endif
+
+#if 0
 /* remapHeap (s, h, desiredSize, minSize)
  */
 #if not HAS_REMAP
@@ -321,6 +339,9 @@ bool remapHeap (__attribute__ ((unused)) GC_state s,
 bool remapHeap (GC_state s, GC_heap h,
                 size_t desiredSize,
                 size_t minSize) {
+
+
+
 
   size_t newSize;
   size_t newWithMapsSize;
@@ -405,6 +426,7 @@ bool remapHeap (GC_state s, GC_heap h,
     }
   }
   return result;
+#endif 
 }
 #endif
 
@@ -412,9 +434,17 @@ enum {
   COPY_CHUNK_SIZE = 0x2000000, /* 32M */
 };
 
+
+
+
 /* growHeap (s, desiredSize, minSize)
  */
-void growHeap (GC_state s, size_t desiredSize, size_t minSize) {
+__attribute__ ((unused)) void growHeap (GC_state s, size_t desiredSize, size_t minSize) {
+
+
+  die("Trying to growHeap\n");
+
+#if 0
   GC_heap curHeapp;
   struct GC_heap newHeap;
   GC_heap newHeapp;
@@ -534,11 +564,17 @@ oom:
     GC_displayMem ();
   die ("Out of memory.  Unable to allocate heap with %s bytes.\n",
        uintmaxToCommaString(minSize));
+
+#endif
 }
 
 /* resizeHeap (s, minSize)
  */
-void resizeHeap (GC_state s, size_t minSize) {
+__attribute__ ((unused)) void resizeHeap (GC_state s, size_t minSize) {
+
+  die("Trying to resize heap\n");
+
+#if 0
   size_t desiredSize;
 
   if (DEBUG_RESIZING)
@@ -556,11 +592,16 @@ void resizeHeap (GC_state s, size_t minSize) {
     growHeap (s, desiredSize, minSize);
   }
   assert (s->heap.size >= minSize);
+#endif
 }
 
 /* resizeHeapSecondary (s)
  */
-void resizeHeapSecondary (GC_state s) {
+__attribute__ ((unused)) void resizeHeapSecondary (GC_state s) {
+
+  die("Trying to resizeHeapSecondary\n")  ;
+
+#if 0
   size_t primarySize, primaryWithMapsSize;
   size_t secondarySize;
 
@@ -581,4 +622,5 @@ void resizeHeapSecondary (GC_state s) {
     shrinkHeap (s, &s->secondaryHeap, primarySize);
   assert (0 == s->secondaryHeap.size
           or s->heap.size == s->secondaryHeap.size);
+#endif
 }

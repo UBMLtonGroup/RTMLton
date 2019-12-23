@@ -590,7 +590,7 @@ structure Type =
           | SOME s => s
    end
 
-val cardSizeLog2 : IntInf.t = 8 (* must agree with CARD_SIZE_LOG2 in gc.c *)
+(*val cardSizeLog2 : IntInf.t = 8 (* must agree with CARD_SIZE_LOG2 in gc.c *)
 
 fun updateCard (addr: Operand.t): Statement.t list =
    let
@@ -613,7 +613,7 @@ fun updateCard (addr: Operand.t): Statement.t list =
                      scale = Scale.One,
                      ty = Type.word cardElemSize}),
              src = Operand.word (WordX.one cardElemSize)}]
-   end
+   end*)
 
 fun convertWordSize (ws: WordSize.t): WordSize.t =
    WordSize.roundUpToPrim ws

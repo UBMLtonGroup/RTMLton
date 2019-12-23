@@ -410,14 +410,14 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->reserved = 0;
 
 	s->hashConsDuringGC = FALSE;
-	initHeap(s, &s->heap);
+	//initHeap(s, &s->heap);
 	initUMHeap(s, &s->umheap);
 	//initUMArrayHeap (s, &s->umarheap);
 	s->lastMajorStatistics.bytesHashConsed = 0;
 	s->lastMajorStatistics.bytesLive = 0;
 	s->lastMajorStatistics.kind = GC_COPYING;
 	s->lastMajorStatistics.numMinorGCs = 0;
-	initHeap(s, &s->secondaryHeap);
+	//initHeap(s, &s->secondaryHeap);
 	s->signalsInfo.amInSignalHandler = FALSE;
 	s->signalsInfo.gcSignalHandled = FALSE;
 	s->signalsInfo.gcSignalPending = FALSE;
@@ -433,8 +433,9 @@ int GC_init(GC_state s, int argc, char **argv) {
 	initSignalStack(s);
 	worldFile = NULL;
 
-	unless(isAligned(s->sysvals.pageSize, CARD_SIZE))
-	die("Page size must be a multiple of card size.");
+	/* Check not needed as card mapping is disabled. Even in ssa-to-rssa.fun "updateCard" 
+     * unless(isAligned(s->sysvals.pageSize, CARD_SIZE))
+	die("Page size must be a multiple of card size.");*/
 	processAtMLton(s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
 	res = processAtMLton(s, 1, argc, argv, &worldFile);
 	if (s->controls.fixedHeap > 0 and
@@ -493,11 +494,13 @@ int GC_init(GC_state s, int argc, char **argv) {
 		 */
 		assert(invariantForMutator(s, TRUE, FALSE));
 	} else {
-		loadWorldFromFileName(s, worldFile);
+
+        die("Trying to loadWorldFromFileName");
+		/*loadWorldFromFileName(s, worldFile);
 		if (s->profiling.isOn and
 		s->profiling.stack)
 		foreachStackFrame(s, enterFrameForProfiling);
-		assert(invariantForMutator(s, TRUE, TRUE));
+		assert(invariantForMutator(s, TRUE, TRUE));*/
 	}
 	s->amInGC = FALSE;
 

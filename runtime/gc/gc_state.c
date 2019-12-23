@@ -23,14 +23,11 @@ void displayGCState (GC_state s, FILE *stream) {
 
   fprintf (stream, "%d] GC state\n", PTHREAD_NUM);
   fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
-  displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start)
+  displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->umheap.start)
                                 + offsetofThread (s)),
                  stream);
-  fprintf (stream, "%d] \tgenerational\n", PTHREAD_NUM);
-  displayGenerationalMaps (s, &s->generationalMaps,
-                           stream);
-  fprintf (stream, "%d] \theap\n", PTHREAD_NUM);
-  displayHeap (s, &s->heap,
+  fprintf (stream, "%d] \t Global heap\n", PTHREAD_NUM);
+  displayHeap (s, &s->globalHeap,
                stream);
   fprintf (stream,
 		   "%d] \tlimit = "FMTPTR"\n"
@@ -93,9 +90,14 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   //markCard (s, (pointer)stack);
 }
 
-void setGCStateCurrentHeap (GC_state s, 
+__attribute__ ((unused)) void setGCStateCurrentHeap (GC_state s, 
                             size_t oldGenBytesRequested,
                             size_t nurseryBytesRequested) {
+
+//old heap nuked. wont need to set these items
+     die("Trying to set current heap \n");
+
+#if 0
   GC_heap h;
   pointer nursery;
   size_t nurserySize;
@@ -150,6 +152,7 @@ void setGCStateCurrentHeap (GC_state s,
   assert (nurseryBytesRequested <= (size_t)(s->limitPlusSlop - s->frontier));
   assert (isFrontierAligned (s, s->heap.nursery));
   assert (hasHeapBytesFree (s, oldGenBytesRequested, nurseryBytesRequested));
+#endif
 }
 
 bool GC_getAmOriginal (GC_state s) {
@@ -201,12 +204,12 @@ size_t GC_getLastMajorStatisticsBytesLive (GC_state s) {
 
 
 pointer GC_getCallFromCHandlerThread (GC_state s) {
-  pointer p = objptrToPointer (s->callFromCHandlerThread, s->heap.start);
+  pointer p = objptrToPointer (s->callFromCHandlerThread, s->umheap.start);
   return p;
 }
 
 void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
-  objptr op = pointerToObjptr (p, s->heap.start);
+  objptr op = pointerToObjptr (p, s->umheap.start);
   s->callFromCHandlerThread = op;
   if (DEBUG_THREADS) 
       fprintf(stderr,"%d] call handler set,\n",PTHREAD_NUM);
@@ -217,14 +220,14 @@ void GC_setCallFromCHandlerThread (GC_state s, pointer p) {
 }
 
 pointer GC_getCurrentThread (GC_state s) {
-  pointer p = objptrToPointer (s->currentThread[PTHREAD_NUM], s->heap.start);
+  pointer p = objptrToPointer (s->currentThread[PTHREAD_NUM], s->umheap.start);
   return p;
 }
 
 pointer GC_getSavedThread (GC_state s) {
   pointer p;
   assert(s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR);
-  p = objptrToPointer (s->savedThread[PTHREAD_NUM], s->heap.start);
+  p = objptrToPointer (s->savedThread[PTHREAD_NUM], s->umheap.start);
   s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
   return p;
 }
@@ -233,13 +236,13 @@ void GC_setSavedThread (GC_state s, pointer p) {
   objptr op;
 
   //assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
-  op = pointerToObjptr (p, s->heap.start);
+  op = pointerToObjptr (p, s->umheap.start);
   s->savedThread[PTHREAD_NUM] = op;
 }
 
 
 void GC_setSignalHandlerThread (GC_state s, pointer p) {
-  objptr op = pointerToObjptr (p, s->heap.start);
+  objptr op = pointerToObjptr (p, s->umheap.start);
   s->signalHandlerThread[PTHREAD_NUM] = op;
 }
 

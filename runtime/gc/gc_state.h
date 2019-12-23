@@ -54,14 +54,14 @@ struct GC_state {
   struct GC_cumulativeStatistics cumulativeStatistics;
   objptr currentThread[MAXPRI]; /* Currently executing thread (in heap). */
 
-  struct GC_forwardState forwardState;
+  //struct GC_forwardState forwardState;
   GC_frameLayout frameLayouts; /* Array of frame layouts. */
   uint32_t frameLayoutsLength; /* Cardinality of frameLayouts array. */
-  struct GC_generationalMaps generationalMaps;
+  //struct GC_generationalMaps generationalMaps;
   objptr *globals;
   uint32_t globalsLength;
   bool hashConsDuringGC;
-  struct GC_heap heap;
+  struct GC_heap globalHeap;
   struct GC_UM_heap umheap;
   //struct GC_UM_heap umarheap;
   struct GC_lastMajorStatistics lastMajorStatistics;
@@ -70,7 +70,7 @@ struct GC_state {
   uint32_t magic; /* The magic number for this executable. */
   uint32_t maxFrameSize;
   bool mutatorMarksCards;
-  GC_objectHashTable objectHashTable;
+  //GC_objectHashTable objectHashTable;
   GC_objectType objectTypes; /* Array of object types. */
   uint32_t objectTypesLength; /* Cardinality of objectTypes array. */
   struct GC_profiling profiling;
@@ -80,12 +80,12 @@ struct GC_state {
                        	    */
   int (*saveGlobals)(FILE *f); /* saves the globals to the file. */
   bool saveWorldStatus; /* */
-  struct GC_heap secondaryHeap; /* Used for major copying collection. */
+  //struct GC_heap secondaryHeap; /* Used for major copying collection. */
   objptr signalHandlerThread[MAXPRI]; /* Handler for signals (in heap). */
   struct GC_signalsInfo signalsInfo;
   struct GC_sourceMaps sourceMaps;
   struct GC_sysvals sysvals;
-  struct GC_translateState translateState;
+  //struct GC_translateState translateState;
   struct GC_vectorInit *vectorInits;
   uint32_t vectorInitsLength;
   GC_weak weaks; /* Linked list of (live) weak pointers */

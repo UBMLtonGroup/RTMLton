@@ -15,7 +15,7 @@ objptr getThreadCurrentObjptr (GC_state s) {
 }
 
 GC_thread getThreadCurrent (GC_state s) {
-  pointer p = objptrToPointer(getThreadCurrentObjptr(s), s->heap.start);
+  pointer p = objptrToPointer(getThreadCurrentObjptr(s), s->umheap.start);
   return (GC_thread)(p + offsetofThread (s));
 }
 
@@ -29,7 +29,7 @@ objptr getStackCurrentObjptr (GC_state s) {
 }
 
 GC_stack getStackCurrent (GC_state s) {
-  pointer p = objptrToPointer(getStackCurrentObjptr(s), s->heap.start);
+  pointer p = objptrToPointer(getStackCurrentObjptr(s), s->umheap.start);
   return (GC_stack)p;
 }
 
@@ -56,11 +56,11 @@ objptr um_getStackCurrentObjptr (GC_state s) {
 }
 
 pointer um_getStackCurrent (GC_state s) {
-	pointer p = objptrToPointer(um_getStackCurrentObjptr(s), s->heap.start);
+	pointer p = objptrToPointer(um_getStackCurrentObjptr(s), s->umheap.start);
 	return p;
 }
 
 pointer um_getStackCurrentFrame (GC_state s) {
-	pointer p = objptrToPointer(um_getStackCurrentFrameObjptr(s), s->heap.start);
+	pointer p = objptrToPointer(um_getStackCurrentFrameObjptr(s), s->umheap.start);
 	return p;
 }

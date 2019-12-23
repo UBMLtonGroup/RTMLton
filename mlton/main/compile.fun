@@ -505,7 +505,8 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
             Runtime.GCField.setOffsets
             {
              atomicState = get "atomicState_Offset",
-             cardMapAbsolute = get "generationalMaps.cardMapAbsolute_Offset",
+             (*cardMapAbsolute = get
+             * "generationalMaps.cardMapAbsolute_Offset",*)
              currentThread = get "currentThread_Offset",
              curSourceSeqsIndex = get "sourceMaps.curSourceSeqsIndex_Offset",
              exnStack = get "exnStack_Offset",
@@ -528,7 +529,7 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
             Runtime.GCField.setSizes
             {
              atomicState = get "atomicState_Size",
-             cardMapAbsolute = get "generationalMaps.cardMapAbsolute_Size",
+             (*cardMapAbsolute = get "generationalMaps.cardMapAbsolute_Size",*)
              currentThread = get "currentThread_Size",
              curSourceSeqsIndex = get "sourceMaps.curSourceSeqsIndex_Size",
              exnStack = get "exnStack_Size",

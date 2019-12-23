@@ -91,7 +91,7 @@ void GC_done(GC_state s) {
 	FILE *out;
 
 	enter(s);
-	minorGC(s);
+	//minorGC(s);
 	out = stderr;
 	if (s->controls.summary) {
 		struct rusage ru_total;
@@ -142,6 +142,7 @@ void GC_done(GC_state s) {
 		fprintf(out, "bytes hash consed: %s bytes\n",
 				uintmaxToCommaString(s->cumulativeStatistics.bytesHashConsed));
 	}
-	releaseHeap(s, &s->heap);
-	releaseHeap(s, &s->secondaryHeap);
+	//releaseHeap(s, &s->heap);
+	releaseHeap(s, &s->globalHeap);
+    releaseHeap(s,&s->infHeap);
 }
