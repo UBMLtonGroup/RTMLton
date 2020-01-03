@@ -330,16 +330,13 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 static
 bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 	/*Treat shaded objects as unmarked*/
-	fprintf(stderr, "hi2 %d\n", tag);
 
 	if (tag == NORMAL_TAG) {
 		GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
-		fprintf(stderr, "%x\n", (unsigned int)pc);
 		return (ISINUSE(pc->chunk_header) && ISMARKED(pc->chunk_header));
 	} else if (tag == STACK_TAG) {
 
 		GC_UM_Chunk pc = (GC_UM_Chunk)(p); /*Get the chunk holding the mlton object*/
-		fprintf(stderr, "%x\n", (unsigned int)pc);
 		return (ISINUSE(pc->chunk_header) && ISMARKED(pc->chunk_header));
 
 	} else if (tag == ARRAY_TAG) {
@@ -356,11 +353,9 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 
 static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 	/*Treat shaded objects as unmarked*/
-fprintf(stderr, "hi1 %d\n", tag);
+
 	if (tag == NORMAL_TAG) {
 		GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
-
-		fprintf(stderr, "%x\n", (unsigned int)pc);
 
 		if (ISINUSE(pc->chunk_header) && ISGREY(pc->chunk_header))
 			return true;
@@ -369,8 +364,6 @@ fprintf(stderr, "hi1 %d\n", tag);
 
 	} else if (tag == STACK_TAG) {
 		GC_UM_Chunk pc = (GC_UM_Chunk)(p); /*Get the chunk holding the mlton object*/
-
-		fprintf(stderr, "%x\n", (unsigned int)pc);
 
 		if (ISINUSE(pc->chunk_header) && ISGREY(pc->chunk_header))
 			return true;

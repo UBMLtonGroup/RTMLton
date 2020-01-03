@@ -90,7 +90,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
-  	fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
+	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
   	/*
       p += bytesNonObjptrs;
@@ -126,7 +126,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       }
 
   } else if (WEAK_TAG == tag) {
-  	fprintf(stderr, "%d] "GREEN("marking weak\n"), PTHREAD_NUM);
+	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking weak\n"), PTHREAD_NUM);
 
   	p += bytesNonObjptrs;
     if (1 == numObjptrs) {
@@ -142,7 +142,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     pointer last;
     GC_arrayLength numElements;
 
-   // fprintf(stderr, "%d] "GREEN("marking array (old heap)\n"), PTHREAD_NUM);
+    if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (old heap)\n"), PTHREAD_NUM);
 
     numElements = getArrayLength (p);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
@@ -184,7 +184,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
-	  fprintf(stderr, "%d] "GREEN("marking array (2)\n"), PTHREAD_NUM);
+	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
 
 	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
       if (fst_leaf->array_chunk_length > 0) {
@@ -213,7 +213,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     GC_frameOffsets frameOffsets;
 	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
 
-    fprintf(stderr, "%d] "GREEN("marking stack\n"), PTHREAD_NUM);
+    fprintf(stderr, "%d] "GREEN("marking stack")"(foreachObjptrInObject)\n", PTHREAD_NUM);
     assert (STACK_TAG == tag);
     stackFrame = (GC_UM_Chunk)p;
 	assert (stackFrame->next_chunk != NULL); // we will be starting at the chunk just after currentFrame
