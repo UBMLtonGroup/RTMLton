@@ -137,6 +137,7 @@ void initWorld (GC_state s) {
 
 
   thread = newThread (s, sizeofStackInitialReserved (s)); // defaults to pri 0
+  thread->currentFrame = thread->firstFrame;
 
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->umheap.start));
   if (DEBUG_MEM) {

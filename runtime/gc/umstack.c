@@ -69,29 +69,29 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         GC_memcpy((pointer)f, (pointer)t, copyamt);
         if (from->currentFrame == (objptr)f) {
             if (DEBUG_CCODEGEN) {
-		fprintf(stderr, "found cf: ");
-		fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
+				fprintf(stderr, "found cf: ");
+				fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
             }
             to->currentFrame = (objptr)t;
         }
         if (to->currentFrame == BOGUS_OBJPTR) {
             if (DEBUG_CCODEGEN)
-                fprintf(stderr, "%08x -> %08x\n", (unsigned int) f, (unsigned int)t);
+                fprintf(stderr, "did not find cf! %08x -> %08x\n", (unsigned int) f, (unsigned int)t);
         }
         cc++;
     }
 
     if (DEBUG_CCODEGEN)
-	fprintf(stderr, YELLOW("copyStacklet") " [Thr %d] copied %d chunks,"
-					      " old-first %08x"
-					      " old-cur %08x"
-					      " new-first %08x"
-					      " new-cur %08x\n",
-		PTHREAD_NUM, cc,
-		(unsigned int)from->firstFrame,
-		(unsigned int)from->currentFrame,
-		(unsigned int)to->firstFrame,
-		(unsigned int)to->currentFrame);
+		fprintf(stderr, YELLOW("copyStacklet") " [Thr %d] copied %d chunks,"
+							  " old-first %08x"
+							  " old-cur %08x"
+							  " new-first %08x"
+							  " new-cur %08x\n",
+			PTHREAD_NUM, cc,
+			(unsigned int)from->firstFrame,
+			(unsigned int)from->currentFrame,
+			(unsigned int)to->firstFrame,
+			(unsigned int)to->currentFrame);
 
 
     if (to->currentFrame == BOGUS_OBJPTR)

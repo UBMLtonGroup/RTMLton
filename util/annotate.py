@@ -5,18 +5,20 @@ import re
 import sys
 
 # fl_chunks_Offset = 64
+# currentFrame_Offset = 52
+
 
 def lwl(n, l):  # line with label  (linenum, line)
-    return """  fprintf(stderr, "[%d %x {} {}]\\n", PTHREAD_NUM, *(int*)(gcStateAddress+64));  """.format(n, l.strip())
+    return """  fprintf(stderr, "[%d fc:%x ln:{} {}]\\n", PTHREAD_NUM, *(int*)(gcStateAddress+64));  """.format(n, l.strip())
 
 def line(n, l):  #  (linenum, line)
     l = re.sub(r"[\\\"]", " ", l.strip())
-    return """  fprintf(stderr, "[%d %x {}] {}\\n", PTHREAD_NUM, *(int*)(gcStateAddress+64));  """.format(n, l)
+    return """  fprintf(stderr, "[%d fc:%x ln:{} cf:%x] {}\\n", PTHREAD_NUM, *(int*)(gcStateAddress+64), *(int*)(gcStateAddress+52));  """.format(n, l)
 
 def lwtmp(n, l):  # line with tmp var
     # we want to print the line, execute it, and then print the value in tmp0
     foo = line(n, l)
-    return """  {} ;\n  fprintf(stderr, "[%d %x {}] tmp0=%x\\n", PTHREAD_NUM, *(int*)(gcStateAddress+64), tmp0);  """.format(foo, n,l)
+    return """  {} ;\n  fprintf(stderr, "[%d fc:%x ln:{} cf:%x] tmp0=%x\\n", PTHREAD_NUM, *(int*)(gcStateAddress+64), *(int*)(gcStateAddress+52), tmp0);  """.format(foo, n,l)
 
 
 # currentFrame_Offset = 64
