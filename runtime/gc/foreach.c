@@ -37,9 +37,10 @@ void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f)
  */
 void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
   for (unsigned int i = 0; i < s->globalsLength; ++i) {
+    objptr *op = (objptr*)(s->globals + i * sizeof(objptr) + PTHREAD_NUM);
     if (DEBUG_DETAILED)
-      fprintf (stderr, "%d] foreachGlobal %u\n", PTHREAD_NUM, i);
-    callIfIsObjptr (s, f, &s->globals [i]);
+      fprintf (stderr, "%d] foreachGlobal %u %p\n", PTHREAD_NUM, i, (void*)op);
+    callIfIsObjptr (s, f, op); //&s->globals [i][PTHREAD_NUM]);
   }
   
   //foreachGlobalThreadObjptr(s,f);

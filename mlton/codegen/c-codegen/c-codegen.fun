@@ -233,7 +233,7 @@ fun implementsPrim (p: 'a Prim.t): bool =
    end
 
 fun creturn (t: Type.t): string =
-   concat ["CReturn", CType.name (Type.toCType t)]
+   concat ["CReturn", CType.name (Type.toCType t), "[PTHREAD_NUM]"]
 
 fun outputIncludes (includes, print) =
    (print "#define _ISOC99_SOURCE\n"
@@ -259,7 +259,7 @@ fun declareGlobals (prefix: string, print) =
           in
              print (concat [prefix, s, " global", s,
                             "[", C.int (Global.numberOfType t), "];\n"])
-             ; print (concat [prefix, s, " CReturn", CType.name t, ";\n"])
+             ; print (concat [prefix, s, " CReturn", CType.name t, "[PTHREAD_MAX];\n"])
           end)
       val _ =
          print (concat [prefix, "Pointer globalObjptrNonRoot [",
@@ -282,21 +282,21 @@ fun outputDeclarations
       fun declareExports () =
          Ffi.declareExports {print = print}
       fun declareLoadSaveGlobals () =
-         let
+         let (* we force a die because these routines should not be called *)
             val _ = 
-               print "void Copy_globalObjptrs(int f, int t) { memcpy(globalObjptr[t], globalObjptr[f], sizeof(globalObjptr[t])); }\n"
+               print "void Copy_globalObjptrs(int f, int t) { die(\"Copy_globalObjptrs\"); memcpy(globalObjptr[t], globalObjptr[f], sizeof(globalObjptr[t])); }\n"
             val _ =
                (print "static int saveGlobals (FILE *f) {\n"
                 ; (List.foreach
                    (CType.all, fn t =>
-                    print (concat ["\tSaveArray (global",
+                    print (concat ["\tdie(\"saveGlobals\"); SaveArray (global",
                                    CType.toString t, ", f);\n"])))
                 ; print "\treturn 0;\n}\n")
             val _ =
                (print "static int loadGlobals (FILE *f) {\n"
                 ; (List.foreach
                    (CType.all, fn t =>
-                    print (concat ["\tLoadArray (global",
+                    print (concat ["\tdie(\"loadGlobals\"); LoadArray (global",
                                    CType.toString t, ", f);\n"])))
                 ; print "\treturn 0;\n}\n")
          in
@@ -790,7 +790,7 @@ fun output {program as Machine.Program.T {chunks,
              | Real r => RealX.toC r
              | Register r =>
                   concat [Type.name (Register.ty r), "_",
-                          Int.toString (Register.index r)]
+                          Int.toString (Register.index r), "[PTHREAD_NUM]"]
              | StackOffset s => StackOffset.toString s
              | StackTop => "StackTop"
              | Word w => WordX.toC w
@@ -1291,13 +1291,14 @@ fun output {program as Machine.Program.T {chunks,
                                      CType.name t, "_"]
                 in
                    Int.for (0, 1 + regMax t, fn i =>
-                            print (concat [pre, C.int i, ";\n"]))
+                            print (concat [pre, C.int i, "[PTHREAD_MAX];\n"]))
                 end)
             fun outputOffsets () =
                List.foreach
                ([("ExnStackOffset", GCField.ExnStack),
                  ("FrontierOffset", GCField.Frontier),
                  ("UMFrontierOffset", GCField.UMFrontier),
+                 ("CurrentThreadOffset", GCField.CurrentThread),
                  ("StackBottomOffset", GCField.StackBottom),
                  ("StackTopOffset", GCField.StackTop),
                  ("RTSyncOffset",GCField.RTSync)],

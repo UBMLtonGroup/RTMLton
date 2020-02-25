@@ -13,10 +13,6 @@
 #include <stdbool.h>
 #include <stdatomic.h>
 
-#ifndef PTHREAD_NUM
-# define PTHREAD_NUM get_pthread_num()
-#endif
-
 #include "ml-types.h"
 #include "c-types.h"
 #include "c-common.h"
@@ -38,7 +34,11 @@
 #define NO_CACHE_STACK
 #define NO_CACHE_FRONTIER
 
+static void dumpStack(void *s);
+
+
 #define GCState ((Pointer)&gcState)
+#define CurrentThread *(size_t*)(GCState + CurrentThreadOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define ExnStack *(size_t*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define UMFrontierMem *(Pointer*)(GCState + UMFrontierOffset)
@@ -91,6 +91,7 @@
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 // #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
+//                     base, index, size, offset
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
 #define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
@@ -254,24 +255,26 @@
 
 #define Push(bytes)                                                     \
         do {                                                            \
-                if (DEBUG_CCODEGEN)                                     \
-                        fprintf (stderr, "%s:%d: Push (%d)\n",          \
-                                        __FILE__, __LINE__, bytes);     \
                 StackTop += (bytes);                                    \
+                int Xl_nextFun = *(uintptr_t*)(StackTop - sizeof(void*));            \
+                if (1||DEBUG_CCODEGEN)                                     \
+                        fprintf (stderr, "%s:%d: %d/%x Push (%d) ra %d\n",          \
+                                        __FILE__, __LINE__, PTHREAD_NUM, CurrentThread, bytes, Xl_nextFun);     \
+ if (bytes > 0) dumpStack((void *)&gcState); \
         } while (0)
 
 #define Return()                                                                \
         do {                                                                    \
                 l_nextFun = *(uintptr_t*)(StackTop - sizeof(void*));            \
-                if (DEBUG_CCODEGEN)                                             \
-                        fprintf (stderr, "%s:%d: Return()  l_nextFun = %d\n",   \
-                                        __FILE__, __LINE__, (int)l_nextFun);    \
+                if (1||DEBUG_CCODEGEN)                                             \
+                        fprintf (stderr, "%s:%d: %d/%x Return()  l_nextFun = %d\n",   \
+                                        __FILE__, __LINE__, PTHREAD_NUM, CurrentThread, (int)l_nextFun);    \
                 goto top;                                                       \
         } while (0)
 
 #define Raise()                                                                 \
         do {                                                                    \
-                if (DEBUG_CCODEGEN)                                             \
+                if (1||DEBUG_CCODEGEN)                                             \
                         fprintf (stderr, "%s:%d: Raise\n",                      \
                                         __FILE__, __LINE__);                    \
                 StackTop = StackBottom + ExnStack;                              \

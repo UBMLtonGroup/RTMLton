@@ -21,7 +21,7 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
   to = newThread (s, alignStackReserved(s, used));
   from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->heap.start) + offsetofThread (s));
   s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
-  if (DEBUG_THREADS) {
+  if (1||DEBUG_THREADS) {
     fprintf (stderr, FMTPTR" = copyThread ("FMTPTR")\n",
              (uintptr_t)to, (uintptr_t)from);
   }

@@ -14,6 +14,12 @@
 #define DEBUG_CCODEGEN FALSE
 #endif
 
+#define PTHREAD_MAX 3 /* same as MAXPRI */
+
+#ifndef PTHREAD_NUM
+# define PTHREAD_NUM get_pthread_num()
+#endif
+
 #include "export.h"
 
 struct cont {

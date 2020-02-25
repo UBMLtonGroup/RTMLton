@@ -53,6 +53,8 @@ typedef struct GC_stack {
 
 #endif /* (defined (MLTON_GC_INTERNAL_TYPES)) */
 
+void dumpStack(GC_state s);
+
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
 static void displayStack (GC_state s, GC_stack stack, FILE *stream);

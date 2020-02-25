@@ -111,9 +111,12 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->bytesNeeded = 0;
   thread->exnStack = BOGUS_EXN_STACK;
   thread->stack = pointerToObjptr((pointer)stack, s->heap.start);
-  if (DEBUG_THREADS)
-    fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
-             (uintptr_t)thread, (uintmax_t)reserved);
+  if (1||DEBUG_THREADS) {
+    pointer fromBottom;
+    fromBottom = getStackBottom (s, stack);
+    fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX") stack "FMTPTR"\n",
+             (uintptr_t)thread, (uintmax_t)reserved, (uintptr_t)fromBottom);
+  }
 
   return thread;
 }

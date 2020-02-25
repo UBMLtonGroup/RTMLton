@@ -55,7 +55,7 @@ PRIVATE Pointer gcStateAddress;
         gcState.atMLtonsLength = cardof(atMLtons);                      \
         gcState.frameLayouts = frameLayouts;                            \
         gcState.frameLayoutsLength = cardof(frameLayouts);              \
-        gcState.globals = (objptr*)globalObjptr;                        \
+        gcState.globals = (objptr**)globalObjptr;                        \
         gcState.globalsLength = cardof(globalObjptr);                   \
         gcState.loadGlobals = loadGlobals;                              \
         gcState.magic = mg;                                             \

@@ -48,6 +48,7 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   GC_thread thread;
   GC_stack stack;
 
+fprintf(stderr, "setGCStateCurrentThreadAndStack()\n");
   thread = getThreadCurrent (s);
   s->exnStack[PTHREAD_NUM] = thread->exnStack;
   stack = getStackCurrent (s);
