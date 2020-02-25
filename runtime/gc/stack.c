@@ -20,25 +20,18 @@ void displayStack (__attribute__ ((unused)) GC_state s,
 }
 
 void dumpStack (GC_state s) {
-	GC_stack stack;
 	pointer top, bottom;
 	unsigned int i;
 	GC_returnAddress returnAddress;
 	GC_frameLayout frameLayout;
 	GC_frameOffsets frameOffsets;
-	GC_thread th = (GC_thread)(s->currentThread[PTHREAD_NUM]);
 
-	stack = (GC_stack)th->stack;
-	//bottom = getStackBottom (s, stack);
-	//top = getStackTop (s, stack);
 	bottom = s->stackBottom[PTHREAD_NUM];
 	top = s->stackTop[PTHREAD_NUM];
 
 	fprintf (stderr, "%d]  bottom = "FMTPTR"  top = "FMTPTR"\n",
 			PTHREAD_NUM,
 			(uintptr_t)bottom, (uintptr_t)top);
-
-	assert (stack->used <= stack->reserved);
 
 	while (top > bottom) {
 		/* Invariant: top points just past a "return address". */
@@ -55,9 +48,12 @@ void dumpStack (GC_state s) {
 			PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
 		for (i = 0 ; i < frameOffsets[0] ; ++i) {
-			fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR"\n",
+			uintptr_t x = (uintptr_t)(top + frameOffsets[i + 1] + s->alignment);
+
+			fprintf(stderr, "%d]    offset %"PRIx16"  address "FMTOBJPTR" objptr "FMTOBJPTR"\n",
 				PTHREAD_NUM,
 				frameOffsets[i + 1],
+				x,
 				*(objptr*)(top + frameOffsets[i + 1]));
 		}
 	}
