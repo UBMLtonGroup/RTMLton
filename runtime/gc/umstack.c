@@ -22,7 +22,7 @@ void um_dumpStack (GC_state s) {
 
 	GC_UM_Chunk top = (GC_UM_Chunk)s->currentFrame[PTHREAD_NUM]; //thread->currentFrame;
 	GC_UM_Chunk bottom = (GC_UM_Chunk)thread->firstFrame;
-	GC_UM_Chunk chunk = top;
+	GC_UM_Chunk chunk = top->prev_chunk;
 
 	int counter = 0;
 
@@ -42,7 +42,7 @@ void um_dumpStack (GC_state s) {
 				PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
 		for (i = 0 ; i < frameOffsets[0] ; ++i) {
-			uintptr_t x = (uintptr_t)(top->ml_object + frameOffsets[i + 1] + s->alignment);
+			uintptr_t x = (uintptr_t)(&(chunk->ml_object)) + frameOffsets[i + 1] + s->alignment;
 			unsigned int xv = *(objptr*)x;
 
 			fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
@@ -56,7 +56,7 @@ void um_dumpStack (GC_state s) {
 		if (bottom == chunk) return;
 
 		chunk = chunk->prev_chunk;
-	} while (chunk != bottom);
+	} while (chunk);
 }
 
 bool um_isStackEmpty (GC_stack stack) {
@@ -73,9 +73,9 @@ pointer um_getStackBottom (ARG_USED_FOR_ASSERT GC_state s, objptr stack) {
     res = ((pointer)stack) + GC_STACK_HEADER_SIZE;
 
     if (DEBUG_CCODEGEN)
-	fprintf(stderr, "getUMStackBottom is aligned? %zu %zu %zu\n",
-		(size_t)res, s->alignment,
-		(size_t)res / s->alignment);
+		fprintf(stderr, "getUMStackBottom is aligned? %zu %zu %zu\n",
+			(size_t)res, s->alignment,
+			(size_t)res / s->alignment);
     assert (isAligned ((size_t)res, s->alignment));
     return res;
 }
