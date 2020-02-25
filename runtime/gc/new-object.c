@@ -69,12 +69,12 @@ objptr newStack_um (GC_state s) {
 	assert(s->maxFrameSize < sizeof(struct GC_UM_Chunk));
 
 	/* Reserve the allocation before actually allocating.
-     * Will block if not enough chunks available.
-     */
+         * Will block if not enough chunks available.
+         */
 	reserveAllocation(s, need_chunks);
 	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
-	if (DEBUG_STACKS)
+	if (1 || DEBUG_STACKS)
 	{
 #ifdef STACK_GC_SANITY
 		GC_UM_Chunk x = (GC_UM_Chunk) um_stack;
@@ -148,9 +148,10 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->firstFrame = newStack_um(s);
   thread->currentFrame = BOGUS_OBJPTR; //init-world first thread will do: thread->firstFrame;
 
-  if (DEBUG_THREADS)
+  if (1||DEBUG_THREADS) 
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
              (uintptr_t)thread, (uintmax_t)reserved);
+ 
 
   return thread;
 }

@@ -1,3 +1,5 @@
+#include "../gc.h"
+
 /* Copyright (C) 1999-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
  * Copyright (C) 1997-2000 NEC Research Institute.
@@ -20,11 +22,11 @@ void switchToThread (GC_state s, objptr op) {
 	}
 
 	s->currentThread[PTHREAD_NUM] = op;
-	setGCStateCurrentThreadAndStack (s);  // sets s->currentFrame
+	setGCStateCurrentThreadAndStack (s);  // sets s->currentFrame, s->exnStack
 }
 
 void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
-	if (DEBUG_THREADS)
+	if (1||DEBUG_THREADS)
 		fprintf (stderr, GREEN("GC_switchToThread")" ("FMTPTR", %"PRIuMAX")\n",
 			(uintptr_t)p, (uintmax_t)ensureBytesFree);
 	if (FALSE) {
@@ -47,19 +49,20 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
 		/* BEGIN: enter(s); */
 		//getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
 
-		// stacklet, save currentFrame on thread swap
-		getThreadCurrent(s)->currentFrame = s->currentFrame[PTHREAD_NUM];
-
 		if (DEBUG_THREADS)
 			fprintf(stderr, YELLOW("CurFrame CHECK")
-		" t->cf %08x s->cf[%d] %08x\n",
+			    " t->cf %08x s->cf[%d] %08x\n",
 				(unsigned int)getThreadCurrent(s)->currentFrame , PTHREAD_NUM,
 				(unsigned int)s->currentFrame[PTHREAD_NUM]);
 
-		getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
 		beginAtomic (s);
 		/* END: enter(s); */
+
+		// stacklet, save currentFrame on thread swap
+		getThreadCurrent(s)->currentFrame = s->currentFrame[PTHREAD_NUM];
+		getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
 		getThreadCurrent(s)->bytesNeeded = ensureBytesFree;
+
 		switchToThread (s, pointerToObjptr(p, s->umheap.start));
 		decAtomic(s); /* s->atomicState--; */
 		switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);

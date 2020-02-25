@@ -255,63 +255,6 @@ leaveGC(GC_state s) {
         }                                                        \
 }
 
-#define COPYIN(EL) s->EL[1] = s->EL[TC.requested_by]
-#define COPYOUT(EL) s->EL[TC.requested_by] = s->EL[1]
-#define SANITY(EL) if (s->EL[TC.requested_by] == s->EL[1]) if (DEBUG) fprintf(stderr,"%d] " #EL " changed!\n", PTHREAD_NUM);
-
-inline static void
-setup_for_gc(GC_state s) {
-	COPYIN (stackTop);
-	/*if (DEBUG)
-		fprintf (stderr,
-				 "%d] GCREqBy = %d , before copy stackBottom = " FMTPTR
-				 " , should become = " FMTPTR " , actually = " FMTPTR
-				 " \n", PTHREAD_NUM, TC.requested_by, s->stackBottom[1],
-				 s->stackBottom[TC.requested_by], s->stackBottom[0]);*/
-	COPYIN (stackBottom);
-	/*if (DEBUG)
-		fprintf (stderr,
-				 "%d] GCReqBy= %d,  after copy StackBottom = "FMTPTR  " \n",
-				 PTHREAD_NUM, TC.requested_by, s->stackBottom[1]);*/
-	COPYIN (stackLimit);
-	COPYIN (exnStack);
-	/*if (DEBUG)
-		fprintf (stderr,
-				 "%d] GCREqBy = %d , before copy currentThread = "FMTPTR" , should become = "FMTPTR" , main thread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,
-				 s->currentThread[1],s->currentThread[TC.requested_by],s->currentThread[0]);*/
-	COPYIN (currentThread);
-	/*if (DEBUG)
-		fprintf (stderr,
-				 "%d] GCReqBy= %d,  after copy currentThread = "FMTPTR" \n", PTHREAD_NUM, TC.requested_by,s->currentThread[1]);*/
-	COPYIN (savedThread);
-	COPYIN (signalHandlerThread);
-	COPYIN (ffiOpArgsResPtr);
-}
-
-inline static void
-sanity_check_array(GC_state s) {
-	SANITY (stackTop);
-	SANITY (stackBottom);
-	SANITY (stackLimit);
-	SANITY (exnStack);
-	SANITY (currentThread);
-	SANITY (savedThread);
-	SANITY (signalHandlerThread);
-	SANITY (ffiOpArgsResPtr);
-}
-
-inline static void
-finish_for_gc(GC_state s) {
-	sanity_check_array(s);
-	COPYOUT (stackTop);
-	COPYOUT (stackBottom);
-	COPYOUT (stackLimit);
-	COPYOUT (exnStack);
-	COPYOUT (currentThread);
-	COPYOUT (savedThread);
-	COPYOUT (signalHandlerThread);
-	COPYOUT (ffiOpArgsResPtr);
-}
 
 
 __attribute__ ((noreturn))
@@ -739,15 +682,7 @@ void performGC_helper(GC_state s,
 	//bool stackTopOk;
 	//size_t stackBytesRequested;
 	struct rusage ru_start;
-//  if (s->gc_module == GC_UM) {
-//      performUMGC(s);
-//	  return;
-//  }
 
-
-	if (s->gc_module == GC_NONE) {
-		return;
-	}
 
 	enterGC(s);
 	s->cumulativeStatistics.numGCs++;

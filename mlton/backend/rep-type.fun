@@ -529,24 +529,24 @@ fun ofGCField (f: GCField.t): t =
       case f of
          AtomicState => word32
        | CardMapAbsolute => cpointer ()
+       | CurrentFrame => cpointer ()
        | CurrentThread => thread ()
        | CurSourceSeqsIndex => word32
        | ExnStack => exnStack ()
+       | FLChunks => csize ()
+       | FLLock => cpointer ()
        | Frontier => cpointer ()
-       | UMFrontier => cpointer ()
+       | HeuristicChunks => csize ()
        | Limit => cpointer ()
        | LimitPlusSlop => cpointer ()
        | MaxFrameSize => word32
+       | Reserved => csize ()
+       | RTSync => word32
        | SignalIsPending => word32
        | StackBottom => cpointer ()
        | StackLimit => cpointer ()
        | StackTop => cpointer ()
-       | FLChunks => csize ()
-       | CurrentFrame => cpointer ()
-       | RTSync => word32
-       | HeuristicChunks => csize ()
-       | FLLock => cpointer ()
-       | Reserved => csize ()
+       | UMFrontier => cpointer ()
    end
 
 fun castIsOk {from, to, tyconTy = _} =

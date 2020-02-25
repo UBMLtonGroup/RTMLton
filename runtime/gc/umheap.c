@@ -308,9 +308,14 @@ bool createUMHeap(GC_state s,
     h->end = newStart + desiredSize;
 
     pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Chunk) + sizeof(UM_header); /*account for size of chunktype field*/
+    size_t max_chunk_size = max(sizeof(struct GC_UM_Chunk), sizeof(struct GC_UM_Array_Chunk));
+    size_t step = max_chunk_size + sizeof(UM_header); /*account for size of chunktype field*/
     pointer end = h->start + h->size - step;
-
+    if (DEBUG) {
+    	fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk) = %d\n", PTHREAD_NUM, sizeof(struct GC_UM_Chunk));
+		fprintf(stderr, "    sizeof(struct GC_UM_Array_Chunk) = %d\n", sizeof(struct GC_UM_Array_Chunk));
+		fprintf(stderr, "    final chunk size = %d\n", max_chunk_size);
+	}
     struct timeval t0, t1;
 	gettimeofday(&t0, NULL);
     for (pchunk=h->start;

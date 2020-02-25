@@ -79,7 +79,6 @@ PRIVATE Pointer gcStateAddress;
         gcState.sourceMaps.sourcesLength = cardof(sources);             \
         gcState.profiling.kind = pk;                                    \
         gcState.profiling.stack = ps;                                   \
-        gcState.gc_module = gc;                                         \
         gcState.GCrunnerRunning = FALSE;                                \
 	    gcState.isRealTimeThreadInitialized = FALSE;           			\
         MLton_init (argc, argv, &gcState);                              \

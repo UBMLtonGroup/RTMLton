@@ -7,29 +7,32 @@
  * See the file MLton-LICENSE for details.
  */
 
+#include "../gc.h"
+
 GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
 	GC_thread to;
 
-	if (DEBUG_THREADS)
-		fprintf (stderr, "copyThread ("FMTPTR") my_pthread=%u\n", (uintptr_t)from, PTHREAD_NUM);
+	if (1 ||DEBUG_THREADS)
+		fprintf (stderr, GREEN("%d] copyThread from=("FMTPTR")\n"), PTHREAD_NUM, (uintptr_t)from);
 
 	/* newThread may do a GC, which invalidates from.
 	 * Hence we need to stash from someplace that the GC can find it.
 	 */
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer)from - offsetofThread (s), s->umheap.start);
+
 	to = newThread (s, alignStackReserved(s, used));
+
 	from = (GC_thread)(objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread (s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
-	if (DEBUG_THREADS) {
-		fprintf (stderr, FMTPTR" = copyThread ("FMTPTR")\n",
-				(uintptr_t)to, (uintptr_t)from);
-	}
 
 	to->bytesNeeded = from->bytesNeeded; // TODO what does this do in stacklets?
 	//to->exnStack = from->exnStack; // this will be adjusted in um_copyStack below
 
 	um_copyStack(s, from, to); // note we pass in GC_threads not the actual stacklets
+
+	if (1 ||DEBUG_THREADS)
+		fprintf (stderr, GREEN("%d] copyThread new=("FMTPTR")\n"), PTHREAD_NUM, (uintptr_t)to);
 
 	return to;
 }

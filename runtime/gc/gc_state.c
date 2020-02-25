@@ -1,3 +1,5 @@
+#include "../gc.h"
+
 /* Copyright (C) 2009,2012 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
@@ -55,9 +57,10 @@ void displayGCState (GC_state s, FILE *stream) {
  * firstframe and currentframe are kept in the thread structure.
  */
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
-	fprintf(stderr, "***WARN*** sizeofGCStateCurrentStackUsed needs to be removed?\n");
+	die(RED( "***ERR*** sizeofGCStateCurrentStackUsed needs to be removed?\n"));
 	return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
+
 size_t sizeofGCStateCurrentUMStackUsed (GC_state s) {
 	return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
 }
@@ -72,22 +75,17 @@ void setGCStateCurrentThreadAndStack (GC_state s) {
   objptr firstFrame = thread->firstFrame;
 
   s->exnStack[PTHREAD_NUM] = thread->exnStack;
-
-  //TODO clean up stack = getStackCurrent (s);
-  //s->stackBottom[PTHREAD_NUM] = getStackBottom (s, stack);
-  //s->stackTop[PTHREAD_NUM] = getStackTop (s, stack);
-  //s->stackLimit[PTHREAD_NUM] = getStackLimit (s, stack);
-
   s->currentFrame[PTHREAD_NUM] = currentFrame;
+
   if(DEBUG_DETAILED || 1)
 		fprintf(stderr, "%d] "
 				GREEN("setGCStateCurrentThreadAndStack")
-				" currentFrame "FMTPTR" stackBottom "FMTPTR"\n",
+				" currentFrame "FMTPTR" stackBottom "FMTPTR" exnStack "FMTPTR"\n",
 				PTHREAD_NUM,
 				(uintptr_t)s->currentFrame[PTHREAD_NUM],
-				(uintptr_t)firstFrame);
+				(uintptr_t)firstFrame,
+				(uintptr_t)s->exnStack[PTHREAD_NUM]);
 
-  //markCard (s, (pointer)stack);
 }
 
 __attribute__ ((unused)) void setGCStateCurrentHeap (GC_state s, 

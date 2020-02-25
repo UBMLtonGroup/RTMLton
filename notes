@@ -1,3 +1,9 @@
+(gdb) n
+Chunk1 (l_nextFun=25) at ub/justprint.1.c:2689
+2689		Return();
+
+
+
 callFromCHandler
    http://www.mlton.org/pipermail/mlton-devel/2007-September/029980.html
 

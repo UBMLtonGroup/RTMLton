@@ -10,12 +10,6 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 
 
-typedef enum {
-  GC_NONE,
-  GC_DEFAULT,
-  GC_UM
-} GC_moduleKind;
-
 struct GC_state {
   /* These fields are at the front because they are the most commonly
    * referenced, and having them at smaller offsets may decrease code
@@ -89,7 +83,6 @@ struct GC_state {
   struct GC_vectorInit *vectorInits;
   uint32_t vectorInitsLength;
   GC_weak weaks; /* Linked list of (live) weak pointers */
-  GC_moduleKind gc_module;
   struct GC_heap infHeap;
   pointer infFrontier;
   

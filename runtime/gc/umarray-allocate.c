@@ -32,7 +32,7 @@ pointer GC_arrayAllocate (GC_state s,
     size_t chunkNumObjs = UM_CHUNK_ARRAY_PAYLOAD_SIZE / bytesPerElement;
     size_t numChunks = numElements / chunkNumObjs + (numElements % chunkNumObjs != 0);
 
-    if (DEBUG_MEM) {
+    if (1||DEBUG_MEM) {
         fprintf(stderr, "numElements: %d, chunkNumObjs: %d, numChunks: %d\n",
                 numElements, chunkNumObjs, numChunks);
     }
