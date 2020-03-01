@@ -759,8 +759,8 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else (
 			            concat["\n\t",
-                       	       stackletWrite({dbase=dbase, sbase=sbase}, ty, dst, src),
-                               "\t",
+                       	       (*stackletWrite({dbase=dbase, sbase=sbase}, ty, dst, src),
+                               "\t",*)
                                writeBarrier({dbase = dbase, sbase = sbase},
                                             {dst = dst,src = src},
                                             ty,
@@ -811,6 +811,7 @@ fun output {program as Machine.Program.T {chunks,
              | Word w => WordX.toC w
              | ChunkExnHandler h => concat ["ChunkExnHandler"]
              | ChunkExnLink => concat ["ChunkExnLink"]
+
 
         fun getbase(x: Operand.t):string = 
           case x of 

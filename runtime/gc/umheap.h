@@ -30,16 +30,16 @@ typedef struct UM_Mem_Chunk{
 
 
 typedef struct GC_UM_Chunk {
-    unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
+    unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION]; /* 154 + 16 */
     //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
-    UM_header chunk_header;
-    size_t sentinel;
-    GC_returnAddress ra;
-    GC_returnAddress handler;
-    GC_returnAddress link;
-    void *memcpy_addr;
-    size_t memcpy_size;
-    struct GC_UM_Chunk* next_chunk;
+    UM_header chunk_header;          /* +0 */
+    size_t sentinel;                 /* +4 */
+    GC_returnAddress ra;             /* +8 */
+    GC_returnAddress handler;        /* +12 */
+    GC_returnAddress link;           /* +16 */
+    void *memcpy_addr;               /* +20 */
+    size_t memcpy_size;              /* +24 */
+    struct GC_UM_Chunk* next_chunk;  /* +28 */
     struct GC_UM_Chunk* prev_chunk;
 } *GC_UM_Chunk;
 

@@ -612,18 +612,38 @@ let
                   end
              | ProfileLabel s => Vector.new1 (M.Statement.ProfileLabel s)
              | SetExnStackLocal =>
-                  (* ExnStack = stackTop + (offset + LABEL_SIZE) - StackBottom; *)
+                  (* ExnStack = stackTop + (handlerOffset + LABEL_SIZE) - StackBottom;
+
+                     In vanilla, ExnStack is an offset from the bottom of the stack
+                     to where a return address exists for an exception handler. A raise
+                     will do the following: stacktop = stackbottom+exnstack; return();
+                     This causes control to be transferred to the exceptional handler
+                     function, which then immediately does a push(-X) where X is
+                     "offset".. causing stacktop to be moved back to the start of the
+                     current frame which we are currently pointing into the middle of
+                     due to the stackbottom+exnstack calculation.
+
+
+                     In RTMLton, stackTop is currentFrame. So this is an offset
+                     into the currentFrame. What we do is
+                        ExnStack = currentFrame
+                        currentFrame->handler = function number
+                     where the function number is what vanilla mlton placed in
+                     the slot determined by stopTop+offset
+                     SetHandler (below) is what does the currentFrame->handler=...
+                     step.
+                     A raise in rtmlton will do the following:
+                     currentFrame = exnStack->next_chunk;
+                     nextFun = currentFrame->prev_chunk->handler; /* the exception handler */
+                     goto nextFun;
+
+                     the exception handler then immediately does a push(-X) which
+                     moves currentFrame back one frame, thus ensuring we are pointing to
+                     the same frame that vanilla would be.
+
+                   *)
                   let
-                     val tmp1 =
-                        M.Operand.Register
-                        (Register.new (Type.cpointer (), NONE))
-                     val tmp4 =
-                        M.Operand.Register
-                        (Register.new (Type.cpointer (), NONE))
-                     val tmp2 =
-                        M.Operand.Register
-                        (Register.new (Type.csize (), NONE))
-                     val tmp3 = M.Operand.Word
+                     val tmp1 = M.Operand.Word
                                         (WordX.fromIntInf
                                          (Int.toIntInf
                                           (Bytes.toInt
@@ -632,58 +652,82 @@ let
                      val label_size = Bytes.toInt (Runtime.labelSize ())
                      val offset = Bytes.toInt (handlerOffset ())
                   in
-                    (
-                       if offset = 0 then (
+                    (print (concat ["SetExnStackLocal: handleroffset ", Int.toString (offset),
+                                    " labelsize ", Int.toString(label_size), "\n"]);
                          (* gcState->exnStack = gcState->currentFrame *)
                          Vector.new1
                            (M.Statement.move
                             {dst = exnStackOp,
                              src = currentFrameOp})
-                       ) else (
-                         (* gcState->exnStack = gcState->currentFrame->next *)
-                         Vector.new2
-                           (M.Statement.PrimApp
-                                  {args = (Vector.new2
-                                           (currentFrameOp,
-                                            M.Operand.Word
-                                            (WordX.fromIntInf
-                                             (Int.toIntInf 154 + 16 + 4 + 4 + 4, (* next ptr *)
-                                              WordSize.cpointer ())))),
-                                   dst = SOME tmp1,
-                                   prim = Prim.cpointerAdd},
-
-
-                            M.Statement.move
-                                    {dst = exnStackOp,
-                                     src = tmp1})
-                       )
                     )
 
                   end
+
+             | SetHandler h =>
+                  (* vanilla: stackTop+handlerOffset = handler
+                     rtmlton: currentFrame->ml_object[handlerOffset] = handler;
+                              currentFrame->handler = handler
+                   *)
+                  (   print (concat ["SetHandler      : handleroffset ",
+                             Int.toString (Bytes.toInt(handlerOffset())), "\n"]);
+                      Vector.new2
+                        (M.Statement.move
+                         {dst = M.Operand.stackOffset {offset = handlerOffset (),
+                                                       ty = Type.label h},
+                          src = M.Operand.Label h}
+                          ,
+                         M.Statement.move
+                         {dst = M.Operand.ChunkExnHandler h,
+                          src = M.Operand.Label h})
+                  )
+
              | SetExnStackSlot =>
-                  (* ExnStack = *(uint* )(stackTop + offset); *)
+                  (*
+                     vanilla:
+                       ExnStack = *(uint* )(stackTop + linkOffset);
+                     this takes the value from the stack slot and places it
+                     into gcState->exnStack. In vanilla, this sets the exnstack to
+                     point somewhere in the current stack.
+
+                     in rtmlton, exnstack is a chunk pointer, and not a scalar number.
+                     however, as long as SetSlotExnStack placed a chunk pointer into
+                     the link slot, this same operation will work.
+
+                        ExnStack = *(uint* )(stackTop + linkOffset);
+                  *)
+                  (
+                  print (concat ["SetExnStackSlot  : linkoffset ",
+                         Int.toString (Bytes.toInt(linkOffset())), "\n"]);
                   Vector.new1
                   (M.Statement.move
                    {dst = exnStackOp,
                     src = M.Operand.stackOffset {offset = linkOffset (),
-                                                 ty = Type.exnStack ()}})
-             | SetHandler h =>
-                  Vector.new2
-                    (M.Statement.move
-                     {dst = M.Operand.stackOffset {offset = handlerOffset (),
-                                                   ty = Type.label h},
-                      src = M.Operand.Label h}
-                      ,
-                     M.Statement.move
-                     {dst = M.Operand.ChunkExnHandler h,
-                      src = M.Operand.Label h})
+                                                 ty = Type.exnStack ()}}
+                                                  )
+                                                  )
+
              | SetSlotExnStack =>
-                  (* *(uint* )(stackTop + offset) = ExnStack; *)
+                  (* vanilla:
+
+                       *(uint* )(stackTop + linkOffset) = ExnStack;
+
+                     the above takes the exnstack setting that is in gc_state
+                     and places it onto the stack in the link slot.
+
+                     In RTMLton this will be a chunk pointer rather than a scalar
+                     offset. The operation itself does not need to be adjusted.
+
+                   *)
+                  (
+                   print (concat ["SetSlotExnStack  : linkoffset ",
+                          Int.toString (Bytes.toInt(linkOffset())), "\n"]);
                   Vector.new1
                   (M.Statement.move
                    {dst = M.Operand.stackOffset {offset = linkOffset (),
                                                  ty = Type.exnStack ()},
                     src = exnStackOp})
+                    )
+
              | _ => Error.bug (concat
                                ["Backend.genStatement: strange statement: ",
                                 R.Statement.toString s])

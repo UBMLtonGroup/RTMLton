@@ -119,7 +119,11 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra]);
         if (from->exnStack == (objptr)f) {
 			if (1 || DEBUG_CCODEGEN) {
-				fprintf(stderr, GREEN("found exnStack: from:%08x -> to:%08x\n"), (unsigned int) f, (unsigned int)t);
+				fprintf(stderr, GREEN("found exnStack: from:%08x -> to:%08x (handler %d, ra %d)\n"),
+						(unsigned int) f,
+						(unsigned int) t,
+						f->handler,
+						f->ml_object[f->ra]);
 			}
 			to->exnStack = (objptr)t;
         }

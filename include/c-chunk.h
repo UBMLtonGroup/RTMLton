@@ -358,7 +358,7 @@ void dump_hex(char *str, int len);
                      int fnum = (cf->ml_object[cf->ra]); \
                      if (STACKLET_DEBUG)  { \
                         for (StackDepth=0 ; xx && xx->prev_chunk ; xx = xx->prev_chunk, ++StackDepth); /* find the 1st chunk just so we can print the addr */ \
-                        fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x)  "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
+                        fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
                              __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                              cf, cf->next_chunk); \
                          \
@@ -407,7 +407,9 @@ void dump_hex(char *str, int len);
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
                 else if (cf->handler == 0) fprintf(stderr, RED("Raise handler zero??\n")); \
                 else { \
-                    l_nextFun = cf->handler; CurrentFrame = ((struct GC_UM_Chunk *)ExnStack)->next_chunk; \
+                    l_nextFun = cf->handler; \
+                    /* see discussion in backend.fun's SetExnStackLocal for explanation of next line */ \
+                    CurrentFrame = ((struct GC_UM_Chunk *)ExnStack)->next_chunk; \
                     if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
                             fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_RaiseReturn()")"  l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx\n"),   \
                                             __FILE__, __LINE__, (int)l_nextFun,           \
