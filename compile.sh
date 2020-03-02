@@ -1,7 +1,7 @@
 #!/bin/bash
 rm -rf build
 
-export CFLAGS="-Wunused-but-set-variable -DSTACK_GC_SANITY"
+export CFLAGS="-Wunused-but-set-variable -DSTACK_GC_SANITY -Wall"
 arch_flags="-j 8"
 make $arch_flags dirs     &&
 make $arch_flags runtime  &&

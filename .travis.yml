@@ -13,8 +13,11 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
 
+services:
+  - docker
+
 script:
-  - ./bin/travis-ci
+  - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-docker\""
 
 
 notifications:
