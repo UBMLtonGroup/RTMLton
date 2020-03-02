@@ -33,8 +33,8 @@
  */
 typedef struct GC_thread {
   size_t bytesNeeded;
-  size_t exnStack;
-  objptr stack;
+  objptr exnStack;
+  objptr stack; /* TODO remove, add stack_depth, adjust stack_used calculation functions */
   objptr firstFrame; /* similar to stackBottom, this contains a header+GC_frameLayout */
   objptr currentFrame; /* similar to stackTop (i.e. stackBottom+used), this contains a header+GC_frameLayout */
 } __attribute__ ((packed)) *GC_thread;
@@ -42,7 +42,7 @@ typedef struct GC_thread {
 COMPILE_TIME_ASSERT(GC_thread__packed,
                     sizeof(struct GC_thread) ==
                     sizeof(size_t)
-                    + sizeof(size_t)
+                    + sizeof(objptr)
                     + sizeof(objptr)
                     + sizeof(objptr)
                     + sizeof(objptr)

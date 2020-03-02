@@ -23,7 +23,7 @@ pointer objptrToPointer (objptr O, pointer B) {
 
   if (GC_MODEL_OBJPTR_BASE) {
 
-    die("GC_MODEL_OBJPTR_BASE is non 0. Check the base in objptrToPointer (was originaly start of heap)\n");
+    die("GC_MODEL_OBJPTR_BASE is non 0. Check the base in objptrToPointer (was originally start of heap)\n");
     B_ = (uintptr_t)B;
   } else {
     B_ = 0;
@@ -46,7 +46,7 @@ objptr pointerToObjptr (pointer P, pointer B) {
 
   if (GC_MODEL_OBJPTR_BASE) {
 
-    die("GC_MODEL_OBJPTR_BASE is non 0. Check the base in pointerToObjptr (was originaly start of heap)\n");
+    die("GC_MODEL_OBJPTR_BASE is non 0. Check the base in pointerToObjptr (was originally start of heap)\n");
     B_ = (uintptr_t)B;
   } else {
     B_ = 0;
