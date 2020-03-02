@@ -10,7 +10,7 @@
 (*
  * The goal of limit check insertion is to ensure that
  *      1. At any allocation of b bytes, frontier + b <= base + heapSize
- *      2. At entry to each function, stackTop <= stackLimit
+ *      2. At entry to each function, stackTop <= stackLimit TODO JEFF
  *
  * It assumes that runtime provides several operands to help with this.
  *      Frontier
@@ -352,8 +352,8 @@ fun insertFunction (f: Function.t,
                 let
                    val (statements, transfer) =
                       primApp (Prim.cpointerLt,
-                               Operand.Runtime StackLimit,
-                               Operand.Runtime StackTop,
+                               Operand.Runtime CurrentFrame,
+                               Operand.Runtime CurrentFrame, (* FIX JEFF *)
                                z)
                 in
                    newBlock (maybeFirst, statements, transfer)

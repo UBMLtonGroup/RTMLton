@@ -338,7 +338,6 @@ let
                 *    end of the backend.
                 *)
                if !Control.codegen = Control.CCodegen
-                  orelse !Control.codegen = Control.LLVMCodegen
                   orelse !Control.profile <> Control.ProfileNone
                   then new ()
                else
@@ -492,14 +491,11 @@ let
       fun runtimeOp (field: GCField.t): M.Operand.t =
          case field of
             GCField.Frontier => M.Operand.Frontier
-          | GCField.StackTop => M.Operand.StackTop
           | _ =>
                M.Operand.Offset {base = M.Operand.GCState,
                                  offset = GCField.offset field,
                                  ty = Type.ofGCField field}
       val exnStackOp = runtimeOp GCField.ExnStack
-      val stackBottomOp = runtimeOp GCField.StackBottom
-      val stackTopOp = runtimeOp GCField.StackTop
       val currentFrameOp = runtimeOp GCField.CurrentFrame
 
       fun translateOperand (oper: R.Operand.t): M.Operand.t =

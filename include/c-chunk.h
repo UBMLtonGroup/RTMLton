@@ -55,8 +55,8 @@ void um_dumpStack (void *s);
 
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
-#define StackDepth (*(size_t*)(GCState + 68+(PTHREAD_NUM*WORDWIDTH))) // debugging
-#define RTSync *(bool*)(GCState + RTSyncOffset + (PTHREAD_NUM *WORDWIDTH)) 
+#define StackDepth (*(size_t*)(GCState + 44+(PTHREAD_NUM*WORDWIDTH))) // debugging
+#define RTSync *(bool*)(GCState + RTSyncOffset + (PTHREAD_NUM *WORDWIDTH))
 
 #define StackTop StackTopMem
 
@@ -113,7 +113,7 @@ void um_dumpStack (void *s);
                 } while(0)                                          \
 
 
-#define CurrentFrameOffset 52
+#define CurrentFrameOffset 28
 #define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
 
 #define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))

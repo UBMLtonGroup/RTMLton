@@ -301,45 +301,6 @@ struct
        gcState_frontierContentsOperand) =
      make (Field.Frontier, pointerSize, Classes.GCStateHold)
 
-  val (_, gcState_stackBottomContents, 
-       gcState_stackBottomContentsOperand) =
-     make (Field.StackBottom, pointerSize, Classes.GCState)
-
-  val (_, gcState_stackTopContents,
-       gcState_stackTopContentsOperand) =
-     make (Field.StackTop, pointerSize, Classes.GCStateHold)
-
-  local
-    val stackTopTemp = 
-      Immediate.label (Label.fromString "stackTopTemp")
-    val stackTopTempContents = 
-      makeContents {base = stackTopTemp,
-                    size = wordSize,
-                    class = Classes.StaticTemp} 
-    val stackTopTempContentsOperand = 
-      Operand.memloc (stackTopTempContents)
-  in
-    val stackTopTempContents = fn () => stackTopTempContents
-    val stackTopTempContentsOperand = fn () => stackTopTempContentsOperand
-  end
-
-  fun gcState_stackTopMinusWordDeref () =
-     MemLoc.simple {base = gcState_stackTopContents (), 
-                    index = Immediate.int ~1,
-                    scale = wordScale,
-                    size = pointerSize,
-                    class = Classes.Stack}
-  fun gcState_stackTopMinusWordDerefOperand () =
-     Operand.memloc (gcState_stackTopMinusWordDeref ())
-
-  fun stackTopTempMinusWordDeref () =
-     MemLoc.simple {base = stackTopTempContents (), 
-                    index = Immediate.int ~1,
-                    scale = wordScale,
-                    size = pointerSize,
-                    class = Classes.Stack}
-  fun stackTopTempMinusWordDerefOperand () =
-     Operand.memloc (stackTopTempMinusWordDeref ())
 
   fun gcState_offset {offset, ty} =
     let

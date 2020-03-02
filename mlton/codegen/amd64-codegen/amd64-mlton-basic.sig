@@ -103,14 +103,5 @@ signature AMD64_MLTON_BASIC =
     val gcState_exnStackContentsOperand: unit -> amd64.Operand.t
     val gcState_frontierContents: unit -> amd64.MemLoc.t
     val gcState_frontierContentsOperand: unit -> amd64.Operand.t
-    val gcState_stackBottomContents: unit -> amd64.MemLoc.t
-    val gcState_stackBottomContentsOperand: unit -> amd64.Operand.t
-    val gcState_stackTopContents: unit -> amd64.MemLoc.t
-    val gcState_stackTopContentsOperand: unit -> amd64.Operand.t
-    val gcState_stackTopMinusWordDeref: unit -> amd64.MemLoc.t
-    val gcState_stackTopMinusWordDerefOperand: unit -> amd64.Operand.t
 
-    val stackTopTempContentsOperand: unit -> amd64.Operand.t
-    val stackTopTempMinusWordDeref: unit -> amd64.MemLoc.t
-    val stackTopTempMinusWordDerefOperand: unit -> amd64.Operand.t
   end

@@ -63,24 +63,18 @@ val closureConvertShrink = control {name = "closureConvertShrink",
 structure Codegen =
    struct
       datatype t =
-         AMD64Codegen
-       | CCodegen
-       | LLVMCodegen
-       | X86Codegen
+         CCodegen
 
-      val all = [X86Codegen,AMD64Codegen,CCodegen,LLVMCodegen]
+      val all = [CCodegen]
 
       val toString: t -> string =
-         fn AMD64Codegen => "amd64"
-          | CCodegen => "c"
-          | LLVMCodegen => "llvm"
-          | X86Codegen => "x86"
+         fn CCodegen => "c"
    end
 
 datatype codegen = datatype Codegen.t
 
 val codegen = control {name = "codegen",
-                       default = Codegen.X86Codegen,
+                       default = Codegen.CCodegen,
                        toString = Codegen.toString}
 
 val contifyIntoMain = control {name = "contifyIntoMain",

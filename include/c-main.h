@@ -29,6 +29,7 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
         struct cont cont;                                               \
         GC_state s;                                                     \
                                                                         \
+        struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)s->currentFrame[PTHREAD_NUM];    \
         if (DEBUG_CCODEGEN)                                             \
                 fprintf (stderr, "MLton_callFromC() starting\n");       \
         s = &gcState;                                                   \
@@ -41,7 +42,7 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
         /* Switch to the C Handler thread. */                           \
         GC_switchToThread (s, GC_getCallFromCHandlerThread (s), 0);     \
         cont.nextFun =                                                  \
-       	   *(uintptr_t*)(s->stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE);   \
+           *(uintptr_t*)(cf->ml_object + cf->ra); \
         cont.nextChunk = nextChunks[cont.nextFun];                      \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
         if (DEBUG_CCODEGEN) fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
@@ -70,7 +71,8 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 PrepFarJump(cont, mc, ml);                              \
         } else {                                                        \
                 /* Return to the saved world */                         \
-                cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
+                struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)gcState.currentFrame[PTHREAD_NUM];    \
+                cont.nextFun = *(uintptr_t*)(cf->ml_object + cf->ra); \
                 cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         setvbuf(stderr, NULL, _IONBF, 0);                               \
@@ -106,7 +108,8 @@ PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
                 PrepFarJump(cont, mc, ml);                              \
         } else {                                                        \
                 /* Return to the saved world */                         \
-                cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
+                struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)gcState.currentFrame[PTHREAD_NUM];    \
+                cont.nextFun = *(uintptr_t*)(cf->ml_object + cf->ra); \
                 cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         /* Trampoline */                                                \
@@ -117,7 +120,8 @@ PUBLIC void LIB_OPEN(LIBNAME) (int argc, char* argv[]) {                \
 }                                                                       \
 PUBLIC void LIB_CLOSE(LIBNAME) () {                                     \
         struct cont cont;                                               \
-        cont.nextFun = *(uintptr_t*)(gcState.stackTop[PTHREAD_NUM] - GC_RETURNADDRESS_SIZE); \
+        struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)gcState.currentFrame[PTHREAD_NUM];    \
+        cont.nextFun = *(uintptr_t*)(cf->ml_object + cf->ra); \
         cont.nextChunk = nextChunks[cont.nextFun];                      \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
         do {                                                            \

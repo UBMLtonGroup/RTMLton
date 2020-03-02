@@ -543,9 +543,6 @@ fun ofGCField (f: GCField.t): t =
        | Reserved => csize ()
        | RTSync => word32
        | SignalIsPending => word32
-       | StackBottom => cpointer ()
-       | StackLimit => cpointer ()
-       | StackTop => cpointer ()
        | UMFrontier => cpointer ()
    end
 

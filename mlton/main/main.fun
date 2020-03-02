@@ -152,36 +152,13 @@ fun setTargetType (target: string, usage): unit =
             ; Target.os := os
          end
 
-fun hasCodegen (cg) =
-   let
-      datatype z = datatype Control.Target.arch
-      datatype z = datatype Control.Target.os
-      datatype z = datatype Control.Format.t
-      datatype z = datatype Control.codegen
-   in
-      case !Control.Target.arch of
-         AMD64 => (case cg of
-                      X86Codegen => false
-                    | _ => true)
-       | X86 => (case cg of
-                    AMD64Codegen => false
-                  | X86Codegen =>
-                      (* Darwin PIC doesn't work *)
-                      !Control.Target.os <> Darwin orelse
-                      !Control.format = Executable orelse
-                      !Control.format = Archive
-                  | _ => true)
-       | _ => (case cg of
-                  AMD64Codegen => false
-                | X86Codegen => false
-                | _ => true)
-   end
+fun hasCodegen (cg) = true
+
 fun hasNativeCodegen () =
    let
       datatype z = datatype Control.codegen
    in
-      hasCodegen AMD64Codegen
-      orelse hasCodegen X86Codegen
+      false
    end
 
 
@@ -953,28 +930,10 @@ fun commandLine (args: string list): unit =
                       NONE => if defaultAlignIs8 () then Align8 else Align4
                     | SOME a => a)
       val () =
-         codegen := (case !explicitCodegen of
-                        NONE =>
-                           if hasCodegen AMD64Codegen
-                              then AMD64Codegen
-                           else if hasCodegen X86Codegen
-                              then X86Codegen
-                           else CCodegen
-                      | SOME Native =>
-                           if hasCodegen AMD64Codegen
-                              then AMD64Codegen
-                           else if hasCodegen X86Codegen
-                              then X86Codegen
-                           else usage (concat ["can't use native codegen on ",
-                                               MLton.Platform.Arch.toString targetArch,
-                                               " target"])
-                      | SOME (Explicit cg) => cg)
+         codegen := CCodegen
       val () = MLton.Rusage.measureGC (!verbosity <> Silent)
       val () = if !profileTimeSet
-                  then (case !codegen of
-                           X86Codegen => profile := ProfileTimeLabel
-                         | AMD64Codegen => profile := ProfileTimeLabel
-                         | _ => profile := ProfileTimeField)
+                  then profile := ProfileTimeField
                   else ()
       val () = if !exnHistory
                   then (case !profile of
@@ -1105,15 +1064,9 @@ fun commandLine (args: string list): unit =
          chunk :=
          (case !explicitChunk of
              NONE => (case !codegen of
-                         AMD64Codegen => ChunkPerFunc
-                       | CCodegen => Coalesce {limit = 4096}
-                       | LLVMCodegen => Coalesce {limit = 4096}
-                       | X86Codegen => ChunkPerFunc
+                         CCodegen => Coalesce {limit = 4096}
                        )
            | SOME c => c)
-      val _ = if not (!Control.codegen = X86Codegen) andalso !Native.IEEEFP
-                 then usage "must use x86 codegen with -ieee-fp true"
-              else ()
       val _ =
          if !keepDot andalso List.isEmpty (!keepPasses)
             then keepSSA := true

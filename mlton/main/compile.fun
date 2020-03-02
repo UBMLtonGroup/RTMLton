@@ -89,12 +89,7 @@ structure Backend = Backend (structure Ssa = Ssa2
                              fun funcToLabel f = f)
 structure CCodegen = CCodegen (structure Ffi = Ffi
                                structure Machine = Machine)
-structure LLVMCodegen = LLVMCodegen (structure CCodegen = CCodegen
-                                     structure Machine = Machine)
-structure x86Codegen = x86Codegen (structure CCodegen = CCodegen
-                                   structure Machine = Machine)
-structure amd64Codegen = amd64Codegen (structure CCodegen = CCodegen
-                                       structure Machine = Machine)
+
 
 
 (* ------------------------------------------------- *)
@@ -516,9 +511,6 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              limitPlusSlop = get "limitPlusSlop_Offset",
              maxFrameSize = get "maxFrameSize_Offset",
              signalIsPending = get "signalsInfo.signalIsPending_Offset",
-             stackBottom = get "stackBottom_Offset",
-             stackLimit = get "stackLimit_Offset",
-             stackTop = get "stackTop_Offset",
              flChunks = get "fl_chunks_Offset",
              currentFrame = get "currentFrame_Offset",
              rtSync = get "rtSync_Offset",
@@ -539,9 +531,6 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              limitPlusSlop = get "limitPlusSlop_Size",
              maxFrameSize = get "maxFrameSize_Size",
              signalIsPending = get "signalsInfo.signalIsPending_Size",
-             stackBottom = get "stackBottom_Size",
-             stackLimit = get "stackLimit_Size",
-             stackTop = get "stackTop_Size",
              flChunks = get "fl_chunks_Size",
     	     currentFrame = get "currentFrame_Size",
              rtSync = get "rtSync_Size",
@@ -678,10 +667,7 @@ fun preCodegen {input: MLBString.t}: Machine.Program.t =
          end
       val codegenImplementsPrim =
          case !Control.codegen of
-            Control.AMD64Codegen => amd64Codegen.implementsPrim
-          | Control.CCodegen => CCodegen.implementsPrim
-          | Control.LLVMCodegen => LLVMCodegen.implementsPrim
-          | Control.X86Codegen => x86Codegen.implementsPrim
+           Control.CCodegen => CCodegen.implementsPrim
       val machine =
          Control.passTypeCheck
          {display = Control.Layouts Machine.Program.layouts,
@@ -721,30 +707,13 @@ fun compile {input: MLBString.t, outputC, outputLL, outputS}: unit =
           ; Machine.Label.printNameAlphaNumeric := true)
       val () =
          case !Control.codegen of
-            Control.AMD64Codegen =>
-               (print "hi"; clearNames ()
-                (*; (Control.trace (Control.Top, "amd64! code gen")
-                   amd64Codegen.output {program = machine,
-                                        outputC = outputC,
-                                        outputS = outputS})*) )
-          | Control.CCodegen =>
+          Control.CCodegen =>
                (clearNames ()
                 ; (Control.trace (Control.Top, "C code gen")
                    CCodegen.output {program = machine,
                                     outputC = outputC}))
-          | Control.LLVMCodegen =>
-               (clearNames ()
-                ; (Control.trace (Control.Top, "llvm code gen")
-                   LLVMCodegen.output {program = machine,
-                                       outputC = outputC,
-                                      outputLL = outputLL}))
-          | Control.X86Codegen =>
-               (clearNames ()
-                ; (Control.trace (Control.Top, "x86 code gen")
-                   x86Codegen.output {program = machine,
-                                      outputC = outputC,
-                                      outputS = outputS}))
-                                      
+
+
       val _ = Control.message (Control.Detail, PropertyList.stats)
       val _ = Control.message (Control.Detail, HashSet.stats)
    in

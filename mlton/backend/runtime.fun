@@ -24,9 +24,6 @@ structure GCField =
        | LimitPlusSlop
        | MaxFrameSize
        | SignalIsPending
-       | StackBottom
-       | StackLimit
-       | StackTop
        | FLChunks
        | CurrentFrame
        | RTSync
@@ -43,9 +40,6 @@ structure GCField =
       val limitPlusSlopOffset: Bytes.t ref = ref Bytes.zero
       val maxFrameSizeOffset: Bytes.t ref = ref Bytes.zero
       val signalIsPendingOffset: Bytes.t ref = ref Bytes.zero
-      val stackBottomOffset: Bytes.t ref = ref Bytes.zero
-      val stackLimitOffset: Bytes.t ref = ref Bytes.zero
-      val stackTopOffset: Bytes.t ref = ref Bytes.zero
       val umfrontierOffset: Bytes.t ref = ref Bytes.zero
       val flChunksOffset: Bytes.t ref = ref Bytes.zero
       val currentFrameOffset: Bytes.t ref = ref Bytes.zero
@@ -56,7 +50,7 @@ structure GCField =
 
       fun setOffsets {atomicState, currentThread, curSourceSeqsIndex,
                       exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
-                      signalIsPending, stackBottom, stackLimit, stackTop,
+                      signalIsPending,
                       flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved} =
          (atomicStateOffset := atomicState
           ; currentThreadOffset := currentThread
@@ -68,9 +62,6 @@ structure GCField =
           ; limitPlusSlopOffset := limitPlusSlop
           ; maxFrameSizeOffset := maxFrameSize
           ; signalIsPendingOffset := signalIsPending
-          ; stackBottomOffset := stackBottom
-          ; stackLimitOffset := stackLimit
-          ; stackTopOffset := stackTop
           ; flChunksOffset := flChunks
           ; currentFrameOffset := currentFrame
           ; rtSyncOffset := rtSync
@@ -89,9 +80,6 @@ structure GCField =
           | LimitPlusSlop => !limitPlusSlopOffset
           | MaxFrameSize => !maxFrameSizeOffset
           | SignalIsPending => !signalIsPendingOffset
-          | StackBottom => !stackBottomOffset
-          | StackLimit => !stackLimitOffset
-          | StackTop => !stackTopOffset
           | FLChunks => !flChunksOffset
           | CurrentFrame => !currentFrameOffset
           | RTSync => !rtSyncOffset
@@ -108,9 +96,6 @@ structure GCField =
       val limitPlusSlopSize: Bytes.t ref = ref Bytes.zero
       val maxFrameSizeSize: Bytes.t ref = ref Bytes.zero
       val signalIsPendingSize: Bytes.t ref = ref Bytes.zero
-      val stackBottomSize: Bytes.t ref = ref Bytes.zero
-      val stackLimitSize: Bytes.t ref = ref Bytes.zero
-      val stackTopSize: Bytes.t ref = ref Bytes.zero
       val flChunksSize: Bytes.t ref = ref Bytes.zero
       val currentFrameSize: Bytes.t ref = ref Bytes.zero
       val rtSyncSize: Bytes.t ref = ref Bytes.zero
@@ -120,7 +105,7 @@ structure GCField =
 
       fun setSizes {atomicState,currentThread, curSourceSeqsIndex,
                     exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
-                    signalIsPending, stackBottom, stackLimit, stackTop,
+                    signalIsPending,
                     flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved} =
          (atomicStateSize := atomicState
           ; currentThreadSize := currentThread
@@ -131,9 +116,6 @@ structure GCField =
           ; limitPlusSlopSize := limitPlusSlop
           ; maxFrameSizeSize := maxFrameSize
           ; signalIsPendingSize := signalIsPending
-          ; stackBottomSize := stackBottom
-          ; stackLimitSize := stackLimit
-          ; stackTopSize := stackTop
           ; flChunksSize := flChunks
           ; currentFrameSize := currentFrame
           ; rtSyncSize := rtSync
@@ -152,9 +134,6 @@ structure GCField =
           | LimitPlusSlop => !limitPlusSlopSize
           | MaxFrameSize => !maxFrameSizeSize
           | SignalIsPending => !signalIsPendingSize
-          | StackBottom => !stackBottomSize
-          | StackLimit => !stackLimitSize
-          | StackTop => !stackTopSize
           | FLChunks => !flChunksSize
           | CurrentFrame => !currentFrameSize
           | RTSync => !rtSyncSize
@@ -173,9 +152,6 @@ structure GCField =
           | LimitPlusSlop => "LimitPlusSlop"
           | MaxFrameSize => "MaxFrameSize"
           | SignalIsPending => "SignalIsPending"
-          | StackBottom => "StackBottom"
-          | StackLimit => "StackLimit"
-          | StackTop => "StackTop"
           | FLChunks => "FLChunks"
           | CurrentFrame => "CurrentFrame"
           | RTSync => "RTSync"

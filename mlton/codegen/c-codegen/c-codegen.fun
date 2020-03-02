@@ -1316,8 +1316,6 @@ fun output {program as Machine.Program.T {chunks,
                  ("CurrentThreadOffset", GCField.CurrentThread),
                  ("FrontierOffset", GCField.Frontier),
                  ("UMFrontierOffset", GCField.UMFrontier),
-                 ("StackBottomOffset", GCField.StackBottom),
-                 ("StackTopOffset", GCField.StackTop),
                  ("RTSyncOffset",GCField.RTSync)],
                 fn (name, f) =>
                 print (concat ["#define ", name, " ",
