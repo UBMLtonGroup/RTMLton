@@ -25,4 +25,4 @@ val v =
        end
   else fib (intFromString(hd(args)))
 
-val _ = Int.toString(v)
+val _ = print(Int.toString(v) ^ "\n")

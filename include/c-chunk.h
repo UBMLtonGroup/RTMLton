@@ -339,14 +339,17 @@ void dump_hex(char *str, int len);
                      struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
                      struct GC_UM_Chunk *xx = cf; \
                      if (STACKLET_DEBUG) { \
-                        int fnum = (cf->prev_chunk->ml_object[cf->prev_chunk->ra]); \
+                        int fnum = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra); \
                         for (StackDepth=0 ; xx && xx->prev_chunk ; xx = xx->prev_chunk, ++StackDepth); /* find the 1st chunk just so we can print the addr */ \
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx prev %"FW"lx ", \
                                 __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                                 cf, cf->prev_chunk); \
+                                if(STACKLET_DEBUG > 1) {\
+                                  fprintf(stderr, "%d \n", cf->prev_chunk->ra);  \
+                                  dump_hex(cf, (-bytes)+WORDWIDTH); \
+                                  } \
                      } \
                      if (cf->prev_chunk) { \
-                         int fnum = (cf->prev_chunk->ml_object[cf->prev_chunk->ra]); \
                          CurrentFrame = cf->prev_chunk; \
                      } else {                                                \
                          if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant retreat to prev frame"));      \
@@ -355,7 +358,7 @@ void dump_hex(char *str, int len);
                      struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
                      struct GC_UM_Chunk *xx = cf; \
                      cf->ra = bytes; \
-                     int fnum = (cf->ml_object[cf->ra]); \
+                     int fnum = *(GC_returnAddress*)(cf->ml_object + cf->ra); \
                      if (STACKLET_DEBUG)  { \
                         for (StackDepth=0 ; xx && xx->prev_chunk ; xx = xx->prev_chunk, ++StackDepth); /* find the 1st chunk just so we can print the addr */ \
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
@@ -390,7 +393,7 @@ void dump_hex(char *str, int len);
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n")); \
                 else { \
                     memcpy(cf->memcpy_addr, cf->ml_object+WORDWIDTH, cf->memcpy_size); \
-                    l_nextFun = (cf->prev_chunk->ml_object[cf->prev_chunk->ra]); \
+                    l_nextFun = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra); \
                     if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
                             fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_Return()")"  %d/%x l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx ra %d\n"),   \
                                             __FILE__, __LINE__, PTHREAD_NUM, CurrentThread, (int)l_nextFun,           \
