@@ -38,7 +38,12 @@
 
 void um_dumpStack (void *s);
 
-#define WORDWIDTH 4 /* use gcState->alignment */
+/* useful offsets are in ./build/lib/targets/self/constants */
+#include "gcstate-offsets.h"
+
+/* since atomicState is an int, we can use its size as our wordwidth */
+
+#define WORDWIDTH GCSCONST_atomicState_Size
 
 #define NO_CACHE_STACK
 #define NO_CACHE_FRONTIER
@@ -55,7 +60,7 @@ void um_dumpStack (void *s);
 
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
-#define StackDepth (*(size_t*)(GCState + 44+(PTHREAD_NUM*WORDWIDTH))) // debugging
+#define StackDepth (*(size_t*)(GCState + GCSCONST_stack_depth_Offset+(PTHREAD_NUM*WORDWIDTH))) // debugging
 #define RTSync *(bool*)(GCState + RTSyncOffset + (PTHREAD_NUM *WORDWIDTH))
 
 #define StackTop StackTopMem
@@ -113,7 +118,7 @@ void um_dumpStack (void *s);
                 } while(0)                                          \
 
 
-#define CurrentFrameOffset 28
+#define CurrentFrameOffset GCSCONST_currentFrame_Offset
 #define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
 
 #define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))
@@ -295,7 +300,6 @@ void um_dumpStack (void *s);
 
 #define UM_CHUNK_PAYLOAD_SIZE 154
 #define UM_CHUNK_PAYLOAD_SAFE_REGION 16
-#define CURRENTTHREAD_OFFSET 588
 
 typedef uintptr_t GC_returnAddress;
 typedef uintptr_t pointer;

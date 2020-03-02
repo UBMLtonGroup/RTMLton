@@ -51,11 +51,12 @@ val gcFields =
    [
     "atomicState",
     "currentThread",
+    "currentFrame",
+    "stack_depth",
     "sourceMaps.curSourceSeqsIndex",
     "exnStack",
     "frontier",
     "umfrontier",
-   (* "generationalMaps.cardMapAbsolute",*)
     "limit",
     "limitPlusSlop",
     "maxFrameSize",

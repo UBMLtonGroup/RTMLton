@@ -194,6 +194,14 @@ profiled:
 .PHONY: runtime
 runtime:
 	@echo 'Compiling MLton runtime system for $(TARGET).'
+	@echo Translate ./build/lib/targets/self/constants to include/gcstate-offsets.h
+	rm -f include/gcstate-offsets.h
+	egrep '(Offset|Size)' ./build/lib/targets/self/constants | \
+	   egrep -v '(signalsInfo|sourceMaps)' | sort | sed 's/=//g' | \
+	   while read L ; \
+	    do echo '#define ' GCSCONST_$$L ; \
+	    done > include/gcstate-offsets.h
+
 	$(MAKE) -C runtime
 	$(CP) include/*.h "$(INC)/"
 	$(CP) runtime/*.a "$(LIB)/targets/$(TARGET)/"

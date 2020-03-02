@@ -30,6 +30,8 @@
  * Note that the order of the fields is important.  The non-objptr
  * fields must be first, because a thread object must appear to be a
  * normal object.
+ *
+ * If you adjust this, also adjust 'val thread' in backend/rep-type.fun
  */
 typedef struct GC_thread {
   size_t bytesNeeded;
