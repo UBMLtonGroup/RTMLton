@@ -23,8 +23,8 @@ struct GC_state {
 /*4*/  pointer umfrontier;
 /*8*/  pointer umarfrontier;
 /*12*/  pointer limit; /* limit = heap.start + heap.size */
-/*16*/  pointer stackTop[MAXPRI]; /* Top of stack in current thread. */
-/*28*/  pointer stackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
+/*16*/  pointer xstackTop[MAXPRI]; /* Top of stack in current thread. */
+/*28*/  pointer xstackLimit[MAXPRI]; /* stackBottom + stackSize - maxFrameSize */
 /*40*/  size_t exnStack[MAXPRI];
 
 /*52*/  objptr currentFrame[MAXPRI];
