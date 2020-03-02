@@ -102,8 +102,7 @@ struct GC_state {
   volatile int casLock;
   bool collectAll;
   /* -------------------------- */
-  pointer stackBottom[MAXPRI]; /* Bottom of stack in current thread. */
- 
+
   /* added for rt-threading */
 
   pthread_t *realtimeThreads[MAXPRI];

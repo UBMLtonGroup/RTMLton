@@ -951,33 +951,3 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 }
 
-/* Irrelevant in RTGC*/
-#if 0
-void ensureHasHeapBytesFree(GC_state s,
-							size_t oldGenBytesRequested,
-							size_t nurseryBytesRequested) {
-	assert(s->heap.nursery <= s->limitPlusSlop);
-	assert(s->frontier <= s->limitPlusSlop);
-
-	if (DEBUG) {
-		displayHeap(s, &(s->heap), stderr);
-		displayHeapInfo(s);
-	}
-
-	if (not hasHeapBytesFree(s, oldGenBytesRequested, nurseryBytesRequested)) {
-		// we start at the current frame and move down to stack bottom
-		markStack(s, um_getStackCurrentFrame(s));
-		//performGC (s, oldGenBytesRequested, nurseryBytesRequested, FALSE,TRUE);
-		if (DEBUG) {
-			fprintf(stderr,
-					"%d] Back after GCin and going to check assert. oldgen size=%d\n",
-					PTHREAD_NUM, s->heap.oldGenSize);
-			displayHeap(s, &(s->heap), stderr);
-			assert(s->stackBottom[PTHREAD_NUM] ==
-				   getStackBottom(s, getStackCurrent(s)));
-		}
-	}
-	assert(hasHeapBytesFree
-				   (s, oldGenBytesRequested, nurseryBytesRequested));
-}
-#endif

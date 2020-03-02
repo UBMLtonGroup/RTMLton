@@ -13,36 +13,30 @@
 #define LOCK_RT_TH IFED(pthread_mutex_lock(&s->rtThreads_lock))
 #define UNLOCK_RT_TH IFED(pthread_mutex_unlock(&s->rtThreads_lock))
 
-void displayGCState (GC_state s, FILE *stream) {
+void displayGCState(GC_state s, FILE *stream) {
 
-  if(DEBUG_DETAILED)
-  {
-    if(PTHREAD_NUM ==1)
-    {
-        fprintf(stream,"%d] Cannot display GC_state in GC thread\n",PTHREAD_NUM);
-        return;
-    }
+	if (DEBUG_DETAILED) {
+		if (PTHREAD_NUM == 1) {
+			fprintf(stream, "%d] Cannot display GC_state in GC thread\n", PTHREAD_NUM);
+			return;
+		}
 
-  fprintf (stream, "%d] GC state\n", PTHREAD_NUM);
-  fprintf (stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
-  displayThread (s, (GC_thread)(objptrToPointer (s->currentThread[PTHREAD_NUM], s->umheap.start)
-                                + offsetofThread (s)),
-                 stream);
-  fprintf (stream, "%d] \t Global heap\n", PTHREAD_NUM);
-  displayHeap (s, &s->globalHeap,
-               stream);
-  fprintf (stream,
-		   "%d] \tlimit = "FMTPTR"\n"
-		   "\tstackBottom = "FMTPTR"\n"
-		   "\tstackTop = "FMTPTR"\n"
-		   "\tcurrentFrame = "FMTPTR"\n",
-		   PTHREAD_NUM,
-		   (uintptr_t)s->limit,
-		   (uintptr_t)s->stackBottom[PTHREAD_NUM],
-		   (uintptr_t)s->stackTop[PTHREAD_NUM],
-		   (uintptr_t)s->currentFrame[PTHREAD_NUM]
-           );
-  }
+		fprintf(stream, "%d] GC state\n", PTHREAD_NUM);
+		fprintf(stream, "%d] \tcurrentThread = "FMTOBJPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
+		displayThread(s, (GC_thread) (objptrToPointer(s->currentThread[PTHREAD_NUM], s->umheap.start)
+									  + offsetofThread(s)),
+					  stream);
+		fprintf(stream, "%d] \t Global heap\n", PTHREAD_NUM);
+		displayHeap(s, &s->globalHeap,
+					stream);
+		fprintf(stream,
+				"%d] \tlimit = "FMTPTR"\n"
+				"\tcurrentFrame = "FMTPTR"\n",
+				PTHREAD_NUM,
+				(uintptr_t) s->limit,
+				(uintptr_t) s->currentFrame[PTHREAD_NUM]
+		);
+	}
 }
 
 /* in the previous mlton stack implementation, stacktop
@@ -58,11 +52,14 @@ void displayGCState (GC_state s, FILE *stream) {
  */
 size_t sizeofGCStateCurrentStackUsed (GC_state s) {
 	die(RED( "***ERR*** sizeofGCStateCurrentStackUsed needs to be removed?\n"));
-	return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
+	return (0);
 }
 
+/* in RTMLton, the amount of 'stack used' corresponds to the number of
+ * chunks in use in the current stack.
+ */
 size_t sizeofGCStateCurrentUMStackUsed (GC_state s) {
-	return (size_t)(s->stackTop[PTHREAD_NUM] - s->stackBottom[PTHREAD_NUM]);
+	return (0);
 }
 
 void setGCStateCurrentThreadAndStack (GC_state s) {
