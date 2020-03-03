@@ -175,41 +175,11 @@ bool invariantForMutatorFrontier (GC_state s) {
           <= (size_t)(s->limitPlusSlop - s->frontier));
 }
 
-/*Do we really need this once stacks are chunked? */
+/* Do we really need this once stacks are chunked?
+ * TODO no, but we should probably think about what invariants would apply here
+ */
 bool invariantForMutatorStack (GC_state s) {
-  pointer top, limit;
-  uint16_t framesize;
-
-  return true;
-
-  GC_stack stack = getStackCurrent(s);
-
-  
-  if(s->mainBooted)
-    {
-        pointer p = objptrToPointer(s->currentThread[0], s->umheap.start);
-        GC_thread th = (GC_thread)(p + offsetofThread (s));
-
-        GC_stack st = (GC_stack)objptrToPointer(th->stack, s->umheap.start);
-        
-        if (st == stack)
-            return true;
-
-    }
-
-  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
-
-#if 0
-  if (top <= (limit + framesize)) {
-	  fprintf(stderr, "grow stack %x <= %x (%x + %x)\n", top, (limit+framesize), limit, framesize);
-	  growStackCurrent (s); // XXX bc we disabled the GC
-  }
-  top = getStackTop(s, stack); limit = getStackLimit(s, stack); framesize = getStackTopFrameSize(s, stack);
-#endif
-
-  //if (DEBUG)
-	  //fprintf(stderr, "invariantForMutatorStack top <= (limit+framesize) "FMTPTR" <= " FMTPTR " (" FMTPTR " + " FMTPTR ")\n", top, (limit+framesize), limit, framesize);
-  return (top <= (limit + framesize));
+	return true;
 }
 
 #if ASSERT

@@ -413,6 +413,7 @@ structure ObjectType =
 
       val stack = Stack
 
+      (* note: this must match the struct in thread.h *)
       val thread = fn () =>
          let
             val padding =
@@ -423,12 +424,10 @@ structure ObjectType =
                       | Control.Align8 => Bytes.fromInt 8
                   val bytesHeader =
                      Bits.toBytes (Control.Target.Size.header ())
-                  val bytesCSize =
+                  val bytesCSize = (* bytesNeeded and stack_depth *)
                      Bits.toBytes (Control.Target.Size.csize ())
-                  val bytesExnStack = (* TODO type is now cpointer *)
+                  val bytesExnStack =
                      Bits.toBytes (Type.width (Type.exnStack ()))
-                  val bytesStack = (* TODO remove - not used anymore *)
-                     Bits.toBytes (Type.width (Type.stack ()))
                   val bytesFirstFrame =
                      Bits.toBytes (Type.width (Type.cpointer ()))
                   val bytesCurrentFrame =
@@ -436,14 +435,14 @@ structure ObjectType =
 
                   val bytesObject =
                      Bytes.+ (bytesHeader,
-                      Bytes.+ (bytesCSize,
-                       Bytes.+ (bytesExnStack,
-                        Bytes.+ (bytesFirstFrame,
-                         Bytes.+ (bytesCurrentFrame, bytesStack)
+                      Bytes.+ (bytesCSize, (* bytesNeeded *)
+                        Bytes.+ (bytesExnStack,
+                         Bytes.+ (bytesFirstFrame,
+                          Bytes.+ (bytesCurrentFrame, bytesCSize) (* stack_depth *)
+                         )
                         )
                        )
                       )
-                     )
                   val bytesTotal =
                      Bytes.align (bytesObject, {alignment = align})
                   val bytesPad = Bytes.- (bytesTotal, bytesObject)
@@ -455,9 +454,9 @@ structure ObjectType =
                     ty = Type.seq (Vector.new6 (padding,
                                                 Type.csize (),
                                                 Type.exnStack (),
-                                                Type.stack (),
                                                 Type.cpointer (), (* stacklet bottom *)
-                                                Type.cpointer () (* stacklet top *)
+                                                Type.cpointer (), (* stacklet top *)
+                                                Type.csize ()     (* stack_depth *)
                                                 ))}
          end
 

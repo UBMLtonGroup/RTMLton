@@ -62,7 +62,6 @@ val gcFields =
     "maxFrameSize",
     "signalsInfo.signalIsPending",
     "fl_chunks",
-    "currentFrame",
     "heuristicChunks",
     "rtSync",
     "fl_lock",

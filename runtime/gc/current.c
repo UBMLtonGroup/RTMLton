@@ -27,7 +27,7 @@ objptr getStackCurrentObjptr (GC_state s) {
   if(DEBUG)
         fprintf(stderr,"%d]currenThread= %x\n",PTHREAD_NUM,thread);
 #endif
-  return thread->stack;
+  return thread->firstFrame;
 }
 
 GC_stack getStackCurrent (GC_state s) {

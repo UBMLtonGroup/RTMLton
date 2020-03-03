@@ -11,7 +11,6 @@ void displayThread (GC_state s,
                     FILE *stream) {
 	fprintf(stream, "\t\texnStack = "FMTPTR"\n", (uintptr_t)thread->exnStack);
 	fprintf(stream, "\t\tbytesNeeded = %"PRIuMAX"\n", (uintmax_t)thread->bytesNeeded);
-	fprintf(stream, "\t\tstack = "FMTOBJPTR"\n", thread->stack);
 	fprintf(stream,
 			"\t\tcurrentFrame = "FMTPTR"\n\t\tfirstFrame = "FMTPTR"\n",
 			(uintptr_t)thread->currentFrame,
