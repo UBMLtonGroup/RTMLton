@@ -1,5 +1,4 @@
 /*
- *
  * MLton is released under a BSD-style license.
  * See the file MLton-LICENSE for details.
  */
@@ -111,14 +110,15 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
     to->currentFrame = BOGUS_OBJPTR;
 	to->exnStack = BOGUS_EXN_STACK;
 
-    if (1 || DEBUG_CCODEGEN)
+    if (DEBUG_CCODEGEN)
         fprintf(stderr, "%d] um_copyStack from:%08x -> to:%08x\n", PTHREAD_NUM, (unsigned int) f, (unsigned int)t);
 
     for( ; f ; f = (GC_UM_Chunk)f->next_chunk, t = (GC_UM_Chunk)t->next_chunk) {
         GC_memcpy((pointer)f, (pointer)t, copyamt);
-        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra]);
+        if (DEBUG_CCODEGEN)
+	        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra]);
         if (from->exnStack == (objptr)f) {
-			if (1 || DEBUG_CCODEGEN) {
+			if (DEBUG_CCODEGEN) {
 				fprintf(stderr, GREEN("found exnStack: from:%08x -> to:%08x (handler %d, ra %d)\n"),
 						(unsigned int) f,
 						(unsigned int) t,
@@ -144,7 +144,7 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         cc++;
     }
 
-    if (1 || DEBUG_CCODEGEN) {
+    if (DEBUG_CCODEGEN) {
     	if (to->exnStack == BOGUS_EXN_STACK) {
     		fprintf(stderr, YELLOW("No exnStack found in from thread\n"));
     	}

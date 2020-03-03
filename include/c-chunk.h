@@ -10,7 +10,7 @@
 #define _C_CHUNK_H_
 
 #define STACKLETS
-#define STACKLET_DEBUG 1
+#define STACKLET_DEBUG 0
 
 #include <stdio.h>
 #include <stdbool.h>
@@ -368,7 +368,6 @@ void dump_hex(char *str, int len);
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
                              __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                              cf, cf->next_chunk); \
-                         \
                         if (STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("current chunk:\n")); dump_hex(cf, bytes+WORDWIDTH); } \
                      } \
                      if (cf->next_chunk) { \
@@ -382,11 +381,11 @@ void dump_hex(char *str, int len);
                          if (STACKLET_DEBUG) fprintf(stderr, "cf %"FW"lx cf->next %"FW"lx bytes %d len %d\n", \
                                                  cf, cf->next_chunk, bytes, UM_CHUNK_PAYLOAD_SIZE-bytes-WORDWIDTH ); \
                          CurrentFrame = cf->next_chunk; \
-                          \
                          if(STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("\nnext_chunk:\n")); dump_hex(cf->next_chunk, 100); } \
                      } else {                                                \
                          if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant advance to next frame\n"));   die("out of stack");   \
-                     } if (STACKLET_DEBUG) fprintf(stderr, "\n"); um_dumpStack((void*)&gcState); \
+                     } if (STACKLET_DEBUG) fprintf(stderr, "\n"); \
+                     if (STACKLET_DEBUG > 2) um_dumpStack((void*)&gcState); \
                 } else { if (STACKLET_DEBUG) fprintf(stderr, RED("???SKLT_Push(0)\n")); } \
         } while (0)
 

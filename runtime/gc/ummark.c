@@ -1,3 +1,4 @@
+#include "../gc.h"
 
 
 #define LOCK_WL IFED(pthread_mutex_lock(&s->wl_lock))
@@ -34,7 +35,7 @@ void addToWorklist(GC_state s, objptr *opp) {
 	assert(isObjectShaded(s, opp) || isObjectMarked(s, opp));
 
 	if (s->wl_length >= s->wl_size) {
-		if (1 || DEBUG_RTGC_MARKING)
+		if (DEBUG_RTGC_MARKING)
 			fprintf(stderr, "%d] addToWorklist: Allocating more space to worklist\n", PTHREAD_NUM);
 		GC_worklist new = malloc(s->wl_size * 2 * sizeof(objptr * ));
 		GC_worklist old = s->worklist;

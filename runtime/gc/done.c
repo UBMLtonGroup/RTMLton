@@ -1,3 +1,5 @@
+#include "../gc.h"
+
 /* Copyright (C) 2012 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
@@ -80,8 +82,8 @@ void RTGC_done(GC_state s) {
 
 	free(s->worklist);
 
-
-	displayChunkedGCStats(s, out);
+	if (DEBUG)
+		displayChunkedGCStats(s, out);
 }
 __attribute__((noreturn))
 void GC_done(GC_state s) {

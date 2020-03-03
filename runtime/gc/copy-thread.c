@@ -12,7 +12,7 @@
 GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
 	GC_thread to;
 
-	if (1 ||DEBUG_THREADS)
+	if (DEBUG_THREADS)
 		fprintf (stderr, GREEN("%d] copyThread from=("FMTPTR")\n"), PTHREAD_NUM, (uintptr_t)from);
 
 	/* newThread may do a GC, which invalidates from.
@@ -31,7 +31,7 @@ GC_thread copyThread (GC_state s, GC_thread from, size_t used) {
 
 	um_copyStack(s, from, to); // note we pass in GC_threads not the actual stacklets
 
-	if (1 ||DEBUG_THREADS)
+	if (DEBUG_THREADS)
 		fprintf (stderr, GREEN("%d] copyThread new=("FMTPTR")\n"), PTHREAD_NUM, (uintptr_t)to);
 
 	return to;

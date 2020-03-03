@@ -1,3 +1,5 @@
+#include "../gc.h"
+
 /* Copyright (C) 2009,2012,2015 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
@@ -458,13 +460,11 @@ int GC_init(GC_state s, int argc, char **argv) {
 				   (uintmax_t)(s->sysvals.pageSize));
 	ram = min(ram, alignMaxDown((uintmax_t) SIZE_MAX, (uintmax_t)(s->sysvals.pageSize)));
 	s->sysvals.ram = (size_t) ram;
-	if (DEBUG or DEBUG_RESIZING
-	or
-	s->controls.messages)
-	fprintf(stderr, "[GC: Found %s bytes of RAM; using %s bytes (%.1f%% of RAM).]\n",
-			uintmaxToCommaString(s->sysvals.physMem),
-			uintmaxToCommaString(s->sysvals.ram),
-			100.0 * ((double) ram / (double) (s->sysvals.physMem)));
+	if (DEBUG or DEBUG_RESIZING or s->controls.messages)
+		fprintf(stderr, "[GC: Found %s bytes of RAM; using %s bytes (%.1f%% of RAM).]\n",
+				uintmaxToCommaString(s->sysvals.physMem),
+				uintmaxToCommaString(s->sysvals.ram),
+				100.0 * ((double) ram / (double) (s->sysvals.physMem)));
 	if (DEBUG_SOURCES or DEBUG_PROFILE) {
 		uint32_t i;
 		for (i = 0; i < s->sourceMaps.frameSourcesLength; i++) {

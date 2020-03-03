@@ -1,3 +1,4 @@
+#include "../gc.h"
 
 /*
 hello.1.c:(.text+0xb8fa): undefined reference to `UM_Header_alloc'
@@ -235,7 +236,9 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset) {
     Pointer heap_end = (gc_stat->umheap).start + (gc_stat->umheap).size;
 
-fprintf(stderr, "UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n", (unsigned int)base, index, elemSize, offset);
+    if (DEBUG_MEM)
+		fprintf(stderr, "UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
+				(unsigned int)base, index, elemSize, offset);
 
     if (base < gc_stat->umheap.start || base >= heap_end) {
         if (DEBUG_MEM) {

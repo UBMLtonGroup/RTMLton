@@ -1,3 +1,5 @@
+#include "../gc.h"
+
 /* Copyright (C) 2012 Matthew Fluet.
  * Copyright (C) 1999-2008 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.
@@ -61,7 +63,7 @@ objptr newStack_um (GC_state s) {
 	pointer um_stack;
 	uint32_t need_chunks = frameLayouts_len * 20;
 
-	if (1 || DEBUG_STACKS)
+	if (DEBUG_STACKS)
 		fprintf(stderr, "newStack_um chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
 			need_chunks, s->maxFrameSize,
 			sizeof(struct GC_UM_Chunk));
@@ -74,7 +76,7 @@ objptr newStack_um (GC_state s) {
 	reserveAllocation(s, need_chunks);
 	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
-	if (1 || DEBUG_STACKS)
+	if (DEBUG_STACKS)
 	{
 #ifdef STACK_GC_SANITY
 		GC_UM_Chunk x = (GC_UM_Chunk) um_stack;
@@ -147,7 +149,7 @@ GC_thread newThread (GC_state s, size_t reserved) {
   thread->firstFrame = newStack_um(s);
   thread->currentFrame = BOGUS_OBJPTR; //init-world first thread will do: thread->firstFrame;
 
-  if (1||DEBUG_THREADS) 
+  if (DEBUG_THREADS)
     fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
              (uintptr_t)thread, (uintmax_t)reserved);
  

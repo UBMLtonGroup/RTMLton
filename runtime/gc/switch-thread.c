@@ -26,7 +26,7 @@ void switchToThread (GC_state s, objptr op) {
 }
 
 void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
-	if (1||DEBUG_THREADS)
+	if (DEBUG_THREADS)
 		fprintf (stderr, GREEN("GC_switchToThread")" ("FMTPTR", %"PRIuMAX")\n",
 			(uintptr_t)p, (uintmax_t)ensureBytesFree);
 	if (FALSE) {
