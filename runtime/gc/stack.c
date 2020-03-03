@@ -1,3 +1,4 @@
+#include "../gc.h"
 /* Copyright (C) 2012 Matthew Fluet.
  * Copyright (C) 1999-2007 Henry Cejtin, Matthew Fluet, Suresh
  *    Jagannathan, and Stephen Weeks.

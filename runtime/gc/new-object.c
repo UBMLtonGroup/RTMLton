@@ -25,17 +25,7 @@ pointer newUMObject(GC_state s,
 					GC_header header,
 					size_t bytesRequested,
 					__attribute__ ((unused)) bool allocInOldGen) {
-	pointer frontier;
-	pointer result;
-
-
 	die("invalid codepath : newUMObject\n");
-
-	frontier = s->frontier;
-	s->frontier += bytesRequested;
-	*((GC_header *) frontier) = header;
-	result = frontier + GC_NORMAL_HEADER_SIZE;
-	return result;
 }
 
 /* this variable is declared by the c-codegen. if you
@@ -95,30 +85,13 @@ objptr newStack_um(GC_state s) {
 GC_stack newStack(GC_state s,
 				  size_t reserved,
 				  bool allocInOldGen) {
-	GC_stack stack;
 	fprintf(stderr, RED("*** warn newStack should not be called\n"));
 	die("newstack called");
-	reserved = 100 * 1024 * 1024;
-	assert (isStackReservedAligned(s, reserved));
-	if (reserved > s->cumulativeStatistics.maxStackSize)
-		s->cumulativeStatistics.maxStackSize = reserved;
-	stack = (GC_stack) (newUMObject(s, GC_STACK_HEADER,
-									sizeofStackWithHeader(s, reserved),
-									allocInOldGen));
-	stack->reserved = reserved;
-	stack->used = 0;
 
-	if (DEBUG_STACKS) {
-		memset((stack + 4), 0xAD, reserved - 4);
-		fprintf(stderr, FMTPTR " = "GREEN("newStack")" (%"PRIuMAX")\n",
-				(uintptr_t) stack,
-				(uintmax_t) reserved);
-	}
-	return stack;
+	return NULL;
 }
 
 GC_thread newThread(GC_state s, size_t reserved) {
-	//GC_stack stack;
 	GC_thread thread;
 	pointer res;
 
@@ -126,8 +99,6 @@ GC_thread newThread(GC_state s, size_t reserved) {
 		fprintf(stderr, GREEN("newThread\n"));
 
 	assert (isStackReservedAligned(s, reserved));
-	//ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
-	//stack = NULL; //newStack (s, reserved, FALSE);
 
 	C_Size_t numchunks = (sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
 	assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
@@ -139,9 +110,6 @@ GC_thread newThread(GC_state s, size_t reserved) {
 
 	res = UM_Object_alloc(s, numchunks, GC_THREAD_HEADER, GC_NORMAL_HEADER_SIZE);
 
-	/*res = newUMObject (s, GC_THREAD_HEADER,
-					   sizeofThread (s),
-					   FALSE);*/
 	thread = (GC_thread) (res + offsetofThread(s));
 	thread->bytesNeeded = 0;
 	thread->exnStack = BOGUS_EXN_STACK;
