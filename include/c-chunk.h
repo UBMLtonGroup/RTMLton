@@ -60,7 +60,7 @@ void um_dumpStack (void *s);
 
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
-#define StackDepth (*(size_t*)(GCState + GCSCONST_stack_depth_Offset+(PTHREAD_NUM*WORDWIDTH))) // debugging
+#define StackDepth (*(size_t*)(GCState + GCSCONST_stack_depth_Offset+(PTHREAD_NUM*WORDWIDTH)))
 #define RTSync *(bool*)(GCState + RTSyncOffset + (PTHREAD_NUM *WORDWIDTH))
 
 #define StackTop StackTopMem
@@ -342,9 +342,9 @@ void dump_hex(char *str, int len);
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)CurrentFrame; \
                      struct GC_UM_Chunk *xx = cf; \
+                     StackDepth = StackDepth - 1; \
                      if (STACKLET_DEBUG) { \
                         int fnum = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra); \
-                        for (StackDepth=0 ; xx && xx->prev_chunk ; xx = xx->prev_chunk, ++StackDepth); /* find the 1st chunk just so we can print the addr */ \
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx prev %"FW"lx ", \
                                 __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                                 cf, cf->prev_chunk); \
@@ -363,8 +363,8 @@ void dump_hex(char *str, int len);
                      struct GC_UM_Chunk *xx = cf; \
                      cf->ra = bytes; \
                      int fnum = *(GC_returnAddress*)(cf->ml_object + cf->ra); \
+                     StackDepth = StackDepth + 1; \
                      if (STACKLET_DEBUG)  { \
-                        for (StackDepth=0 ; xx && xx->prev_chunk ; xx = xx->prev_chunk, ++StackDepth); /* find the 1st chunk just so we can print the addr */ \
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
                              __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                              cf, cf->next_chunk); \

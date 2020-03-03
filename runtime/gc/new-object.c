@@ -14,28 +14,28 @@
  * Allocate a new object in the heap.
  * bytesRequested includes the size of the header.
  */
-pointer newObject (GC_state s,
-                   GC_header header,
-                   size_t bytesRequested,
-                   bool allocInOldGen) {
-    return newUMObject(s, header, bytesRequested, allocInOldGen);
+pointer newObject(GC_state s,
+				  GC_header header,
+				  size_t bytesRequested,
+				  bool allocInOldGen) {
+	return newUMObject(s, header, bytesRequested, allocInOldGen);
 }
 
-pointer newUMObject (GC_state s,
-                     GC_header header,
-                     size_t bytesRequested,
-                     __attribute__ ((unused)) bool allocInOldGen) {
-    pointer frontier;
-    pointer result;
+pointer newUMObject(GC_state s,
+					GC_header header,
+					size_t bytesRequested,
+					__attribute__ ((unused)) bool allocInOldGen) {
+	pointer frontier;
+	pointer result;
 
 
-    die("invalid codepath : newUMObject\n");
+	die("invalid codepath : newUMObject\n");
 
-    frontier = s->frontier;
-    s->frontier += bytesRequested;
-    *((GC_header*)frontier) = header;
-    result = frontier + GC_NORMAL_HEADER_SIZE;
-    return result;
+	frontier = s->frontier;
+	s->frontier += bytesRequested;
+	*((GC_header *) frontier) = header;
+	result = frontier + GC_NORMAL_HEADER_SIZE;
+	return result;
 }
 
 /* this variable is declared by the c-codegen. if you
@@ -59,14 +59,14 @@ GC_UM_Chunk stack_list[100000];
 unsigned int stack_list_end = 0;
 #endif
 
-objptr newStack_um (GC_state s) {
+objptr newStack_um(GC_state s) {
 	pointer um_stack;
 	uint32_t need_chunks = frameLayouts_len * 20;
 
 	if (DEBUG_STACKS)
 		fprintf(stderr, "newStack_um chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
-			need_chunks, s->maxFrameSize,
-			sizeof(struct GC_UM_Chunk));
+				need_chunks, s->maxFrameSize,
+				sizeof(struct GC_UM_Chunk));
 
 	assert(s->maxFrameSize < sizeof(struct GC_UM_Chunk));
 
@@ -76,8 +76,7 @@ objptr newStack_um (GC_state s) {
 	reserveAllocation(s, need_chunks);
 	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
 
-	if (DEBUG_STACKS)
-	{
+	if (DEBUG_STACKS) {
 #ifdef STACK_GC_SANITY
 		GC_UM_Chunk x = (GC_UM_Chunk) um_stack;
 		for ( ; x ; x = x->next_chunk) {
@@ -85,84 +84,85 @@ objptr newStack_um (GC_state s) {
 			stack_list_end++;
 		}
 #endif
-		fprintf (stderr, FMTPTR " = newStack_um (%"PRIuMAX")\n",
-			(uintptr_t)um_stack,
-			(uintmax_t)need_chunks);
+		fprintf(stderr, FMTPTR " = newStack_um (%"PRIuMAX")\n",
+				(uintptr_t) um_stack,
+				(uintmax_t) need_chunks);
 	}
 
 	return pointerToObjptr(um_stack, s->umheap.start);
 }
 
-GC_stack newStack (GC_state s,
-                   size_t reserved,
-                   bool allocInOldGen) {
-  GC_stack stack;
-  fprintf(stderr, RED("*** warn newStack should not be called\n"));
-  die("newstack called");
-  reserved = 100 * 1024 * 1024;
-  assert (isStackReservedAligned (s, reserved));
-  if (reserved > s->cumulativeStatistics.maxStackSize)
-    s->cumulativeStatistics.maxStackSize = reserved;
-  stack = (GC_stack)(newUMObject (s, GC_STACK_HEADER,
-                                  sizeofStackWithHeader (s, reserved),
-                                  allocInOldGen));
-  stack->reserved = reserved;
-  stack->used = 0;
+GC_stack newStack(GC_state s,
+				  size_t reserved,
+				  bool allocInOldGen) {
+	GC_stack stack;
+	fprintf(stderr, RED("*** warn newStack should not be called\n"));
+	die("newstack called");
+	reserved = 100 * 1024 * 1024;
+	assert (isStackReservedAligned(s, reserved));
+	if (reserved > s->cumulativeStatistics.maxStackSize)
+		s->cumulativeStatistics.maxStackSize = reserved;
+	stack = (GC_stack) (newUMObject(s, GC_STACK_HEADER,
+									sizeofStackWithHeader(s, reserved),
+									allocInOldGen));
+	stack->reserved = reserved;
+	stack->used = 0;
 
-  if (DEBUG_STACKS) {
-	  memset((stack+4), 0xAD, reserved-4);
-	  fprintf (stderr, FMTPTR " = "GREEN("newStack")" (%"PRIuMAX")\n",
-             (uintptr_t)stack,
-             (uintmax_t)reserved);
-  }
-  return stack;
+	if (DEBUG_STACKS) {
+		memset((stack + 4), 0xAD, reserved - 4);
+		fprintf(stderr, FMTPTR " = "GREEN("newStack")" (%"PRIuMAX")\n",
+				(uintptr_t) stack,
+				(uintmax_t) reserved);
+	}
+	return stack;
 }
 
-GC_thread newThread (GC_state s, size_t reserved) {
-  //GC_stack stack;
-  GC_thread thread;
-  pointer res;
+GC_thread newThread(GC_state s, size_t reserved) {
+	//GC_stack stack;
+	GC_thread thread;
+	pointer res;
 
-  if (DEBUG)
-	  fprintf(stderr, GREEN("newThread\n"));
+	if (DEBUG)
+		fprintf(stderr, GREEN("newThread\n"));
 
-  assert (isStackReservedAligned (s, reserved));
-  //ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
-  //stack = NULL; //newStack (s, reserved, FALSE);
+	assert (isStackReservedAligned(s, reserved));
+	//ensureHasHeapBytesFree (s, 0, sizeofStackWithHeader (s, reserved) + sizeofThread (s));
+	//stack = NULL; //newStack (s, reserved, FALSE);
 
-  C_Size_t numchunks = (sizeofThread(s)<UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
-  assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
+	C_Size_t numchunks = (sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
+	assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
 
-  /*Reserve the allocation before actually allocating.
-   * Will block if not enough chunks available.
-   */
-  reserveAllocation(s, numchunks);
+	/*Reserve the allocation before actually allocating.
+	 * Will block if not enough chunks available.
+	 */
+	reserveAllocation(s, numchunks);
 
-  res = UM_Object_alloc(s,numchunks,GC_THREAD_HEADER,GC_NORMAL_HEADER_SIZE);
+	res = UM_Object_alloc(s, numchunks, GC_THREAD_HEADER, GC_NORMAL_HEADER_SIZE);
 
-  /*res = newUMObject (s, GC_THREAD_HEADER,
-                     sizeofThread (s),
-                     FALSE);*/
-  thread = (GC_thread)(res + offsetofThread (s));
-  thread->bytesNeeded = 0;
-  thread->exnStack = BOGUS_EXN_STACK;
-  thread->firstFrame = newStack_um(s);
-  thread->currentFrame = BOGUS_OBJPTR; //init-world first thread will do: thread->firstFrame;
+	/*res = newUMObject (s, GC_THREAD_HEADER,
+					   sizeofThread (s),
+					   FALSE);*/
+	thread = (GC_thread) (res + offsetofThread(s));
+	thread->bytesNeeded = 0;
+	thread->exnStack = BOGUS_EXN_STACK;
+	thread->firstFrame = newStack_um(s);
+	thread->currentFrame = BOGUS_OBJPTR; //init-world first thread will do: thread->firstFrame;
+	thread->stack_depth = 0;
 
-  if (DEBUG_THREADS)
-    fprintf (stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
-             (uintptr_t)thread, (uintmax_t)reserved);
- 
+	if (DEBUG_THREADS)
+		fprintf(stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
+				(uintptr_t) thread, (uintmax_t) reserved);
 
-  return thread;
+
+	return thread;
 }
 
-static inline void setFrontier (GC_state s, pointer p,
-                                ARG_USED_FOR_ASSERT size_t bytes) {
-  p = alignFrontier (s, p);
-  assert ((size_t)(p - s->frontier) <= bytes);
-  GC_profileAllocInc (s, (size_t)(p - s->frontier));
-  s->cumulativeStatistics.bytesAllocated += (size_t)(p - s->frontier);
-  s->frontier = p;
-  assert (s->frontier <= s->limitPlusSlop);
+static inline void setFrontier(GC_state s, pointer p,
+							   ARG_USED_FOR_ASSERT size_t bytes) {
+	p = alignFrontier(s, p);
+	assert ((size_t)(p - s->frontier) <= bytes);
+	GC_profileAllocInc(s, (size_t)(p - s->frontier));
+	s->cumulativeStatistics.bytesAllocated += (size_t)(p - s->frontier);
+	s->frontier = p;
+	assert (s->frontier <= s->limitPlusSlop);
 }
