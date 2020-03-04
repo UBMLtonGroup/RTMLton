@@ -62,6 +62,7 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
 		getThreadCurrent(s)->currentFrame = s->currentFrame[PTHREAD_NUM];
 		getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
 		getThreadCurrent(s)->bytesNeeded = ensureBytesFree;
+		getThreadCurrent(s)->stack_depth = s->stack_depth[PTHREAD_NUM];
 
 		switchToThread (s, pointerToObjptr(p, s->umheap.start));
 		decAtomic(s); /* s->atomicState--; */
