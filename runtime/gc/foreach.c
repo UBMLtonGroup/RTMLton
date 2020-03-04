@@ -225,16 +225,14 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
     displayThread(s, thread, stderr);
 
-	GC_UM_Chunk top = stackFrame->next_chunk;
-	GC_UM_Chunk bottom = NULL;
+	GC_UM_Chunk top = stackFrame;
+	GC_UM_Chunk bottom =(GC_UM_Chunk) thread->firstFrame;;
 
 	int counter = 0;
 	int depth = 0;
 
 	// count the depth of the current stack
-	for (GC_UM_Chunk t = top ; t ; t = t->prev_chunk, depth++)
-		if (t->prev_chunk == NULL)
-			bottom = t;
+	for (GC_UM_Chunk t = top ; t ; t = t->prev_chunk, depth++);
 
 	assert (bottom != NULL);
 
@@ -249,7 +247,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 		top = top->prev_chunk;
 
 		//assert (top->ra != 0);
-		returnAddress = (uintptr_t)(top->ml_object[top->ra]);
+		returnAddress = *(uintptr_t*)(top->ml_object+top->ra);
 
 		if (DEBUG_STACKS) {
 			fprintf (stderr, "%d] frame %d:  top = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
