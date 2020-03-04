@@ -21,7 +21,7 @@ void um_dumpStack (GC_state s) {
 
 	GC_UM_Chunk top = (GC_UM_Chunk)s->currentFrame[PTHREAD_NUM]; //thread->currentFrame;
 	GC_UM_Chunk bottom = (GC_UM_Chunk)thread->firstFrame;
-	GC_UM_Chunk chunk = top->prev_chunk;
+	GC_UM_Chunk chunk = top;
 
 	int counter = 0;
 
