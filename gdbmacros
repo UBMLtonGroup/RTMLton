@@ -24,7 +24,7 @@ end
 def returnaddress
     set $caddr = $arg0
     set $raoffset = ((GC_UM_Chunk) $caddr)->ra
-    set $ra = ((GC_UM_Chunk) $caddr)->ml_object[$raoffset]
+    set $ra = *(unsigned int*)((GC_UM_Chunk) $caddr)->ml_object[$raoffset]
     print $raoffset
     print $ra
 end

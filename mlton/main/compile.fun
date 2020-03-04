@@ -516,7 +516,8 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              rtSync = get "rtSync_Offset",
              heuristicChunks = get "heuristicChunks_Offset",
              flLock = get "fl_lock_Offset",
-             reserved = get "reserved_Offset"
+             reserved = get "reserved_Offset",
+             stackDepth = get "stackDepth_Offset"
              };
             Runtime.GCField.setSizes
             {
@@ -536,7 +537,8 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              rtSync = get "rtSync_Size",
              heuristicChunks = get "heuristicChunks_Size",
              flLock = get "fl_lock_Size",
-             reserved = get "reserved_Size"
+             reserved = get "reserved_Size",
+             stackDepth = get "stackDepth_Size"
              }
          end
       (* Setup endianness *)

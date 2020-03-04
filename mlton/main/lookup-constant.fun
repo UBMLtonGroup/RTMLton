@@ -52,7 +52,7 @@ val gcFields =
     "atomicState",
     "currentThread",
     "currentFrame",
-    "stack_depth",
+    "stackDepth",
     "sourceMaps.curSourceSeqsIndex",
     "exnStack",
     "frontier",

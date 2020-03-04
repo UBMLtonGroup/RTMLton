@@ -111,12 +111,6 @@ constants:
 	"$(BIN)/mlton" -target "$(TARGET)" -output tmp tmp.c
 	./tmp >"$(LIB)/targets/$(TARGET)/constants"
 	rm -f tmp tmp.exe tmp.c
-	rm -f include/gcstate-offsets.h
-	egrep '(Offset|Size)' ./build/lib/targets/self/constants | \
-	   egrep -v '(signalsInfo|sourceMaps)' | sort | sed 's/=//g' | \
-	   while read L ; \
-	    do echo '#define ' GCSCONST_$$L ; \
-	    done > include/gcstate-offsets.h
 
 
 .PHONY: debugged

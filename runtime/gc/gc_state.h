@@ -26,7 +26,7 @@ struct GC_state {
 /*16*/  objptr exnStack[MAXPRI];
 /*28*/  objptr currentFrame[MAXPRI];
 /*40*/  size_t fl_chunks;
-/*44*/  size_t stack_depth[MAXPRI];
+/*44*/  size_t stackDepth[MAXPRI];
 
   size_t reserved;
   size_t heuristicChunks;

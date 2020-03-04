@@ -26,7 +26,7 @@ void enter(GC_state s) {
 	/* these are objptrs, we adjust in c-chunk.h to get the actual point to the start of frame */
 	getThreadCurrent(s)->currentFrame = s->currentFrame[PTHREAD_NUM];
 	getThreadCurrent(s)->exnStack = s->exnStack[PTHREAD_NUM];
-  	getThreadCurrent(s)->stack_depth = s->stack_depth[PTHREAD_NUM];
+  	getThreadCurrent(s)->stackDepth = s->stackDepth[PTHREAD_NUM];
 
 	if (DEBUG_OLD)
 		displayGCState(s, stderr);

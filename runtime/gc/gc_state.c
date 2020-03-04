@@ -73,7 +73,7 @@ void setGCStateCurrentThreadAndStack(GC_state s) {
 
 	s->exnStack[PTHREAD_NUM] = thread->exnStack;
 	s->currentFrame[PTHREAD_NUM] = currentFrame;
-	s->stack_depth[PTHREAD_NUM] = thread->stack_depth;
+	s->stackDepth[PTHREAD_NUM] = thread->stackDepth;
 
 	if (DEBUG_DETAILED)
 		fprintf(stderr, "%d] "

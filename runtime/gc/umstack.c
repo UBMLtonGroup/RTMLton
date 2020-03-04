@@ -144,7 +144,7 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         cc++;
     }
 
-	to->stack_depth = from->stack_depth;
+	to->stackDepth = from->stackDepth;
 
 	if (DEBUG_CCODEGEN) {
     	if (to->exnStack == BOGUS_EXN_STACK) {

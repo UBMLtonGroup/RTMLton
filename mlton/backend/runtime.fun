@@ -30,6 +30,7 @@ structure GCField =
        | HeuristicChunks
        | FLLock
        | Reserved
+       | StackDepth
 
       val atomicStateOffset: Bytes.t ref = ref Bytes.zero
       val currentThreadOffset: Bytes.t ref = ref Bytes.zero
@@ -47,11 +48,13 @@ structure GCField =
       val heuristicChunksOffset: Bytes.t ref = ref Bytes.zero
       val flLockOffset: Bytes.t ref = ref Bytes.zero
       val reservedOffset: Bytes.t ref = ref Bytes.zero
+      val stackDepthOffset: Bytes.t ref = ref Bytes.zero
 
       fun setOffsets {atomicState, currentThread, curSourceSeqsIndex,
                       exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
                       signalIsPending,
-                      flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved} =
+                      flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved,
+                      stackDepth} =
          (atomicStateOffset := atomicState
           ; currentThreadOffset := currentThread
           ; curSourceSeqsIndexOffset := curSourceSeqsIndex
@@ -67,7 +70,8 @@ structure GCField =
           ; rtSyncOffset := rtSync
           ; heuristicChunksOffset := heuristicChunks
           ; flLockOffset := flLock
-          ; reservedOffset := reserved)
+          ; reservedOffset := reserved
+          ; stackDepthOffset := stackDepth)
 
       val offset =
          fn AtomicState => !atomicStateOffset
@@ -86,6 +90,7 @@ structure GCField =
           | HeuristicChunks => !heuristicChunksOffset
           | FLLock => !flLockOffset
           | Reserved => !reservedOffset
+          | StackDepth => !stackDepthOffset
 
       val atomicStateSize: Bytes.t ref = ref Bytes.zero
       val currentThreadSize: Bytes.t ref = ref Bytes.zero
@@ -102,11 +107,13 @@ structure GCField =
       val heuristicChunksSize: Bytes.t ref = ref Bytes.zero
       val flLockSize: Bytes.t ref = ref Bytes.zero
       val reservedSize: Bytes.t ref = ref Bytes.zero
+      val stackDepthSize: Bytes.t ref = ref Bytes.zero
 
       fun setSizes {atomicState,currentThread, curSourceSeqsIndex,
                     exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
                     signalIsPending,
-                    flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved} =
+                    flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved,
+                    stackDepth} =
          (atomicStateSize := atomicState
           ; currentThreadSize := currentThread
           ; curSourceSeqsIndexSize := curSourceSeqsIndex
@@ -121,7 +128,8 @@ structure GCField =
           ; rtSyncSize := rtSync
           ; heuristicChunksSize := heuristicChunks
           ; flLockSize := flLock
-          ; reservedSize := reserved)
+          ; reservedSize := reserved
+          ; stackDepthSize := stackDepth)
 
       val size =
          fn AtomicState => !atomicStateSize
@@ -140,6 +148,7 @@ structure GCField =
           | HeuristicChunks => !heuristicChunksSize
           | FLLock => !flLockSize
           | Reserved => !reservedSize
+          | StackDepth => !stackDepthSize
 
       val toString =
          fn AtomicState => "AtomicState"
@@ -158,6 +167,7 @@ structure GCField =
           | HeuristicChunks => "HeuristicChunks"
           | FLLock => "FLLock"
           | Reserved => "Reserved"
+          | StackDepth => "StackDepth"
 
       val layout = Layout.str o toString
    end

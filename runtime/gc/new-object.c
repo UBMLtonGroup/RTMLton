@@ -115,7 +115,7 @@ GC_thread newThread(GC_state s, size_t reserved) {
 	thread->exnStack = BOGUS_EXN_STACK;
 	thread->firstFrame = newStack_um(s);
 	thread->currentFrame = BOGUS_OBJPTR; //init-world first thread will do: thread->firstFrame;
-	thread->stack_depth = 0;
+	thread->stackDepth = 0;
 
 	if (DEBUG_THREADS)
 		fprintf(stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
