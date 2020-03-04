@@ -19,14 +19,14 @@ void um_dumpStack (GC_state s) {
 	GC_frameOffsets frameOffsets;
 	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
 
-	GC_UM_Chunk top = (GC_UM_Chunk)s->currentFrame[PTHREAD_NUM]; //thread->currentFrame;
+	GC_UM_Chunk top = (GC_UM_Chunk)s->currentFrame[PTHREAD_NUM];
 	GC_UM_Chunk bottom = (GC_UM_Chunk)thread->firstFrame;
 	GC_UM_Chunk chunk = top;
 
 	int counter = 0;
 
 	do {
-		returnAddress = (uintptr_t)(chunk->ml_object[chunk->ra]);
+		returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra);
 
 		fprintf (stderr, "%d] frame %d:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
 				 PTHREAD_NUM, counter,
@@ -123,7 +123,7 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
 						(unsigned int) f,
 						(unsigned int) t,
 						f->handler,
-						f->ml_object[f->ra]);
+						*(uintptr_t*)(f->ml_object + f->ra));
 			}
 			to->exnStack = (objptr)t;
         }

@@ -134,8 +134,8 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 Pointer
 UM_Chunk_Next_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 {
-    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
-    return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - sizeof(void *));
+    return (Pointer)(current_chunk->next_chunk->ml_object + (o + sizeof(void *) + s) -
                      UM_CHUNK_PAYLOAD_SIZE);
 }
 
@@ -159,7 +159,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
         return (p + o);
     }
 
-    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - 4);
+    GC_UM_Chunk current_chunk = (GC_UM_Chunk) (p - sizeof(void *));
     if (current_chunk->chunk_header & UM_CHUNK_HEADER_CLEAN)
         die("Visiting a chunk that is on free list!\n");
 
@@ -177,7 +177,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
 
     if (DEBUG_MEM)
        DBG(p, o, s, "go to next chunk");
-    return (Pointer)(current_chunk->next_chunk->ml_object + (o + 4 + s) -
+    return (Pointer)(current_chunk->next_chunk->ml_object + (o + sizeof(void *) + s) -
                      UM_CHUNK_PAYLOAD_SIZE);
 }
 
