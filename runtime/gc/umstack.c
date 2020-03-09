@@ -17,6 +17,9 @@ void um_dumpStack (GC_state s) {
 	GC_returnAddress returnAddress;
 	GC_frameLayout frameLayout;
 	GC_frameOffsets frameOffsets;
+
+	if (PTHREAD_NUM == 1) return;
+
 	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
 
 	GC_UM_Chunk top = (GC_UM_Chunk)s->currentFrame[PTHREAD_NUM];

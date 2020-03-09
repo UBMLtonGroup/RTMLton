@@ -71,7 +71,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
  */
 pointer foreachObjptrInObject (GC_state s, pointer p,
                                GC_foreachObjptrFun f, bool skipWeaks) {
-  if (DEBUG_MEM) {
+  if (1||DEBUG_MEM) {
       fprintf(stderr, "%d] foreach object in 0x%x\n", PTHREAD_NUM, (uintptr_t)p);
   }
   GC_header header;
@@ -81,7 +81,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (DEBUG_DETAILED)
+  if (1||DEBUG_DETAILED)
     fprintf (stderr,
              "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
@@ -91,7 +91,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
-	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
+	if (1||DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
   	/*
       p += bytesNonObjptrs;
@@ -110,7 +110,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
         die("Non stack Object in old heap");
       }
 
-      if (DEBUG_MEM)
+      if (1||DEBUG_MEM)
           fprintf(stderr, "   foreachObjptrInObject, normal, bytesNonObjptrs: %d, "
                   "num ptrs: %d\n", bytesNonObjptrs, numObjptrs);
 
@@ -120,7 +120,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
                                             OBJPTR_SIZE);
 
 		if (((unsigned int )(*todo)) == 0) {
-			fprintf(stderr, "TODO is null\n");
+			fprintf(stderr, "%d] TODO is null\n", PTHREAD_NUM);
 			um_dumpStack(s);
 		} else {
 			callIfIsObjptr(s, f, (objptr *) todo);
@@ -243,14 +243,12 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
 	fprintf(stderr, "%d] stack depth is %d\n", PTHREAD_NUM, depth);
 
-	while (top->prev_chunk) {
-		top = top->prev_chunk;
-
+	while (top) {
 		//assert (top->ra != 0);
 		returnAddress = *(uintptr_t*)(top->ml_object+top->ra);
 
-		if (DEBUG_STACKS) {
-			fprintf (stderr, "%d] frame %d:  top = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
+		if (1||DEBUG_STACKS) {
+			fprintf (stderr, "%d] "YELLOW("frame %d")":  top = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
 					 PTHREAD_NUM, depth-counter,
 					 (uintptr_t)top, returnAddress, returnAddress,
 					 top->ra);
@@ -259,7 +257,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 		frameOffsets = frameLayout->offsets;
 		counter++;
 
-		if (DEBUG_STACKS)
+		if (1||DEBUG_STACKS)
 		   fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
 				   PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
@@ -267,7 +265,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 			uintptr_t x = (uintptr_t)(top->ml_object + frameOffsets[i + 1] + s->alignment);
 			unsigned int xv = *(objptr*)x;
 
-			if (DEBUG_STACKS)
+			if (1||DEBUG_STACKS)
 				fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
 					  PTHREAD_NUM,
 					  frameOffsets[i + 1], frameOffsets[i + 1],
@@ -276,7 +274,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
 			callIfIsObjptr(s, f, (objptr * )x);
 		}
-    }
+		top = top->prev_chunk;
+	}
     fprintf(stderr, "%d] done checking stack\n", PTHREAD_NUM);
     p = (pointer) stackFrame->next_chunk;
   }
