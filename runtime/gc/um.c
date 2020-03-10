@@ -25,6 +25,14 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest){
 		* this function is called, thus allowing us to perform this check at runtime while preserving the
 		* temporaries in the generated C code from being wrongfully collected.
 		* I leave the heuristic check to the compiler inserted checkpoints */
+    
+    if(numChunksToRequest > s->maxChunksAvailable)
+    {
+        /* P.S. This check isn't "required" in compiler inserted reservation because blocks 
+         * don't allocate more than a few chunks. Runtime can possible allocate in thousands */
+        die("Insufficient Memory: Reserving more space than available heap\n");
+    }
+
 	LOCK_FL;
 	while (s->fl_chunks < (s->reserved + numChunksToRequest))
 	{

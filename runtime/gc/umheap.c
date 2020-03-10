@@ -118,6 +118,12 @@ void blockAllocator(GC_state s,size_t numChunks)
 
 GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 {
+
+    if(numChunks > s->maxChunksAvailable)
+    {
+        die("Insufficient Memory: Asking for more memory than total heap space\n");
+    }
+    
     LOCK_FL;
 
 	/*if (s->fl_chunks < 1 || s->fl_chunks < numChunks)
@@ -196,6 +202,12 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 
 GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks)
 {
+   
+   if(numChunks > s->maxChunksAvailable)
+    {
+        die("Insufficient Memory: Asking for more memory than total heap space\n");
+    }
+
 
    LOCK_FL;
 	/*if (s->fl_chunks < 1 || s->fl_chunks < numChunks) {
