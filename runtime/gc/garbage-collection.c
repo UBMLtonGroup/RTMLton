@@ -485,7 +485,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 	for (pchunk = s->umheap.start;
 		 pchunk < s->umheap.limit;
 		 pchunk += step) {
-		if (((UM_Mem_Chunk) pchunk)->chunkType == UM_NORMAL_CHUNK) {
+
+        if (((UM_Mem_Chunk) pchunk)->chunkType == UM_STACK_CHUNK){
+            
+            continue;
+        }
+        else if (((UM_Mem_Chunk) pchunk)->chunkType == UM_NORMAL_CHUNK) {
 			GC_UM_Chunk pc = (GC_UM_Chunk) (pchunk + sizeof(UM_header)); /*account for size of chunktype*/
 
 			UM_header header = pc->chunk_header;

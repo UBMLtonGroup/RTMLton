@@ -67,7 +67,17 @@ UM_Header_alloc(GC_state gc_stat,
 Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
 {
-    GC_UM_Chunk chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks);
+
+    GC_UM_Chunk chunk;
+
+    if(header == GC_STACK_HEADER)
+    {
+        chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks,UM_STACK_CHUNK);
+    }
+    else
+    {
+        chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks,UM_NORMAL_CHUNK);
+    }
    
     assert(header !=0);
 
@@ -89,16 +99,16 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 
 
 
-
 Pointer
 UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 {
+
     fprintf(stderr,"In UM_PAYLOAD_ALLOC\n");
     if (DEBUG_MEM)
        DBG(umfrontier, s, 0, "enter");
     //    GC_collect(gc_stat, 0, false);
     //    GC_collect(gc_stat, 0, false);
-    GC_UM_Chunk next_chunk = allocateChunks(gc_stat, &(gc_stat->umheap),1);
+    GC_UM_Chunk next_chunk = allocateChunks(gc_stat, &(gc_stat->umheap),1,UM_NORMAL_CHUNK);
     GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
     current_chunk->chunk_header |= UM_CHUNK_IN_USE;
 
@@ -128,7 +138,7 @@ UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
 /////////////////
     next_chunk->chunk_header |= UM_CHUNK_IN_USE;
 /////////////////
-    GC_UM_Chunk next_chunk_next = allocateChunks(gc_stat, &(gc_stat->umheap),1);
+    GC_UM_Chunk next_chunk_next = allocateChunks(gc_stat, &(gc_stat->umheap),1,UM_NORMAL_CHUNK);
     next_chunk->next_chunk = NULL;
 
     if (DEBUG_MEM) {

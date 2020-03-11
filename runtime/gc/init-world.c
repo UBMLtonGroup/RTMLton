@@ -129,8 +129,9 @@ void initWorld (GC_state s) {
   //setGCStateCurrentHeap (s, 0, 0);
 
   GC_UM_Chunk next_chunk = NULL;
-  s->reserved ++; /*TODO Review this: Dirty hack to not fail assert in allocateChunks. UMfrontier should be removed*/
-  next_chunk = allocateChunks(s, &(s->umheap), 1);
+   /*TODO Review this: Dirty hack to not fail assert in allocateChunks. UMfrontier should be removed*/
+  reserveAllocation(s, 1);
+  next_chunk = allocateChunks(s, &(s->umheap), 1,UM_NORMAL_CHUNK);
   next_chunk->next_chunk = NULL;
   s->umfrontier = (Pointer) next_chunk->ml_object;
 

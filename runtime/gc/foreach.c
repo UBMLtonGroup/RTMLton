@@ -71,7 +71,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
  */
 pointer foreachObjptrInObject (GC_state s, pointer p,
                                GC_foreachObjptrFun f, bool skipWeaks) {
-  if (1||DEBUG_MEM) {
+  if (DEBUG_MEM) {
       fprintf(stderr, "%d] foreach object in 0x%x\n", PTHREAD_NUM, (uintptr_t)p);
   }
   GC_header header;
@@ -81,7 +81,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (1||DEBUG_DETAILED)
+  if (DEBUG_DETAILED || (tag == STACK_TAG))
     fprintf (stderr,
              "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
@@ -91,7 +91,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
              (uintptr_t)p, header, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
-	if (1||DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
+	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
   	/*
       p += bytesNonObjptrs;
@@ -110,7 +110,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
         die("Non stack Object in old heap");
       }
 
-      if (1||DEBUG_MEM)
+      if (DEBUG_MEM)
           fprintf(stderr, "   foreachObjptrInObject, normal, bytesNonObjptrs: %d, "
                   "num ptrs: %d\n", bytesNonObjptrs, numObjptrs);
 

@@ -41,13 +41,13 @@ GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
 
 
 GC_UM_Chunk allocNextChunk(GC_state s,
-                           GC_UM_heap h) {
+                           GC_UM_heap h,UM_header chunkType) {
 
 
     /*Only place this should be called is allocChunk to preserve fl_lock*/
     
     /*Allocate next chunk from start of free list*/
-    h->fl_head->chunkType= UM_NORMAL_CHUNK;
+    h->fl_head->chunkType= chunkType;
     struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
     GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head + sizeof(UM_header) )); /*pass pointer to area after chunktype*/
 
@@ -116,7 +116,7 @@ void blockAllocator(GC_state s,size_t numChunks)
 }
 #endif
 
-GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
+GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks,UM_header chunkType)
 {
 
     if(numChunks > s->maxChunksAvailable)
@@ -134,7 +134,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
 
 	assert(numChunks <= s->reserved);
 
-    GC_UM_Chunk head = allocNextChunk(s,&(s->umheap));
+    GC_UM_Chunk head = allocNextChunk(s,&(s->umheap),chunkType);
     head->chunk_header |= UM_CHUNK_IN_USE;
     
     if(numChunks > 1)
@@ -144,7 +144,7 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks)
         for (i=0; i< (numChunks -1);i++)
         {
             
-            current->next_chunk = allocNextChunk(s, &(s->umheap));
+            current->next_chunk = allocNextChunk(s, &(s->umheap),chunkType);
             current->next_chunk->chunk_header |= UM_CHUNK_IN_USE;
 			current->next_chunk->prev_chunk = current;
 			current = current->next_chunk;

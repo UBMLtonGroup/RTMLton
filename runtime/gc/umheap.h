@@ -94,12 +94,12 @@ static void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 static void initUMHeap(GC_state s, GC_UM_heap h);
 //static void initUMArrayHeap(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_heap h, pointer c);
-GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks);
+GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks,UM_header chunkType);
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
 bool createUMHeap(GC_state s, GC_UM_heap h,
                   size_t diredSize,
                   size_t minSize);
-static GC_UM_Chunk allocNextChunk(GC_state s,GC_UM_heap h);
+static GC_UM_Chunk allocNextChunk(GC_state s,GC_UM_heap h,UM_header chunkType);
 
 GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks);
 static GC_UM_Chunk insertFreeUMChunk(GC_state s,GC_UM_heap h, pointer c);

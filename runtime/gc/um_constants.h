@@ -24,6 +24,7 @@
 #define UM_EMPTY                         0
 #define UM_NORMAL_CHUNK                  1
 #define UM_ARRAY_CHUNK                   2
+#define UM_STACK_CHUNK                   3
 
 #define ISINUSE(header) (header & UM_CHUNK_IN_USE)
 #define ISMARKED(header) (header & UM_CHUNK_MARK_MASK)
