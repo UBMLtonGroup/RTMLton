@@ -190,7 +190,7 @@ fun gcbench kStretchTreeDepth =
 structure Main =
 struct
   fun testit out = TextIO.output (out, "OK\n")
-  fun doit () = gcbench 18
+  fun doit () = gcbench 13
 end
 
 

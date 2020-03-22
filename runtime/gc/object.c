@@ -41,6 +41,13 @@ GC_header getHeader (pointer p) {
 
 /*
  * Build the header for an object, given the index to its type info.
+ * TWOPOWER(n) (1 << (n))
+ * STACK_TYPE_INDEX = 0
+ * 0 < (1 << 0) -> true
+ * 1 | (0 << 1) -> 1
+ *
+ * THREAD = 1
+ * 1 | (1 << 1) -> 3
  */
 GC_header buildHeaderFromTypeIndex (uint32_t t) {
   assert (t < TWOPOWER (TYPE_INDEX_BITS));
@@ -56,9 +63,12 @@ void splitHeader(GC_state s, GC_header header,
   bool hasIdentity;
   uint16_t bytesNonObjptrs, numObjptrs;
 
+	if (1 != (header & GC_VALID_HEADER_MASK))
+		fprintf(stderr, "%x & %x = %x\n", header, GC_VALID_HEADER_MASK,
+				(header & GC_VALID_HEADER_MASK));
+
   assert (1 == (header & GC_VALID_HEADER_MASK)); 
-  //if (1 != (header & GC_VALID_HEADER_MASK))
-      //return;
+
   objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT; 
   assert (objectTypeIndex < s->objectTypesLength); 
   objectType = &(s->objectTypes[objectTypeIndex]);

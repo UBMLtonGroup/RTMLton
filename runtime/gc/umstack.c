@@ -22,14 +22,14 @@ void um_dumpStack (GC_state s) {
 
 	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
 
-	GC_UM_Chunk top = (GC_UM_Chunk)s->currentFrame[PTHREAD_NUM];
-	GC_UM_Chunk bottom = (GC_UM_Chunk)thread->firstFrame;
+	GC_UM_Chunk top = (GC_UM_Chunk)(s->currentFrame[PTHREAD_NUM] - GC_HEADER_SIZE);
+	GC_UM_Chunk bottom = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
 	GC_UM_Chunk chunk = top;
 
 	int counter = 0;
 
 	do {
-		returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra);
+		returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
 
 		fprintf (stderr, "%d] frame %d:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
 				 PTHREAD_NUM, counter,
@@ -108,8 +108,8 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
 
     int cc = 0;
 
-    GC_UM_Chunk f = (GC_UM_Chunk)from->firstFrame;
-    GC_UM_Chunk t = (GC_UM_Chunk)to->firstFrame;
+    GC_UM_Chunk f = (GC_UM_Chunk)(from->firstFrame - GC_HEADER_SIZE);
+    GC_UM_Chunk t = (GC_UM_Chunk)(to->firstFrame - GC_HEADER_SIZE);
     to->currentFrame = BOGUS_OBJPTR;
 	to->exnStack = BOGUS_EXN_STACK;
 
@@ -119,22 +119,22 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
     for( ; f ; f = (GC_UM_Chunk)f->next_chunk, t = (GC_UM_Chunk)t->next_chunk) {
         GC_memcpy((pointer)f, (pointer)t, copyamt);
         if (DEBUG_CCODEGEN)
-	        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra]);
-        if (from->exnStack == (objptr)f) {
+	        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra + GC_HEADER_SIZE]);
+        if (from->exnStack == (objptr)f + GC_HEADER_SIZE) {
 			if (DEBUG_CCODEGEN) {
 				fprintf(stderr, GREEN("found exnStack: from:%08x -> to:%08x (handler %d, ra %d)\n"),
 						(unsigned int) f,
 						(unsigned int) t,
 						f->handler,
-						*(uintptr_t*)(f->ml_object + f->ra));
+						*(uintptr_t*)(f->ml_object + f->ra + GC_HEADER_SIZE));
 			}
-			to->exnStack = (objptr)t;
+			to->exnStack = (objptr)t + GC_HEADER_SIZE;
         }
-        if (from->currentFrame == (objptr)f) {
+        if (from->currentFrame - GC_HEADER_SIZE == (objptr)f) {
             if (DEBUG_CCODEGEN) {
 				fprintf(stderr, "found cf at from:%08x -> to:%08x\n", (unsigned int) f, (unsigned int)t);
             }
-            to->currentFrame = (objptr)t;
+            to->currentFrame = (objptr)t + GC_HEADER_SIZE;
             f = f->next_chunk;
             t = t->next_chunk;
 			GC_memcpy((pointer)f, (pointer)t, copyamt);

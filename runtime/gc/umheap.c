@@ -27,43 +27,31 @@ extern GC_UM_Chunk stack_list[];
 extern unsigned int stack_list_end;
 #endif
 
-GC_UM_Chunk insertFreeUMChunk(GC_state s, GC_UM_heap h, pointer c){
-
-    GC_UM_Chunk pc = (GC_UM_Chunk) c;
-
-    pc->next_chunk = NULL; // TODO is this correct? pc is c+offset so struct mapping is invalid now?
-    pc->sentinel = UM_CHUNK_SENTINEL_UNUSED;
-    pc->chunk_header = UM_CHUNK_HEADER_CLEAN;
-
-    return pc;
-}
-
-
 
 GC_UM_Chunk allocNextChunk(GC_state s,
-                           GC_UM_heap h,UM_header chunkType) {
-
-
+                           GC_UM_heap h,
+                           UM_header chunkType) {
     /*Only place this should be called is allocChunk to preserve fl_lock*/
     
     /*Allocate next chunk from start of free list*/
-    h->fl_head->chunkType= chunkType;
-    struct UM_Mem_Chunk* nc= h->fl_head->next_chunk;
-    GC_UM_Chunk c = insertFreeUMChunk(s, h,((pointer)h->fl_head + sizeof(UM_header) )); /*pass pointer to area after chunktype*/
-
-    if(nc == NULL )
-    	{
-        	h->fl_head = NULL;
-        	h->fl_tail = NULL;
-    	}
-    else
-    	{
-        	h->fl_head = nc;
-    	}
-    
-    c->next_chunk = c->prev_chunk = NULL; // TODO is this correct? c is pc+offset now
+    h->fl_head->chunkType = chunkType;
+    struct UM_Mem_Chunk* nc = h->fl_head->next_chunk;
+    GC_UM_Chunk c = (GC_UM_Chunk)((pointer)h->fl_head + sizeof(UM_header));
+	c->next_chunk = c->prev_chunk = NULL;
+    c->sentinel = UM_CHUNK_SENTINEL_UNUSED;
     c->chunk_header = UM_CHUNK_HEADER_CLEAN;
-    if( s->rtSync[PTHREAD_NUM])
+
+    if (nc == NULL)
+    {
+    	h->fl_head = NULL;
+    	h->fl_tail = NULL;
+    }
+    else
+    {
+    	h->fl_head = nc;
+    }
+    
+    if(s->rtSync[PTHREAD_NUM])
     {
         c->chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/
 	}
@@ -116,7 +104,7 @@ void blockAllocator(GC_state s,size_t numChunks)
 }
 #endif
 
-GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks,UM_header chunkType)
+GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h, size_t numChunks, UM_header chunkType)
 {
 
     if(numChunks > s->maxChunksAvailable)
@@ -134,17 +122,16 @@ GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks,UM_header c
 
 	assert(numChunks <= s->reserved);
 
-    GC_UM_Chunk head = allocNextChunk(s,&(s->umheap),chunkType);
+    GC_UM_Chunk head = allocNextChunk(s, &(s->umheap), chunkType);
     head->chunk_header |= UM_CHUNK_IN_USE;
     
-    if(numChunks > 1)
+    if (numChunks > 1)
     {
         int i;
         GC_UM_Chunk current = head;
-        for (i=0; i< (numChunks -1);i++)
+        for (i = 0; i < (numChunks - 1); i++)
         {
-            
-            current->next_chunk = allocNextChunk(s, &(s->umheap),chunkType);
+            current->next_chunk = allocNextChunk(s, &(s->umheap), chunkType);
             current->next_chunk->chunk_header |= UM_CHUNK_IN_USE;
 			current->next_chunk->prev_chunk = current;
 			current = current->next_chunk;
@@ -250,11 +237,11 @@ void insertFreeChunk(GC_state s,
     UM_Mem_Chunk pc = (UM_Mem_Chunk)c;
     if(s->fl_chunks == 0)
     {
-        h->fl_head= pc;
+        h->fl_head = pc;
         h->fl_tail = pc;
         pc->chunkType = UM_EMPTY;
         pc->next_chunk = NULL;
-        s->fl_chunks +=1;
+        s->fl_chunks += 1;
     }
     else
     {

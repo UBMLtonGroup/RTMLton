@@ -14,6 +14,8 @@ bool isObjptr (objptr p) {
   return (0 == (p & mask));
 }
 
+/* in rtmlon this returns P, no translation is done */
+
 pointer objptrToPointer (objptr O, pointer B) {
   uintptr_t O_ = (uintptr_t)O;
   uintptr_t B_;
@@ -31,16 +33,18 @@ pointer objptrToPointer (objptr O, pointer B) {
 
   P_ = ((O_ << S_) + B_);
   P = (pointer)P_;
-  if (DEBUG_OBJPTR) 
+  if (DEBUG_OBJPTR)
     fprintf (stderr, "objptrToPointer ("FMTOBJPTR") = "FMTPTR"\n", O, (uintptr_t)P);
 
   return P;
 }
 
+/* in rtmlton this returns P .. no translation is done */
+
 objptr pointerToObjptr (pointer P, pointer B) {
   uintptr_t P_ = (uintptr_t)P;
   uintptr_t B_;
-  unsigned int S_ = GC_MODEL_OBJPTR_SHIFT;
+  unsigned int S_ = GC_MODEL_OBJPTR_SHIFT; // 0
   uintptr_t O_;
   objptr O;
 
@@ -52,9 +56,9 @@ objptr pointerToObjptr (pointer P, pointer B) {
     B_ = 0;
   }
 
-  O_ = ((P_ - B_) >> S_);
+  O_ = ((P_ - B_) >> S_); // so (P - 0) >> 0, ie P
   O = (objptr)O_;
-  if (DEBUG_OBJPTR) 
+  if (DEBUG_OBJPTR)
     fprintf (stderr, "pointerToObjptr ("FMTPTR") = "FMTOBJPTR"\n", (uintptr_t)P, O);
 
   return O;

@@ -72,14 +72,14 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 
     if(header == GC_STACK_HEADER)
     {
-        chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks,UM_STACK_CHUNK);
+        chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
     }
     else
     {
-        chunk = allocateChunks(gc_stat, &(gc_stat->umheap),num_chunks,UM_NORMAL_CHUNK);
+        chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
     }
    
-    assert(header !=0);
+    assert(header != 0);
 
 	// apply object header to all chunks in the chain
 	GC_UM_Chunk current = chunk;

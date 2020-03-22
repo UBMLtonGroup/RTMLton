@@ -61,10 +61,10 @@ objptr newStack_um(GC_state s) {
 	assert(s->maxFrameSize < sizeof(struct GC_UM_Chunk));
 
 	/* Reserve the allocation before actually allocating.
-         * Will block if not enough chunks available.
-         */
+	 * Will block if not enough chunks available.
+	 */
 	reserveAllocation(s, need_chunks);
-	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, 0);
+	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE);
 
 	if (DEBUG_STACKS) {
 #ifdef STACK_GC_SANITY

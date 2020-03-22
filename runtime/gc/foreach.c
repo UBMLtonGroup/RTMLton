@@ -226,7 +226,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     displayThread(s, thread, stderr);
 
 	GC_UM_Chunk top = stackFrame;
-	GC_UM_Chunk bottom =(GC_UM_Chunk) thread->firstFrame;;
+	GC_UM_Chunk bottom = (GC_UM_Chunk) thread->firstFrame;
 
 	int counter = 0;
 	int depth = 0;

@@ -6,24 +6,15 @@
 
 typedef UM_HEADER_TYPE UM_header;
 
-typedef union GC_UM_Chunktype{
-
+typedef union GC_UM_Chunktype {
    struct GC_UM_Chunk* umChunk;
    struct GC_UM_Array_Chunk* umArrayChunk;
-
 } GC_UM_Chunktype;
-
-
-/*typedef struct GC_worklist{
-    objptr* item;
-    struct GC_worklist *next; 
-} *GC_worklist;*/
 
 
 typedef objptr** GC_worklist;
 
-typedef struct UM_Mem_Chunk{
-  // GC_UM_Chunktype chunkType;
+typedef struct UM_Mem_Chunk {
    UM_header chunkType;
    struct UM_Mem_Chunk* next_chunk;
 } *UM_Mem_Chunk;
@@ -102,8 +93,5 @@ bool createUMHeap(GC_state s, GC_UM_heap h,
 static GC_UM_Chunk allocNextChunk(GC_state s,GC_UM_heap h,UM_header chunkType);
 
 GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks);
-static GC_UM_Chunk insertFreeUMChunk(GC_state s,GC_UM_heap h, pointer c);
-/*bool createUMArrayHeap(GC_state s, GC_UM_heap h,
-                       size_t diredSize,
-                       size_t minSize);*/
+
 #endif
