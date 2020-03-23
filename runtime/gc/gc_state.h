@@ -20,12 +20,11 @@ struct GC_state {
 
    */
 /*0*/  pointer frontier; /* heap.start <= frontier < limit */
-/*4*/  pointer umarfrontier;
-/*8*/  pointer limit; /* limit = heap.start + heap.size */
-/*12*/  objptr exnStack[MAXPRI];
-/*16*/  objptr currentFrame[MAXPRI];
-/*28*/  size_t fl_chunks;
-/*40*/  size_t stackDepth[MAXPRI];
+/*4*/  pointer limit; /* limit = heap.start + heap.size */
+/*8*/  objptr exnStack[MAXPRI];
+/*12*/  objptr currentFrame[MAXPRI];
+/*16*/  size_t fl_chunks;
+/*28*/  size_t stackDepth[MAXPRI];
 
   size_t reserved;
   size_t heuristicChunks;
