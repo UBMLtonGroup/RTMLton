@@ -19,14 +19,14 @@ void displayThread (GC_state s,
 			(uintptr_t)thread->firstFrame);
 
 
-	GC_UM_Chunk c = (GC_UM_Chunk)thread->firstFrame;
+	GC_UM_Chunk c = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
 	assert(c->prev_chunk == NULL);
 
 
 	int count = 0, depth = 0, found = 0;
 	while (c->next_chunk != NULL) {
 		if (found == 0) {
-			if (c != (GC_UM_Chunk)thread->currentFrame)
+			if (c != (GC_UM_Chunk)(thread->currentFrame - GC_HEADER_SIZE))
 				depth++;
 			else
 				found = 1;
