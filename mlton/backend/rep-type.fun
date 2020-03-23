@@ -542,7 +542,6 @@ fun ofGCField (f: GCField.t): t =
        | Reserved => csize ()
        | RTSync => word32
        | SignalIsPending => word32
-       | UMFrontier => cpointer ()
    end
 
 fun castIsOk {from, to, tyconTy = _} =
@@ -610,8 +609,6 @@ fun checkPrimApp {args, prim, result} =
        | CPointer_diff => done ([cpointer, cpointer], SOME cptrdiff)
        | CPointer_equal => done ([cpointer, cpointer], SOME bool)
        | CPointer_fromWord => done ([csize], SOME cpointer)
-       | UM_Header_alloc => done ([gcState, cpointer, cptrdiff], SOME cpointer)
-       | UM_Payload_alloc => done ([gcState, cpointer, cptrdiff], SOME cpointer)
        | UM_CPointer_offset => done ([gcState, cpointer, cptrdiff, cptrdiff], SOME cpointer)
        | CPointer_lt => done ([cpointer, cpointer], SOME bool)
        | CPointer_sub => done ([cpointer, cptrdiff], SOME cpointer)

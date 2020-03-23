@@ -180,7 +180,6 @@ struct
           | ChunkExnLink => Error.bug (concat
                                        ["x86Translate.Operand.toX86Operand: ",
                                         "ChunkExnLink unimplemented"])
-          | UMFrontier => Error.bug "UMFrontier not implemented in x86"
           | GCState =>
                Vector.new1 (x86.Operand.immediate_label x86MLton.gcState_label,
                             x86MLton.pointerSize)

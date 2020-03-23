@@ -206,7 +206,6 @@ structure Operand =
        | Contents of {oper: t,
                       ty: Type.t}
        | Frontier
-       | UMFrontier
        | GCState
        | Global of Global.t
        | Label of Label.t
@@ -231,7 +230,6 @@ structure Operand =
         | Cast (_, ty) => ty
         | Contents {ty, ...} => ty
         | Frontier => Type.cpointer ()
-        | UMFrontier => Type.cpointer ()
         | GCState => Type.gcState ()
         | Global g => Global.ty g
         | Label l => Type.label l
@@ -266,7 +264,6 @@ structure Operand =
                   seq [str (concat ["C", Type.name ty, " "]),
                        paren (layout oper)]
              | Frontier => str "<Frontier>"
-             | UMFrontier => str "<UMFrontier>"
              | GCState => str "<GCState>"
              | Global g => Global.layout g
              | Label l => Label.layout l
@@ -1126,7 +1123,6 @@ structure Program =
                            (checkOperand (oper, alloc)
                             ; Type.isCPointer (Operand.ty oper))
                       | Frontier => true
-                      | UMFrontier => true
                       | GCState => true
                       | Global _ =>
                            (* We don't check that globals are defined because

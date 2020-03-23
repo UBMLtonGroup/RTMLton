@@ -23,7 +23,6 @@ signature RUNTIME =
              | CurSourceSeqsIndex
              | ExnStack
              | Frontier (* The place where the next object is allocated. *)
-             | UMFrontier (* The place where the next object is allocated on the uniform memory heap. *)
              | Limit (* frontier + heapSize - LIMIT_SLOP *)
              | LimitPlusSlop (* frontier + heapSize *)
              | MaxFrameSize
@@ -43,7 +42,6 @@ signature RUNTIME =
                              curSourceSeqsIndex: Bytes.t,
                              exnStack: Bytes.t,
                              frontier: Bytes.t,
-                             umfrontier: Bytes.t,
                              limit: Bytes.t,
                              limitPlusSlop: Bytes.t,
                              maxFrameSize: Bytes.t,
@@ -60,7 +58,6 @@ signature RUNTIME =
                            curSourceSeqsIndex: Bytes.t,
                            exnStack: Bytes.t,
                            frontier: Bytes.t,
-                           umfrontier: Bytes.t,
                            limit: Bytes.t,
                            limitPlusSlop: Bytes.t,
                            maxFrameSize: Bytes.t,

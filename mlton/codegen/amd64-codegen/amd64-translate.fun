@@ -174,7 +174,6 @@ struct
           | ChunkExnLink => Error.bug (concat
                                       ["amd64Translate.Operand.toAMD64Operand:",
                                        "ChunkExnLink unimplemented"])
-          | UMFrontier => Error.bug "UMFrontier not implemented"
           | Frontier =>
                let
                   val frontier = amd64MLton.gcState_frontierContentsOperand ()

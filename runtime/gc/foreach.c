@@ -75,8 +75,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       fprintf(stderr, "%d] foreach object in 0x%x\n", PTHREAD_NUM, (uintptr_t)p);
   }
   GC_header header;
-  uint16_t bytesNonObjptrs =0;
-  uint16_t numObjptrs =0;
+  uint16_t bytesNonObjptrs = 0;
+  uint16_t numObjptrs = 0;
   GC_objectTypeTag tag = ERROR_TAG;
 
   header = getHeader (p);
@@ -217,8 +217,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
     fprintf(stderr, "%d] "GREEN("marking stack")"(foreachObjptrInObject)\n", PTHREAD_NUM);
     assert (STACK_TAG == tag);
-    stackFrame = (GC_UM_Chunk)p;
-	assert (stackFrame->next_chunk != NULL); // we will be starting at the chunk just after currentFrame
+    stackFrame = (GC_UM_Chunk)(p - GC_HEADER_SIZE);
+	assert (stackFrame->next_chunk != NULL);
 
     if (DEBUG_STACKS)
     	fprintf(stderr,"%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t)stackFrame);
@@ -245,7 +245,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
 	while (top) {
 		//assert (top->ra != 0);
-		returnAddress = *(uintptr_t*)(top->ml_object+top->ra);
+		returnAddress = *(uintptr_t*)(top->ml_object + top->ra + GC_HEADER_SIZE);
 
 		if (1||DEBUG_STACKS) {
 			fprintf (stderr, "%d] "YELLOW("frame %d")":  top = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
@@ -262,7 +262,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 				   PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
 		for (i = 0 ; i < frameOffsets[0] ; ++i) {
-			uintptr_t x = (uintptr_t)(top->ml_object + frameOffsets[i + 1] + s->alignment);
+			uintptr_t x = (uintptr_t)(top->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE);
 			unsigned int xv = *(objptr*)x;
 
 			if (1||DEBUG_STACKS)

@@ -124,23 +124,7 @@ void initWorld (GC_state s) {
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
 
-  /*Dont set current Heap cause you dont have one*/
-  //s->heap.oldGenSize = (size_t)(s->frontier - s->heap.start);
-  //setGCStateCurrentHeap (s, 0, 0);
-
-  GC_UM_Chunk next_chunk = NULL;
-   /*TODO Review this: Dirty hack to not fail assert in allocateChunks. UMfrontier should be removed*/
-  reserveAllocation(s, 1);
-  next_chunk = allocateChunks(s, &(s->umheap), 1,UM_NORMAL_CHUNK);
-  next_chunk->next_chunk = NULL;
-  s->umfrontier = (Pointer) next_chunk->ml_object;
-
-
   thread = newThread (s, sizeofStackInitialReserved (s)); // defaults to pri 0
   thread->currentFrame = thread->firstFrame;
-
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->umheap.start));
-  if (DEBUG_MEM) {
-      fprintf(stderr, "UMFrontier start: "FMTPTR"\n", (uintptr_t)(s->umfrontier));
-  }
 }

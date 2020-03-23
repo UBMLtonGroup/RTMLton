@@ -41,8 +41,6 @@ datatype 'a t =
  | Array_toVector (* backend *)
  | Array_update (* backend *)
  | UM_CPointer_offset (* not optimized away *)
- | UM_Payload_alloc (* not optimized away *)
- | UM_Header_alloc (* not optimized away *)
  | UM_Object_alloc (* not optimized away *)
  | CPointer_add (* codegen *)
  | CPointer_diff (* codegen *)
@@ -233,8 +231,6 @@ fun toString (n: 'a t): string =
        | Array_toVector => "Array_toVector"
        | Array_update => "Array_update"
        | UM_CPointer_offset => "UM_CPointer_offset"
-       | UM_Payload_alloc => "UM_Payload_alloc"
-       | UM_Header_alloc => "UM_Header_alloc"
        | UM_Object_alloc => "UM_Object_alloc"
        | CPointer_add => "CPointer_add"
        | CPointer_diff => "CPointer_diff"
@@ -380,8 +376,6 @@ val equals: 'a t * 'a t -> bool =
     | (Array_toVector, Array_toVector) => true
     | (Array_update, Array_update) => true
     | (UM_CPointer_offset, UM_CPointer_offset) => true
-    | (UM_Payload_alloc, UM_Payload_alloc) => true
-    | (UM_Header_alloc, UM_Header_alloc) => true
     | (UM_Object_alloc, UM_Object_alloc) => true
     | (CPointer_add, CPointer_add) => true
     | (CPointer_diff, CPointer_diff) => true
@@ -549,8 +543,6 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | Array_toVector => Array_toVector
     | Array_update => Array_update
     | UM_CPointer_offset => UM_CPointer_offset
-    | UM_Payload_alloc  => UM_Payload_alloc
-    | UM_Header_alloc => UM_Header_alloc
     | UM_Object_alloc => UM_Object_alloc
     | CPointer_add => CPointer_add
     | CPointer_diff => CPointer_diff
@@ -693,8 +685,6 @@ val arrayLength = Array_length
 val assign = Ref_assign
 val bogus = MLton_bogus
 val bug = MLton_bug
-val umPayloadAlloc = UM_Payload_alloc
-val umHeaderAlloc = UM_Header_alloc
 val umObjectAlloc = UM_Object_alloc
 val umcPointerOffset = UM_CPointer_offset
 val cpointerAdd = CPointer_add
@@ -809,8 +799,6 @@ val kind: 'a t -> Kind.t =
        | Array_toVector => DependsOnState
        | Array_update => SideEffect
        | UM_CPointer_offset => Functional
-       | UM_Payload_alloc => Functional
-       | UM_Header_alloc  => Functional
        | UM_Object_alloc  => Functional
        | CPointer_add => Functional
        | CPointer_diff => Functional
@@ -1024,8 +1012,6 @@ in
        Array_toVector,
        Array_update,
        UM_CPointer_offset,
-       UM_Payload_alloc,
-       UM_Header_alloc,
        UM_Object_alloc,
        CPointer_add,
        CPointer_diff,
@@ -1265,10 +1251,6 @@ fun 'a checkApp (prim: 'a t,
        | Array_toVector => oneTarg (fn t => (oneArg (array t), vector t))
        | Array_update =>
             oneTarg (fn t => (threeArgs (array t, seqIndex, t), unit))
-       | UM_Header_alloc =>
-            noTargs (fn () => (threeArgs (cpointer, cpointer, cptrdiff), cpointer))
-       | UM_Payload_alloc =>
-            noTargs (fn () => (threeArgs (cpointer, cpointer, cptrdiff), cpointer))
        | UM_Object_alloc =>
             noTargs (fn () => (nArgs (Vector.new4(cpointer, csize, word32, csize)),
                                cpointer))

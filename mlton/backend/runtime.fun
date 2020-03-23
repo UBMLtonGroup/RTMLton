@@ -19,7 +19,6 @@ structure GCField =
        | CurSourceSeqsIndex
        | ExnStack
        | Frontier
-       | UMFrontier
        | Limit
        | LimitPlusSlop
        | MaxFrameSize
@@ -41,7 +40,6 @@ structure GCField =
       val limitPlusSlopOffset: Bytes.t ref = ref Bytes.zero
       val maxFrameSizeOffset: Bytes.t ref = ref Bytes.zero
       val signalIsPendingOffset: Bytes.t ref = ref Bytes.zero
-      val umfrontierOffset: Bytes.t ref = ref Bytes.zero
       val flChunksOffset: Bytes.t ref = ref Bytes.zero
       val currentFrameOffset: Bytes.t ref = ref Bytes.zero
       val rtSyncOffset :Bytes.t ref = ref Bytes.zero
@@ -51,7 +49,7 @@ structure GCField =
       val stackDepthOffset: Bytes.t ref = ref Bytes.zero
 
       fun setOffsets {atomicState, currentThread, curSourceSeqsIndex,
-                      exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
+                      exnStack, frontier, limit, limitPlusSlop, maxFrameSize,
                       signalIsPending,
                       flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved,
                       stackDepth} =
@@ -60,7 +58,6 @@ structure GCField =
           ; curSourceSeqsIndexOffset := curSourceSeqsIndex
           ; exnStackOffset := exnStack
           ; frontierOffset := frontier
-          ; umfrontierOffset := umfrontier
           ; limitOffset := limit
           ; limitPlusSlopOffset := limitPlusSlop
           ; maxFrameSizeOffset := maxFrameSize
@@ -79,7 +76,6 @@ structure GCField =
           | CurSourceSeqsIndex => !curSourceSeqsIndexOffset
           | ExnStack => !exnStackOffset
           | Frontier => !frontierOffset
-          | UMFrontier => !umfrontierOffset (* XXX probably not needed *)
           | Limit => !limitOffset
           | LimitPlusSlop => !limitPlusSlopOffset
           | MaxFrameSize => !maxFrameSizeOffset
@@ -110,7 +106,7 @@ structure GCField =
       val stackDepthSize: Bytes.t ref = ref Bytes.zero
 
       fun setSizes {atomicState,currentThread, curSourceSeqsIndex,
-                    exnStack, frontier, umfrontier, limit, limitPlusSlop, maxFrameSize,
+                    exnStack, frontier, limit, limitPlusSlop, maxFrameSize,
                     signalIsPending,
                     flChunks, currentFrame, rtSync, heuristicChunks, flLock, reserved,
                     stackDepth} =
@@ -137,7 +133,6 @@ structure GCField =
           | CurSourceSeqsIndex => !curSourceSeqsIndexSize
           | ExnStack => !exnStackSize
           | Frontier => !frontierSize
-          | UMFrontier => !frontierSize (* XXX probably not needed *)
           | Limit => !limitSize
           | LimitPlusSlop => !limitPlusSlopSize
           | MaxFrameSize => !maxFrameSizeSize
@@ -156,7 +151,6 @@ structure GCField =
           | CurSourceSeqsIndex => "CurSourceSeqsIndex"
           | ExnStack => "ExnStack"
           | Frontier => "Frontier"
-          | UMFrontier => "UMFrontier"
           | Limit => "Limit"
           | LimitPlusSlop => "LimitPlusSlop"
           | MaxFrameSize => "MaxFrameSize"

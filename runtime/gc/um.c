@@ -48,105 +48,32 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest){
 }
 
 
-/*
- * header
- * - 4 bytes MLton header (initialized in the ML code)
- * - 4 bytes next chunk pointer (initialize in the C code)
- */
 Pointer
-UM_Header_alloc(GC_state gc_stat,
-                Pointer umfrontier,
-                C_Size_t s)
-{
-    if (DEBUG_MEM)
-        DBG(umfrontier, s, 0, "enter");
+UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s) {
 
-    return (umfrontier + s);
-}
+	GC_UM_Chunk chunk;
 
-Pointer
-UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s)
-{
+	if (header == GC_STACK_HEADER) {
+		chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
+	} else {
+		chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
+	}
 
-    GC_UM_Chunk chunk;
-
-    if(header == GC_STACK_HEADER)
-    {
-        chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
-    }
-    else
-    {
-        chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
-    }
-   
-    assert(header != 0);
+	assert(header != 0);
 
 	// apply object header to all chunks in the chain
 	GC_UM_Chunk current = chunk;
-	for(int i=0; i < num_chunks; i++)
-	{
+	for (int i = 0; i < num_chunks; i++) {
 		//violates C aliasing rules (undefined behavior)
 		//*((uint32_t*) chunk->ml_object) = header;
 
-		uint32_t *alias = (uint32_t *) (current->ml_object);
+		uint32_t *alias = (uint32_t * )(current->ml_object);
 		*alias = header;
 		assert(current->chunk_header & UM_CHUNK_IN_USE);
 		current = current->next_chunk;
 	}
-   
-    return (Pointer)(chunk->ml_object + s);
-}
 
-
-
-Pointer
-UM_Payload_alloc(GC_state gc_stat, Pointer umfrontier, C_Size_t s)
-{
-
-    fprintf(stderr,"In UM_PAYLOAD_ALLOC\n");
-    if (DEBUG_MEM)
-       DBG(umfrontier, s, 0, "enter");
-    //    GC_collect(gc_stat, 0, false);
-    //    GC_collect(gc_stat, 0, false);
-    GC_UM_Chunk next_chunk = allocateChunks(gc_stat, &(gc_stat->umheap),1,UM_NORMAL_CHUNK);
-    GC_UM_Chunk current_chunk = (GC_UM_Chunk) umfrontier;
-    current_chunk->chunk_header |= UM_CHUNK_IN_USE;
-
-    if (DEBUG_MEM) {
-        fprintf(stderr, "Sentinel: %d \n", current_chunk->sentinel);
-        fprintf(stderr, "Nextchunk: "FMTPTR" \n", (uintptr_t) next_chunk);
-    }
-    current_chunk->next_chunk = NULL;
-
-    if (s <= UM_CHUNK_PAYLOAD_SIZE) {
-        if (DEBUG_MEM)
-            DBG(umfrontier, s, 0, "move frontier to next chunk");
-        return (Pointer)next_chunk->ml_object;
-    }
-
-    if (DEBUG_MEM)
-       DBG(umfrontier, s, 0, "allocate next chunk");
-
-    if (s > 2 * UM_CHUNK_PAYLOAD_SIZE) {
-        die("BUG: Requiring allocation of more than 2 chunks\n");
-    }
-    /* Assume a maximum of 2 chunks
-     * It can actually be 3 (fragmented chunks of LARGE objects)
-     * TODO: Set header to represent chunked object
-     */
-    current_chunk->next_chunk = next_chunk;
-/////////////////
-    next_chunk->chunk_header |= UM_CHUNK_IN_USE;
-/////////////////
-    GC_UM_Chunk next_chunk_next = allocateChunks(gc_stat, &(gc_stat->umheap),1,UM_NORMAL_CHUNK);
-    next_chunk->next_chunk = NULL;
-
-    if (DEBUG_MEM) {
-        fprintf(stderr, "Next chunk next: place frontier at "FMTPTR"\n",
-                (uintptr_t) next_chunk_next->ml_object);
-    }
-
-    return (Pointer) next_chunk_next->ml_object;
+	return (Pointer) (chunk->ml_object + s);
 }
 
 Pointer

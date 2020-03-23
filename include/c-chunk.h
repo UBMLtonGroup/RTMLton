@@ -335,6 +335,7 @@ void dump_hex(char *str, int len);
 #define GREEN(x) "\033[1;32m"x"\033[0m"
 #define FW "08"
 
+#define STACKLET_DEBUG 1
 
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \

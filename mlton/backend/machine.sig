@@ -80,7 +80,6 @@ signature MACHINE =
              | Cast of t * Type.t
              | Contents of {oper: t,
                             ty: Type.t}
-             | UMFrontier
              | Frontier
              | GCState
              | Global of Global.t

@@ -429,14 +429,14 @@ performGC(GC_state s,
 #endif 
 
 
-void markStack(GC_state s, pointer currentStack) {
+void markStack(GC_state s, pointer currentFrame) {
 
 
 	fprintf(stderr, "%d] "YELLOW("Marking stack")" (garbage-collection.c)\n", PTHREAD_NUM);
 	assert(!s->dirty);
 
 	foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
-	foreachObjptrInObject(s, (pointer) currentStack, umDfsMarkObjectsMarkToWL, FALSE);
+	foreachObjptrInObject(s, (pointer) currentFrame, umDfsMarkObjectsMarkToWL, FALSE);
 
 	if (DEBUG_RTGC)
 		fprintf(stderr, "%d] "YELLOW("Completed marking stack")" (garbage-collection.c)\n", PTHREAD_NUM);

@@ -33,8 +33,6 @@ signature PRIM =
              | Array_toVector (* backend *)
              | Array_update (* ssa to ssa2 *)
              | UM_CPointer_offset (* not optimized *)
-             | UM_Payload_alloc (* not optimized *)
-             | UM_Header_alloc (* not optimized *)
              | UM_Object_alloc (* not optimized *)
              | CPointer_add (* not optimized *)
              | CPointer_diff (* codegen *)
@@ -242,8 +240,7 @@ signature PRIM =
                                       vector: 'a -> 'a,
                                       weak: 'a -> 'a,
                                       word: WordSize.t -> 'a}} -> bool
-      val umPayloadAlloc: 'a t
-      val umHeaderAlloc: 'a t
+
       val umObjectAlloc: 'a t
       val umcPointerOffset: 'a t
       val cpointerAdd: 'a t

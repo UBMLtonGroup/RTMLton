@@ -56,7 +56,6 @@ val gcFields =
     "sourceMaps.curSourceSeqsIndex",
     "exnStack",
     "frontier",
-    "umfrontier",
     "limit",
     "limitPlusSlop",
     "maxFrameSize",

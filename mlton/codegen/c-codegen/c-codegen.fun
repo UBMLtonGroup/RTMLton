@@ -781,7 +781,6 @@ fun output {program as Machine.Program.T {chunks,
              | Cast (z, ty) => concat ["(", Type.toC ty, ")", toString z]
              | Contents {oper, ty} => contents (ty, toString oper)
              | Frontier => "Frontier"
-             | UMFrontier => "UMFrontier"
              | GCState => "GCState"
              | Global g =>
                   if Global.isRoot g
@@ -1315,7 +1314,6 @@ fun output {program as Machine.Program.T {chunks,
                ([("ExnStackOffset", GCField.ExnStack),
                  ("CurrentThreadOffset", GCField.CurrentThread),
                  ("FrontierOffset", GCField.Frontier),
-                 ("UMFrontierOffset", GCField.UMFrontier),
                  ("StackDepthOffset", GCField.StackDepth),
                  ("CurrentFrameOffset", GCField.CurrentFrame),
                  ("RTSyncOffset",GCField.RTSync)],
