@@ -126,8 +126,8 @@ void um_dumpStack (void *s);
                                *(ty*)(StackTop + (i)))) , \
                         (ty*)(StackTop + (i))))
 
-#define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i) + STACKHEADER)
-#define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
+#define STACKLET_DBG_S(ty, i) *(ty*)(CurrentFrame + (i) + STACKHEADER)
+#define STACKLET_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
                                 (void*)CurrentFrame, i, \
                                 (void*)(CurrentFrame + (i) + STACKHEADER), \
