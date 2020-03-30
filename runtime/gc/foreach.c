@@ -10,7 +10,14 @@
 //#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
 
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
-	//fprintf(stderr, "callIfIsObjptr "FMTPTR"\n", (unsigned int)opp);
+	fprintf(stderr, "callIfIsObjptr "FMTPTR" %x ?= %x\n", (unsigned int)opp,
+			(uint32_t)*opp, (uint32_t)s);
+
+	if ((uint32_t)*opp == (uint32_t)s) {
+		fprintf(stderr, "  **gcstate?\n");
+		return;
+	}
+
     if (isObjptr (*opp)) {
         f (s, opp);
         return;
@@ -225,7 +232,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
     displayThread(s, thread, stderr);
 
-	GC_UM_Chunk top = stackFrame;
+	GC_UM_Chunk top = stackFrame->prev_chunk;
 	GC_UM_Chunk bottom = (GC_UM_Chunk) thread->firstFrame;
 
 	int counter = 0;
