@@ -105,7 +105,7 @@ structure Operand =
              | EnsuresBytesFree => str "<EnsuresBytesFree>"
              | GCState => str "<GCState>"
              | Offset {base, offset, ty} =>
-                  seq [str (concat ["O", Type.name ty, " "]),
+                  seq [str (concat ["OLD_O", Type.name ty, " "]),
                        tuple [layout base, Bytes.layout offset],
                        constrain ty]
              | ChunkedOffset {base, offset, ty} =>
