@@ -29,7 +29,4 @@ signature PRIM_THREAD =
      end
 
      type 'a t
-   
-     val gcSafePoint: unit -> int
- 
  end

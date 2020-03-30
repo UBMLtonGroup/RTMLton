@@ -25,8 +25,5 @@ struct
     fun thread_main () = (*MLtonThread.run ()*)print "Parallel_run::thread_main running!"
 		
     val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
-
-    fun gcSafePoint () : int = Primitive.MLton.Thread.gcSafePoint(1)
-
 end
 

@@ -340,8 +340,7 @@ structure Thread =
       val current = _import "GC_getCurrentThread" runtime private: GCState.t -> thread;
 
       val yield = _import "GC_threadYield": GCState.t -> Int32.int;
-      val gcSafePoint = _import "GC_safePoint" runtime private: Int32.int -> Int32.int;
-      
+
       val finishSignalHandler = _import "GC_finishSignalHandler" runtime private: GCState.t -> unit;
       val returnToC = _prim "Thread_returnToC": unit -> unit;
       val saved = _import "GC_getSavedThread" runtime private: GCState.t -> thread;
