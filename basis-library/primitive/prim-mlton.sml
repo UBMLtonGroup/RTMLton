@@ -339,7 +339,6 @@ structure Thread =
       val copyCurrent = _prim "Thread_copyCurrent": unit -> unit;
       val current = _import "GC_getCurrentThread" runtime private: GCState.t -> thread;
 
-      val myPriority = _import "GC_myPriority": GCState.t -> Int32.int;      
       val yield = _import "GC_threadYield": GCState.t -> Int32.int;
       val gcSafePoint = _import "GC_safePoint" runtime private: Int32.int -> Int32.int;
       

@@ -30,7 +30,6 @@ signature PRIM_THREAD =
 
      type 'a t
    
-     val myPriority: unit -> int
      val gcSafePoint: unit -> int
  
  end
