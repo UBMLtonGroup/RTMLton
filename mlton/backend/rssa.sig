@@ -94,7 +94,6 @@ signature RSSA =
                                 , header: word
                                 , size: Bytes.t
                                 , numChunks: word }
-             | Dummy
              | Profile of ProfileExp.t
              | ProfileLabel of ProfileLabel.t
              | SetExnStackLocal

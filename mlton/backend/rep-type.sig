@@ -108,7 +108,6 @@ signature REP_TYPE =
       structure BuiltInCFunction:
          sig
             val bug: unit -> t CFunction.t
-            val dummyCCall : unit -> t CFunction.t
             val gc: {maySwitchThreads: bool} -> t CFunction.t
          end
    end

@@ -858,21 +858,6 @@ structure BuiltInCFunction =
                   name = "MLton_bug",
                   prototype = (Vector.new1 CType.objptr, NONE),
                   return = unit}
-    
-     val dummyCCall = fn () =>
-         T {args = Vector.new0 (),
-            convention = Cdecl,
-            kind = Kind.Runtime {bytesNeeded = NONE,
-                                 ensuresBytesFree = false,
-                                 mayGC = true,
-                                 maySwitchThreads = true,
-                                 modifiesFrontier = true,
-                                 readsStackTop = true,
-                                 writesStackTop = true},
-            prototype = (Vector.new0 (), NONE),
-            return = Type.unit,
-            symbolScope = SymbolScope.Private,
-            target = Direct "dummyCFunc"}
      
      local
          fun make b = fn () =>

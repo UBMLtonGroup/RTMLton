@@ -57,7 +57,6 @@ structure ImplementProfiling = ImplementProfiling (structure Machine = Machine
 structure LimitCheck = LimitCheck (structure Rssa = Rssa)
 structure ChunkedAllocation = ChunkedAllocation (structure Rssa = Rssa)
 structure GCCheck = GCCheck (structure Rssa = Rssa)
-structure SplitBlocks = SplitBlocks (structure Rssa = Rssa)
 structure ParallelMove = ParallelMove ()
 structure SignalCheck = SignalCheck(structure Rssa = Rssa)
 structure SsaToRssa = SsaToRssa (structure Rssa = Rssa
@@ -192,11 +191,6 @@ fun toMachine (program: Ssa.Program.t, codegen) =
                else pass ({name = name, doit = doit}, p)
             val p = maybePass ({name = "rssaShrink1",
                                 doit = Program.shrink}, p)
-            (* val p = pass ({name = "chunkedAllocation",
-                                doit = ChunkedAllocation.transform}, p)
-            val p = maybePass ({name = "splitBlocks",
-                                doit = SplitBlocks.transform},p) *)
-
             val p = pass ({name = "gcCheck",
                            doit = GCCheck.transform}, p)
             val p = pass ({name = "insertLimitChecks",
@@ -588,11 +582,10 @@ let
                                          , header = header
                                          , size = size
                                          , numChunks = numChunks }
-             | Dummy => Vector.new1 (M.Statement.Noop)
-             | Object {dst, header, size} =>
+             | Object {dst, header, size} => (print "genStatement->Object JEFF";
                   M.Statement.object {dst = varOperand (#1 dst),
                                       header = header,
-                                      size = size}
+                                      size = size})
              | PrimApp {dst, prim, args} =>
                   let
                      datatype z = datatype Prim.Name.t

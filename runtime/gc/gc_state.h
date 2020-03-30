@@ -19,6 +19,7 @@ struct GC_state {
    runtime/gc/realtime_thread.h:4:#define MAXPRI 3
 
    */
+  size_t foobar[4];
 /*0*/  pointer frontier; /* heap.start <= frontier < limit */
 /*4*/  pointer limit; /* limit = heap.start + heap.size */
 /*8*/  objptr exnStack[MAXPRI];

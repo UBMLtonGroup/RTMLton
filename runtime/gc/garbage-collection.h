@@ -48,7 +48,6 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force);
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 
 #if (defined (MLTON_GC_INTERNAL_BASIS))
-PRIVATE void dummyCFunc (void);
 PRIVATE void GC_collect (GC_state s, size_t bytesRequested, bool force, bool collectRed);
 void maybe_growstack(GC_state s);
 

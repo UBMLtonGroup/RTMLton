@@ -837,11 +837,6 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
 }
 
 
-void dummyCFunc() {
-	if (0)
-		fprintf(stderr, "%d] Dummy call \n", PTHREAD_NUM);
-}
-
 void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) {
 
 	/*The gc-check pass ensures that when the mutator executes this function, either :
