@@ -67,6 +67,7 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
     state->realtimeThreads[1] = gc;
     initialized = 2;
 
+    if (DEBUG) fprintf(stderr, "gcStateAddress %p\n", (void*)state);
     int tNum;
     for (tNum = 2; tNum < MAXPRI; tNum++) {
         if (DEBUG_THREADS)
