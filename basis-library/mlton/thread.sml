@@ -301,7 +301,7 @@ structure Queue =
                            end)
           | x :: l => (front := l; SOME x)
    end
-   
+
     val topLevel: Runnable.t option ref = ref NONE
     val threads:Runnable.t Queue.t = Queue.new ()
 
@@ -326,5 +326,5 @@ structure Queue =
          (switch (fn t =>
                   (topLevel := SOME (prepare (t, ()))
                    ; next()))
-; topLevel := NONE)
+                   ; topLevel := NONE)
 end

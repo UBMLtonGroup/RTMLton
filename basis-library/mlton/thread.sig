@@ -63,7 +63,7 @@ signature MLTON_THREAD =
        * atomically.
        *)
       val switch: ('a t -> Runnable.t) -> 'a
-        
+
       val spawn: (unit -> unit) -> unit
       val run: unit -> unit
 

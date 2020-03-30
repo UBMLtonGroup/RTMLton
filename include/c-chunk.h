@@ -126,19 +126,13 @@ void um_dumpStack (void *s);
                                *(ty*)(StackTop + (i)))) , \
                         (ty*)(StackTop + (i))))
 
-#define STACKLET_DBG_S(ty, i) *(ty*)(CurrentFrame + (i) + STACKHEADER)
-#define STACKLET_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
+#define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i) + STACKHEADER)
+#define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
                                 (void*)CurrentFrame, i, \
                                 (void*)(CurrentFrame + (i) + STACKHEADER), \
                                *(ty*)(CurrentFrame + (i)  + STACKHEADER))) , \
                                 (ty*)(CurrentFrame + (i)  + STACKHEADER)))
-
-#if STACKLET_DEBUG > 2
-# define STACKWRITE(A, V) fprintf(stderr, "%s:%d %d] WRITE: cur:%x new:%x\n", __FILE__, __LINE__, PTHREAD_NUM, A, V)
-#else
-# define STACKWRITE(A, V)
-#endif
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
 #define Lock_fl(s) IFED(pthread_mutex_lock(&s))
@@ -334,8 +328,6 @@ void dump_hex(char *str, int len);
 #define YELLOW(x) "\033[1;33m"x"\033[0m"
 #define GREEN(x) "\033[1;32m"x"\033[0m"
 #define FW "08"
-
-#define STACKLET_DEBUG 1
 
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \
