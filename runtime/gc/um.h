@@ -11,5 +11,5 @@ void CompareAndSet(GC_state s, int lockOrUnlock);
 bool CompareExchange(volatile int *ptr, int expected, int desired);
 void reserveAllocation(GC_state s, size_t numChunksTorequest);
 
-
+bool is_on_um_heap(GC_state s, Pointer p);
 void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase);

@@ -436,13 +436,15 @@ structure ObjectType =
                   val bytesObject =
                      Bytes.+ (bytesHeader,
                       Bytes.+ (bytesCSize, (* bytesNeeded *)
-                        Bytes.+ (bytesExnStack,
-                         Bytes.+ (bytesFirstFrame,
+                       Bytes.+ (bytesExnStack,
+                        Bytes.+ (bytesFirstFrame,
+                         Bytes.+ (bytesCSize, (* markCycles *)
                           Bytes.+ (bytesCurrentFrame, bytesCSize) (* stack_depth *)
                          )
                         )
                        )
                       )
+                     )
                   val bytesTotal =
                      Bytes.align (bytesObject, {alignment = align})
                   val bytesPad = Bytes.- (bytesTotal, bytesObject)
@@ -451,12 +453,13 @@ structure ObjectType =
                end
          in
             Normal {hasIdentity = true,
-                    ty = Type.seq (Vector.new6 (padding,
+                    ty = Type.seq (Vector.new7 (padding,
                                                 Type.csize (),
                                                 Type.exnStack (),
                                                 Type.cpointer (), (* stacklet bottom *)
                                                 Type.cpointer (), (* stacklet top *)
-                                                Type.csize ()     (* stack_depth *)
+                                                Type.csize (),    (* stackDepth *)
+                                                Type.csize ()     (* markCycles *)
                                                 ))}
          end
 

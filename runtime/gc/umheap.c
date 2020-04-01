@@ -38,7 +38,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
     struct UM_Mem_Chunk* nc = h->fl_head->next_chunk;
     GC_UM_Chunk c = (GC_UM_Chunk)((pointer)h->fl_head + sizeof(UM_header));
 	c->next_chunk = c->prev_chunk = NULL;
-    c->sentinel = UM_CHUNK_SENTINEL_UNUSED;
+    c->sentinel = UM_CHUNK_SENTINEL;
     c->chunk_header = UM_CHUNK_HEADER_CLEAN;
 
     if (nc == NULL)
@@ -263,7 +263,7 @@ void insertFreeChunk(GC_state s,
 	// TODO remove before benchmarking
 	if (DEBUG_STACKS) {
 		for (unsigned int i = 0; i < stack_list_end; i++) {
-			if (stack_list[i] == ((GC_UM_Chunk) pc + sizeof(UM_header))) {
+			if (stack_list[i] == (GC_UM_Chunk) pc) {
 				fprintf(stderr, RED("stack frame added to free list\n"));
 				die("abort");
 			}

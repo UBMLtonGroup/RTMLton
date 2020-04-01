@@ -211,10 +211,13 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 			p < (s->umheap.start + s->umheap.size)) /*if object is on UM heap */
 		{
 			GC_UM_Chunk pchunk;
-			if (tag == NORMAL_TAG)
+			if (tag == NORMAL_TAG || tag == STACK_TAG)
 				pchunk = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
 			else
 				pchunk = (GC_UM_Chunk)(p);
+
+			assert (pchunk->sentinel == UM_CHUNK_SENTINEL);
+
 			if (m == MARK_MODE) {
 				pchunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
 				pchunk->chunk_header |= UM_CHUNK_MARK_MASK;  /*mark chunk header*/

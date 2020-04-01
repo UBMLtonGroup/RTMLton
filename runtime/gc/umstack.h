@@ -13,6 +13,7 @@
 void um_dumpStack (GC_state s);
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
+void um_dumpFrame (GC_state s, objptr chunk);
 
 static void um_displayStack (GC_state s, GC_stack stack, FILE *stream) __attribute__ ((unused));
 

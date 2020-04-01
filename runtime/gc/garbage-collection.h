@@ -12,16 +12,10 @@ extern pthread_mutex_t gcflag_lock;
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 
-//static void minorGC (GC_state s);
-//static void majorGC (GC_state s, size_t bytesRequested, bool mayResize);
-//static inline void growStackCurrent (GC_state s);
+
 static inline void enterGC (GC_state s);
 static inline void leaveGC (GC_state s);
-//static void performGC (GC_state s,
-//                       size_t oldGenBytesRequested,
-//                       size_t nurseryBytesRequested,
-//                       bool forceMajor,
-//                       bool mayResize);
+
 static void performUMGC(GC_state s,
                         size_t ensureObjectChunksAvailable,
                         size_t ensureArrayChunksAvailable,
@@ -32,7 +26,7 @@ static void performGC_helper (GC_state s,
 								bool forceMajor,
 								bool mayResize);
 
-static void markStack(GC_state s, pointer currentStack);
+static void markStack(GC_state s, pointer thread);
 static void startMarking(GC_state s);
 
 static void sweep(GC_state s, size_t ensureObjectChunksAvailable,size_t ensureArrayChunksAvailable,
@@ -41,9 +35,6 @@ static void sweep(GC_state s, size_t ensureObjectChunksAvailable,size_t ensureAr
 static inline void ensureInvariantForMutator (GC_state s, bool force);
 bool ensureChunksAvailable(GC_state s);
 void GC_collect_real(GC_state s, size_t bytesRequested, bool force);
-//static inline void ensureHasHeapBytesFree (GC_state s,
-//                                           size_t oldGenBytesRequested,
-//                                           size_t nurseryBytesRequested);
 
 #endif /* (defined (MLTON_GC_INTERNAL_FUNCS)) */
 

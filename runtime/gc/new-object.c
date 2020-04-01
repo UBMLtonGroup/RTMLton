@@ -68,7 +68,10 @@ objptr newStack_um(GC_state s) {
 
 	if (DEBUG_STACKS) {
 #ifdef STACK_GC_SANITY
-		GC_UM_Chunk x = (GC_UM_Chunk) um_stack;
+		/* UM_Object_alloc returns a pointer that is +GC_NORMAL_HEADER_SIZE
+		 * bytes ahead of the actual GC_UM_Chunk object.
+		 */
+		GC_UM_Chunk x = (GC_UM_Chunk) (um_stack - GC_NORMAL_HEADER_SIZE);
 		for ( ; x ; x = x->next_chunk) {
 			stack_list[stack_list_end] = x;
 			stack_list_end++;
@@ -110,12 +113,14 @@ GC_thread newThread(GC_state s, size_t reserved) {
 
 	res = UM_Object_alloc(s, numchunks, GC_THREAD_HEADER, GC_NORMAL_HEADER_SIZE);
 
+	// offsetofThread should be 0
 	thread = (GC_thread) (res + offsetofThread(s));
 	thread->bytesNeeded = 0;
 	thread->exnStack = BOGUS_EXN_STACK;
 	thread->firstFrame = newStack_um(s);
 	thread->currentFrame = BOGUS_OBJPTR; //init-world first thread will do: thread->firstFrame;
 	thread->stackDepth = 0;
+	thread->markCycles = 0;
 
 	if (DEBUG_THREADS)
 		fprintf(stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",

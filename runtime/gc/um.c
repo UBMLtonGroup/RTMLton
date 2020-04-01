@@ -84,6 +84,15 @@ UM_Chunk_Next_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
                      UM_CHUNK_PAYLOAD_SIZE);
 }
 
+bool
+is_on_um_heap(GC_state s, Pointer p)
+{
+	/* Not on our heap! */
+	if (p < (s->umheap).start || p >= (s->umheap).end) {
+		return false;
+	}
+	return true;
+}
 /*
  * calculate which chunk we need to look at
  *

@@ -429,17 +429,47 @@ performGC(GC_state s,
 #endif 
 
 
-void markStack(GC_state s, pointer currentFrame) {
+void markStack(GC_state s, pointer thread_) {
+	GC_thread thread = (GC_thread) thread_;
+	thread->markCycles++;
 
+	GC_UM_Chunk stackFrame = (GC_UM_Chunk) (thread->firstFrame - GC_HEADER_SIZE);
 
-	fprintf(stderr, "%d] "YELLOW("Marking stack")" (garbage-collection.c)\n", PTHREAD_NUM);
-	assert(!s->dirty);
+	if (DEBUG_RTGC) {
+		fprintf(stderr, "%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t) stackFrame);
+		fprintf(stderr, "%d] "YELLOW("Marking stack")" (garbage-collection.c): cycle=%d\n",
+				PTHREAD_NUM, thread->markCycles);
+		displayThread(s, thread, stderr);
+	}
 
-	foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
-	foreachObjptrInObject(s, (pointer) currentFrame, umDfsMarkObjectsMarkToWL, FALSE);
+	assert (!s->dirty);
+	assert (stackFrame->prev_chunk == NULL); // this must be the first frame
+	assert (stackFrame->next_chunk); // we must have a stack of at least two chunks
+
+	//foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
+
+	// mark the objptrs inside of each used frame
+
+	do {
+		fprintf(stderr, "mark SF "FMTPTR"\n", (uintptr_t)stackFrame);
+		assert (stackFrame->sentinel == UM_CHUNK_SENTINEL);
+		assert (stackFrame->ra != 0);
+		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);
+		foreachObjptrInObject(s, (((pointer)stackFrame) + GC_HEADER_SIZE),
+				              umDfsMarkObjectsMarkToWL, FALSE);
+		stackFrame = stackFrame->next_chunk;
+	} while (stackFrame->prev_chunk !=
+	         (GC_UM_Chunk) (s->currentFrame[PTHREAD_NUM] - GC_HEADER_SIZE));
+
+		// mark the rest of the chunks
+	while (stackFrame) {
+		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);
+		stackFrame = stackFrame->next_chunk;
+	}
 
 	if (DEBUG_RTGC)
-		fprintf(stderr, "%d] "YELLOW("Completed marking stack")" (garbage-collection.c)\n", PTHREAD_NUM);
+		fprintf(stderr, "%d] "YELLOW("Completed marking stack")" (garbage-collection.c)\n",
+				PTHREAD_NUM);
 }
 
 
@@ -743,9 +773,7 @@ void performGC_helper(GC_state s,
 	} else
 		gcTime = 0;  /* Assign gcTime to quell gcc warning. */
 		/* Send a GC signal. */
-	if (s->signalsInfo.gcSignalHandled
-		and
-	s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
+	if (s->signalsInfo.gcSignalHandled and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
 		if (DEBUG_SIGNALS)
 			fprintf(stderr, "GC Signal pending.\n");
 		s->signalsInfo.gcSignalPending = TRUE;
@@ -766,34 +794,7 @@ void performGC_helper(GC_state s,
 
 void ensureInvariantForMutator(GC_state s, bool force) {
 	force = true;
-	// we start at the current frame and move down to stack bottom
-	markStack(s, um_getStackCurrentFrame(s));
-	//performGC (s, 0, getThreadCurrent(s)->bytesNeeded, force, TRUE);
-
-	//assert (invariantForMutatorFrontier(s));
-	//assert (invariantForMutatorStack(s));
-/*
-void
-ensureInvariantForMutator (GC_state s, bool force)
-{
-    if (DEBUG)
-        fprintf (stderr, "%d] ensureInvariantForMutator\n", PTHREAD_NUM);
-
-    if (force or not (invariantForMutatorFrontier (s))) {
-        performGC (s, 0, getThreadCurrent (s)->bytesNeeded, force, TRUE);
-    }
-
-    if (not (invariantForMutatorStack (s)))
-        maybe_growstack (s);
-
-    assert (invariantForMutatorFrontier (s));
-    if (DEBUG)
-        fprintf (stderr, "%d] ensureInvariantForMutatorStack 2nd call\n",
-                 PTHREAD_NUM);
-    assert (invariantForMutatorStack (s));
->>>>>>> develop/rt-threading
-*/
-
+	markStack(s, GC_getCurrentThread(s));
 }
 
 /* ensureHasHeapBytesFree (s, oldGen, nursery)
@@ -827,7 +828,7 @@ void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
 	assert (invariantForMutatorStack(s));
 	 */
 
-	markStack(s, um_getStackCurrentFrame(s));
+	markStack(s, GC_getCurrentThread(s));
 
 	leave(s);
 

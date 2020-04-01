@@ -3,7 +3,7 @@
 #define UM_CHUNK_PAYLOAD_SAFE_REGION     16
 #define UM_CHUNK_ARRAY_INTERNAL_POINTERS 32
 #define UM_CHUNK_ARRAY_PAYLOAD_SIZE      128
-#define UM_CHUNK_SENTINEL_UNUSED         9999
+#define UM_CHUNK_SENTINEL                9999
 
 /*
  * Chunk header splitup

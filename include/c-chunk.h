@@ -37,6 +37,7 @@
 #endif
 
 void um_dumpStack (void *s);
+void um_dumpFrame (void *s, void *f);
 
 
 /* since atomicState is an int, we can use its size as our wordwidth */
@@ -372,8 +373,6 @@ void dump_hex(char *str, int len);
                                 UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER); \
                          cf->next_chunk->memcpy_addr = cf->ml_object+bytes+STACKHEADER; \
                          cf->next_chunk->memcpy_size = UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER; \
-                         if (STACKLET_DEBUG) fprintf(stderr, "cf %"FW"lx cf->next %"FW"lx bytes %d len %d\n", \
-                                                 cf, cf->next_chunk, bytes, UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER ); \
                          CurrentFrame = (pointer)cf->next_chunk + STACKHEADER; \
                          if(STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("\nnext_chunk:\n")); dump_hex(cf->next_chunk, 100); } \
                      } else {                                                \

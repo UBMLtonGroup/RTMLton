@@ -12,12 +12,42 @@ void um_displayStack (__attribute__ ((unused)) GC_state s,
 }
 
 
-void um_dumpStack (GC_state s) {
-	unsigned int i;
+void um_dumpFrame (GC_state s, objptr frame) {
+	unsigned int i, counter = 0;
 	GC_returnAddress returnAddress;
 	GC_frameLayout frameLayout;
 	GC_frameOffsets frameOffsets;
+	GC_UM_Chunk chunk = (GC_UM_Chunk)frame;
 
+	returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
+
+	fprintf (stderr, "%d] frame %d:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
+			PTHREAD_NUM, counter,
+			(uintptr_t)chunk, returnAddress, returnAddress,
+			chunk->ra);
+
+	frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
+	frameOffsets = frameLayout->offsets;
+	counter++;
+
+	fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
+			PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
+
+	for (i = 0 ; i < frameOffsets[0] ; ++i) {
+		uintptr_t x = (uintptr_t)(&(chunk->ml_object)) + frameOffsets[i + 1] + s->alignment;
+		unsigned int xv = *(objptr*)x;
+
+		fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
+				PTHREAD_NUM,
+				frameOffsets[i + 1], frameOffsets[i + 1],
+				x,
+				xv);
+	}
+
+}
+
+
+void um_dumpStack (GC_state s) {
 	if (PTHREAD_NUM == 1) return;
 
 	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
@@ -26,37 +56,9 @@ void um_dumpStack (GC_state s) {
 	GC_UM_Chunk bottom = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
 	GC_UM_Chunk chunk = top;
 
-	int counter = 0;
-
 	do {
-		returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
-
-		fprintf (stderr, "%d] frame %d:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
-				 PTHREAD_NUM, counter,
-				 (uintptr_t)chunk, returnAddress, returnAddress,
-				 chunk->ra);
-
-		frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
-		frameOffsets = frameLayout->offsets;
-		counter++;
-
-		fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
-				PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
-
-		for (i = 0 ; i < frameOffsets[0] ; ++i) {
-			uintptr_t x = (uintptr_t)(&(chunk->ml_object)) + frameOffsets[i + 1] + s->alignment;
-			unsigned int xv = *(objptr*)x;
-
-			fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
-					PTHREAD_NUM,
-					frameOffsets[i + 1], frameOffsets[i + 1],
-					x,
-					xv);
-
-		}
-
+		um_dumpFrame(s, (objptr)chunk);
 		if (bottom == chunk) return;
-
 		chunk = chunk->prev_chunk;
 	} while (chunk);
 }

@@ -10,16 +10,18 @@
 //#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
 
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
+#if 0
 	fprintf(stderr, "callIfIsObjptr "FMTPTR" %x ?= %x\n", (unsigned int)opp,
 			(uint32_t)*opp, (uint32_t)s);
+#endif
 
 	if ((uint32_t)*opp == (uint32_t)s) {
-		fprintf(stderr, "  **gcstate?\n");
-		return;
+		die("  **gcstate is in a stack slot\n");
 	}
 
     if (isObjptr (*opp)) {
-        f (s, opp);
+    	if (is_on_um_heap(s, (Pointer)*opp))
+	        f (s, opp);
         return;
     }
 
@@ -39,16 +41,16 @@ void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f)
   // where you can call SML /from/ C. our research is focused (?) on
   // pure SML systems.
 
-  fprintf (stderr, "%d] callFromCHandlerThread\n", PTHREAD_NUM);
+  fprintf (stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread);
   callIfIsObjptr (s, f, &s->callFromCHandlerThread);
 
-  fprintf (stderr, "%d] currentThread\n", PTHREAD_NUM);
+  fprintf (stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
 
-  fprintf (stderr, "%d] savedThread\n", PTHREAD_NUM);
+  fprintf (stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
 
-  fprintf (stderr, "%d] signalHandlerThread\n", PTHREAD_NUM);
+  fprintf (stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
   callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }
 
@@ -214,77 +216,46 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
                   cur_chunk = cur_chunk->next_chunk;
           }
       }
-  } else { /* stack */
-    GC_UM_Chunk stackFrame;
-    unsigned int i;
-    GC_returnAddress returnAddress;
-    GC_frameLayout frameLayout;
-    GC_frameOffsets frameOffsets;
-	GC_thread thread = (GC_thread)s->currentThread[PTHREAD_NUM];
+  } else { /* stack frame */
+  	  // mark the objptrs inside of the given frame
 
-    fprintf(stderr, "%d] "GREEN("marking stack")"(foreachObjptrInObject)\n", PTHREAD_NUM);
-    assert (STACK_TAG == tag);
-    stackFrame = (GC_UM_Chunk)(p - GC_HEADER_SIZE);
-	assert (stackFrame->next_chunk != NULL);
+	  assert (STACK_TAG == tag);
+	  GC_UM_Chunk stackFrame = (GC_UM_Chunk)(p - GC_HEADER_SIZE);
+	  GC_returnAddress returnAddress = *(uintptr_t*)(
+	  		stackFrame->ml_object + stackFrame->ra + GC_HEADER_SIZE);
+	  assert (stackFrame->ra != 0); // cant process a frame if we dont know its layout
 
-    if (DEBUG_STACKS)
-    	fprintf(stderr,"%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t)stackFrame);
+	  if (DEBUG_RTGC) {
+		  fprintf (stderr, "%d] "YELLOW("frame")":  frame = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
+				  PTHREAD_NUM,
+				  (uintptr_t)stackFrame,
+				  returnAddress,
+				  returnAddress,
+				  stackFrame->ra);
+	  }
 
-    displayThread(s, thread, stderr);
+	  GC_frameLayout frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
+	  GC_frameOffsets frameOffsets = frameLayout->offsets;
 
-	GC_UM_Chunk top = stackFrame->prev_chunk;
-	GC_UM_Chunk bottom = (GC_UM_Chunk) thread->firstFrame;
+	  if (DEBUG_RTGC)
+		  fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
+			  PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
 
-	int counter = 0;
-	int depth = 0;
+	  for (uint32_t i = 0 ; i < frameOffsets[0] ; ++i) {
+		  uintptr_t x = (uintptr_t)(
+		  		stackFrame->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE);
+		  unsigned int xv = *(objptr*)x;
 
-	// count the depth of the current stack
-	for (GC_UM_Chunk t = top ; t ; t = t->prev_chunk, depth++);
+		  if (DEBUG_RTGC)
+			  fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
+				  PTHREAD_NUM,
+				  frameOffsets[i + 1],
+				  frameOffsets[i + 1],
+				  x,
+				  xv);
 
-	assert (bottom != NULL);
-
-	// mark all of this stack's chunks
-	for( ; bottom->next_chunk ; bottom = bottom->next_chunk) {
-		markChunk((pointer) & (bottom->ml_object), tag, MARK_MODE, s, 0);
-	}
-
-	fprintf(stderr, "%d] stack depth is %d\n", PTHREAD_NUM, depth);
-
-	while (top) {
-		//assert (top->ra != 0);
-		returnAddress = *(uintptr_t*)(top->ml_object + top->ra + GC_HEADER_SIZE);
-
-		if (1||DEBUG_STACKS) {
-			fprintf (stderr, "%d] "YELLOW("frame %d")":  top = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
-					 PTHREAD_NUM, depth-counter,
-					 (uintptr_t)top, returnAddress, returnAddress,
-					 top->ra);
-		}
-		frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
-		frameOffsets = frameLayout->offsets;
-		counter++;
-
-		if (1||DEBUG_STACKS)
-		   fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
-				   PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
-
-		for (i = 0 ; i < frameOffsets[0] ; ++i) {
-			uintptr_t x = (uintptr_t)(top->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE);
-			unsigned int xv = *(objptr*)x;
-
-			if (1||DEBUG_STACKS)
-				fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
-					  PTHREAD_NUM,
-					  frameOffsets[i + 1], frameOffsets[i + 1],
-					  x,
-					  xv);
-
-			callIfIsObjptr(s, f, (objptr * )x);
-		}
-		top = top->prev_chunk;
-	}
-    fprintf(stderr, "%d] done checking stack\n", PTHREAD_NUM);
-    p = (pointer) stackFrame->next_chunk;
+		  callIfIsObjptr(s, f, (objptr *)x);
+	  }
   }
   return p;
 }
