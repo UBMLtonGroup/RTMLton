@@ -451,7 +451,8 @@ void markStack(GC_state s, pointer thread_) {
 	// mark the objptrs inside of each used frame
 
 	do {
-		fprintf(stderr, "mark SF "FMTPTR"\n", (uintptr_t)stackFrame);
+		if (DEBUG_RTGC)
+			fprintf(stderr, "mark SF "FMTPTR"\n", (uintptr_t)stackFrame);
 		assert (stackFrame->sentinel == UM_CHUNK_SENTINEL);
 		assert (stackFrame->ra != 0);
 		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);

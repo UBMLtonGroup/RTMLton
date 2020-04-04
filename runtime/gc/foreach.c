@@ -32,28 +32,39 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
 }
 
 
-void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f)
-{
+void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f) {
 
-  //if (DEBUG_DETAILED)
-  //  fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
+	//if (DEBUG_DETAILED)
+	//  fprintf (stderr, "%d] foreachGlobal threads\n", PTHREAD_NUM);
 
 
-  // in rtmlton i think it is safe to disable this feature
-  // where you can call SML /from/ C. our research is focused (?) on
-  // pure SML systems.
+	// in rtmlton i think it is safe to disable this feature
+	// where you can call SML /from/ C. our research is focused (?) on
+	// pure SML systems.
 
-  fprintf (stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread);
-  callIfIsObjptr (s, f, &s->callFromCHandlerThread);
+	if (DEBUG)
+		fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR
+	"\n", PTHREAD_NUM, s->callFromCHandlerThread);
 
-  fprintf (stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
-  callIfIsObjptr (s, f, &s->currentThread[PTHREAD_NUM]);
+	callIfIsObjptr(s, f, &s->callFromCHandlerThread);
 
-  fprintf (stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
-  callIfIsObjptr (s, f, &s->savedThread[PTHREAD_NUM]);
+	if (DEBUG)
+		fprintf(stderr, "%d] currentThread: "FMTPTR
+	"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
 
-  fprintf (stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
-  callIfIsObjptr (s, f, &s->signalHandlerThread[PTHREAD_NUM]);
+	callIfIsObjptr(s, f, &s->currentThread[PTHREAD_NUM]);
+
+	if (DEBUG)
+		fprintf(stderr, "%d] savedThread: "FMTPTR
+	"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
+
+	callIfIsObjptr(s, f, &s->savedThread[PTHREAD_NUM]);
+
+	if (DEBUG)
+		fprintf(stderr, "%d] signalHandlerThread: "FMTPTR
+	"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
+
+	callIfIsObjptr(s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }
 
 
@@ -92,7 +103,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
   header = getHeader (p);
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (DEBUG_DETAILED || (tag == STACK_TAG))
+  if (DEBUG_DETAILED)
     fprintf (stderr,
              "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
