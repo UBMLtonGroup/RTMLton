@@ -446,7 +446,7 @@ void markStack(GC_state s, pointer thread_) {
 	assert (stackFrame->prev_chunk == NULL); // this must be the first frame
 	assert (stackFrame->next_chunk); // we must have a stack of at least two chunks
 
-	//foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
+	foreachGlobalThreadObjptr(s, umDfsMarkObjectsMarkToWL);
 
 	// mark the objptrs inside of each used frame
 
@@ -458,7 +458,7 @@ void markStack(GC_state s, pointer thread_) {
 		foreachObjptrInObject(s, (((pointer)stackFrame) + GC_HEADER_SIZE),
 				              umDfsMarkObjectsMarkToWL, FALSE);
 		stackFrame = stackFrame->next_chunk;
-	} while (stackFrame->prev_chunk !=
+	} while (stackFrame !=
 	         (GC_UM_Chunk) (s->currentFrame[PTHREAD_NUM] - GC_HEADER_SIZE));
 
 		// mark the rest of the chunks
