@@ -27,7 +27,7 @@ WordU_addCheckBody(size, c, x, doOverflow, doSuccess)
   do {                                                          \
     if ((x == (WordS##size)0) || (y == (WordS##size)0)) {       \
     } else                                                      \
-    if (x > (WordS## size)0) {                                  \
+    if (x > (WordS##size)0) {                                   \
       if (y > (WordS##size)0) {                                 \
         if (x > WordS##size##_quot (WordS##size##_max, y)) {    \
           doOverflow;                                           \
