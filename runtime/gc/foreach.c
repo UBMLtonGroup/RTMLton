@@ -15,9 +15,11 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
 			(uint32_t)*opp, (uint32_t)s);
 #endif
 
+#if 0  // temp hack
 	if ((uint32_t)*opp == (uint32_t)s) {
 		die("  **gcstate is in a stack slot\n");
 	}
+#endif
 
     if (isObjptr (*opp)) {
     	if (is_on_um_heap(s, (Pointer)*opp))
@@ -102,18 +104,6 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   if (NORMAL_TAG == tag) {
 	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
-  	/*
-      p += bytesNonObjptrs;
-
-      pointer max = p + (numObjptrs * OBJPTR_SIZE);
-
-      for ( ; p < max; p += OBJPTR_SIZE) {
-          fprintf (stderr,
-                   "Should have:  p = "FMTPTR"  *p = "FMTOBJPTR"\n",
-                   (uintptr_t)p, *(objptr*)p);
-          callIfIsObjptr (s, f, (objptr*)p);
-      }
-*/
       if(!isObjectOnUMHeap(s,p)) 
       {
         die("Non stack Object in old heap");
@@ -128,9 +118,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           pointer todo = UM_CPointer_offset(s, p, bytesNonObjptrs + i * OBJPTR_SIZE,
                                             OBJPTR_SIZE);
 
-		if (((unsigned int )(*todo)) == 0) {
-			fprintf(stderr, "%d] TODO is null\n", PTHREAD_NUM);
-			um_dumpStack(s);
+		if (*(objptr*)todo == (objptr)NULL) {
+			fprintf(stderr, "%d] *TODO is null "FMTPTR"\n",
+					PTHREAD_NUM, (uintptr_t)todo);
 		} else {
 			callIfIsObjptr(s, f, (objptr *) todo);
 		}
@@ -226,12 +216,14 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  assert (stackFrame->ra != 0); // cant process a frame if we dont know its layout
 
 	  if (DEBUG_RTGC) {
-		  fprintf (stderr, "%d] "YELLOW("frame")":  frame = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
+		  fprintf (stderr, "%d] "YELLOW("frame")":  frame = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d) "FMTPTR"\n",
 				  PTHREAD_NUM,
 				  (uintptr_t)stackFrame,
 				  returnAddress,
 				  returnAddress,
-				  stackFrame->ra);
+				  stackFrame->ra,
+				  (uintptr_t)(
+						  stackFrame->ml_object + stackFrame->ra + GC_HEADER_SIZE));
 	  }
 
 	  GC_frameLayout frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
@@ -243,7 +235,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
 	  for (uint32_t i = 0 ; i < frameOffsets[0] ; ++i) {
 		  uintptr_t x = (uintptr_t)(
-		  		stackFrame->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE);
+		  		stackFrame->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE+4); // why??
 		  unsigned int xv = *(objptr*)x;
 
 		  if (DEBUG_RTGC)
