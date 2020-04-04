@@ -751,21 +751,20 @@ fun output {program as Machine.Program.T {chunks,
 			         )
 			       )
 		        | false =>
-			        	if handleMisaligned ty then
+			         if handleMisaligned ty then
 			            case (dstIsMem, srcIsMem) of
 			               (false, false) => concat [dst, " = ", src, ";\n"]
 			             | (false, true) => concat [dst, " = ", fetch (src, ty), ";\n"]
 			             | (true, false) => store ({dst = dst, src = src}, ty)
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else (
-			            concat["\n\t",
-                       	       (*stackletWrite({dbase=dbase, sbase=sbase}, ty, dst, src),
-                               "\t",*)
+                       	       concat ["\n\t", dst, " = ", src, ";\n"]
+                               (*
                                writeBarrier({dbase = dbase, sbase = sbase},
                                             {dst = dst,src = src},
                                             ty,
                                             concat [dst, " = ", src, ";\n"])
-			                   , "\n"]
+                               *)
 			         )
       local
          datatype z = datatype Operand.t
