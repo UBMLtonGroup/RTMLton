@@ -11,3 +11,42 @@ free array chunk      AE
 
 
 
+mark SF 0xb73001ac
+0] foreachObjptrInObject (0xb73001b0)  header = 00000001  tag = STACK  bytesNonObjptrs = 0  numObjptrs = 0
+0] frame:  frame = 0xb73001ac  return address = 0x0000000000000043 (67) (ra=104)
+0]   frame: kind ML_FRAME size 68
+0]    offset 0x8 (8) stackaddress 0x00000000b73001b8 objptr 0x00000000ffffffff
+0]    offset 0xc (12) stackaddress 0x00000000b73001bc objptr 0x00000000aab00054
+0]    offset 0x10 (16) stackaddress 0x00000000b73001c0 objptr 0x00000000b74225d0
+0]    offset 0x14 (20) stackaddress 0x00000000b73001c4 objptr 0x00000000b741d084
+0]    offset 0x18 (24) stackaddress 0x00000000b73001c8 objptr 0x00000000b7424898
+0]    offset 0x1c (28) stackaddress 0x00000000b73001cc objptr 0x00000000b741d22c
+0]    offset 0x20 (32) stackaddress 0x00000000b73001d0 objptr 0x00000000b741d57c
+0]    offset 0x24 (36) stackaddress 0x00000000b73001d4 objptr 0x00000000b741d4ac
+0]    offset 0x28 (40) stackaddress 0x00000000b73001d8 objptr 0x00000000b741d654
+0]    offset 0x2c (44) stackaddress 0x00000000b73001dc objptr 0x00000000b741e610
+0]    offset 0x30 (48) stackaddress 0x00000000b73001e0 objptr 0x00000000b741f0d4
+0]    offset 0x34 (52) stackaddress 0x00000000b73001e4 objptr 0x00000000b741ef28
+0]    offset 0x38 (56) stackaddress 0x00000000b73001e8 objptr 0x00000000b741effc
+0]    offset 0x3c (60) stackaddress 0x00000000b73001ec objptr 0x00000000b741f278
+0]    offset 0x40 (64) stackaddress 0x00000000b73001f0 objptr 0x00000000b741f420
+0]    offset 0x48 (72) stackaddress 0x00000000b73001f8 objptr 0x0000000000003ffc
+0]    offset 0x4c (76) stackaddress 0x00000000b73001fc objptr 0x00000000b76a10e4
+0]    offset 0x50 (80) stackaddress 0x00000000b7300200 objptr 0x00000000b74226a4
+
+
+0] frame 0:  chunkAddr = 0xb73001ac  return address = 0x0000000000000049 (73) (ra=88)
+0]   frame: kind ML_FRAME size 58
+0]    offset 0xc (12) stackaddress 0x00000000b73001bc objptr 0x00000000aab00054
+0]    offset 0x10 (16) stackaddress 0x00000000b73001c0 objptr 0x00000000b74225d0
+0]    offset 0x18 (24) stackaddress 0x00000000b73001c8 objptr 0x00000000aab00084
+0]    offset 0x1c (28) stackaddress 0x00000000b73001cc objptr 0x00000000b741d22c
+0]    offset 0x20 (32) stackaddress 0x00000000b73001d0 objptr 0x00000000b741d57c
+0]    offset 0x24 (36) stackaddress 0x00000000b73001d4 objptr 0x00000000b741d4ac
+0]    offset 0x28 (40) stackaddress 0x00000000b73001d8 objptr 0x00000000b741d654
+0]    offset 0x2c (44) stackaddress 0x00000000b73001dc objptr 0x00000000b741e610
+0]    offset 0x30 (48) stackaddress 0x00000000b73001e0 objptr 0x00000000b741f0d4
+0]    offset 0x34 (52) stackaddress 0x00000000b73001e4 objptr 0x00000000b741ef28
+0]    offset 0x38 (56) stackaddress 0x00000000b73001e8 objptr 0x00000000b741effc
+0]    offset 0x4c (76) stackaddress 0x00000000b73001fc objptr 0x00000000b76a10e4
+0]    offset 0x50 (80) stackaddress 0x00000000b7300200 objptr 0x00000000b74226a4

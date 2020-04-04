@@ -51,14 +51,14 @@ fun gcbench kStretchTreeDepth =
 
   let open Int
 
-      fun expt (m:int, n:int) =
-        if n = 0 then 1 else m * expt (m, n - 1)
+      fun exptX (m:int, n:int) =
+        if n = 0 then 1 else m * exptX (m, n - 1)
   
       (*  Nodes used by a tree of a given size  *)
-      fun TreeSize_orig i =
-        expt (2, i + 1) - 1
+      fun TreeSize1 i =
+        exptX (2, i + 1) - 1
   
-      fun TreeSize i =
+      fun TreeSize i = 
          (* (1 << (i + 1)) - 1 *)
          IntInf.toInt(IntInf.<< (IntInf.fromInt 1, Word.fromInt (i+1))) - 1
 
@@ -99,17 +99,20 @@ fun gcbench kStretchTreeDepth =
 
       (*  Build tree bottom-up  *)
       fun MakeTree iDepth =
-      ( 
         if iDepth <= 0
             then make_empty_node()
             else make_node (MakeTree (iDepth - 1),
                             MakeTree (iDepth - 1))
-      )
       
       fun TimeConstruction depth =
         let val iNumIters = NumIters depth
         in
         (
+          print (concat ["Creating ",
+                         toString iNumIters,
+                         " trees of depth ",
+                         toString depth,
+                         "\n"]);
           let fun loop i =
                 if i < iNumIters
                   then (Populate (depth, make_empty_node());
@@ -133,9 +136,10 @@ fun gcbench kStretchTreeDepth =
         print (concat [" Stretching memory with a binary tree of depth ",
                        toString kStretchTreeDepth,
                        "\n"]);
+        PrintDiagnostics();
         (*  Stretch the memory space quickly  *)
         MakeTree kStretchTreeDepth;
-
+                         
         (*  Create a long lived object  *)
         print (concat[" Creating a long-lived binary tree of depth ",
                       toString kLongLivedTreeDepth,
@@ -190,7 +194,7 @@ fun gcbench kStretchTreeDepth =
 structure Main =
 struct
   fun testit out = TextIO.output (out, "OK\n")
-  fun doit () = gcbench 13
+  fun doit () = gcbench 18
 end
 
 
@@ -201,10 +205,9 @@ in
   (Real.toString((Time.toReal(Timer.checkRealTimer tmr)) *1000.0)^"\n",result)
 end
 
-
 val (s,_) = timeit Main.doit ()
+
 val _ = print ("Time taken :"^s^"\n")
 
-(*val _ = Main.doit () *)
 
 val _ = print "Done\n"
