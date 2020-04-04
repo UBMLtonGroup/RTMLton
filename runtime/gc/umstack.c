@@ -12,23 +12,25 @@ void um_displayStack (__attribute__ ((unused)) GC_state s,
 }
 
 
-void um_dumpFrame (GC_state s, objptr frame) {
-	unsigned int i, counter = 0;
+void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
+	unsigned int i;
 	GC_returnAddress returnAddress;
 	GC_frameLayout frameLayout;
 	GC_frameOffsets frameOffsets;
 	GC_UM_Chunk chunk = (GC_UM_Chunk)frame;
 
 	returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
+	if (raoverride > 0) {
+		returnAddress = raoverride;
+	}
 
-	fprintf (stderr, "%d] frame %d:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
-			PTHREAD_NUM, counter,
+	fprintf (stderr, "%d] frame:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
+			PTHREAD_NUM,
 			(uintptr_t)chunk, returnAddress, returnAddress,
 			chunk->ra);
 
 	frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
 	frameOffsets = frameLayout->offsets;
-	counter++;
 
 	fprintf(stderr, "%d]   frame: kind %s size %"PRIx16"\n",
 			PTHREAD_NUM, (frameLayout->kind==C_FRAME)?"C_FRAME":"ML_FRAME", frameLayout->size);
@@ -57,7 +59,7 @@ void um_dumpStack (GC_state s) {
 	GC_UM_Chunk chunk = top;
 
 	do {
-		um_dumpFrame(s, (objptr)chunk);
+		um_dumpFrame(s, (objptr)chunk, 0);
 		if (bottom == chunk) return;
 		chunk = chunk->prev_chunk;
 	} while (chunk);
