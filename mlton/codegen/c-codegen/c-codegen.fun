@@ -709,6 +709,7 @@ fun output {program as Machine.Program.T {chunks,
           of true => 
           ( case hd(String.explode dst) of
                 #"P" => oper
+               | #"S" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",oper,"} );"]
                | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
           )
         |   false => oper
@@ -758,13 +759,11 @@ fun output {program as Machine.Program.T {chunks,
 			             | (true, false) => store ({dst = dst, src = src}, ty)
 			             | (true, true) => move' ({dst = dst, src = src}, ty)
 			         else (
-                       	       concat ["\n\t", dst, " = ", src, ";\n"]
-                               (*
                                writeBarrier({dbase = dbase, sbase = sbase},
                                             {dst = dst,src = src},
                                             ty,
                                             concat [dst, " = ", src, ";\n"])
-                               *)
+                               
 			         )
       local
          datatype z = datatype Operand.t

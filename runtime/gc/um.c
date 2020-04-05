@@ -145,6 +145,31 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
     bool isSrcOnUMHeap = isObjectOnUMHeap(s,srcbase);
     bool isDstOnUMHeap = isObjectOnUMHeap(s,dstbase);
 
+    /*deadbeef dst indicates writing to stack slot. 
+     * in such case shade the source always, given that source is an objptr on umheap
+     * e.g S(Objptr,16) = P_1[PTHREAD_NUM] */
+    if(dstbase == (void *) 0xdeadbeef)
+    {
+
+        if(isSrcOnUMHeap)
+        {
+           srcMarked = (srcbase == NULL)?false:(isContainerChunkMarkedByMode(srcbase,MARK_MODE,getObjectType(s,srcbase)));
+           
+          if(!srcMarked)
+          { 
+            GC_header header = getHeader(srcbase);
+            uint16_t bytesNonObjptrs=0;
+            uint16_t numObjptrs =0;
+            GC_objectTypeTag tag = ERROR_TAG;
+            splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
+            
+            markChunk(srcbase,tag,GREY_MODE,s,numObjptrs);
+          }
+        }
+
+        return;
+    
+    }
 
     if(isDstOnUMHeap)
         dstMarked = (dstbase == NULL)?false:(isContainerChunkMarkedByMode(dstbase,MARK_MODE,getObjectType(s,dstbase)));
