@@ -15,7 +15,7 @@
 *     FLChunks > (0.3 * TChunks) else signal the GC to Run and continue
 * 
 * 2. FLChunks < nc then 
-*     Block and singal GC to run
+*     Block and signal GC to run
 *     When woken up by GC, do check 1 again
 *
 * *)
@@ -61,12 +61,6 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
       val collect = Label.newNoname ()
       val func = CFunction.gc {maySwitchThreads = false}
 
-      
-
-
-
-    
-
 
       fun gcAndJumpToBlock (to) =
         let
@@ -98,29 +92,55 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
         let
           val flChunks = Operand.Runtime FLChunks
           val res = Var.newNoname ()
-          val resTy = Operand.ty flChunks
+          (*           val resTy = Operand.ty flChunks
+ *)
+                val resWordSize = WordSize.word32
+                val resTy = Type.word resWordSize
+
+          val _ = print ("decFreeChunks " ^ Layout.toString (Type.layout resTy) ^ "\n")
+
         in
           [Statement.PrimApp {args = (Vector.new2
                                         (flChunks, Operand.constWord n (WordSize.word32))),
-                                  dst = SOME (res, resTy),
-                                  prim = Prim.wordSub WordSize.word32},
+                              dst = SOME (res, resTy),
+                              prim = Prim.cpointerSub},
+                                  (*
+           [Statement.PrimApp {args = (Vector.new1(flChunks)),
+                               dst = SOME (res, resTy),
+                               prim = Prim.wordSub},
+                               *)
             Statement.Move {dst = flChunks,
-                                  src = Operand.Var {ty = resTy, var = res}}]
+                            src = Operand.Var {ty = resTy, var = res}}]
         end
 
 
     fun incReserved n =
         let
+                  val flChunks = Operand.Runtime FLChunks
+                  val res2 = Var.newNoname ()
+                  (* Operand.ty is in rssa.fun *)
+                  (*
+                  val resTy2 = Operand.ty flChunks
+                   *)
+                                  val resWordSize = WordSize.word32
+                                  val resTy2 = Type.word resWordSize
+                  val _ = print ("FLChunks " ^ Layout.toString (Type.layout resTy2) ^ "\n")
+
+
           val reserved = Operand.Runtime Reserved
           val res = Var.newNoname ()
-          val resTy = Operand.ty reserved
+(*          val resTy = Operand.ty reserved *)
+                          val resWordSize = WordSize.word32
+                          val resTy = Type.word resWordSize
+          val _ = print ("incReserved " ^ Layout.toString (Type.layout resTy) ^ "\n")
+
         in
-          [Statement.PrimApp {args = (Vector.new2
-                                        (reserved, Operand.constWord n (WordSize.word32))),
-                                  dst = SOME (res, resTy),
-                                  prim = Prim.wordAdd WordSize.word32},
+          [Statement.PrimApp {args = (Vector.new1 (reserved)) (*(Vector.new2
+                                        (reserved, Operand.constWord n (WordSize.word32))) *),
+                              dst = SOME (res, resTy),
+                              prim = Prim.wordAdd WordSize.word32},
             Statement.Move {dst = reserved,
-                                  src = Operand.Var {ty = resTy, var = res}}]
+                            src = Operand.Var {ty = resTy, var = res}}]
         end
 
     
@@ -141,23 +161,50 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
         end
     
    
-     val lockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime
-     FLLock),
+   val lockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime FLLock),
                                             dst = NONE,
                                             prim = Prim.lockfl}
 
-    val unlockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime
-    FLLock),
+   val unlockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime FLLock),
                                             dst = NONE,
                                             prim = Prim.unlockfl}
 
-     fun blockingGC blLbl  check= 
+     fun blockingGC blLbl  check =
      let
+                       val flChunks = Operand.Runtime FLChunks
+                       val res2 = Var.newNoname ()
+                       (*val resTy2 = Operand.ty flChunks *)
+                                       val resWordSize = WordSize.word32
+                                       val resTy2 = Type.word resWordSize
+                       val _ = print ("blockingGC FLChunks " ^ Layout.toString (Type.layout resTy2) ^ "\n")
+
+
         val return = Label.newNoname ()
+        (*
+        the following primApp results in:
+        invalid statement: x_0: Word32 = WordU32_lt (FLChunks, 0xA2: Word32)
+
+        should we convert FLChunks first?
+        val x = Statement.PrimApp {args = Vector.new1 (flChunks),
+                                    dst = SOME (res2, resTy2),
+                                   prim = Prim.cpointerToWord}
+
+        *)
         val (ss, ts) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
                               Operand.Runtime FLChunks,
                               Operand.constWord chunksNeeded (WordSize.csize ()),
                               {ifTrue=blLbl, ifFalse=check})
+        (*
+        the following primApp results in:
+        invalid statement: x_0: Word32 = CPointer_lt (FLChunks, 0xA2: Word32)
+        *)
+        (*
+        val (ss, ts) = primApp (Prim.cpointerLt,
+                              Operand.Runtime FLChunks,
+                              Operand.constWord chunksNeeded (WordSize.csize ()),
+                              {ifTrue=blLbl, ifFalse=check})
+        *)
+
      in
         [ Block.T {args = Vector.new0 (),
                        kind = Kind.Jump,
@@ -174,7 +221,7 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
             , Block.T { args = Vector.new0 ()
                       , kind = Kind.CReturn {func = func}
                       , label = return
-                      , statements = Vector.new2 (lockstmt,ss)
+                      , statements = Vector.new2 (lockstmt, ss)
                       , transfer = ts} ]
 
 
@@ -189,8 +236,11 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
 
           val reserved = Operand.Runtime Reserved
           val res = Var.newNoname ()
-          val resTy = Operand.ty reserved
+          (*val resTy = Operand.ty reserved*)
+                          val resWordSize = WordSize.word32
+                          val resTy = Type.word resWordSize
 
+          val _ = print ("startBlock " ^ Layout.toString (Type.layout resTy) ^ "\n")
 
 
           val sAdd = Statement.PrimApp {args = (Vector.new2
@@ -198,23 +248,35 @@ fun insertCheck (b as Block.T {args, kind, label, statements, transfer}) =
                                   dst = SOME (res, resTy),
                                   prim = Prim.wordAdd WordSize.word32}
 
+
           val (ss, ts) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
-                              Operand.Runtime FLChunks,
-                              Operand.Var {var = res, ty = resTy},
-                              {ifTrue=block, ifFalse=check})
-          
+                                  Operand.Runtime FLChunks,
+                                  Operand.Var {var = res, ty = resTy},
+                                  {ifTrue=block, ifFalse=check})
+
           val (ss2, ts2) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
-                              Operand.Runtime FLChunks,
-                              Operand.Runtime HeuristicChunks,
-                              {ifTrue=collect, ifFalse=dontCollect})
+                                    Operand.Runtime FLChunks,
+                                    Operand.Runtime HeuristicChunks,
+                                    {ifTrue=collect, ifFalse=dontCollect})
+
+          (*
+          val (ss, ts) = primApp (Prim.cpointerLt,
+                                  Operand.Runtime FLChunks,
+                                  Operand.Var {var = res, ty = resTy},
+                                  {ifTrue=block, ifFalse=check})
           
+          val (ss2, ts2) = primApp (Prim.cpointerLt,
+                                    Operand.Runtime FLChunks,
+                                    Operand.Runtime HeuristicChunks,
+                                    {ifTrue=collect, ifFalse=dontCollect})
           
+          *)
 
         in
           [ Block.T { args = args
                        , kind = kind
                        , label = label
-                       , statements = Vector.new3 (lockstmt,sAdd,ss) 
+                       , statements = Vector.new3 (lockstmt, sAdd, ss)
                        , transfer = ts }
         ,
             Block.T { args = Vector.new0 ()

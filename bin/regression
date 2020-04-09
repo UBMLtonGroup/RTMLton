@@ -82,6 +82,9 @@ src=`cd "$dir/.." && pwd`
 bin="$src/build/bin"
 lib="$src/build/lib"
 mlton="$bin/mlton"
+flags[${#flags[@]}]="-codegen"
+flags[${#flags[@]}]="c"
+
 if $cross; then
 	flags[${#flags[@]}]="-target"
 	flags[${#flags[@]}]="$crossTarget"
@@ -258,6 +261,7 @@ done
 if $cross || $runOnly || $short || $testReg ; then
         exit 0
 fi
+exit 0
 mmake clean >/dev/null
 cd "$src/benchmark/tests"
 for f in *.sml; do

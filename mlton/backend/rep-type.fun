@@ -535,14 +535,14 @@ fun ofGCField (f: GCField.t): t =
        | CurrentThread => thread ()
        | CurSourceSeqsIndex => word32
        | ExnStack => exnStack ()
-       | FLChunks => csize ()
+       | FLChunks => word32
        | FLLock => cpointer ()
        | Frontier => cpointer ()
-       | HeuristicChunks => csize ()
+       | HeuristicChunks => word32
        | Limit => cpointer ()
        | LimitPlusSlop => cpointer ()
        | MaxFrameSize => word32
-       | Reserved => csize ()
+       | Reserved => word32
        | RTSync => word32
        | SignalIsPending => word32
    end
@@ -556,6 +556,7 @@ fun checkPrimApp {args, prim, result} =
       fun done (argsP, resultP) =
          let
             val argsP = Vector.fromList argsP
+            val _ = print "type check: args and rv\n"
          in
             (Vector.length args = Vector.length argsP)
             andalso (Vector.forall2 (args, argsP,
@@ -620,6 +621,8 @@ fun checkPrimApp {args, prim, result} =
                                           fn t' => fn t => equals (t', t)),
                         SOME (fn t => equals (t, CFunction.return f)))
        | FFI_Symbol _ => done ([], SOME cpointer)
+       | Lock_fl => done ([cpointer], NONE)
+       | Unlock_fl => done ([cpointer], NONE)
        | MLton_touch => done ([objptr], NONE)
        | Real_Math_acos s => realUnary s
        | Real_Math_asin s => realUnary s

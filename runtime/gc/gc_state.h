@@ -24,11 +24,11 @@ struct GC_state {
 /*4*/  pointer limit; /* limit = heap.start + heap.size */
 /*8*/  objptr exnStack[MAXPRI];
 /*12*/  objptr currentFrame[MAXPRI];
-/*16*/  size_t fl_chunks;
+/*16*/  volatile uint32_t fl_chunks;
 /*28*/  size_t stackDepth[MAXPRI];
 
-  size_t reserved;
-  size_t heuristicChunks;
+  volatile uint32_t reserved;
+  volatile uint32_t heuristicChunks;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */
