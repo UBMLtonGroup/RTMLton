@@ -2,6 +2,7 @@ val filename = OS.FileSys.tmpName ()
 
 fun testRange (start, length) =
       let
+        val _ = print ("start: " ^ Int.toString(start) ^ " stop: "  ^ Int.toString(length) ^ "\n")
         val allChars = Word8Vector.tabulate(length, fn i => Word8.fromInt ((i + start) mod 256))
 
         val outStr = BinIO.openOut filename
@@ -30,6 +31,11 @@ fun testRange (start, length) =
       in
         ()
       end
+
+(*
+tabulate (n, f)
+returns a list of length n equal to [f(0), f(1), ..., f(n-1)], created from left to right. 
+*)
 
 val _ = testRange (0, 256)
 val _ = print "basic test of writing and reading back all characters done\n"
