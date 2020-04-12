@@ -334,6 +334,10 @@ structure Operand =
              | _ => false
          end
 
+      (* if an Operand can be written to, make sure its listed here
+       * or the type checking for move operations will fail
+       * see "fun checkStatement" in this file, around line 1300ish
+       *)
       val rec isLocation =
          fn ArrayOffset _ => true
           | Cast (z, _) => isLocation z
@@ -344,6 +348,8 @@ structure Operand =
           | ChunkedOffset _ => true
           | Register _ => true
           | StackOffset _ => true
+          | ChunkExnHandler _ => true
+          | ChunkExnLink => true
           | _ => false
    end
 
@@ -1289,10 +1295,12 @@ structure Program =
                         else NONE
                    | Jump => SOME alloc
                end
-            fun checkStatement (s: Statement.t, alloc: Alloc.t)
-               : Alloc.t option =
+            fun checkStatement (s: Statement.t, alloc: Alloc.t): Alloc.t option =
                let
                   datatype z = datatype Statement.t
+                  (*
+                  val _ = TextIO.print (concat ["checkStatement: ", Layout.toString (Statement.layout s), "\n"])
+                  *)
                in
                   case s of
                      Move {dst, src} =>
@@ -1300,6 +1308,16 @@ structure Program =
                            val _ = checkOperand (src, alloc)
                            val alloc = Alloc.define (alloc, dst)
                            val _ = checkOperand (dst, alloc)
+                           (*
+                            val _ = TextIO.print "  Move "
+                            val _ = TextIO.print ("  src-Type: " ^ Layout.toString (Type.layout(Operand.ty src)))
+                            val _ = TextIO.print ("  dst-Type: " ^ Layout.toString (Type.layout(Operand.ty dst)))
+                            val _ = TextIO.print "\n    is src a subtype of dst? "
+                            val _ = TextIO.print (Bool.toString (Type.isSubtype (Operand.ty src, Operand.ty dst)))
+                            val _ = TextIO.print "\n    is dst a location that can be written to? "
+                            val _ = TextIO.print (Bool.toString (Operand.isLocation dst))
+                            val _ = TextIO.print "\n"
+                           *)
                         in
                            if Type.isSubtype (Operand.ty src, Operand.ty dst)
                               andalso Operand.isLocation dst
@@ -1310,6 +1328,8 @@ structure Program =
                    | PrimApp {args, dst, prim, ...} =>
                         let
                            val _ = checkOperands (args, alloc)
+                           (*val _ = TextIO.print "  PrimApp\n"*)
+
                            val alloc =
                               case dst of
                                  NONE => SOME alloc

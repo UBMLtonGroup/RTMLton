@@ -77,7 +77,7 @@ structure Operand =
                in
                   case c of
                      IntInf _ => Type.intInf ()
-                   | Null => (print "here\n"; Type.cpointer ())
+                   | Null => Type.cpointer ()
                    | Real r => Type.real (RealX.size r)
                    | Word w => Type.ofWordX w
                    | WordVector v => Type.ofWordXVector v
@@ -1580,7 +1580,7 @@ structure Program =
             fun statementOk (s: Statement.t): bool =
                let
                   datatype z = datatype Statement.t
-                  val _ = print (Layout.toString (Statement.layout s) ^ "\n")
+                  (*val _ = print ("statementOk: "^ Layout.toString (Statement.layout s) ^ "\n")*)
                in
                   case s of
                      Bind {src, dst = (_, dstTy), ...} =>
@@ -1617,7 +1617,9 @@ structure Program =
                               | _ => false)
                         end
                    | PrimApp {args, dst, prim} =>
-                        (print ("checkprim "  ^ "\n"); Vector.foreach (args, checkOperand)
+                        (
+                        (*print ("   statementOk->checkprim "  ^ "\n"); *)
+                         Vector.foreach (args, checkOperand)
                          ; (Type.checkPrimApp
                             {args = Vector.map (args, Operand.ty),
                              prim = prim,

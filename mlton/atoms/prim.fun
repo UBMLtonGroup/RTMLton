@@ -35,6 +35,7 @@ structure Kind =
 
 datatype 'a t =
    Array_array (* backend *)
+ | ChunkExnHandler
  | Array_array0Const (* constant propagation *)
  | Array_length (* ssa to rssa *)
  | Array_sub (* backend *)
@@ -232,6 +233,7 @@ fun toString (n: 'a t): string =
        | Array_update => "Array_update"
        | UM_CPointer_offset => "UM_CPointer_offset"
        | UM_Object_alloc => "UM_Object_alloc"
+       | ChunkExnHandler => "ChunkExnHandler"
        | CPointer_add => "CPointer_add"
        | CPointer_diff => "CPointer_diff"
        | CPointer_equal => "CPointer_equal"
@@ -417,6 +419,7 @@ val equals: 'a t * 'a t -> bool =
     | (IntInf_toWord, IntInf_toWord) => true
     | (IntInf_xorb, IntInf_xorb) => true
     | (Lock_fl, Lock_fl) => true
+    | (ChunkExnHandler, ChunkExnHandler) => true
     | (MLton_bogus, MLton_bogus) => true
     | (MLton_bug, MLton_bug) => true
     | (MLton_deserialize, MLton_deserialize) => true
@@ -585,6 +588,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | IntInf_toWord => IntInf_toWord
     | IntInf_xorb => IntInf_xorb
     | Lock_fl => Lock_fl
+    | ChunkExnHandler => ChunkExnHandler
     | MLton_bogus => MLton_bogus
     | MLton_bug => MLton_bug
     | MLton_deserialize => MLton_deserialize
@@ -692,6 +696,7 @@ val cpointerDiff = CPointer_diff
 val cpointerEqual = CPointer_equal
 val lockfl = Lock_fl
 val unlockfl = Unlock_fl
+val chunkExnHandler = ChunkExnHandler
 fun cpointerGet ctype =
    let datatype z = datatype CType.t
    in
@@ -843,6 +848,7 @@ val kind: 'a t -> Kind.t =
        | IntInf_toWord => Functional
        | IntInf_xorb => Functional
        | Lock_fl => Functional
+       | ChunkExnHandler => Functional
        | MLton_bogus => Functional
        | MLton_bug => SideEffect
        | MLton_deserialize => Moveable
@@ -1047,6 +1053,7 @@ in
        IntInf_toWord,
        IntInf_xorb,
        Lock_fl,
+       ChunkExnHandler,
        MLton_bogus,
        MLton_bug,
        MLton_deserialize,
@@ -1378,6 +1385,7 @@ fun 'a checkApp (prim: 'a t,
        | String_toWord8Vector =>
             noTargs (fn () => (oneArg string, word8Vector))
        | Unlock_fl => oneTarg (fn t => (oneArg t, unit))
+       | ChunkExnHandler => noTargs (fn () => (noArgs, unit))
        | Vector_length => oneTarg (fn t => (oneArg (vector t), seqIndex))
        | Vector_sub => oneTarg (fn t => (twoArgs (vector t, seqIndex), t))
        | Weak_canGet => oneTarg (fn t => (oneArg (weak t), bool))

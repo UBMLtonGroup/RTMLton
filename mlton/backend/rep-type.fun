@@ -63,6 +63,7 @@ structure Type =
              (Bits, Bits) => true
            | (CPointer, CPointer) => true
            | (ExnStack, ExnStack) => true
+           | (ExnStack, CPointer) => true
            | (GCState, GCState) => true
            | (Label l, Label l') => Label.equals (l, l')
            | (Objptr opts, Objptr opts') =>
@@ -82,7 +83,7 @@ structure Type =
          T {node = CPointer, width = WordSize.bits (WordSize.cpointer ())}
 
       val exnStack: unit -> t = fn () =>
-         T {node = ExnStack, width = WordSize.bits (WordSize.cpointer ())}
+         T {node = CPointer, width = WordSize.bits (WordSize.cpointer ())}
 
       val gcState: unit -> t = fn () =>
          T {node = GCState, width = WordSize.bits (WordSize.cpointer ())}
@@ -530,11 +531,10 @@ fun ofGCField (f: GCField.t): t =
    in
       case f of
          AtomicState => word32
-       | CardMapAbsolute => cpointer ()
        | CurrentFrame => cpointer ()
        | CurrentThread => thread ()
        | CurSourceSeqsIndex => word32
-       | ExnStack => exnStack ()
+       | ExnStack => cpointer ()
        | FLChunks => word32
        | FLLock => cpointer ()
        | Frontier => cpointer ()
@@ -545,6 +545,7 @@ fun ofGCField (f: GCField.t): t =
        | Reserved => word32
        | RTSync => word32
        | SignalIsPending => word32
+       | StackDepth => word32
    end
 
 fun castIsOk {from, to, tyconTy = _} =
@@ -552,18 +553,21 @@ fun castIsOk {from, to, tyconTy = _} =
 
 fun checkPrimApp {args, prim, result} =
    let
+      (*val _  = print ("checkPrimApp: " ^ Prim.toString prim ^ "\n")*)
       datatype z = datatype Prim.Name.t
       fun done (argsP, resultP) =
          let
             val argsP = Vector.fromList argsP
-            val _ = print "type check: args and rv\n"
+            (*val _ = print ("type check: args and rv " ^ Int.toString(Vector.length args) ^ " = "
+                        ^ Int.toString(Vector.length argsP) ^ "?\n")
+            *)
          in
             (Vector.length args = Vector.length argsP)
             andalso (Vector.forall2 (args, argsP,
                                      fn (arg, argP) => argP arg))
             andalso (case (result, resultP) of
                         (NONE, NONE) => true
-                      | (SOME result, SOME resultP) => resultP result
+                      | (SOME result, SOME resultP) => (resultP result)
                       | _ => false)
          end
       val bits = fn s => fn t => equals (t, bits s)
@@ -614,6 +618,7 @@ fun checkPrimApp {args, prim, result} =
        | CPointer_equal => done ([cpointer, cpointer], SOME bool)
        | CPointer_fromWord => done ([csize], SOME cpointer)
        | UM_CPointer_offset => done ([gcState, cpointer, cptrdiff, cptrdiff], SOME cpointer)
+       | UM_Object_alloc => done ([gcState, csize, csize, csize], SOME cpointer)
        | CPointer_lt => done ([cpointer, cpointer], SOME bool)
        | CPointer_sub => done ([cpointer, cptrdiff], SOME cpointer)
        | CPointer_toWord => done ([cpointer], SOME csize)
@@ -622,6 +627,7 @@ fun checkPrimApp {args, prim, result} =
                         SOME (fn t => equals (t, CFunction.return f)))
        | FFI_Symbol _ => done ([], SOME cpointer)
        | Lock_fl => done ([cpointer], NONE)
+       | ChunkExnHandler => true
        | Unlock_fl => done ([cpointer], NONE)
        | MLton_touch => done ([objptr], NONE)
        | Real_Math_acos s => realUnary s

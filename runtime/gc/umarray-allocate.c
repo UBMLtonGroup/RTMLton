@@ -34,7 +34,7 @@ pointer GC_arrayAllocate (GC_state s,
     size_t numChunks = numElements / chunkNumObjs + (numElements % chunkNumObjs != 0);
 
     if (DEBUG_MEM) {
-        fprintf(stderr, "numElements: %d, chunkNumObjs: %d, numChunks: %d\n",
+        fprintf(stderr, "numElements: %zd, chunkNumObjs: %zd, numChunks: %zd\n",
                 numElements, chunkNumObjs, numChunks);
     }
         
@@ -61,7 +61,7 @@ pointer GC_arrayAllocate (GC_state s,
     GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap),numChunksToRequest);
     
     if(DEBUG_CHUNK_ARRAY)
-        fprintf(stderr,"%d] Initial allocHead length: %d, numChunks = %d\n",PTHREAD_NUM,getLengthOfList(allocHead),numChunks);
+        fprintf(stderr,"%d] Initial allocHead length: %zd, numChunks = %zd\n",PTHREAD_NUM,getLengthOfList(allocHead),numChunks);
 
     GC_UM_Array_Chunk new = allocHead;
     allocHead = allocHead->next_chunk;
@@ -102,7 +102,7 @@ pointer GC_arrayAllocate (GC_state s,
     }
 
     if(DEBUG_CHUNK_ARRAY)
-        fprintf(stderr,"%d] allocHead length after Leaf alloc: %d\n",PTHREAD_NUM,getLengthOfList(allocHead));
+        fprintf(stderr,"%d] allocHead length after Leaf alloc: %zd\n",PTHREAD_NUM,getLengthOfList(allocHead));
 
     GC_UM_Array_Chunk root = UM_Group_Array_Chunk(s,
                                                   parray_header,
@@ -114,8 +114,8 @@ pointer GC_arrayAllocate (GC_state s,
 
     if(DEBUG_CHUNK_ARRAY)
     {
-       fprintf(stderr,"%d] allocHead length after 1st group alloc: %d\n",PTHREAD_NUM,getLengthOfList(allocHead));
-       fprintf(stderr, "%d] 1st group created array with chunk_fan_out: %d\n",PTHREAD_NUM,root->array_chunk_fan_out);
+       fprintf(stderr,"%d] allocHead length after 1st group alloc: %zd\n",PTHREAD_NUM,getLengthOfList(allocHead));
+       fprintf(stderr, "%d] 1st group created array with chunk_fan_out: %zd\n",PTHREAD_NUM,root->array_chunk_fan_out);
     }
 
     while (root->next_chunk) {
@@ -124,14 +124,14 @@ pointer GC_arrayAllocate (GC_state s,
     }
 
     if(DEBUG_CHUNK_ARRAY)
-        fprintf(stderr,"%d] allocHead length after all alloc: %d\n",PTHREAD_NUM,getLengthOfList(allocHead));
+        fprintf(stderr,"%d] allocHead length after all alloc: %zd\n",PTHREAD_NUM,getLengthOfList(allocHead));
 
     root->array_chunk_numObjs = parray_header->array_chunk_numObjs;
     root->array_chunk_length = parray_header->array_chunk_length;
     parray_header->root = root;
 
     if (DEBUG_CHUNK_ARRAY)
-        fprintf(stderr, "%d] Created array with chunk_fan_out: %d\n",PTHREAD_NUM,root->array_chunk_fan_out);
+        fprintf(stderr, "%d] Created array with chunk_fan_out: %zd\n",PTHREAD_NUM,root->array_chunk_fan_out);
 
     /*ensure that no chunks remain in the initially allocated list*/
     assert(allocHead == NULL);
