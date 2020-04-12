@@ -1580,6 +1580,7 @@ structure Program =
             fun statementOk (s: Statement.t): bool =
                let
                   datatype z = datatype Statement.t
+                  (*val _ = print ("statementOk: "^ Layout.toString (Statement.layout s) ^ "\n")*)
                in
                   case s of
                      Bind {src, dst = (_, dstTy), ...} =>
@@ -1616,7 +1617,9 @@ structure Program =
                               | _ => false)
                         end
                    | PrimApp {args, dst, prim} =>
-                        (Vector.foreach (args, checkOperand)
+                        (
+                        (*print ("   statementOk->checkprim "  ^ "\n"); *)
+                         Vector.foreach (args, checkOperand)
                          ; (Type.checkPrimApp
                             {args = Vector.map (args, Operand.ty),
                              prim = prim,

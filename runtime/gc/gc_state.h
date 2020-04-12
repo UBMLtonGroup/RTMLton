@@ -19,16 +19,15 @@ struct GC_state {
    runtime/gc/realtime_thread.h:4:#define MAXPRI 3
 
    */
-  size_t foobar[4];
 /*0*/  pointer frontier; /* heap.start <= frontier < limit */
 /*4*/  pointer limit; /* limit = heap.start + heap.size */
 /*8*/  objptr exnStack[MAXPRI];
-/*12*/  objptr currentFrame[MAXPRI];
-/*16*/  size_t fl_chunks;
-/*28*/  size_t stackDepth[MAXPRI];
+/*20*/  objptr currentFrame[MAXPRI];
+/*32*/  volatile uint32_t fl_chunks;
+/*36*/  size_t stackDepth[MAXPRI];
 
-  size_t reserved;
-  size_t heuristicChunks;
+  volatile uint32_t reserved;
+  volatile uint32_t heuristicChunks;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */

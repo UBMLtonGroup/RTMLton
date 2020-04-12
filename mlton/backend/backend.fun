@@ -641,8 +641,8 @@ let
                      val label_size = Bytes.toInt (Runtime.labelSize ())
                      val offset = Bytes.toInt (handlerOffset ())
                   in
-                    (print (concat ["SetExnStackLocal: handleroffset ", Int.toString (offset),
-                                    " labelsize ", Int.toString(label_size), "\n"]);
+                    ((*print (concat ["SetExnStackLocal: handleroffset ", Int.toString (offset),
+                                    " labelsize ", Int.toString(label_size), "\n"]); *)
                          (* gcState->exnStack = gcState->currentFrame *)
                          Vector.new1
                            (M.Statement.move
@@ -657,8 +657,8 @@ let
                      rtmlton: currentFrame->ml_object[handlerOffset] = handler;
                               currentFrame->handler = handler
                    *)
-                  (   print (concat ["SetHandler      : handleroffset ",
-                             Int.toString (Bytes.toInt(handlerOffset())), "\n"]);
+                  (  (* print (concat ["SetHandler      : handleroffset ",
+                             Int.toString (Bytes.toInt(handlerOffset())), "\n"]); *)
                       Vector.new2
                         (M.Statement.move
                          {dst = M.Operand.stackOffset {offset = handlerOffset (),
@@ -685,8 +685,8 @@ let
                         ExnStack = *(uint* )(stackTop + linkOffset);
                   *)
                   (
-                  print (concat ["SetExnStackSlot  : linkoffset ",
-                         Int.toString (Bytes.toInt(linkOffset())), "\n"]);
+                  (*print (concat ["SetExnStackSlot  : linkoffset ",
+                         Int.toString (Bytes.toInt(linkOffset())), "\n"]);*)
                   Vector.new1
                   (M.Statement.move
                    {dst = exnStackOp,
@@ -708,8 +708,8 @@ let
 
                    *)
                   (
-                   print (concat ["SetSlotExnStack  : linkoffset ",
-                          Int.toString (Bytes.toInt(linkOffset())), "\n"]);
+                   (*print (concat ["SetSlotExnStack  : linkoffset ",
+                          Int.toString (Bytes.toInt(linkOffset())), "\n"]); *)
                   Vector.new1
                   (M.Statement.move
                    {dst = M.Operand.stackOffset {offset = linkOffset (),

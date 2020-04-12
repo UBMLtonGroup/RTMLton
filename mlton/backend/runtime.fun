@@ -15,20 +15,20 @@ structure GCField =
    struct
       datatype t =
          AtomicState
+       | CurrentFrame
        | CurrentThread
        | CurSourceSeqsIndex
        | ExnStack
+       | FLChunks
+       | FLLock
        | Frontier
+       | HeuristicChunks
        | Limit
        | LimitPlusSlop
        | MaxFrameSize
-       | SignalIsPending
-       | FLChunks
-       | CurrentFrame
-       | RTSync
-       | HeuristicChunks
-       | FLLock
        | Reserved
+       | RTSync
+       | SignalIsPending
        | StackDepth
 
       val atomicStateOffset: Bytes.t ref = ref Bytes.zero
@@ -42,7 +42,7 @@ structure GCField =
       val signalIsPendingOffset: Bytes.t ref = ref Bytes.zero
       val flChunksOffset: Bytes.t ref = ref Bytes.zero
       val currentFrameOffset: Bytes.t ref = ref Bytes.zero
-      val rtSyncOffset :Bytes.t ref = ref Bytes.zero
+      val rtSyncOffset: Bytes.t ref = ref Bytes.zero
       val heuristicChunksOffset: Bytes.t ref = ref Bytes.zero
       val flLockOffset: Bytes.t ref = ref Bytes.zero
       val reservedOffset: Bytes.t ref = ref Bytes.zero

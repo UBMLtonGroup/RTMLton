@@ -34,6 +34,7 @@ signature PRIM =
              | Array_update (* ssa to ssa2 *)
              | UM_CPointer_offset (* not optimized *)
              | UM_Object_alloc (* not optimized *)
+             | ChunkExnHandler
              | CPointer_add (* not optimized *)
              | CPointer_diff (* codegen *)
              | CPointer_equal (* codegen *)
@@ -248,6 +249,7 @@ signature PRIM =
       val cpointerEqual: 'a t
       val lockfl: 'a t
       val unlockfl: 'a t
+      val chunkExnHandler: 'a t
       val cpointerGet: CType.t -> 'a t
       val cpointerLt: 'a t
       val cpointerSet: CType.t -> 'a t

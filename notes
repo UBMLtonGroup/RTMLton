@@ -1,3 +1,9 @@
+Code Layout
+
+WordSize is defined in mlton/atoms/word-size.fun
+
+
+
 TODO https://github.com/MLton/mlton/commit/7cc22f34ff18d3433c17f4f9089e4d8b6d48f063
 
 
