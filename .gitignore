@@ -4,7 +4,6 @@
 *~
 *.sml-e
 cscope.*
-regression/*
 *.swp
 core
 *.0.c

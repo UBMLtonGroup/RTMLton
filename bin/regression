@@ -261,8 +261,7 @@ done
 if $cross || $runOnly || $short || $testReg ; then
         exit 0
 fi
-exit 0
-mmake clean >/dev/null
+#mmake clean >/dev/null
 cd "$src/benchmark/tests"
 for f in *.sml; do
         f=`basename "$f" .sml`
