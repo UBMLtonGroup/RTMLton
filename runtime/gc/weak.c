@@ -65,6 +65,9 @@ pointer GC_weakGet(GC_state s, pointer p) {
 pointer GC_weakNew(GC_state s, GC_header header, pointer p) {
 	GC_weak weak;
 	pointer res;
+    
+    /*Will block if there aren't enough chunks*/
+    reserveAllocation(s, 1);
 
 	res = UM_Object_alloc(s, 1 /* num chunks */, header, GC_NORMAL_HEADER_SIZE);
 
