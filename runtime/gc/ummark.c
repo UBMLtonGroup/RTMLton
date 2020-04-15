@@ -347,7 +347,10 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 		GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
 
 		return (ISINUSE(pc->array_chunk_header) && ISMARKED(pc->array_chunk_header));
-	} else {
+	} else if (tag == WEAK_TAG) { 
+        GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
+		return (ISINUSE(pc->chunk_header) && ISMARKED(pc->chunk_header));
+    } else {
 		/*weak or error tags*/
 		die("Why are you checking a %s object chunk??\n",(tag == STACK_TAG)?"Stack":"Weak");
 	}
@@ -383,7 +386,13 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 			return false;
 
 	} else if (tag == WEAK_TAG) {
-		die("Why are you checking a %s object chunk??\n", (tag == STACK_TAG) ? "Stack" : "Weak");
+        GC_UM_Chunk pc = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
+
+		if (ISINUSE(pc->chunk_header) && ISGREY(pc->chunk_header))
+			return true;
+		else
+			return false;
+
 	} else {
 		return false;
 	}
