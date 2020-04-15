@@ -223,7 +223,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  assert (STACK_TAG == tag);
 	  GC_UM_Chunk stackFrame = (GC_UM_Chunk)(p - GC_HEADER_SIZE);
 	  GC_returnAddress returnAddress = *(uintptr_t*)(
-	  		stackFrame->ml_object + stackFrame->ra + GC_HEADER_SIZE);
+	  		stackFrame->ml_object + stackFrame->ra);
 	  assert (stackFrame->ra != 0); // cant process a frame if we dont know its layout
 
 	  if (DEBUG_RTGC) {
@@ -246,7 +246,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 
 	  for (uint32_t i = 0 ; i < frameOffsets[0] ; ++i) {
 		  uintptr_t x = (uintptr_t)(
-		  		stackFrame->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE+4); // why??
+		  		stackFrame->ml_object + frameOffsets[i + 1] + GC_HEADER_SIZE);
 		  unsigned int xv = *(objptr*)x;
 
 		  if (DEBUG_RTGC)

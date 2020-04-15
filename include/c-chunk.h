@@ -49,7 +49,11 @@ void um_dumpFrame (void *s, void *f);
 #define NO_CACHE_FRONTIER
 
 #define GCState ((Pointer)&gcState)
-#define ExnStack *(size_t*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
+/* ExnStack does not point to a GC_UM_Chunk, it points to one word
+ * past it. so to map to a GC_UM_Chunk and reference its fields, we must subtract
+ * one word.
+ */
+#define ExnStack *(Pointer*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define CurrentThread *(size_t*)(GCState + CurrentThreadOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define UMFrontierMem *(Pointer*)(GCState + UMFrontierOffset)
@@ -118,6 +122,10 @@ void um_dumpFrame (void *s, void *f);
                 } while(0)                                          \
 
 
+/* CurrentFrame does not point to a GC_UM_Chunk, it points to one word
+ * past it. so to map to a GC_UM_Chunk and reference its fields, we must subtract
+ * one word. The S() macro however, writes to CurrentFrame+offset
+ */
 #define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
 
 #define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))
@@ -127,20 +135,20 @@ void um_dumpFrame (void *s, void *f);
                                *(ty*)(StackTop + (i)))) , \
                         (ty*)(StackTop + (i))))
 
-#define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i) + STACKHEADER)
+#define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i))
 #define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
                                 (void*)CurrentFrame, i, \
-                                (void*)(CurrentFrame + (i) + STACKHEADER), \
-                               *(ty*)(CurrentFrame + (i)  + STACKHEADER))) , \
-                                (ty*)(CurrentFrame + (i)  + STACKHEADER)))
+                                (void*)(CurrentFrame + (i)), \
+                               *(ty*)(CurrentFrame + (i)))) , \
+                                (ty*)(CurrentFrame + (i))))
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
 #define Lock_fl(s) IFED(pthread_mutex_lock(&s))
 #define Unlock_fl(s) IFED(pthread_mutex_unlock(&s))
 
-#define ChunkExnHandler ((struct GC_UM_Chunk*)CurrentFrame)->handler
-#define ChunkExnLink ((struct GC_UM_Chunk*)CurrentFrame)->link
+#define ChunkExnHandler ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->handler
+#define ChunkExnLink ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->link
 
 
 #ifdef STACKLETS
@@ -337,7 +345,7 @@ void dump_hex(char *str, int len);
                      struct GC_UM_Chunk *xx = cf; \
                      StackDepth = StackDepth - 1; \
                      if (STACKLET_DEBUG) { \
-                        int fnum = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra + STACKHEADER); \
+                        int fnum = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra ); \
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) " \
                                 YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx prev %"FW"lx ", \
                                 __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, \
@@ -346,7 +354,7 @@ void dump_hex(char *str, int len);
                                 if(STACKLET_DEBUG > 1) {\
                                   fprintf(stderr, "%d \n", cf->prev_chunk->ra);  \
                                   dump_hex(cf, (-bytes)+STACKHEADER); \
-                                  } \
+                                } \
                      } \
                      if (cf->prev_chunk) { \
                          CurrentFrame = (pointer)(cf->prev_chunk) + STACKHEADER; \
@@ -356,7 +364,7 @@ void dump_hex(char *str, int len);
                 } else if (bytes > 0) {   \
                      struct GC_UM_Chunk *xx = cf; \
                      cf->ra = bytes; \
-                     int fnum = *(GC_returnAddress*)(cf->ml_object + cf->ra + STACKHEADER); \
+                     int fnum = *(GC_returnAddress*)((void *)&(cf->ml_object) + cf->ra ); \
                      StackDepth = StackDepth + 1; \
                      if (STACKLET_DEBUG)  { \
                         fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
@@ -389,7 +397,7 @@ void dump_hex(char *str, int len);
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n")); \
                 else { \
                     memcpy(cf->memcpy_addr, cf->ml_object+STACKHEADER, cf->memcpy_size); \
-                    l_nextFun = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra + STACKHEADER); \
+                    l_nextFun = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra); \
                     if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
                             fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_Return()")"  %d/%x l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx ra %d\n"),   \
                                             __FILE__, __LINE__, PTHREAD_NUM, CurrentThread, (int)l_nextFun,           \
@@ -400,7 +408,7 @@ void dump_hex(char *str, int len);
 
 #define STACKLET_Raise()                                                                \
         do {                                                                    \
-                struct GC_UM_Chunk *cf = ExnStack;  \
+                struct GC_UM_Chunk *cf = (ExnStack - STACKHEADER);  \
                 if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
                          __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
@@ -408,7 +416,7 @@ void dump_hex(char *str, int len);
                 else { \
                     l_nextFun = cf->handler; \
                     /* see discussion in backend.fun's SetExnStackLocal for explanation of next line */ \
-                    CurrentFrame = ((struct GC_UM_Chunk *)ExnStack)->next_chunk; \
+                    CurrentFrame = ((struct GC_UM_Chunk *)(ExnStack-STACKHEADER))->next_chunk; \
                     if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
                             fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_RaiseReturn()")"  l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx\n"),   \
                                             __FILE__, __LINE__, (int)l_nextFun,           \
