@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdatomic.h>
+#include <assert.h>
 
 #ifndef PTHREAD_NUM
 # define PTHREAD_NUM get_pthread_num()
@@ -341,6 +342,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER); \
+                assert (cf->sentinel == 9999); \
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *xx = cf; \
                      StackDepth = StackDepth - 1; \
@@ -352,7 +354,6 @@ void dump_hex(char *str, int len);
                                 fnum, StackDepth, xx, \
                                 cf, cf->prev_chunk); \
                                 if(STACKLET_DEBUG > 1) {\
-                                  fprintf(stderr, "%d \n", cf->prev_chunk->ra);  \
                                   dump_hex(cf, (-bytes)+STACKHEADER); \
                                 } \
                      } \
@@ -367,48 +368,58 @@ void dump_hex(char *str, int len);
                      int fnum = *(GC_returnAddress*)((void *)&(cf->ml_object) + cf->ra ); \
                      StackDepth = StackDepth + 1; \
                      if (STACKLET_DEBUG)  { \
-                        fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
+                        fprintf(stderr, "%s:%d: %d] "GREEN("SKLT_Push")" (%4d) (thr:%x) "\
+                             YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
                              __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                              cf, cf->next_chunk); \
-                        if (STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("current chunk:\n")); dump_hex(cf, bytes+STACKHEADER); } \
-                     } \
+                        if (STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("current chunk:\n")); \
+                            dump_hex(cf, bytes+STACKHEADER); } \
+                        } \
                      if (cf->next_chunk) { \
-                         if (UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER < STACKHEADER) die("impossible no room in next chunk"); \
+                         if (UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER < STACKHEADER) \
+                             die("impossible no room in next chunk"); \
                          if (STACKLET_DEBUG > 2) fprintf(stderr, RED("memcpy: ") "(%"FW"lx, %"FW"lx, %d)\n", \
-                                                 cf->next_chunk->ml_object+STACKHEADER, cf->ml_object+bytes+STACKHEADER,\
+                                                 cf->next_chunk->ml_object+STACKHEADER, \
+                                                 cf->ml_object+bytes+STACKHEADER,\
                                                  UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER); \
                          memcpy(cf->next_chunk->ml_object+STACKHEADER, cf->ml_object+bytes+STACKHEADER, \
                                 UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER); \
                          cf->next_chunk->memcpy_addr = cf->ml_object+bytes+STACKHEADER; \
                          cf->next_chunk->memcpy_size = UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER; \
                          CurrentFrame = (pointer)cf->next_chunk + STACKHEADER; \
-                         if(STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("\nnext_chunk:\n")); dump_hex(cf->next_chunk, 100); } \
+                         if(STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("\nnext_chunk:\n")); \
+                             dump_hex(cf->next_chunk, 100); \
+                         } \
                      } else {                                                \
-                         if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant advance to next frame\n"));   die("out of stack");   \
+                         if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant advance to next frame\n"));\
+                         die("out of stack");   \
                      } if (STACKLET_DEBUG) fprintf(stderr, "\n"); \
                      if (STACKLET_DEBUG > 2) um_dumpStack((void*)&gcState); \
                 } else { if (STACKLET_DEBUG) fprintf(stderr, RED("???SKLT_Push(0)\n")); } \
         } while (0)
 
-#define STACKLET_Return()                                                                \
-        do {                                                                    \
-                struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER); \
-                if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n")); \
-                else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n")); \
-                else { \
-                    memcpy(cf->memcpy_addr, cf->ml_object+STACKHEADER, cf->memcpy_size); \
-                    l_nextFun = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra); \
-                    if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
-                            fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_Return()")"  %d/%x l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx ra %d\n"),   \
-                                            __FILE__, __LINE__, PTHREAD_NUM, CurrentThread, (int)l_nextFun,           \
-                                            cf, cf->prev_chunk, cf->prev_chunk->ra);    \
-                    goto top;                                                       \
-                } \
+#define STACKLET_Return()                                                                                           \
+        do {                                                                                                        \
+                struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER);                        \
+                assert (cf->sentinel == 9999 || 1!=1);                                                              \
+                if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n"));              \
+                else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n"));                              \
+                else {                                                                                              \
+                    memcpy(cf->memcpy_addr, cf->ml_object+STACKHEADER, cf->memcpy_size);                            \
+                    l_nextFun = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra);               \
+                    if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                                           \
+                            fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_Return()")                                  \
+                                            "  %d/%x l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx ra %d\n"),    \
+                                            __FILE__, __LINE__, PTHREAD_NUM, CurrentThread, (int)l_nextFun,         \
+                                            cf, cf->prev_chunk, cf->prev_chunk->ra);                                \
+                    goto top;                                                                                       \
+                }                                                                                                   \
         } while (0)
 
 #define STACKLET_Raise()                                                                \
         do {                                                                    \
                 struct GC_UM_Chunk *cf = (ExnStack - STACKHEADER);  \
+                assert (cf->sentinel == 9999 || 2!=2); \
                 if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
                          __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
@@ -416,9 +427,10 @@ void dump_hex(char *str, int len);
                 else { \
                     l_nextFun = cf->handler; \
                     /* see discussion in backend.fun's SetExnStackLocal for explanation of next line */ \
-                    CurrentFrame = ((struct GC_UM_Chunk *)(ExnStack-STACKHEADER))->next_chunk; \
+                    CurrentFrame = STACKHEADER+(Pointer)(((struct GC_UM_Chunk *)(ExnStack-STACKHEADER))->next_chunk); \
                     if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                             \
-                            fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_RaiseReturn()")"  l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx\n"),   \
+                            fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_RaiseReturn()")\
+                                            "  l_nextFun = %d currentFrame %"FW"lx prev %"FW"lx\n"),   \
                                             __FILE__, __LINE__, (int)l_nextFun,           \
                                             cf, cf->prev_chunk);    \
                     goto top;                                                       \

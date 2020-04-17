@@ -198,17 +198,6 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
         if(isSrcOnUMHeap || isDstOnUMHeap)
             fprintf(stderr,"%d]In writebarrier, srcbase= "FMTPTR", dstbase= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)srcbase,(uintptr_t)dstbase, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
     }
-   
-
-
-
-    /*    if(isPointerMarkedByMode(dstbase, MARK_MODE))
-            fprintf(stderr,"Marked\n");
-        else if(!isPointerMarkedByMode(dstbase, MARK_MODE))
-            fprintf(stderr,"UnMarked\n");
-        else
-            fprintf(stderr,"Grey mode ?\n");
-            */
 }
 
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
@@ -227,20 +216,30 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         return base + index * elemSize + offset;
     }
 
+    /* base points to the ml_array_payload field (see GC_array_allocate)
+     * and so we must deduct the array_chunk_ml_header and array_chunk_length fields
+     * as well as the header field
+     */
     GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)
-        (base - GC_HEADER_SIZE - GC_HEADER_SIZE);
+        (base - GC_HEADER_SIZE - sizeof(Word32_t));
+
+    assert (fst_leaf->array_chunk_magic == 9998);
 
     if (fst_leaf->array_num_chunks <= 1) {
         return ((Pointer)&(fst_leaf->ml_array_payload.ml_object[0])) + index * elemSize + offset;
     }
 
-    GC_UM_Array_Chunk root = fst_leaf->root;
+    GC_UM_Array_Chunk root2 __attribute__((unused)) = (GC_UM_Array_Chunk)((pointer)(fst_leaf->root)-12);
+	GC_UM_Array_Chunk root = fst_leaf->root;
+
+    assert (root->array_chunk_magic == 9998);
 
     if (DEBUG_MEM) {
         fprintf(stderr, "UM_Array_offset: "FMTPTR" root: "
                 FMTPTR", index: %d size: %d offset %d, "
                 " length: %d, chunk_num_objs: %d\n",
-                (uintptr_t)(base - 8), (uintptr_t)root, index, elemSize, offset,
+                (uintptr_t)(base - GC_HEADER_SIZE - sizeof(Word32_t)),
+                (uintptr_t)root, index, elemSize, offset,
                 fst_leaf->array_chunk_length,
                 fst_leaf->array_chunk_numObjs);
     }
