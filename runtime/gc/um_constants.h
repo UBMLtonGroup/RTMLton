@@ -1,8 +1,23 @@
+
+/*
+ * Currently GC_UM_CHUNK with UM_CHUNK_PAYLOAD_SIZE =154 is 208 bytes
+ * To match Array chunk sizes to utilize max space:
+ * with UM_CHUNK_ARRAY_PAYLOAD_SIZE 128, difference between the two is 
+ * 24 bytes. 
+ * Adding 24 bytes to array payload --> 128+24 = 152
+ * This means internal array nodes can now hold 152/4 = 38 internal pointers.
+ *  Size of GC_UM_CHUNK = size of GC_UM_ARRAY_CHUNK = 208
+ *
+ *  Maintain this whenever the structs in umheap.h are changed or when payload sizes are changed
+ *
+ * */
+
+
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 #define UM_CHUNK_PAYLOAD_SIZE            154
 #define UM_CHUNK_PAYLOAD_SAFE_REGION     16
-#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 32
-#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      128
+#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 38
+#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      152
 #define UM_CHUNK_SENTINEL                9999
 
 /*
