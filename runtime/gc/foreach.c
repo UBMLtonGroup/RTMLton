@@ -199,10 +199,14 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
 
 	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-      if (fst_leaf->array_chunk_length > 0) {
+	  assert (fst_leaf->array_chunk_magic == 9998);
+
+	  if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
-          size_t i, j;
+		  assert (cur_chunk->array_chunk_magic == 9998);
+
+		  size_t i, j;
           size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
           for (i=0; i<length; i++) {
               pointer start = (pointer)&(cur_chunk->ml_array_payload.ml_object[0]);

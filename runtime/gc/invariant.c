@@ -63,6 +63,7 @@ bool invariantForRTGC(GC_state s)
         {
 
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + 4); /*account for size of chunktype*/
+            assert (pc->array_chunk_magic == 9998);
             if (ISINUSE(pc->array_chunk_header) && ISUNMARKED(pc->array_chunk_header)) {
                 fprintf(stderr,"invariantforRTGC failed. Header is "FMTPTR"\n ",(uintptr_t)pc->array_chunk_header);
 

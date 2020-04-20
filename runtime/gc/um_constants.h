@@ -16,16 +16,17 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 #define UM_CHUNK_PAYLOAD_SIZE            154
 #define UM_CHUNK_PAYLOAD_SAFE_REGION     16
-#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 38
-#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      152
+#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 38 /* UM_CHUNK_ARRAY_PAYLOAD_SIZE / 4 ; FIX on 64bit*/
+#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      152 /* this should probably be INTERNAL_POINTERS*sizeof(void*) */
 #define UM_CHUNK_SENTINEL                9999
+#define UM_ARRAY_SENTINEL                9998
 
 /*
  * Chunk header splitup
  * bits         purpose
- * 00-03       Chunk in use/clean
- * 04-07    Mark bits
- * 08-31    Object counter
+ * 00-03        Chunk in use/clean
+ * 04-07        Mark bits
+ * 08-31        Object counter
  */
 
 #define UM_CHUNK_HEADER_CLEAN            ((UM_header)0x0)

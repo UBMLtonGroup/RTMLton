@@ -172,6 +172,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 }
 
 GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks) {
+	assert (numChunks > 0);
 
 	if (numChunks > s->maxChunksAvailable) {
 		die("Insufficient Memory: Asking for more memory than total heap space\n");
@@ -179,10 +180,6 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks
 
 
 	LOCK_FL;
-	/*if (s->fl_chunks < 1 || s->fl_chunks < numChunks) {
-
-		 blockAllocator(s,numChunks);
-	 }*/
 
 	assert(numChunks <= s->reserved);
 
@@ -192,7 +189,6 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks
 		int i;
 		GC_UM_Array_Chunk current = head;
 		for (i = 0; i < (numChunks - 1); i++) {
-
 			current->next_chunk = allocNextArrayChunk(s, &(s->umheap));
 			current = current->next_chunk;
 		}
@@ -316,8 +312,7 @@ bool createUMHeap(GC_state s,
 	fprintf(stderr, "[GC] Created heap of %d chunks\n", s->fl_chunks);
 #endif
 
-	if (DEBUG or
-	s->controls.messages) {
+	if (DEBUG or s->controls.messages) {
 		fprintf(stderr, "[GC] Created heap of %d chunks in %lu us step=%d sz(umchunk)=%d sz(umhdr)=%d\n",
 				s->fl_chunks, elapsed,
 				step, sizeof(struct GC_UM_Chunk), sizeof(UM_header));
@@ -333,37 +328,3 @@ bool createUMHeap(GC_state s,
 
 	return TRUE;
 }
-
-/*bool createUMArrayHeap(__attribute__ ((unused)) GC_state s,
-                       GC_UM_heap h,
-                       size_t desiredSize,
-                       __attribute__ ((unused)) size_t minSize) {
-    pointer newStart;
-    newStart = GC_mmapAnon (NULL, desiredSize);;
-
-    if (newStart == (void*) -1) {
-        fprintf(stderr, "[GC: MMap Failure]\n");
-        return FALSE;
-    }
-
-
-
-    h->start = newStart;
-    h->size = desiredSize;
-
-    pointer pchunk;
-    size_t step = sizeof(struct GC_UM_Array_Chunk);
-    pointer end = h->start + h->size - step;
-
-    for (pchunk=h->start;
-         pchunk < end;
-         pchunk+=step) {
-        insertFreeChunk(s, h, pchunk);
-    }
-
-#ifdef PROFILE_UMGC
-    fprintf(stderr, "[GC] Created array heap of %d chunks\n", s->fl_chunks);
-#endif
-
-    return TRUE;
-}*/

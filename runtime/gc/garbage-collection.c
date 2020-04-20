@@ -587,6 +587,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 			GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk + sizeof(UM_header)); /*account for size of chunktype*/
 			UM_header header = pc->array_chunk_header;
+			assert (pc->array_chunk_magic == 9998);
 
 			if (ISINUSE(header)) {
 

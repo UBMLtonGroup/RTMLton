@@ -22,7 +22,6 @@ typedef struct UM_Mem_Chunk {
 
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION]; /* 154 + 16 */
-    //    unsigned char ml_safe_region[UM_CHUNK_PAYLOAD_SAFE_REGION];
     UM_header chunk_header;          /* +0 */
     size_t sentinel;                 /* +4 */
     GC_returnAddress ra;             /* +8 */
@@ -46,8 +45,8 @@ typedef struct GC_UM_heap {
 struct GC_UM_Array_Chunk;
 
 typedef union GC_UM_Array_Payload {
-    struct GC_UM_Array_Chunk* um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS];
-    unsigned char ml_object[UM_CHUNK_ARRAY_PAYLOAD_SIZE];
+    struct GC_UM_Array_Chunk* um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS]; //  38 - um_constants.h
+    unsigned char ml_object[UM_CHUNK_ARRAY_PAYLOAD_SIZE];                          // 152 - um_constants.h
 } GC_UM_Array_Payload;
 
 /* The array chunk. It still has a portion of ml header... for object type
@@ -58,7 +57,7 @@ typedef struct GC_UM_Array_Chunk {
     Word32_t array_chunk_length;            /* Array Length                     */
     Word32_t array_chunk_ml_header;         /* MLton's array header             */
     GC_UM_Array_Payload ml_array_payload;   /* Payload or internal pointer      */
-    UM_header array_chunk_header;            /* For Mark / Sweep                 */
+    UM_header array_chunk_header;           /* For Mark / Sweep                 */
     Word32_t array_chunk_counter;           /* MLton's array counter            */
     Word32_t array_chunk_type;              /* Internal or Leaf                 */
     size_t array_height;                    /* Height of the tree (subtree)     */
