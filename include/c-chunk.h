@@ -300,7 +300,7 @@ void um_dumpFrame (void *s, void *f);
  * .. need to find a better way to handle this
  */
 
-#define UM_CHUNK_PAYLOAD_SIZE 154
+#define UM_CHUNK_PAYLOAD_SIZE 302
 #define UM_CHUNK_PAYLOAD_SAFE_REGION 16
 
 typedef uintptr_t GC_returnAddress;
