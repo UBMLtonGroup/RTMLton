@@ -16,8 +16,7 @@ hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
  */
 
 
-void reserveAllocation(GC_state s, size_t numChunksToRequest) {
-	assert (numChunksToRequest > 0);
+void reserveAllocation(GC_state s, size_t numChunksToRequest){
 
 	/*This what the gc-check pass inserts for all objects allcoated in basic block.
 		* SInce the number of chunks for an array is calculated at runtime, it becomes necessary to do
@@ -51,9 +50,8 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
 
 Pointer
 UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s) {
-	GC_UM_Chunk chunk;
 
-	assert (num_chunks > 0);
+	GC_UM_Chunk chunk;
 
 	if (header == GC_STACK_HEADER) {
 		chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
@@ -234,8 +232,6 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     GC_UM_Array_Chunk root2 __attribute__((unused)) = (GC_UM_Array_Chunk)((pointer)(fst_leaf->root)-12);
 	GC_UM_Array_Chunk root = fst_leaf->root;
 
-	// off by 40 (0x28)
-
     assert (root->array_chunk_magic == 9998);
 
     if (DEBUG_MEM) {
@@ -250,9 +246,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     size_t chunk_index = index / root->array_chunk_numObjs;
     GC_UM_Array_Chunk current = root;
-	assert (current->array_chunk_magic == 9998);
-
-	size_t i;
+    size_t i;
 
     if (DEBUG_MEM) {
         fprintf(stderr, " >> Start to fetch chunk index: %d\n", chunk_index);
@@ -272,9 +266,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
         }
         chunk_index = chunk_index % current->array_chunk_fan_out;
         current = current->ml_array_payload.um_array_pointers[i];
-		assert (current->array_chunk_magic == 9998);
-
-		if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
+        if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
             size_t chunk_offset = (index % root->array_chunk_numObjs) * elemSize + offset;
             Pointer res = ((Pointer)&(current->ml_array_payload.ml_object[0])) +
                 chunk_offset;

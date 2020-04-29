@@ -553,7 +553,6 @@ structure Object =
 
 fun transform2 (program as Program.T {datatypes, functions, globals, main}) =
    let
-      val _ = print "DeepFlatten pass is running."
       val {get = conValue: Con.t -> Value.t option ref, ...} =
          Property.get (Con.plist, Property.initFun (fn _ => ref NONE))
       val conValue =
