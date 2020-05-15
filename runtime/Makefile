@@ -12,7 +12,8 @@ PATH := ../bin:$(shell echo $$PATH)
 TARGET := self
 
 ifeq ($(TARGET), self)
-CC := gcc -std=gnu99
+CC := gcc -std=c11 
+#-std=gnu99
 AR := ar rc
 RANLIB := ranlib
 else
@@ -38,7 +39,7 @@ CPPFLAGS :=
 CFLAGS := -D_GNU_SOURCE -D_USE_GNU  $(CFLAGS)
 
 WARNXCFLAGS :=
-WARNXCFLAGS += -pedantic -Wall -Werror
+WARNXCFLAGS += -Wall -Werror
 ifeq ($(findstring $(GCC_MAJOR_VERSION), 3),$(GCC_MAJOR_VERSION))
 WARNXCFLAGS += -W
 endif
