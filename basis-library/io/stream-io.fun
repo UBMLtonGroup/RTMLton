@@ -467,6 +467,7 @@ functor StreamIOExtra (S: STREAM_IO_EXTRA_ARG): STREAM_IO_EXTRA =
 
       fun extendB function is = valOf (extend function is true)
       fun extendNB function is = extend function is false
+      structure PFFI = PrimitiveFFI
 
       fun input (is as In {pos, buf as Buf {inp, next, ...}, ...}) =
         if pos < V.length inp
@@ -485,7 +486,7 @@ functor StreamIOExtra (S: STREAM_IO_EXTRA_ARG): STREAM_IO_EXTRA =
 
       fun inputN (is, n) =
         if n < 0 orelse n > V.maxLen
-          then raise Size
+          then (PFFI.Stdio.print "streamio:raise1"; raise Size)
           else let
                  fun first (is as In {pos, buf as Buf {inp, ...}, ...}, n) =
                    if pos + n <= V.length inp
@@ -648,7 +649,7 @@ functor StreamIOExtra (S: STREAM_IO_EXTRA_ARG): STREAM_IO_EXTRA =
 
       fun canInput (is as In {pos, buf = Buf {inp, next, ...}, ...}, n) =
         if n < 0 orelse n > V.maxLen
-          then raise Size
+          then (PFFI.Stdio.print "streamio:raise2\n"; raise Size)
         else if n = 0
           then SOME 0
         else let

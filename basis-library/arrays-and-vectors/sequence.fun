@@ -69,6 +69,7 @@ functor Sequence (S: PRIM_SEQUENCE): SEQUENCE =
       val op <= = SeqIndex.<=
       val op > = SeqIndex.>
       val op >= = SeqIndex.>=
+structure PFFI = PrimitiveFFI
 
       (* fun wrap1 f = fn (i) => f (SeqIndex.toIntUnsafe i) *)
       fun wrap2 f = fn (i, x) => f (SeqIndex.toIntUnsafe i, x)
@@ -84,7 +85,7 @@ functor Sequence (S: PRIM_SEQUENCE): SEQUENCE =
 
       fun fromIntForLength n =
          if Primitive.Controls.safe
-            then (SeqIndex.fromInt n) handle Overflow => raise Size
+            then (SeqIndex.fromInt n) handle Overflow => (PFFI.Stdio.print "seq:size1"; raise Size)
             else SeqIndex.fromIntUnsafe n
 
       fun length s = 
@@ -217,7 +218,7 @@ functor Sequence (S: PRIM_SEQUENCE): SEQUENCE =
                            if Primitive.Controls.safe 
                               then (fn (sl, s) => 
                                        (s +! S.Slice.length sl)
-                                       handle Overflow => raise Size)
+                                       handle Overflow => (PFFI.Stdio.print "seq:size2"; raise Size))
                               else (fn (sl, s) => s +? S.Slice.length sl)
                         val n = List.foldl add 0 sls'
                         fun loop (i, sl, sls) =
@@ -242,7 +243,7 @@ functor Sequence (S: PRIM_SEQUENCE): SEQUENCE =
                            if Primitive.Controls.safe 
                               then (fn (sl, s) => 
                                        (s +! sepn +! S.Slice.length sl)
-                                       handle Overflow => raise Size)
+                                       handle Overflow => (PFFI.Stdio.print "seq:size3"; raise Size))
                               else (fn (sl, s) => 
                                        (s +? sepn +? S.Slice.length sl))
                         val n = List.foldl add (S.Slice.length sl) sls

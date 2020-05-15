@@ -99,10 +99,11 @@ structure List: LIST =
          | SOME _ => true
 
      fun all pred = not o (exists (not o pred))
+      structure PFFI = PrimitiveFFI
 
      fun tabulate (n, f) = 
         if Primitive.Controls.safe andalso n < 0
-           then raise Size
+           then (PFFI.Stdio.print "list:size"; raise Size)
         else let
                 fun loop (i, ac) =
                    if i < n

@@ -21,7 +21,8 @@ functor PrimSequence (S: sig
                                                where type 'a elt = 'a S.elt =
    struct
       structure Array = Primitive.Array
-      
+      structure PFFI = PrimitiveFFI
+
       val op +? = SeqIndex.+?
       val op + = SeqIndex.+
       val op -? = SeqIndex.-?
@@ -71,7 +72,7 @@ functor PrimSequence (S: sig
             then Array.array0Const ()
             else if Primitive.Controls.safe
                     andalso gtu (n, maxLen)
-                    then raise Size
+                    then (PFFI.Stdio.print "seq0:size"; raise Size)
                     else Array.arrayUnsafe n
       fun newUninit n = S.fromArray (arrayUninit n)
 

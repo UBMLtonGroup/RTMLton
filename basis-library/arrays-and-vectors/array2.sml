@@ -103,13 +103,13 @@ structure Array2 : ARRAY2 =
          {base = a, row = 0, col = 0, nrows = NONE, ncols = NONE}
 
       datatype traversal = RowMajor | ColMajor
-
+structure PFFI = PrimitiveFFI
       local
          fun make (rows, cols, doit) =
             if Primitive.Controls.safe 
                andalso (rows < 0 orelse cols < 0)
-               then raise Size
-            else {array = doit (rows * cols handle Overflow => raise Size),
+               then (PFFI.Stdio.print "size6";raise Size)
+            else {array = doit (rows * cols handle Overflow => (PFFI.Stdio.print "size5"; raise Size)),
                   rows = rows,
                   cols = cols}
       in
@@ -124,10 +124,10 @@ structure Array2 : ARRAY2 =
                then let
                        val rows = 
                           (SeqIndex.fromInt rows)
-                          handle Overflow => raise Size
+                          handle Overflow => (PFFI.Stdio.print "size4"; raise Size)
                        val cols = 
                           (SeqIndex.fromInt cols)
-                          handle Overflow => raise Size
+                          handle Overflow => (PFFI.Stdio.print "size3"; raise Size)
                     in
                        doit (rows, cols)
                     end
@@ -200,13 +200,13 @@ structure Array2 : ARRAY2 =
                          val i' =
                             List.foldl (fn (x: 'a, i) =>
                                         (if i >= max
-                                            then raise Size
+                                            then (PFFI.Stdio.print "size2"; raise Size)
                                          else (Primitive.Array.unsafeUpdate (array, i, x)
                                                ; i +? 1)))
                             i row
                       in if i' = max
                             then i'
-                         else raise Size
+                         else (PFFI.Stdio.print "size1"; raise Size)
                       end)
                      0 rows
                in
