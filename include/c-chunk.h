@@ -107,6 +107,12 @@ void um_dumpFrame (void *s, void *f);
 #define O(ty, b, o) (*(ty*)((b) + (o)))
 // #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
 #define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
+#define X_DBG(ty, gc_stat, b, i, s, o) (*((fprintf (stderr, "%s:%d X: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
+                                                 (void*)((b) + ((i) * (s)) + (o)), \
+                                                 *(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))) \
+                                                 )), \
+                                                 (ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o)))))
+
 //#define S(ty, i) *(ty*)(StackTop + (i))
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
 //#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
@@ -130,18 +136,19 @@ void um_dumpFrame (void *s, void *f);
 #define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
 
 #define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))
-#define MLTON_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p i=%d Val=%018p\n", __FILE__, __LINE__, PTHREAD_NUM, \
-                                (void*) StackTop, \
-                               (void*)(StackTop + (i)), i, \
-                               *(ty*)(StackTop + (i)))) , \
-                        (ty*)(StackTop + (i))))
+#define MLTON_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p i=%d Val=%018p\n", \
+                                    __FILE__, __LINE__, PTHREAD_NUM, \
+                                   (void*) StackTop,                 \
+                                   (void*)(StackTop + (i)), i,       \
+                                  *(ty*)(StackTop + (i)))),          \
+                                   (ty*)(StackTop + (i))))
 
 #define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i))
 #define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
-                                (void*)CurrentFrame, i, \
-                                (void*)(CurrentFrame + (i)), \
-                               *(ty*)(CurrentFrame + (i)))) , \
+                                (void*)CurrentFrame, i,           \
+                                (void*)(CurrentFrame + (i)),      \
+                               *(ty*)(CurrentFrame + (i)))),      \
                                 (ty*)(CurrentFrame + (i))))
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
@@ -342,7 +349,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER); \
-                assert (cf->sentinel == 9999); \
+                assert (cf->sentinel == 0x9999); \
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *xx = cf; \
                      StackDepth = StackDepth - 1; \
@@ -401,7 +408,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Return()                                                                                           \
         do {                                                                                                        \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER);                        \
-                assert (cf->sentinel == 9999 || 1!=1);                                                              \
+                assert (cf->sentinel == 0x9999 || 1!=1);                                                              \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n"));              \
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n"));                              \
                 else {                                                                                              \
@@ -419,7 +426,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Raise()                                                                \
         do {                                                                    \
                 struct GC_UM_Chunk *cf = (ExnStack - STACKHEADER);  \
-                assert (cf->sentinel == 9999 || 2!=2); \
+                assert (cf->sentinel == 0x9999 || 2!=2); \
                 if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
                          __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
