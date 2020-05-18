@@ -270,7 +270,7 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 			   p < s->umheap.start + s->umheap.size) {
 		GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)
 				(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-		assert (fst_leaf->array_chunk_magic == 9998);
+		assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		if (DEBUG_DFS_MARK) {
 			fprintf(stderr, "umDfsMarkObjects: marking array: %p, markmode: %d, "
@@ -283,7 +283,7 @@ die("fix ummark array");
 		if (
 			fst_leaf->array_chunk_length > 0) {
 			GC_UM_Array_Chunk root = fst_leaf->root;
-			assert (root->array_chunk_magic == 9998);
+			assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 //            size_t length = root->array_chunk_length;
 //
@@ -351,7 +351,7 @@ bool isChunkMarked(pointer p, GC_objectTypeTag tag) {
 
 	} else if (tag == ARRAY_TAG) {
 		GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-		assert (pc->array_chunk_magic == 9998);
+		assert (pc->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		return (ISINUSE(pc->array_chunk_header) && ISMARKED(pc->array_chunk_header));
 	} else if (tag == WEAK_TAG) { 
@@ -386,7 +386,7 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 
 	} else if (tag == ARRAY_TAG) {
 		GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-		assert (pc->array_chunk_magic == 9998);
+		assert (pc->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		if (ISINUSE(pc->array_chunk_header) && ISGREY(pc->array_chunk_header))
 			return true;
@@ -520,7 +520,7 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
-	assert (p->array_chunk_magic == 9998);
+	assert (p->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 	if (DEBUG_DFS_MARK)
 		fprintf(stderr, "markUMArrayChunks: %p: marking array markmode: %d, "
@@ -546,7 +546,7 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 		int i = 0;
 		for (i = 0; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
 			GC_UM_Array_Chunk pcur = p->ml_array_payload.um_array_pointers[i];
-			assert (pcur->array_chunk_magic == 9998);
+			assert (pcur->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 			if (!pcur)
 				break;

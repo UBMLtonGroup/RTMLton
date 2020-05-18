@@ -199,13 +199,13 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
 
 	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-	  assert (fst_leaf->array_chunk_magic == 9998);
+	  assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 	  // FIX this needs to walk the tree
 	  if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
-		  assert (cur_chunk->array_chunk_magic == 9998);
+		  assert (cur_chunk->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		  size_t i, j;
           size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;

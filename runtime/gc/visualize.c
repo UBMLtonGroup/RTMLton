@@ -29,7 +29,7 @@ void dumpUMHeap(GC_state s) {
         {
 
             GC_UM_Array_Chunk pc = (GC_UM_Array_Chunk)(pchunk+sizeof(UM_header));
-			assert (pc->array_chunk_magic == 9998);
+			assert (pc->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 			if (pc->array_chunk_header & UM_CHUNK_IN_USE) {
                 fprintf(stdout, "Chunk: %p , Array Node: %p -> ", (void *)pchunk,(void *) pc);
