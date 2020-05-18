@@ -85,7 +85,7 @@ structure PFFI = PrimitiveFFI
 
       fun fromIntForLength n =
          if Primitive.Controls.safe
-            then (SeqIndex.fromInt n) handle Overflow => (PFFI.Stdio.print "seq:size1"; raise Size)
+            then (SeqIndex.fromInt n) handle Overflow => raise Size
             else SeqIndex.fromIntUnsafe n
 
       fun length s = 
@@ -218,7 +218,7 @@ structure PFFI = PrimitiveFFI
                            if Primitive.Controls.safe 
                               then (fn (sl, s) => 
                                        (s +! S.Slice.length sl)
-                                       handle Overflow => (PFFI.Stdio.print "seq:size2"; raise Size))
+                                       handle Overflow => raise Size)
                               else (fn (sl, s) => s +? S.Slice.length sl)
                         val n = List.foldl add 0 sls'
                         fun loop (i, sl, sls) =
@@ -243,7 +243,7 @@ structure PFFI = PrimitiveFFI
                            if Primitive.Controls.safe 
                               then (fn (sl, s) => 
                                        (s +! sepn +! S.Slice.length sl)
-                                       handle Overflow => (PFFI.Stdio.print "seq:size3"; raise Size))
+                                       handle Overflow => raise Size)
                               else (fn (sl, s) => 
                                        (s +? sepn +? S.Slice.length sl))
                         val n = List.foldl add (S.Slice.length sl) sls

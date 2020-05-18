@@ -72,7 +72,7 @@ functor PrimSequence (S: sig
             then Array.array0Const ()
             else if Primitive.Controls.safe
                     andalso gtu (n, maxLen)
-                    then (PFFI.Stdio.print "seq0:size"; raise Size)
+                    then raise Size
                     else Array.arrayUnsafe n
       fun newUninit n = S.fromArray (arrayUninit n)
 

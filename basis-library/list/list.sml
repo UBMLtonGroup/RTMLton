@@ -103,7 +103,7 @@ structure List: LIST =
 
      fun tabulate (n, f) = 
         if Primitive.Controls.safe andalso n < 0
-           then (PFFI.Stdio.print "list:size"; raise Size)
+           then raise Size
         else let
                 fun loop (i, ac) =
                    if i < n

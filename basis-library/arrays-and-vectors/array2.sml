@@ -108,8 +108,8 @@ structure PFFI = PrimitiveFFI
          fun make (rows, cols, doit) =
             if Primitive.Controls.safe 
                andalso (rows < 0 orelse cols < 0)
-               then (PFFI.Stdio.print "size6";raise Size)
-            else {array = doit (rows * cols handle Overflow => (PFFI.Stdio.print "size5"; raise Size)),
+               then raise Size
+            else {array = doit (rows * cols handle Overflow => raise Size),
                   rows = rows,
                   cols = cols}
       in
@@ -124,10 +124,10 @@ structure PFFI = PrimitiveFFI
                then let
                        val rows = 
                           (SeqIndex.fromInt rows)
-                          handle Overflow => (PFFI.Stdio.print "size4"; raise Size)
+                          handle Overflow => raise Size
                        val cols = 
                           (SeqIndex.fromInt cols)
-                          handle Overflow => (PFFI.Stdio.print "size3"; raise Size)
+                          handle Overflow => raise Size
                     in
                        doit (rows, cols)
                     end
@@ -200,13 +200,13 @@ structure PFFI = PrimitiveFFI
                          val i' =
                             List.foldl (fn (x: 'a, i) =>
                                         (if i >= max
-                                            then (PFFI.Stdio.print "size2"; raise Size)
+                                            then raise Size
                                          else (Primitive.Array.unsafeUpdate (array, i, x)
                                                ; i +? 1)))
                             i row
                       in if i' = max
                             then i'
-                         else (PFFI.Stdio.print "size1"; raise Size)
+                         else raise Size
                       end)
                      0 rows
                in
