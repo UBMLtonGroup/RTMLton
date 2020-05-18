@@ -9,10 +9,10 @@ Stdio_print_real(String8_t s, FILE *fd) {
 	uintmax_t size = GC_getArrayLength((pointer) s);
 
 	size_t nels = 0, write_rv = 0;
-	String8_t s2 = NULL;
+	String8_t s2 = s;
 	int whats_left = size, to_write = UM_CHUNK_ARRAY_PAYLOAD_SIZE;
 
-	while(whats_left || (s2 = UM_walk_array_leafs(s, &nels))) {
+	while(whats_left || (s2 = UM_walk_array_leafs(s2, &nels))) {
 		to_write = min(UM_CHUNK_ARRAY_PAYLOAD_SIZE, whats_left);
 		whats_left -= to_write;
 		write_rv += fwrite ((const void *) s2, to_write, 1, fd);
