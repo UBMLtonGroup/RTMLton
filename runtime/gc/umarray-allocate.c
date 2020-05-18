@@ -1,5 +1,29 @@
 #include "../gc.h"
 
+static int ipow(int, unsigned int);
+
+static /* see doc/rtmlton/pow-or-ipow.md */
+int ipow(int base, unsigned int exp)
+{
+	if (exp == 0) return 1;
+
+	int result = 1;
+	for (;;)
+	{
+		if (exp & 1)
+			result *= base;
+		exp >>= 1;
+		if (!exp)
+			break;
+		base *= base;
+	}
+
+	return result;
+}
+
+static int getLengthOfList(GC_UM_Array_Chunk head);
+
+static
 int getLengthOfList(GC_UM_Array_Chunk head) {
 	GC_UM_Array_Chunk current = head;
 	int i = 0;
@@ -11,9 +35,136 @@ int getLengthOfList(GC_UM_Array_Chunk head) {
 	return i;
 }
 
+static
+GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
+									GC_UM_Array_Chunk *chunks,
+									size_t numChunks,
+						 			size_t height,
+									GC_header header,
+									size_t numElements,
+									GC_UM_Array_Chunk rootroot);
+
+
+#define POPCHUNK(allocHead, chunk)             \
+   do { GC_UM_Array_Chunk new = allocHead;     \
+        assert(new != NULL);                   \
+        allocHead = (allocHead)->next_chunk;   \
+        new->next_chunk = NULL;                \
+        assert (new->array_chunk_magic == UM_ARRAY_SENTINEL); \
+        chunk = new;                           \
+      } while(0)
+
+__attribute__((unused)) static
+GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
+									GC_UM_Array_Chunk *chunks,
+									size_t numChunks,
+									size_t height,
+									GC_header header,
+									size_t numElements,
+									GC_UM_Array_Chunk rootroot) {
+
+	/* base case, H=0, initialize the chunks as leaves and return
+	 */
+	if (height == 0) {
+		assert (getLengthOfList(*chunks) <= UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+		GC_UM_Array_Chunk anode = NULL, prevnode = NULL;
+		for (int i = 0 ; i < getLengthOfList(*chunks) ; i++) {
+			POPCHUNK(*chunks, anode);
+			if (prevnode == NULL)
+				prevnode = anode;
+			else {
+				prevnode->next_chunk = anode;
+				prevnode = anode;
+			}
+			anode->array_chunk_length = numElements;
+			anode->array_height = height;
+			anode->array_chunk_ml_header = header;
+			anode->array_chunk_header |= UM_CHUNK_IN_USE;
+			anode->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
+			anode->next_chunk = NULL;
+			anode->parent = root;
+			anode->root = rootroot;
+			root->ml_array_payload.um_array_pointers[i] = anode;
+		}
+
+		return root;
+	}
+
+	/* otherwise H>0, link enough chunks to our root to fully populate it */
+
+	for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
+		GC_UM_Array_Chunk anode = NULL;
+		POPCHUNK(*chunks, anode);
+		anode->root = rootroot;
+		anode->parent = root;
+		anode->array_chunk_length = numElements;
+		anode->array_chunk_ml_header = header;
+		anode->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
+		anode->array_chunk_header |= UM_CHUNK_IN_USE;
+		root->ml_array_payload.um_array_pointers[i] = anode;
+		create_array_tree(anode,
+					 	  chunks,
+						  numChunks,
+						  height-1,
+						  header,
+						  numElements,
+						  rootroot);
+	}
+	return root;
+
+}
+
 #define DEBUG_MEM 0
 #define DEBUG_CHUNK_ARRAY 0
+#if GC_MODEL_OBJPTR_SIZE == 32
+# define POW ipow
+#else
+# define POW pow
+#endif
 
+/* this is used by I/O (runtime/basis/...) routines. given an array
+ * chunk, return the first leaf. given a leaf, return the next leaf
+ * or null of there are no more. return the total number of elements in the
+ * array. the caller can use this, and the number of times they've called
+ * this routine, to calculate "number of elements left to process"
+ *
+ * the basis routines dont have convenient access to the runtime
+ * header files, so this is why we do this here.
+ */
+pointer
+UM_walk_array_leafs(pointer _c, size_t *nels)
+{
+	GC_UM_Array_Chunk c = (GC_UM_Array_Chunk)(_c - GC_HEADER_SIZE - sizeof(Word32_t));
+
+	// this isnt an array, probably a global static string
+	if (c->array_chunk_magic != UM_ARRAY_SENTINEL) {
+		if (nels) nels = 0;
+		return _c;
+	}
+
+	bool first_time = FALSE;
+	while (c->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
+		if (nels) {
+			if (c->root) *nels = c->root->num_els;
+			else *nels = c->num_els;
+		}
+   		c = c->ml_array_payload.um_array_pointers[0];
+		first_time = TRUE;
+   	}
+
+	assert (c->array_chunk_type == UM_CHUNK_ARRAY_LEAF);
+
+	if (first_time) {
+		return (pointer) &(c->ml_array_payload.ml_object[0]);
+   	}
+
+	if (c->next_chunk)
+		return (pointer) &(c->next_chunk->ml_array_payload.ml_object[0]);
+
+	return NULL;
+}
+
+__attribute__((unused))
 pointer GC_arrayAllocate(GC_state s,
 						 __attribute__ ((unused)) size_t ensureBytesFree,
 						 GC_arrayLength numElements,
@@ -22,187 +173,67 @@ pointer GC_arrayAllocate(GC_state s,
 	uint16_t bytesNonObjptrs = 0;
 	uint16_t numObjptrs = 0;
 
+	/* calc number of leaves */
+
 	splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
 	bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
 
-	size_t chunkNumObjs = UM_CHUNK_ARRAY_PAYLOAD_SIZE / bytesPerElement;
-	size_t numChunks = numElements / chunkNumObjs + (numElements % chunkNumObjs != 0);
-	if (numChunks == 0) numChunks = 1;
+	size_t numElsPerChunk = UM_CHUNK_ARRAY_PAYLOAD_SIZE / bytesPerElement;
+	size_t numLeaves = numElements / numElsPerChunk + (numElements % numElsPerChunk != 0);
 
-	/* Calculate number of chunks the array representation
-	 * is going to use.
-	 * numChunksToRequest = numChunks for leaf + number of chunks for 1st group internal nodes + .... + 1 chunk for root node
-	 */
-	size_t numChunksToRequest = numChunks;
-	int x = numChunks;
-	while (x != 1 && numChunksToRequest > 1) {
-		if (x < 32)
-			x = 1;
-		else
-			x = 1 + ((x - 1) / UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+	/* calc height of tree */
 
-		numChunksToRequest += x;
-	}
+	size_t treeHeight = ceil(log(numLeaves) / log(UM_CHUNK_ARRAY_INTERNAL_POINTERS));
+
+	/* calc total number of chunks needed */
+
+	size_t numChunks = (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight+1)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
 
 	if (DEBUG_MEM) {
-		fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd, chunkNumObjs: %zd, numChunks: %zd. numChunksNeeded: %zd\n",
-				PTHREAD_NUM, numElements, chunkNumObjs, numChunks, numChunksToRequest);
+		fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd (%zd b/e), numElsPerChunk: %zd, numChunks: %zd\n",
+				PTHREAD_NUM, numElements, bytesPerElement, numElsPerChunk, numChunks);
 	}
 
-	assert(numChunksToRequest >= numChunks);
+	assert (numChunks > 0);
 
-	/*Will block if there aren't enough chunks*/
-	reserveAllocation(s, numChunksToRequest);
+	/* reserve chunks: will block if there aren't enough chunks */
 
-	GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap), numChunksToRequest);
+	reserveAllocation(s, numChunks);
+	GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap), numChunks);
+	assert (getLengthOfList(allocHead) == numChunks);
 
 	if (DEBUG_CHUNK_ARRAY)
-		fprintf(stderr, "%d]   Initial allocHead length: %zd, numChunks = %zd\n", PTHREAD_NUM,
-				getLengthOfList(allocHead),
-				numChunks);
+		fprintf(stderr, "%d]   Initial allocHead "FMTPTR" length: %zd, numChunks = %zd\n",
+			PTHREAD_NUM, (uintptr_t)allocHead,
+			getLengthOfList(allocHead),
+			numChunks);
 
-	GC_UM_Array_Chunk new = allocHead;
-	allocHead = allocHead->next_chunk;
-	new->next_chunk = NULL;
-	assert (new->array_chunk_magic == UM_ARRAY_SENTINEL);
+	/* allocate root node */
 
-	GC_UM_Array_Chunk parray_header = new;
+	GC_UM_Array_Chunk root;
+	POPCHUNK(allocHead, root);
 
+	root->array_chunk_length = numElements;
+	root->num_els = numElements;
+	root->el_size = bytesPerElement;
+	root->array_chunk_ml_header = header;
+	root->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
+	root->num_els_per_chunk = numElsPerChunk;
+	root->array_height = treeHeight;
+	root->parent = NULL;
+	root->root = NULL;
+	root->array_chunk_header |= UM_CHUNK_IN_USE;
 
-	parray_header->array_chunk_counter = 0;
-	parray_header->array_chunk_length = numElements;
-	parray_header->array_chunk_ml_header = header;
-	parray_header->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
-	parray_header->array_chunk_numObjs = chunkNumObjs;
-	parray_header->array_num_chunks = numChunks;
-	parray_header->array_chunk_objSize = bytesPerElement;
-	parray_header->parent = NULL;
-	parray_header->root = NULL;
-	parray_header->array_chunk_header |= UM_CHUNK_IN_USE;
-
-	if (numChunks <= 1 || numElements == 0) {
-		return (pointer) &(parray_header->ml_array_payload.ml_object[0]);
+	if (numChunks == 1 || numElements == 0) {
+		return (pointer) &(root->ml_array_payload.ml_object[0]);
 	}
 
-	GC_UM_Array_Chunk cur_chunk = parray_header;
+	/* if we have more than 1 chunk, then this is a tree */
 
-	for (int i = 0; i < numChunks - 1; i++) {
-		assert(allocHead != NULL);
-		GC_UM_Array_Chunk tmp = allocHead;
-		allocHead = allocHead->next_chunk;
+	assert (numChunks > 1 && treeHeight > 0);
+	root->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
 
-		tmp->next_chunk = NULL;
-		tmp->root = NULL;
-		tmp->parent = NULL;
-		tmp->array_chunk_type = UM_CHUNK_ARRAY_LEAF;
-		tmp->array_chunk_header |= UM_CHUNK_IN_USE;
-		tmp->array_chunk_fan_out = chunkNumObjs;
-		assert (tmp->array_chunk_magic == UM_ARRAY_SENTINEL);
+	create_array_tree(root, &allocHead, numChunks, treeHeight-1, header, numElements, root);
 
-		cur_chunk->next_chunk = tmp;
-		cur_chunk = cur_chunk->next_chunk;
-	}
-
-	if (DEBUG_CHUNK_ARRAY)
-		fprintf(stderr, "%d] allocHead length after Leaf alloc: %zd\n", PTHREAD_NUM, getLengthOfList(allocHead));
-
-	GC_UM_Array_Chunk root = UM_Group_Array_Chunk(s,
-												  parray_header,
-												  &allocHead,
-												  UM_CHUNK_ARRAY_INTERNAL_POINTERS,
-												  1);
-	//chunkNumObjs);
-	assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-
-	if (DEBUG_CHUNK_ARRAY) {
-		fprintf(stderr, "%d] root "FMTPTR"\n", PTHREAD_NUM, (uintptr_t) root);
-		fprintf(stderr, "%d] allocHead length after 1st group alloc: %zd\n", PTHREAD_NUM, getLengthOfList(allocHead));
-		fprintf(stderr, "%d] 1st group created array with chunk_fan_out: %zd\n", PTHREAD_NUM,
-				root->array_chunk_fan_out);
-	}
-
-
-	/* jm: not clear on what this is supposed to do, when would this code path
-	 * get used?
-	 */
-
-	while (root->next_chunk) {
-		root = UM_Group_Array_Chunk(s, root, &allocHead, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
-									root->array_chunk_fan_out * UM_CHUNK_ARRAY_INTERNAL_POINTERS);
-		if (DEBUG_CHUNK_ARRAY)
-			fprintf(stderr, "%d]  root "FMTPTR"\n", PTHREAD_NUM, (uintptr_t) root);
-		assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
-	}
-
-	if (DEBUG_CHUNK_ARRAY)
-		fprintf(stderr, "%d] allocHead length after all alloc: %zd\n", PTHREAD_NUM, getLengthOfList(allocHead));
-
-	root->array_chunk_numObjs = parray_header->array_chunk_numObjs;
-	root->array_chunk_length = parray_header->array_chunk_length;
-	parray_header->root = root;
-
-	if (DEBUG_CHUNK_ARRAY)
-		fprintf(stderr, "%d] Created array with chunk_fan_out: %zd\n", PTHREAD_NUM, root->array_chunk_fan_out);
-
-	/*ensure that no chunks remain in the initially allocated list*/
-	assert(allocHead == NULL);
-
-	return (pointer) &(parray_header->ml_array_payload);
-}
-
-GC_UM_Array_Chunk UM_Group_Array_Chunk(GC_state s,
-									   GC_UM_Array_Chunk head,
-									   GC_UM_Array_Chunk *allocHead,
-									   size_t num,
-									   size_t fan_out) {
-
-	assert (head->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-	if (head->next_chunk == NULL)
-		return head;
-
-	assert(*allocHead != NULL);
-
-	GC_UM_Array_Chunk new = *allocHead;
-	*allocHead = (*allocHead)->next_chunk;
-	new->next_chunk = NULL;
-
-	GC_UM_Array_Chunk start = new;
-
-	GC_UM_Array_Chunk cur_chunk = start;
-
-	assert (cur_chunk->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-	cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
-	cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
-	cur_chunk->array_chunk_fan_out = fan_out;
-
-	int cur_index = 0;
-	while (head) {
-		cur_chunk->ml_array_payload.um_array_pointers[cur_index] = head;
-		assert(head->array_chunk_magic == UM_ARRAY_SENTINEL);
-		head = head->next_chunk;
-
-		cur_index++;
-		if (cur_index >= num && head) {
-			assert(*allocHead != NULL);
-
-			GC_UM_Array_Chunk tmp = *allocHead;
-			*allocHead = (*allocHead)->next_chunk;
-			tmp->next_chunk = NULL;
-			assert(tmp->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-			cur_chunk->next_chunk = tmp;
-			cur_chunk = cur_chunk->next_chunk;
-			cur_chunk->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
-			cur_chunk->array_chunk_header |= UM_CHUNK_IN_USE;
-			cur_chunk->array_chunk_fan_out = fan_out;
-			assert (cur_chunk->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-			cur_index = 0;
-		}
-	}
-
-	return start;
+	return (pointer) &(root->ml_array_payload.ml_object[0]);
 }

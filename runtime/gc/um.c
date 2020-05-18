@@ -1,10 +1,12 @@
 #include "../gc.h"
 
-/*
-hello.1.c:(.text+0xb8fa): undefined reference to `UM_Header_alloc'
-hello.1.c:(.text+0xb912): undefined reference to `UM_Payload_alloc'
-hello.1.c:(.text+0xb92d): undefined reference to `UM_CPointer_offset'
-*/
+
+#if GC_MODEL_OBJPTR_SIZE == 32
+# define POW ipow
+#else
+# define POW pow
+#endif
+
 
 
 #undef DBG
@@ -186,8 +188,8 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
            //objptr opp = pointerToObjptr((pointer)srcbase,s->heap.start);
            //die("We got one! \n");
             GC_header header = getHeader(srcbase);
-            uint16_t bytesNonObjptrs=0;
-            uint16_t numObjptrs =0;
+            uint16_t bytesNonObjptrs= 0;
+            uint16_t numObjptrs = 0;
             GC_objectTypeTag tag = ERROR_TAG;
             splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
             
@@ -195,7 +197,7 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
         }
     }
 
-    if(DEBUG_WB)
+    if (DEBUG_WB)
     {
         if(isSrcOnUMHeap || isDstOnUMHeap)
             fprintf(stderr,"%d]In writebarrier, srcbase= "FMTPTR", dstbase= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)srcbase,(uintptr_t)dstbase, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
@@ -213,7 +215,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     if (base < gc_stat->umheap.start || base >= heap_end) {
         if (DEBUG_MEM) {
             fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
-                    (uintptr_t)base,offset);
+                    (uintptr_t)base, offset);
         }
         return base + index * elemSize + offset;
     }
@@ -222,79 +224,154 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
      * and so we must deduct the array_chunk_ml_header and array_chunk_length fields
      * as well as the header field
      */
-    GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)
-        (base - GC_HEADER_SIZE - sizeof(Word32_t));
+    GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(base - GC_HEADER_SIZE - sizeof(Word32_t));
 
-    assert (fst_leaf->array_chunk_magic == 9998);
+    assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
 
-    if (fst_leaf->array_num_chunks <= 1) {
-        return ((Pointer)&(fst_leaf->ml_array_payload.ml_object[0])) + index * elemSize + offset;
+    if (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
+    	if (DEBUG_MEM)
+    		fprintf(stderr, "   root type is LEAF so return direct calculation of base+%d\n",
+					index * elemSize + offset);
+
+		Pointer res = ((Pointer)&(root->ml_array_payload.ml_object[0])) +
+				index * elemSize + offset;
+		if (DEBUG_MEM)
+			fprintf(stderr,
+					" --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
+					"offset: %d, addr "FMTPTR" word: %x, %d, "
+					" char: %c\n",
+					(uintptr_t)root,
+					index,
+					(uintptr_t)root->ml_array_payload.ml_object, index * elemSize + offset,
+					(uintptr_t)res,
+					*((Word32_t*)(res)),
+					*((Word32_t*)(res)),
+					*((char*)(res)));
+		Pointer p1 = ((Pointer)&(root->ml_array_payload.ml_object[0])) + index * elemSize + offset;
+		return p1;
+    }
+    else {
+		if (DEBUG_MEM)
+			fprintf(stderr, YELLOW("   root type is INTERNAL")
+			        " so return indirect calculation by following root\n");
     }
 
-    GC_UM_Array_Chunk root2 __attribute__((unused)) = (GC_UM_Array_Chunk)((pointer)(fst_leaf->root)-12);
-	GC_UM_Array_Chunk root = fst_leaf->root;
+    /* if we are here, base is the root of a tree */
 
-	// off by 40 (0x28)
+	assert (root->array_height > 0);
+    assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
+	assert (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL);
 
-    assert (root->array_chunk_magic == 9998);
+    /* to find the chunk that the index is in:
+     *
+     * we know the total number of elements in the array
+     *   numElements  root->array_chunk_length
+     * if we take index/num_els_per_chunk * UM_CHUNK_ARRAY_INTERNAL_POINTERS
+     * we get the next chunk to go to when searching for our element's chunk.
+     *
+     * when we are on the next level of the tree, we know what the minimum
+     * element number (e0) is that can possibly be linked from that node and the maximum
+     * reachable element (eX)
+     *
+     * to determine what chunk to proceed to next:
+     * (index-e0)/(eX-e0) * UM_CHUNK_ARRAY_INTERNAL_POINTERS
+     *
+     * we then adjust e0 and eX so they correspond to the
+     * array slice reachable from the new root.
+     *
+     * this is the general approach to walking the tree
+     *
+     * 1. find the 'width' of the array slice below us
+     * 2. calculate the next node we need to go to to find the element
+     * 3. repeat so long as chunk_type is INTERNAL
+     */
 
-    if (DEBUG_MEM) {
-        fprintf(stderr, "UM_Array_offset: "FMTPTR" root: "
-                FMTPTR", index: %d size: %d offset %d, "
-                " length: %d, chunk_num_objs: %d\n",
-                (uintptr_t)(base - GC_HEADER_SIZE - sizeof(Word32_t)),
-                (uintptr_t)root, index, elemSize, offset,
-                fst_leaf->array_chunk_length,
-                fst_leaf->array_chunk_numObjs);
-    }
+    int curHeight = root->array_height;
+    int ourNodeIndex = 0, min_index = 0;
+	GC_UM_Array_Chunk current = root;
+	int width_in_elements = POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight) * root->num_els_per_chunk;
+	int e0 = 0;
+	int eX = width_in_elements-1;
 
-    size_t chunk_index = index / root->array_chunk_numObjs;
-    GC_UM_Array_Chunk current = root;
-	assert (current->array_chunk_magic == 9998);
+	if (DEBUG_ARRAY) {
+		fprintf(stderr, " IP^CH * EPC = %d^%d (%d) * %d = %d\n",
+				UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight,
+				POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight),
+				root->num_els_per_chunk, width_in_elements);
+		fprintf(stderr, " root->num_els_per_chunk %d\n", root->num_els_per_chunk);
+		fprintf(stderr, " e0 %d ex %d\n", e0, eX);
+	}
 
-	size_t i;
+    while (current->array_chunk_type != UM_CHUNK_ARRAY_LEAF) {
+    	if (DEBUG_ARRAY) {
+    		fprintf(stderr, "  chunk "FMTPTR" type %d ? leaf=%d\n",
+    				(uintptr_t)&(current->ml_array_payload.ml_object[0]),
+    				current->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
+			fprintf(stderr, "   down-chunk type %d ? leaf=%d\n",
+					current->ml_array_payload.um_array_pointers[0]->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
 
-    if (DEBUG_MEM) {
-        fprintf(stderr, " >> Start to fetch chunk index: %d\n", chunk_index);
-    }
+			fprintf(stderr, "  curHeight %d\n", curHeight);
+    	}
 
-    while (true) {
-        if (current->array_chunk_header & UM_CHUNK_HEADER_CLEAN)
-            die("Visiting a chunk that is on free list!\n");
+		assert (current->array_chunk_magic == UM_ARRAY_SENTINEL);
 
-        i = chunk_index / current->array_chunk_fan_out;
-        if (DEBUG_MEM) {
-            fprintf(stderr, "  --> chunk_index: %d, current fan out: %d, "
-                    "in chunk index: %d\n",
-                    chunk_index,
-                    current->array_chunk_fan_out,
-                    i);
-        }
-        chunk_index = chunk_index % current->array_chunk_fan_out;
-        current = current->ml_array_payload.um_array_pointers[i];
-		assert (current->array_chunk_magic == 9998);
+		int num_leaf_chunks_below_us = POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight-1);
+    	int slice_width_in_elements = (num_leaf_chunks_below_us) * root->num_els_per_chunk;
 
-		if (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
-            size_t chunk_offset = (index % root->array_chunk_numObjs) * elemSize + offset;
-            Pointer res = ((Pointer)&(current->ml_array_payload.ml_object[0])) +
-                chunk_offset;
-            if (DEBUG_MEM) {
-                fprintf(stderr,
-                        " --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
-                        "offset: %d, addr "FMTPTR" word: %x, %d, "
-                        " char: %c\n",
-                        (uintptr_t)current,
-                        index,
-                        (uintptr_t)current->ml_array_payload.ml_object, chunk_offset, (uintptr_t)res,
-                        *((Word32_t*)(res)),
-                        *((Word32_t*)(res)),
-                        *((char*)(res)));
-            }
-            return res;
-        }
-    }
+    	if (DEBUG_ARRAY)
+			fprintf(stderr, "  leafs_below %d total width %d slice width %d\n",
+					num_leaf_chunks_below_us,
+					width_in_elements,
+					slice_width_in_elements);
 
-    die("UM_Array_Offset: shouldn't be here!");
+		min_index = (width_in_elements/(ourNodeIndex+1)) * ourNodeIndex;
+
+		assert (index >= e0);
+
+		int next = ((float)(index)-(float)e0)/(float)width_in_elements *
+				(float)UM_CHUNK_ARRAY_INTERNAL_POINTERS;
+
+		e0 = slice_width_in_elements * next;
+		eX = e0 + slice_width_in_elements - 1;
+
+		if (DEBUG_ARRAY)
+			fprintf(stderr, "  next: %d = (%d-%d)/%d * %d, h=%d e/c=%d, e0 %d eX %d\n",
+					next, index, min_index, slice_width_in_elements, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+					curHeight, root->num_els_per_chunk, e0, eX);
+
+		GC_UM_Array_Chunk current2 = current->ml_array_payload.um_array_pointers[next];
+		assert (current2 != NULL);
+		current = current2;
+		ourNodeIndex = next;
+		curHeight--;
+	}
+
+	/* now that we found the chunk that the index is in, we must adjust the index
+	 * based on the first index available in this chunk. so if we are looking for index
+	 * 455 and this chunk contains indices 450-500, we need to extract index 5 from this
+	 * chunk.
+	 */
+    assert (e0 <= index);
+	assert ((index-e0) * elemSize + offset <= UM_CHUNK_ARRAY_PAYLOAD_SIZE);
+	assert (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF);
+
+	Pointer res = ((Pointer)&(current->ml_array_payload.ml_object[0])) +
+			(index-e0) * elemSize + offset;
+	if (DEBUG_MEM)
+		fprintf(stderr,
+				" --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
+				"offset: %d, addr "FMTPTR" word: %x, %d, "
+				" char: %c\n",
+			(uintptr_t)root,
+			index,
+			(uintptr_t)root->ml_array_payload.ml_object, (index-e0) * elemSize + offset,
+			(uintptr_t)res,
+			*((Word32_t*)(res)),
+			*((Word32_t*)(res)),
+			*((char*)(res)));
+
+	Pointer p2 = ((Pointer)&(current->ml_array_payload.ml_object[0])) + (index-e0) * elemSize + offset;
+	return p2;
 }
 
 /*When Compare and swap is called with lockOrUnlock =1, 

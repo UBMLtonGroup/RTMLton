@@ -12,9 +12,9 @@
  * Returns a pointer to the length for the array pointed to by p.
  */
 GC_arrayLength* getArrayLengthp (pointer a) {
-  return (GC_arrayLength*)(a
-                           - GC_HEADER_SIZE
-                           - GC_ARRAY_LENGTH_SIZE);
+	GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(a - GC_HEADER_SIZE - sizeof(Word32_t));
+	assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
+	return (GC_arrayLength*)(&root->num_els);
 }
 
 /* getArrayLength (p)
@@ -22,7 +22,10 @@ GC_arrayLength* getArrayLengthp (pointer a) {
  * Returns the length for the array pointed to by p.
  */
 GC_arrayLength getArrayLength (pointer a) {
-  return *(getArrayLengthp (a));
+	GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(a - GC_HEADER_SIZE - sizeof(Word32_t));
+	//assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
+	printf("arraylen %d\n", root->num_els);
+	return root->num_els;
 }
 
 uintmax_t GC_getArrayLength (pointer a) {
@@ -34,6 +37,8 @@ uintmax_t GC_getArrayLength (pointer a) {
  * Returns a pointer to the counter for the array pointed to by p.
  */
 GC_arrayCounter* getArrayCounterp (pointer a) {
+	die("array counter is not used");
+
   return (GC_arrayCounter*)(a
                             - GC_HEADER_SIZE
                             - GC_ARRAY_LENGTH_SIZE

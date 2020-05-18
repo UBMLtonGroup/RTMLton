@@ -278,7 +278,9 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 					fst_leaf->array_chunk_magic, fst_leaf->array_chunk_length);
 		}
 
-		if (fst_leaf->array_num_chunks > 1 &&
+		// FIX mark the tree
+die("fix ummark array");
+		if (
 			fst_leaf->array_chunk_length > 0) {
 			GC_UM_Array_Chunk root = fst_leaf->root;
 			assert (root->array_chunk_magic == 9998);

@@ -153,8 +153,9 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 		h->fl_head = nc;
 	}
 
+		memset(c, 0xAB, sizeof(struct GC_UM_Array_Chunk));
 	c->next_chunk = NULL;
-	c->array_chunk_magic = 9998;
+	c->array_chunk_magic = UM_ARRAY_SENTINEL;
 	c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
 	if (s->rtSync[PTHREAD_NUM]) {
 		c->array_chunk_header |= UM_CHUNK_GREY_MASK;  /*shade chunk header*/

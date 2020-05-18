@@ -102,10 +102,6 @@ void initWorld (GC_state s) {
 
   /* alloc um first so normal heap can expand without overrunning us */
 
-
-    /*ensure all chunks are of same size for best memory usage */
-    assert(sizeof(GC_UM_Chunk) == sizeof(GC_UM_Array_Chunk));
-
 #define MEGABYTES 1024*1024
 #define MEM_AVAILABLE 1024
   size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);

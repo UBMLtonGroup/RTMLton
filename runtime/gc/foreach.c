@@ -201,6 +201,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
 	  assert (fst_leaf->array_chunk_magic == 9998);
 
+	  // FIX this needs to walk the tree
 	  if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
@@ -210,14 +211,14 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
           for (i=0; i<length; i++) {
               pointer start = (pointer)&(cur_chunk->ml_array_payload.ml_object[0]);
-              size_t offset = (i % fst_leaf->array_chunk_numObjs) * elem_size + bytesNonObjptrs;
+              size_t offset = (i % fst_leaf->num_els_per_chunk) * elem_size + bytesNonObjptrs;
               pointer pobj = start + offset;
               for (j=0; j<numObjptrs; j++) {
                   callIfIsObjptr (s, f, (objptr*)pobj);
                   pobj += OBJPTR_SIZE;
               }
 
-              if (i > 0 && i % fst_leaf->array_chunk_numObjs == 0)
+              if (i > 0 && i % fst_leaf->num_els_per_chunk == 0)
                   cur_chunk = cur_chunk->next_chunk;
           }
       }
