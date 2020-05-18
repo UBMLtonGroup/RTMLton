@@ -306,13 +306,3 @@ pointer foreachObjptrInRange (GC_state s, pointer front, pointer *back,
   }
   return front;
 }
-
-
-/* Apply f to the frame index of each frame in the current thread's stack. */
-void foreachStackFrame (GC_state s, GC_foreachStackFrameFun f) {
-  if (DEBUG_PROFILE)
-    fprintf (stderr, "%d] foreachStackFrame\n", PTHREAD_NUM);
-
-  if (DEBUG_PROFILE)
-    fprintf (stderr, "%d] done foreachStackFrame\n", PTHREAD_NUM);
-}

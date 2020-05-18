@@ -39,15 +39,6 @@ static inline pointer foreachObjptrInObject (GC_state s, pointer p,
 static inline pointer foreachObjptrInRange (GC_state s, pointer front, pointer *back,
                                             GC_foreachObjptrFun f, bool skipWeaks);
 
-
-typedef void (*GC_foreachStackFrameFun) (GC_state s, GC_frameIndex i);
-
-/* foreachStackFrame (s, f);
- *
- * Apply f to the frame index of each frame in the current stack.
- */
-static inline void foreachStackFrame (GC_state s, GC_foreachStackFrameFun f);
-
 /*foreachGlobalThreadObjptr(s,f)
  *
  * Apply f to each object global to each thread

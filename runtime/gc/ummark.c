@@ -268,63 +268,38 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 	} else if (tag == ARRAY_TAG &&
 			   p >= s->umheap.start &&
 			   p < s->umheap.start + s->umheap.size) {
-		GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)
-				(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-		assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
+
+		GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
+		assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		if (DEBUG_DFS_MARK) {
 			fprintf(stderr, "umDfsMarkObjects: marking array: %p, markmode: %d, "
-							"magic: %d, length: %d\n", (void *) fst_leaf, m,
-					fst_leaf->array_chunk_magic, fst_leaf->array_chunk_length);
+							"length: %d\n", (void *) root, m, root->array_chunk_length);
 		}
 
-		// FIX mark the tree
-die("fix ummark array");
-		if (
-			fst_leaf->array_chunk_length > 0) {
-			GC_UM_Array_Chunk root = fst_leaf->root;
-			assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
+		markUMArrayChunks(s, root, m);
 
-//            size_t length = root->array_chunk_length;
-//
-//            size_t i, j;
-//            size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
-//            for (i=0; i<length; i++) {
-//                pointer pobj = UM_Array_offset(s, p, i, elem_size, 0) +
-//                    bytesNonObjptrs;
-//
-//                for (j=0; j<numObjptrs; j++) {
-//                    if (m == MARK_MODE)
-//                        foreachObjptrInObject(s, pobj, umDfsMarkObjectsMark, true);
-//                    else
-//                        foreachObjptrInObject(s, pobj, umDfsMarkObjectsUnMark, true);
-//                    pobj += OBJPTR_SIZE;
-//                }
-//            }
-			markUMArrayChunks(s, root, m);
-		} else
-			markUMArrayChunks(s, fst_leaf, m);
 	} else {
 		if (0) {
 			switch (tag) {
 				case STACK_TAG:
-					fprintf(stderr, "%d]Trying to mark Stack Chunk\n", PTHREAD_NUM);
+					fprintf(stderr, "%d] Trying to mark Stack Chunk\n", PTHREAD_NUM);
 					break;
 
 				case WEAK_TAG:
-					fprintf(stderr, "%d]Trying to mark Weak Chunk\n", PTHREAD_NUM);
+					fprintf(stderr, "%d] Trying to mark Weak Chunk\n", PTHREAD_NUM);
 					break;
 
 				case ERROR_TAG:
-					fprintf(stderr, "%d]Trying to mark chunk with Error tag\n", PTHREAD_NUM);
+					fprintf(stderr, "%d] Trying to mark chunk with Error tag\n", PTHREAD_NUM);
 					break;
 
 				case NORMAL_TAG:
-					fprintf(stderr, "%d]Trying to mark Normal Chunk NOT on UMheap \n", PTHREAD_NUM);
+					fprintf(stderr, "%d] Trying to mark Normal Chunk NOT on UMheap \n", PTHREAD_NUM);
 					break;
 
 				case ARRAY_TAG:
-					fprintf(stderr, "%d]Trying to mark Array Chunk NOT on UMheap\n", PTHREAD_NUM);
+					fprintf(stderr, "%d] Trying to mark Array Chunk NOT on UMheap\n", PTHREAD_NUM);
 					break;
 
 				default:
@@ -471,34 +446,6 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 			foreachObjptrInObject(s, p, umShadeObject, false);
 	}
 
-
-	/*mark object*/
-	/*
-	 if (m == MARK_MODE) {
-		 if (DEBUG_DFS_MARK)
-			 fprintf(stderr, FMTPTR" mark b pheader: %x, header: %x\n",
-					 (uintptr_t)p, *(getHeaderp(p)), header);
-
-		 header = header | MARK_MASK;
-		 *headerp = header;
-
-		 if (DEBUG_DFS_MARK)
-			 fprintf(stderr, FMTPTR" mark a pheader: %x, header: %x\n",
-					 (uintptr_t)p, *(getHeaderp(p)), header);
-	 } else {
-		 if (DEBUG_DFS_MARK)
-			 fprintf(stderr, FMTPTR" unmark b pheader: %x, header: %x\n",
-					 (uintptr_t)p, *(getHeaderp(p)), header);
-
-		 header = header & ~MARK_MASK;
-		 (*headerp) = header;
-
-		 if (DEBUG_DFS_MARK)
-			 fprintf(stderr, FMTPTR" unmark a pheader: %x, header: %x\n",
-					 (uintptr_t)p, *(getHeaderp(p)), header);
-	 }
-	 */
-
 	/*Mark chunk*/
 
 	markChunk(p, tag, m, s, numObjptrs);
@@ -543,13 +490,10 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 	}
 
 	if (p->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
-		int i = 0;
-		for (i = 0; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
+		for (int i = 0; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
 			GC_UM_Array_Chunk pcur = p->ml_array_payload.um_array_pointers[i];
+			if (!pcur) break;
 			assert (pcur->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-			if (!pcur)
-				break;
 			markUMArrayChunks(s, pcur, m);
 		}
 	}
