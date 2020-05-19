@@ -142,7 +142,6 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 	/*Allocate next chunk from start of list*/
 	h->fl_head->chunkType = UM_ARRAY_CHUNK;
 	struct UM_Mem_Chunk *nc = h->fl_head->next_chunk;
-	assert(nc != NULL);
 	GC_UM_Array_Chunk c = insertArrayFreeChunk(s, h, ((pointer) h->fl_head +
 													  sizeof(UM_header))); /*pass pointer to area after chunktype*/
 

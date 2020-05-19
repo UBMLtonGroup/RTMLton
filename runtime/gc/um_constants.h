@@ -4,7 +4,7 @@
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 #define UM_CHUNK_PAYLOAD_SIZE            302 /*Change in include/c-chunk.h too*/
 #define UM_CHUNK_PAYLOAD_SAFE_REGION     16
-#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      200 /* this should be divisible by platform wordsize */
+#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      300 /* this should be divisible by platform wordsize */
 #define UM_CHUNK_ARRAY_INTERNAL_POINTERS UM_CHUNK_ARRAY_PAYLOAD_SIZE/sizeof(void*)
 
 _Static_assert (UM_CHUNK_ARRAY_PAYLOAD_SIZE%sizeof(void*)==0,
