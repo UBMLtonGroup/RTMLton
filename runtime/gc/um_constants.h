@@ -19,6 +19,9 @@
 #define UM_CHUNK_ARRAY_INTERNAL_POINTERS 75
 #define UM_CHUNK_ARRAY_PAYLOAD_SIZE      300
 
+#define UM_CHUNK_SENTINEL                9999
+#define UM_ARRAY_SENTINEL                9998
+
 /*
  * Chunk header splitup
  * bits         purpose
