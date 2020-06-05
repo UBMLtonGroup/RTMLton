@@ -14,7 +14,7 @@ in
    true
 end 
 
-val a = Array.array(300,3);
+val a = Array.array(500000,3);
 val _ = Array.all f a
 
 

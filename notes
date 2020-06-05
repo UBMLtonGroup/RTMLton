@@ -1,3 +1,7 @@
+GDB/libcheck
+
+export CK_FORK=no
+
 Code Layout
 
 WordSize is defined in mlton/atoms/word-size.fun

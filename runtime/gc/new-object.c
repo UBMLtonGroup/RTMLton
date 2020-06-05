@@ -58,7 +58,7 @@ objptr newStack_um(GC_state s) {
 				need_chunks, s->maxFrameSize,
 				sizeof(struct GC_UM_Chunk));
 
-	assert(s->maxFrameSize < UM_CHUNK_PAYLOAD_SIZE);
+	assert(s->maxFrameSize <= UM_CHUNK_PAYLOAD_SIZE);
 
 	/* Reserve the allocation before actually allocating.
 	 * Will block if not enough chunks available.

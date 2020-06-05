@@ -77,7 +77,7 @@ pointer getStackLimit (GC_state s, GC_stack stack) {
 
 GC_frameIndex getCachedStackTopFrameIndex (GC_state s) {
 	// used s->stackTop
-    return (GC_frameIndex)NULL;
+    return (GC_frameIndex) -1;
 }
 
 GC_frameIndex getStackTopFrameIndex (GC_state s, GC_stack stack) {

@@ -190,10 +190,15 @@ void incForProfiling (GC_state s, size_t amount, GC_sourceSeqIndex sourceSeqInde
 void GC_profileInc (GC_state s, size_t amount) {
   if (DEBUG_PROFILE)
     fprintf (stderr, "GC_profileInc (%"PRIuMAX")\n", (uintmax_t)amount);
+  return;
+  /*
+   * disabled jcm 20200527 bc it refs old stack impl
   incForProfiling (s, amount,
                    s->amInGC
                    ? SOURCE_SEQ_GC
                    : getCachedStackTopFrameSourceSeqIndex (s));
+  */
+
 }
 
 void GC_profileAllocInc (GC_state s, size_t amount) {

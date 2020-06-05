@@ -54,7 +54,7 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
         chunk = new;                           \
       } while(0)
 
-__attribute__((unused)) static
+static
 GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
                                     GC_UM_Array_Chunk *chunks,
                                     size_t numChunks,
@@ -66,9 +66,9 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
     /* base case, H=0, initialize the chunks as leaves and return
      */
     if (height == 0) {
-        assert (getLengthOfList(*chunks) <= UM_CHUNK_ARRAY_INTERNAL_POINTERS);
         GC_UM_Array_Chunk anode = NULL, prevnode = NULL;
-        for (int i = 0 ; i < getLengthOfList(*chunks) ; i++) {
+        int chunks_to_link = min(getLengthOfList(*chunks),UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+        for (int i = 0 ; i < chunks_to_link ; i++) {
             POPCHUNK(*chunks, anode);
             if (prevnode == NULL)
                 prevnode = anode;
@@ -91,9 +91,14 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
     }
 
     /* otherwise H>0, link enough chunks to our root to fully populate it */
+	bool done = false;
 
-    for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
+    for (int i = 0 ; !done && i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
         GC_UM_Array_Chunk anode = NULL;
+        if (numElements > 10000) {
+        	fprintf(stderr, "i %d (%d) | %d | %d .. \n", i, UM_CHUNK_ARRAY_INTERNAL_POINTERS,height, getLengthOfList(*chunks));
+        }
+		assert (getLengthOfList(*chunks) > 0);
         POPCHUNK(*chunks, anode);
         anode->root = rootroot;
         anode->parent = root;
@@ -109,6 +114,7 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
                           header,
                           numElements,
                           rootroot);
+        done = (getLengthOfList(*chunks) == 0);
     }
     return root;
 
@@ -187,11 +193,24 @@ pointer GC_arrayAllocate(GC_state s,
 
     /* calc total number of chunks needed */
 
-    size_t numChunks = (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight+1)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
+    //size_t numChunks = (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight+1)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
+	size_t numChunks = numLeaves + (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
 
-    if (DEBUG_MEM) {
-        fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd (%zd b/e), numElsPerChunk: %zd, numChunks: %zd\n",
-                PTHREAD_NUM, numElements, bytesPerElement, numElsPerChunk, numChunks);
+	int tcn = numLeaves, ncn = numLeaves, prevlvl = 0;
+	for(int i = treeHeight ; i ; i--) {
+		prevlvl = ceil((double)ncn / (double)UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+		tcn += prevlvl;
+		ncn = prevlvl;
+	}
+
+	numChunks = tcn;
+
+	if (numChunks == 0) numChunks = 1;
+
+    if (1||DEBUG_MEM) {
+        fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd (%zd b/e), "
+						"numElsPerChunk: %zd, numLeaves: %zd, numChunks: %zd, treeHeight: %zd, tcn: %zd\n",
+                PTHREAD_NUM, numElements, bytesPerElement, numElsPerChunk, numLeaves, numChunks, treeHeight, tcn);
     }
 
     assert (numChunks > 0);

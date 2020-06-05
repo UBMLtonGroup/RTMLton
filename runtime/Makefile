@@ -400,3 +400,10 @@ flags:
 .PHONY: clean
 clean:
 	../bin/clean
+
+.PHONY: check
+check: libmlton-gdb.a
+	# if you want to use gdb on this exec, first export CK_FORK=no
+	checkmk umarray-allocate-test.check > umarray-allocate-test.c
+	gcc -g -O0 -I. -Iplatform  -pthread  -o umarray-allocate-test umarray-allocate-test.c -lcheck  -lrt -lm -lpthread -lsubunit ./libmlton-gdb.a ./libgdtoa-gdb.a 
+	CK_VERBOSITY=verbose ./umarray-allocate-test
