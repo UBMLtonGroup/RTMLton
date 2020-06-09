@@ -202,16 +202,18 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
     }
 }
 
+#define DEBUG_ARRAY_OFFSET 1
+
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset) {
     Pointer heap_end = (gc_stat->umheap).start + (gc_stat->umheap).size;
 
-    if (DEBUG_MEM)
+    if (DEBUG_ARRAY_OFFSET)
         fprintf(stderr, "UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
                 (unsigned int)base, index, elemSize, offset);
 
     if (base < gc_stat->umheap.start || base >= heap_end) {
-        if (DEBUG_MEM) {
+        if (DEBUG_ARRAY_OFFSET) {
             fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
                     (uintptr_t)base, offset);
         }
@@ -285,63 +287,63 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
      */
 
 	size_t curHeight = root->array_height;
-	size_t ourNodeIndex = 0, min_index = 0;
     GC_UM_Array_Chunk current = root;
 	size_t width_in_elements = POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight) * root->num_els_per_chunk;
 	size_t e0 = 0;
 	size_t eX = width_in_elements-1;
+	size_t slice_width_in_elements = width_in_elements;
 
-    if (DEBUG_ARRAY) {
-        fprintf(stderr, " IP^CH * EPC = %d^%d (%d) * %d = %d\n",
+    if (DEBUG_ARRAY_OFFSET) {
+        fprintf(stderr, " IP^CH * EPC = %d^%d (%d) * %d = %d (max width_in_elements)\n",
                 UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight,
                 POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight),
                 root->num_els_per_chunk, width_in_elements);
         fprintf(stderr, " root->num_els_per_chunk %d\n", root->num_els_per_chunk);
-        fprintf(stderr, " e0 %d ex %d\n", e0, eX);
+        fprintf(stderr, " e0 %d eX %d (starting case)\n", e0, eX);
     }
 
     while (current->array_chunk_type != UM_CHUNK_ARRAY_LEAF) {
-        if (1||DEBUG_ARRAY) {
+        if (DEBUG_ARRAY_OFFSET) {
             fprintf(stderr, "  chunk "FMTPTR" type %d ? leaf=%d\n",
                     (uintptr_t)&(current->ml_array_payload.ml_object[0]),
                     current->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
             fprintf(stderr, "   down-chunk type %d ? leaf=%d\n",
                     current->ml_array_payload.um_array_pointers[0]->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
-
             fprintf(stderr, "  curHeight %d elsPerChunk %d\n", curHeight, root->num_els_per_chunk);
         }
 
         assert (current->array_chunk_magic == UM_ARRAY_SENTINEL);
 
-		size_t num_leaf_chunks_below_us = POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight-1);
-		size_t slice_width_in_elements = (num_leaf_chunks_below_us) * root->num_els_per_chunk;
+		float next = floor((index-e0)/(float)slice_width_in_elements *
+						   (float)(UM_CHUNK_ARRAY_INTERNAL_POINTERS))
+		;
 
-        if (1||DEBUG_ARRAY)
-            fprintf(stderr, "  leafs_below %d total width %d slice width %d\n",
-                    num_leaf_chunks_below_us,
+		/* now that we know where we are going next, we can figure out the new e0, eX,
+		 * and slice width
+		 */
+
+		size_t num_leaf_chunks_below_next = POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight-1);
+		e0 += (slice_width_in_elements / UM_CHUNK_ARRAY_INTERNAL_POINTERS) * floor(next);
+
+		slice_width_in_elements = num_leaf_chunks_below_next * root->num_els_per_chunk;
+		eX = e0 + slice_width_in_elements - 1;
+
+        if (DEBUG_ARRAY_OFFSET)
+            fprintf(stderr, "  leafs_below_next %d total width %d slice width %d\n",
+                    num_leaf_chunks_below_next,
                     width_in_elements,
                     slice_width_in_elements);
 
-        min_index = (width_in_elements/(ourNodeIndex+1)) * ourNodeIndex;
-
         assert (index >= e0);
 
-		float next = floor((index-min_index)/(float)width_in_elements *
-                (float)UM_CHUNK_ARRAY_INTERNAL_POINTERS)
-		;
 
-        e0 = slice_width_in_elements * floor(next);
-        eX = e0 + slice_width_in_elements - 1;
-
-        if (1||DEBUG_ARRAY)
+        if (DEBUG_ARRAY_OFFSET)
             fprintf(stderr, "  next: %f = (%d-%d)/%d * %d, h=%d e/c=%d, e0 %d eX %d\n",
-                    next, index, min_index, width_in_elements, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+                    next, index, e0, slice_width_in_elements, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
                     curHeight, root->num_els_per_chunk, e0, eX);
 
-        GC_UM_Array_Chunk current2 = current->ml_array_payload.um_array_pointers[(int)next];
-        //assert (current2 != NULL);
-        current = current2;
-        ourNodeIndex = next;
+        assert (current->ml_array_payload.um_array_pointers[(int)next] != NULL);
+        current = current->ml_array_payload.um_array_pointers[(int)next];
         curHeight--;
     }
 
@@ -350,15 +352,18 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
      * 455 and this chunk contains indices 450-500, we need to extract index 5 from this
      * chunk.
      */
-    assert (e0 <= index);
-    fprintf(stderr, "(%d-%d)*%d+%d = %d\n",
-    index, e0, elemSize, offset, (index-e0)*elemSize+offset);
+	if (DEBUG_ARRAY_OFFSET)
+		fprintf(stderr, "   (%d-%d)*%d+%d = %d = (index-e0) * elemSize + offset\n",
+				index, e0,
+				elemSize, offset, (index-e0)*elemSize+offset);
+
+	assert (e0 <= index);
     assert ((index-e0) * elemSize + offset <= UM_CHUNK_ARRAY_PAYLOAD_SIZE);
     assert (current->array_chunk_type == UM_CHUNK_ARRAY_LEAF);
 
     Pointer res = ((Pointer)&(current->ml_array_payload.ml_object[0])) +
             (index-e0) * elemSize + offset;
-    if (DEBUG_MEM)
+    if (DEBUG_ARRAY_OFFSET)
         fprintf(stderr,
                 " --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
                 "offset: %d, addr "FMTPTR" word: %x, %d, "

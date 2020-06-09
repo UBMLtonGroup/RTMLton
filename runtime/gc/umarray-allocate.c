@@ -95,9 +95,11 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
 
     for (int i = 0 ; !done && i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
         GC_UM_Array_Chunk anode = NULL;
+#if 0
         if (numElements > 10000) {
         	fprintf(stderr, "i %d (%d) | %d | %d .. \n", i, UM_CHUNK_ARRAY_INTERNAL_POINTERS,height, getLengthOfList(*chunks));
         }
+#endif
 		assert (getLengthOfList(*chunks) > 0);
         POPCHUNK(*chunks, anode);
         anode->root = rootroot;
@@ -196,22 +198,34 @@ pointer GC_arrayAllocate(GC_state s,
     //size_t numChunks = (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight+1)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
 	size_t numChunks = numLeaves + (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
 
-	int tcn = numLeaves, ncn = numLeaves, prevlvl = 0;
+	/* calc total number of internal chunks needed to construct the tree
+	 * to do this we dont simply calculate the number of nodes needed to fully
+	 * populate the tree, but instead we need to find the minimum number of internal
+	 * nodes needed given the number of leafs. to find the minimum number of nodes
+	 * needed, take the leafs and divide by the number of internal pointers. this tells
+	 * us the number of internal nodes needed to point to those leafs. given the height
+	 * of the tree, we can then ask "how many internal nodes are needed to connect the
+	 * internal nodes we just calculated?" and so on until we get to height 0, the root.
+	 */
+
+	float tcn = numLeaves, ncn = numLeaves;
+	float prevlvl = 0.0;
 	for(int i = treeHeight ; i ; i--) {
-		prevlvl = ceil((double)ncn / (double)UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+		prevlvl = ceil(ncn / UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+		//fprintf(stderr, "  nodes on prevlvl: %f for height: %d\n", prevlvl, i);
 		tcn += prevlvl;
 		ncn = prevlvl;
 	}
 
-	numChunks = tcn;
-
-	if (numChunks == 0) numChunks = 1;
-
-    if (1||DEBUG_MEM) {
+	if (1||DEBUG_MEM) {
         fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd (%zd b/e), "
-						"numElsPerChunk: %zd, numLeaves: %zd, numChunks: %zd, treeHeight: %zd, tcn: %zd\n",
+						"numElsPerChunk: %zd, numLeaves: %zd, numChunks: %zd, treeHeight: %zd, tcn: %f\n",
                 PTHREAD_NUM, numElements, bytesPerElement, numElsPerChunk, numLeaves, numChunks, treeHeight, tcn);
     }
+
+	numChunks = (size_t)tcn;
+
+	if (numChunks == 0) numChunks = 1;
 
     assert (numChunks > 0);
 
