@@ -83,6 +83,28 @@ int count_leafs(pointer r) {
 	return c;
 }
 
+int all_unmarked(struct GC_UM_Array_Chunk *r) {
+    if (r == NULL) return TRUE;
+    if (r->array_chunk_header & UM_CHUNK_MARK_MASK) return FALSE;
+    if (r->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
+        for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
+            return all_unmarked(r->ml_array_payload.um_array_pointers[i]);
+        }
+    }
+    return TRUE;
+}
+
+int all_marked(struct GC_UM_Array_Chunk *r) {
+    if (r == NULL) return TRUE;
+    if (r->array_chunk_header & UM_CHUNK_MARK_MASK) return TRUE;
+    if (r->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
+        for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
+            return all_marked(r->ml_array_payload.um_array_pointers[i]);
+        }
+    }
+    return FALSE;
+}
+
 void teardown(void)
 {
 	fprintf(stderr, "teardown\n");
@@ -98,10 +120,10 @@ void teardown(void)
     // tree construction
     pointer a = GC_arrayAllocate(&gcState, 0, 1, (0x3<<1) | 0x1);
 	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	fail_unless (root->array_height == 0, "height not 0 (root only)");
-	fail_unless (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	fail_unless (root->array_chunk_length == 1, "array len not 1?");
-	fail_unless (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
+	ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
+	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+	ck_assert_msg (root->array_chunk_length == 1, "array len not 1?");
+	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
 
     /* note on element offset calculation: even tho the array is 1 el in size, mlton
        does bounds checking in the compiler and not the runtime, so we dont test
@@ -112,17 +134,26 @@ void teardown(void)
     pointer b = UM_Array_offset(&gcState, a, 0, 1, 0); // el 0, elsize 1, offset 0
     ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[0]) == b, "element 0 is not at expected address");
 
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
 #test array_alloc_2_test
 	pointer a = GC_arrayAllocate(&gcState, 0, 2, (0x3<<1) | 0x1);
 	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	fail_unless (root->array_height == 0, "height not 0 (root only)");
-	fail_unless (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	fail_unless (root->array_chunk_length == 2, "array len not 2?");
-	fail_unless (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
+	ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
+	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+	ck_assert_msg (root->array_chunk_length == 2, "array len not 2?");
+	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
     pointer b = UM_Array_offset(&gcState, a, 0, 1, 0); // el 0, elsize 1, offset 0
     ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[0]) == b, "element 0 is not at expected address");
     b = UM_Array_offset(&gcState, a, 1, 1, 0); // el 0, elsize 1, offset 0
     ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[1]) == b, "element 1 is not at expected address");
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
 
 #tcase RootFull
 
@@ -138,6 +169,11 @@ void teardown(void)
         pointer b = UM_Array_offset(&gcState, a, i, 1, 0);
         ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[i]) == b, "element %d is not at expected address", i);
     }
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
 
 #tcase RootPlusOne
 
@@ -171,6 +207,11 @@ void teardown(void)
                    UM_CHUNK_ARRAY_PAYLOAD_SIZE+1,
                    b,
                    (pointer)&(root->ml_array_payload.um_array_pointers[1]->ml_array_payload.ml_object[0]));
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
 
 #tcase H1Full
 
@@ -218,6 +259,10 @@ void teardown(void)
                        i, lc, ec,
                        (pointer)&(root->ml_array_payload.um_array_pointers[lc]->ml_array_payload.ml_object[ei]));
     }
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
 
 #tcase H1PlusOne
 
@@ -296,6 +341,11 @@ void teardown(void)
                    nels-1, ec,
                    (pointer)&(secondInode->ml_array_payload.um_array_pointers[0]->ml_array_payload.ml_object[0]));
 
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+
 #tcase H3
 
 #test array_alloc_H3_test
@@ -342,7 +392,7 @@ void teardown(void)
         for (int j = 0 ; j < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; j++) {
             ck_assert_msg (H1_inode0_child->ml_array_payload.um_array_pointers[j] != NULL,
                             "all of children of H1_inode0's children should be populated");
-            ck_assert_msg (H1_inode0_child->ml_array_payload.um_array_pointers[j]->array_chunk_type == UM_CHUNK_ARRAY_LEAF != NULL,
+            ck_assert_msg (H1_inode0_child->ml_array_payload.um_array_pointers[j]->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
                             "all of children of H1_inode0's children should be LEAFs");
 
         }
@@ -371,6 +421,10 @@ void teardown(void)
     /* final sanity check */
 	int c = count_leafs(a);
 	ck_assert_msg (c == nleafs, "should have %d leafs (found %d)", nleafs, c);
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
 
 
 #main-pre

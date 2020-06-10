@@ -493,7 +493,6 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 		for (int i = 0; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
 			GC_UM_Array_Chunk pcur = p->ml_array_payload.um_array_pointers[i];
 			if (!pcur) break;
-			assert (pcur->array_chunk_magic == UM_ARRAY_SENTINEL);
 			markUMArrayChunks(s, pcur, m);
 		}
 	}

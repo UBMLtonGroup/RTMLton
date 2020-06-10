@@ -222,7 +222,7 @@ pointer GC_arrayAllocate(GC_state s,
 		ncn = prevlvl;
 	}
 
-	if (1||DEBUG_MEM) {
+	if (DEBUG_MEM) {
         fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd (%zd b/e), "
 						"numElsPerChunk: %zd, numLeaves: %zd, numChunks: %zd, treeHeight: %zd, tcn: %f\n",
                 PTHREAD_NUM, numElements, bytesPerElement, numElsPerChunk, numLeaves, numChunks, treeHeight, tcn);
