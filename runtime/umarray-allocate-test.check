@@ -413,10 +413,10 @@ void teardown(void)
     for (int i = 1 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
         ck_assert_msg (H1_inode1_child0->ml_array_payload.um_array_pointers[i] == NULL, "H1_inode1_child0 [1..N] children should be NULL");
 
-    /* H3: and /that/ node should have be an Lnode */
+    /* H3: and /that/ node should be an Lnode */
     struct GC_UM_Array_Chunk *H1_inode1_child0_child0 = H1_inode1_child0->ml_array_payload.um_array_pointers[0];
     ck_assert_msg (H1_inode1_child0_child0 != NULL, "H1_inode1_child0_child0 is NULL");
-    ck_assert_msg (H1_inode1_child0_child0->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "H1_inode1_child0_child0 is not LEAD");
+    ck_assert_msg (H1_inode1_child0_child0->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "H1_inode1_child0_child0 is not LEAF");
 
     /* final sanity check */
     int c = count_leafs(a);
