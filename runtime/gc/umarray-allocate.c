@@ -66,12 +66,12 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
     /* base case, H=0, initialize the chunks as leaves and return
      */
     if (height == 0) {
-        GC_UM_Array_Chunk anode = NULL, prevnode = NULL;
+        GC_UM_Array_Chunk anode = NULL, prevnode = NULL, firstnode = NULL;
         int chunks_to_link = min(getLengthOfList(*chunks),UM_CHUNK_ARRAY_INTERNAL_POINTERS);
         for (int i = 0 ; i < chunks_to_link ; i++) {
             POPCHUNK(*chunks, anode);
             if (prevnode == NULL)
-                prevnode = anode;
+                prevnode = firstnode = anode;
             else {
                 prevnode->next_chunk = anode;
                 prevnode = anode;
@@ -87,19 +87,17 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
             root->ml_array_payload.um_array_pointers[i] = anode;
         }
 
-        return root;
+        return firstnode; // first leaf in this branch
     }
 
-    /* otherwise H>0, link enough chunks to our root to fully populate it */
+    /* otherwise H>0, link enough chunks to our root to fully populate it, or
+     * we run out of chunks to link
+     */
 	bool done = false;
 
     for (int i = 0 ; !done && i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
-        GC_UM_Array_Chunk anode = NULL;
-#if 0
-        if (numElements > 10000) {
-        	fprintf(stderr, "i %d (%d) | %d | %d .. \n", i, UM_CHUNK_ARRAY_INTERNAL_POINTERS,height, getLengthOfList(*chunks));
-        }
-#endif
+        GC_UM_Array_Chunk anode = NULL, aleaf = NULL;
+
 		assert (getLengthOfList(*chunks) > 0);
         POPCHUNK(*chunks, anode);
         anode->root = rootroot;
@@ -109,14 +107,21 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
         anode->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
         anode->array_chunk_header |= UM_CHUNK_IN_USE;
         root->ml_array_payload.um_array_pointers[i] = anode;
-        create_array_tree(anode,
-                          chunks,
-                          numChunks,
-                          height-1,
-                          header,
-                          numElements,
-                          rootroot);
-        done = (getLengthOfList(*chunks) == 0);
+		aleaf = create_array_tree(anode,
+								  chunks,
+								  numChunks,
+								  height-1,
+								  header,
+								  numElements,
+								  rootroot);
+		done = (getLengthOfList(*chunks) == 0);
+
+		if (height-1 == 0 && i > 0) {
+			/* aleaf really is a leaf. link it to previous leafs if
+			 * appropriate so linear walking works
+			 */
+			root->ml_array_payload.um_array_pointers[i-1]->ml_array_payload.um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS-1]->next_chunk = aleaf;
+		}
     }
     return root;
 

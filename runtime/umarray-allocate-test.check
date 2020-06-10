@@ -76,6 +76,7 @@ void setup(void)
 int count_leafs(pointer r) {
 	int c = 0;
 	pointer n = r;
+
 	while ((n = UM_walk_array_leafs(n, NULL))) {
 		c++;
 	}
@@ -268,7 +269,9 @@ void teardown(void)
 	/* check that we have the expected num leafs */
 
 	int c = count_leafs(a);
-	ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS, "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS leafs");
+	ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS+1,
+	                "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS+1 (%d) leafs, has %d",
+	                UM_CHUNK_ARRAY_INTERNAL_POINTERS+1, c);
 
     /* check that a given offset maps to what we expect:
        offset 0 thru UM_CHUNK_ARRAY_INTERNAL_POINTERS^2 will be under the
@@ -310,7 +313,7 @@ void teardown(void)
 	 */
 	int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
 	int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
-	fprintf(stderr, "nleafs %d nels %d\n", nleafs, nels);
+
 	pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
 	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
 	ck_assert_msg (root->array_height == 3, "height not 3 (root + 1 internal layer + leafs)");

@@ -202,7 +202,7 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
     }
 }
 
-#define DEBUG_ARRAY_OFFSET 1
+#define DEBUG_ARRAY_OFFSET 0
 
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset) {
