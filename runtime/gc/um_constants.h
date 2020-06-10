@@ -1,25 +1,17 @@
 
-/*
- * Currently GC_UM_CHUNK with UM_CHUNK_PAYLOAD_SIZE =154 is 208 bytes
- * To match Array chunk sizes to utilize max space:
- * with UM_CHUNK_ARRAY_PAYLOAD_SIZE 128, difference between the two is 
- * 24 bytes. 
- * Adding 24 bytes to array payload --> 128+24 = 152
- * This means internal array nodes can now hold 152/4 = 38 internal pointers.
- *  Size of GC_UM_CHUNK = size of GC_UM_ARRAY_CHUNK = 208
- *
- *  Maintain this whenever the structs in umheap.h are changed or when payload sizes are changed
- *
- * */
 
 
 #if (defined (MLTON_GC_INTERNAL_TYPES))
 #define UM_CHUNK_PAYLOAD_SIZE            302 /*Change in include/c-chunk.h too*/
 #define UM_CHUNK_PAYLOAD_SAFE_REGION     16
-#define UM_CHUNK_ARRAY_INTERNAL_POINTERS 75 /* UM_CHUNK_ARRAY_PAYLOAD_SIZE / 4 ; FIX on 64bit*/
-#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      300 /* this should probably be INTERNAL_POINTERS*sizeof(void*) */
-#define UM_CHUNK_SENTINEL                9999
-#define UM_ARRAY_SENTINEL                9998
+#define UM_CHUNK_ARRAY_PAYLOAD_SIZE      300 /* this should be divisible by platform wordsize */
+#define UM_CHUNK_ARRAY_INTERNAL_POINTERS (UM_CHUNK_ARRAY_PAYLOAD_SIZE/sizeof(void*))
+
+_Static_assert (UM_CHUNK_ARRAY_PAYLOAD_SIZE%sizeof(void*)==0,
+		"UM_CHUNK_ARRAY_PAYLOAD_SIZE is not evenly divisible by platform word size");
+
+#define UM_CHUNK_SENTINEL                0x9999
+#define UM_ARRAY_SENTINEL                0x9998
 
 /*
  * Chunk header splitup
@@ -35,8 +27,8 @@
 #define UM_CHUNK_GREY_MASK               ((UM_header)0x02000000)
 #define UM_CHUNK_RED_MASK                ((UM_header)0x04000000)
 #define UM_CHUNK_UNMARK_MASK             ((UM_header)0xF0FFFFFF)
-#define UM_CHUNK_ARRAY_INTERNAL          0
-#define UM_CHUNK_ARRAY_LEAF              1
+#define UM_CHUNK_ARRAY_INTERNAL          0x111
+#define UM_CHUNK_ARRAY_LEAF              0xEAF
 #define UM_EMPTY                         0
 #define UM_NORMAL_CHUNK                  1
 #define UM_ARRAY_CHUNK                   2

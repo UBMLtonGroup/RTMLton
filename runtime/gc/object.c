@@ -63,10 +63,6 @@ void splitHeader(GC_state s, GC_header header,
   bool hasIdentity;
   uint16_t bytesNonObjptrs, numObjptrs;
 
-	if (1 != (header & GC_VALID_HEADER_MASK))
-		fprintf(stderr, "%x & %x = %x\n", header, GC_VALID_HEADER_MASK,
-				(header & GC_VALID_HEADER_MASK));
-
   assert (1 == (header & GC_VALID_HEADER_MASK)); 
 
   objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT; 

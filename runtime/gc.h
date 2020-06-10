@@ -76,7 +76,6 @@ typedef GC_state GCState_t;
 #include "gc/array-allocate.h"
 #include "gc/umarray-allocate.h"
 #include "gc/sources.h"
-#include "gc/call-stack.h"
 #include "gc/profiling.h"
 #include "gc/rusage.h"
 #include "gc/gc_state.h"

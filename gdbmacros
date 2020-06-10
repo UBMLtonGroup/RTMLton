@@ -11,9 +11,14 @@ define listchunks
     end
 end
 
+def dumparraychunk
+    set $caddr = $arg0
+    print /x *((GC_UM_Array_Chunk) $caddr)
+end
+
 def dumpchunk
     set $caddr = $arg0
-    print *((GC_UM_Chunk) $caddr)
+    print /x *((GC_UM_Chunk) $caddr)
 end
 
 def dumpprevchunk

@@ -69,6 +69,7 @@ functor Sequence (S: PRIM_SEQUENCE): SEQUENCE =
       val op <= = SeqIndex.<=
       val op > = SeqIndex.>
       val op >= = SeqIndex.>=
+structure PFFI = PrimitiveFFI
 
       (* fun wrap1 f = fn (i) => f (SeqIndex.toIntUnsafe i) *)
       fun wrap2 f = fn (i, x) => f (SeqIndex.toIntUnsafe i, x)

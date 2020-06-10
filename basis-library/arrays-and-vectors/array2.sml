@@ -103,7 +103,7 @@ structure Array2 : ARRAY2 =
          {base = a, row = 0, col = 0, nrows = NONE, ncols = NONE}
 
       datatype traversal = RowMajor | ColMajor
-
+structure PFFI = PrimitiveFFI
       local
          fun make (rows, cols, doit) =
             if Primitive.Controls.safe 

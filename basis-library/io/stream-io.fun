@@ -467,6 +467,7 @@ functor StreamIOExtra (S: STREAM_IO_EXTRA_ARG): STREAM_IO_EXTRA =
 
       fun extendB function is = valOf (extend function is true)
       fun extendNB function is = extend function is false
+      structure PFFI = PrimitiveFFI
 
       fun input (is as In {pos, buf as Buf {inp, next, ...}, ...}) =
         if pos < V.length inp

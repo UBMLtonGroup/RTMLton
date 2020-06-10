@@ -199,25 +199,26 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
 
 	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-	  assert (fst_leaf->array_chunk_magic == 9998);
+	  assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
 
+	  // FIX this needs to walk the tree
 	  if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
-		  assert (cur_chunk->array_chunk_magic == 9998);
+		  assert (cur_chunk->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		  size_t i, j;
           size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
           for (i=0; i<length; i++) {
               pointer start = (pointer)&(cur_chunk->ml_array_payload.ml_object[0]);
-              size_t offset = (i % fst_leaf->array_chunk_numObjs) * elem_size + bytesNonObjptrs;
+              size_t offset = (i % fst_leaf->num_els_per_chunk) * elem_size + bytesNonObjptrs;
               pointer pobj = start + offset;
               for (j=0; j<numObjptrs; j++) {
                   callIfIsObjptr (s, f, (objptr*)pobj);
                   pobj += OBJPTR_SIZE;
               }
 
-              if (i > 0 && i % fst_leaf->array_chunk_numObjs == 0)
+              if (i > 0 && i % fst_leaf->num_els_per_chunk == 0)
                   cur_chunk = cur_chunk->next_chunk;
           }
       }
@@ -304,14 +305,4 @@ pointer foreachObjptrInRange (GC_state s, pointer front, pointer *back,
     b = *back;
   }
   return front;
-}
-
-
-/* Apply f to the frame index of each frame in the current thread's stack. */
-void foreachStackFrame (GC_state s, GC_foreachStackFrameFun f) {
-  if (DEBUG_PROFILE)
-    fprintf (stderr, "%d] foreachStackFrame\n", PTHREAD_NUM);
-
-  if (DEBUG_PROFILE)
-    fprintf (stderr, "%d] done foreachStackFrame\n", PTHREAD_NUM);
 }

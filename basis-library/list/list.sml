@@ -99,6 +99,7 @@ structure List: LIST =
          | SOME _ => true
 
      fun all pred = not o (exists (not o pred))
+      structure PFFI = PrimitiveFFI
 
      fun tabulate (n, f) = 
         if Primitive.Controls.safe andalso n < 0

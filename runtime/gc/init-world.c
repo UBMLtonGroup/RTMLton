@@ -100,11 +100,10 @@ void initWorld (GC_state s) {
     s->globals[i] = BOGUS_OBJPTR;
   s->lastMajorStatistics.bytesLive = sizeofInitialBytesLive (s);
 
-  /* alloc um first so normal heap can expand without overrunning us */
-
-
-    /*ensure all chunks are of same size for best memory usage */
+  /*ensure all chunks are of same size for best memory usage */
     assert(sizeof(GC_UM_Chunk) == sizeof(GC_UM_Array_Chunk));
+
+  /* alloc um first so normal heap can expand without overrunning us */
 
 #define MEGABYTES 1024*1024
 #define MEM_AVAILABLE 1024

@@ -33,7 +33,6 @@
 
 #include "gc/array.c"
 #include "gc/atomic.c"
-#include "gc/call-stack.c"
 //#include "gc/cheney-copy.c"
 #include "gc/controls.c"
 #include "gc/copy-thread.c"

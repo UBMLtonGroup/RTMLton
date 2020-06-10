@@ -9,7 +9,6 @@
 #ifndef _C_CHUNK_H_
 #define _C_CHUNK_H_
 
-#define STACKLETS
 #define STACKLET_DEBUG 0
 
 #include <stdio.h>
@@ -41,8 +40,6 @@ void um_dumpStack (void *s);
 void um_dumpFrame (void *s, void *f);
 
 
-/* since atomicState is an int, we can use its size as our wordwidth */
-
 #define WORDWIDTH sizeof(void *)
 #define STACKHEADER WORDWIDTH
 
@@ -50,18 +47,12 @@ void um_dumpFrame (void *s, void *f);
 #define NO_CACHE_FRONTIER
 
 #define GCState ((Pointer)&gcState)
-/* ExnStack does not point to a GC_UM_Chunk, it points to one word
- * past it. so to map to a GC_UM_Chunk and reference its fields, we must subtract
- * one word.
- */
 #define ExnStack *(Pointer*)(GCState + ExnStackOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define CurrentThread *(size_t*)(GCState + CurrentThreadOffset+(PTHREAD_NUM*WORDWIDTH) )
 #define FrontierMem *(Pointer*)(GCState + FrontierOffset)
 #define UMFrontierMem *(Pointer*)(GCState + UMFrontierOffset)
 #define Frontier *(Pointer*)(GCState + FrontierOffset)
-// frontier
 #define UMFrontier *(Pointer*)(GCState + UMFrontierOffset)
-// umfrontier
 
 #define StackBottom (*(Pointer*)(GCState + StackBottomOffset+(PTHREAD_NUM*WORDWIDTH)))
 #define StackTopMem (*(Pointer*)(GCState + StackTopOffset+(PTHREAD_NUM*WORDWIDTH)))
@@ -82,32 +73,17 @@ void um_dumpFrame (void *s, void *f);
 #define G(ty, i) (global##ty [i])
 #define GPNR(i) G(ObjptrNonRoot, i)
 #undef DEBUG_MEMORY
-#if 0
 
-    #define O(ty, b, o) (*((fprintf (stderr, "%s:%d O: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
-                                           (void*)((b) + (o)), \
-                                           *((ty*)((b) + (o))))), \
-                                 ((ty*)((b) + (o)))))
-
-    #define X(ty, b, i, s, o) (*((fprintf (stderr, "%s:%d X: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
-                                                 (void*)((b) + ((i) * (s)) + (o)), \
-                                                 *(ty*)((b) + ((i) * (s)) + (o)))), \
-                                       ((ty*)((b) + ((i) * (s)) + (o)))))
-
-    #define S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p Val=%018p\n", __FILE__, __LINE__,PTHREAD_NUM, \
-                                (void*) StackTop, \
-                               (void*)(StackTop + (i)), \
-                               *(ty*)(StackTop + (i)))) , \
-                        (ty*)(StackTop + (i))))
-
-
-#endif
-#if 1
+#define X(ty, gc_stat, b, i, s, o) X_NORMAL(ty, gc_stat, b, i, s, o)
 
 #define O(ty, b, o) (*(ty*)((b) + (o)))
-// #define X(ty, b, i, s, o) (*(ty*)((b) + ((i) * (s)) + (o)))
-#define X(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
-//#define S(ty, i) *(ty*)(StackTop + (i))
+#define X_NORMAL(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
+#define X_DBG(ty, gc_stat, b, i, s, o) (*((fprintf (stderr, "%s:%d X: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
+                                                 (void*)((b) + ((i) * (s)) + (o)), \
+                                                 *(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))) \
+                                                 )), \
+                                                 (ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o)))))
+
 #define CHOFF(gc_stat, ty, b, o, s) (*(ty*)(UM_Chunk_Next_offset((gc_stat), (b), (o), (s))))
 //#define WB(ty,d,s,db,sb)  writeBarrier(GCState,(db),(sb)); d=s
 #define WB(ty,db,sb,d,s,op)                                         \
@@ -123,25 +99,14 @@ void um_dumpFrame (void *s, void *f);
                 } while(0)                                          \
 
 
-/* CurrentFrame does not point to a GC_UM_Chunk, it points to one word
- * past it. so to map to a GC_UM_Chunk and reference its fields, we must subtract
- * one word. The S() macro however, writes to CurrentFrame+offset
- */
 #define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
-
-#define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))
-#define MLTON_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p i=%d Val=%018p\n", __FILE__, __LINE__, PTHREAD_NUM, \
-                                (void*) StackTop, \
-                               (void*)(StackTop + (i)), i, \
-                               *(ty*)(StackTop + (i)))) , \
-                        (ty*)(StackTop + (i))))
 
 #define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i))
 #define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
-                                (void*)CurrentFrame, i, \
-                                (void*)(CurrentFrame + (i)), \
-                               *(ty*)(CurrentFrame + (i)))) , \
+                                (void*)CurrentFrame, i,           \
+                                (void*)(CurrentFrame + (i)),      \
+                               *(ty*)(CurrentFrame + (i)))),      \
                                 (ty*)(CurrentFrame + (i))))
 
 #define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
@@ -152,16 +117,10 @@ void um_dumpFrame (void *s, void *f);
 #define ChunkExnLink ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->link
 
 
-#ifdef STACKLETS
-# if STACKLET_DEBUG > 1
-#  define S(ty, i) STACKLET_DBG_S(ty, i)
-# else
-#  define S(ty, i) STACKLET_S(ty, i)
-# endif
+#if STACKLET_DEBUG > 1
+# define S(ty, i) STACKLET_DBG_S(ty, i)
 #else
-# define S(ty, i) MLTON_S(ty, i)
-#endif
-
+# define S(ty, i) STACKLET_S(ty, i)
 #endif
 
 /* ------------------------------------------------- */
@@ -342,7 +301,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER); \
-                assert (cf->sentinel == 9999); \
+                assert (cf->sentinel == 0x9999); \
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *xx = cf; \
                      StackDepth = StackDepth - 1; \
@@ -401,7 +360,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Return()                                                                                           \
         do {                                                                                                        \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER);                        \
-                assert (cf->sentinel == 9999 || 1!=1);                                                              \
+                assert (cf->sentinel == 0x9999 || 1!=1);                                                              \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n"));              \
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n"));                              \
                 else {                                                                                              \
@@ -419,7 +378,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Raise()                                                                \
         do {                                                                    \
                 struct GC_UM_Chunk *cf = (ExnStack - STACKHEADER);  \
-                assert (cf->sentinel == 9999 || 2!=2); \
+                assert (cf->sentinel == 0x9999 || 2!=2); \
                 if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
                          __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
@@ -437,6 +396,8 @@ void dump_hex(char *str, int len);
                 } \
         } while (0)
 
+/* leaving this in for ref for now */
+#if 0
 #define MLTON_Push(bytes)                                                     \
         do {                                                                  \
                 if (1 || DEBUG_CCODEGEN)    {                                 \
@@ -464,16 +425,11 @@ void dump_hex(char *str, int len);
                 StackTop = StackBottom + ExnStack;                              \
                 Return();                                                       \
         } while (0)
+#endif
 
-#ifdef STACKLETS
 #define Push STACKLET_Push
 #define Return STACKLET_Return
 #define Raise STACKLET_Raise
-#else
-#define Push MLTON_Push
-#define Return MLTON_Return
-#define Raise MLTON_Raise
-#endif
 
 
 /* ------------------------------------------------- */

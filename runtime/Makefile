@@ -12,7 +12,8 @@ PATH := ../bin:$(shell echo $$PATH)
 TARGET := self
 
 ifeq ($(TARGET), self)
-CC := gcc -std=gnu99
+CC := gcc -std=c11 
+#-std=gnu99
 AR := ar rc
 RANLIB := ranlib
 else
@@ -38,7 +39,7 @@ CPPFLAGS :=
 CFLAGS := -D_GNU_SOURCE -D_USE_GNU  $(CFLAGS)
 
 WARNXCFLAGS :=
-WARNXCFLAGS += -pedantic -Wall -Werror
+WARNXCFLAGS += -Wall -Werror
 ifeq ($(findstring $(GCC_MAJOR_VERSION), 3),$(GCC_MAJOR_VERSION))
 WARNXCFLAGS += -W
 endif
@@ -399,3 +400,10 @@ flags:
 .PHONY: clean
 clean:
 	../bin/clean
+
+.PHONY: check
+check: libmlton-gdb.a
+	# if you want to use gdb on this exec, first export CK_FORK=no
+	checkmk umarray-allocate-test.check > umarray-allocate-test.c
+	gcc -g -O0 -I. -Iplatform  -pthread  -o umarray-allocate-test umarray-allocate-test.c -lcheck  -lrt -lm -lpthread -lsubunit ./libmlton-gdb.a ./libgdtoa-gdb.a 
+	CK_VERBOSITY=verbose ./umarray-allocate-test
