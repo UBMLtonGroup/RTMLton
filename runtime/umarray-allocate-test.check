@@ -8,10 +8,10 @@ int frameLayouts_len = 1;
 #include "gc.h"
 uint32_t objectTypes_len = 4;
 static struct GC_objectType objectTypes[] = {
-		{STACK_TAG,  FALSE, 0,  0}, /* 0 */
-		{NORMAL_TAG, TRUE,  24, 0}, /* 1 */
-		{WEAK_TAG,   FALSE, 8,  0}, /* 2 */
-		{ARRAY_TAG,  FALSE, 1,  0}  /* 3 */
+        {STACK_TAG,  FALSE, 0,  0}, /* 0 */
+        {NORMAL_TAG, TRUE,  24, 0}, /* 1 */
+        {WEAK_TAG,   FALSE, 8,  0}, /* 2 */
+        {ARRAY_TAG,  FALSE, 1,  0}  /* 3 */
 };
 
 uint32_t sourceSeqs_len = 0;
@@ -31,8 +31,8 @@ static struct GC_source sources[] = {
 };
 uint32_t atMLtons_len = 2;
 static char* atMLtons[] = {
-		"@MLton", /* 0 */
-		"--", /* 1 */
+        "@MLton", /* 0 */
+        "--", /* 1 */
 };
 
 struct GC_state gcState;
@@ -42,45 +42,45 @@ void setup(void)
 {
     if (setup_once) return;
     setup_once = 1;
-	fprintf(stderr, "**** setup ****\n");
-	gcState.alignment = sizeof(void *);
-	gcState.atMLtons = NULL;
-	gcState.atMLtonsLength = 0;
-	gcState.frameLayouts = NULL;
-	gcState.frameLayoutsLength = 0;
-	gcState.globals = (objptr*)NULL;
-	gcState.globalsLength = 0;
-	gcState.magic = 0x2112;
-	gcState.maxFrameSize = UM_CHUNK_PAYLOAD_SIZE;
-	gcState.objectTypes = objectTypes;
-	gcState.objectTypesLength = objectTypes_len;
-	gcState.vectorInits = NULL;
-	gcState.vectorInitsLength = 0;
-	gcState.sourceMaps.frameSources = frameSources;
-	gcState.sourceMaps.frameSourcesLength = cardof(frameSources);
-	gcState.sourceMaps.sourceLabels = sourceLabels;
-	gcState.sourceMaps.sourceLabelsLength = cardof(sourceLabels);
-	gcState.sourceMaps.sourceNames = sourceNames;
-	gcState.sourceMaps.sourceNamesLength = cardof(sourceNames);
-	gcState.sourceMaps.sourceSeqs = sourceSeqs;
-	gcState.sourceMaps.sourceSeqsLength = 0; //cardof(sourceSeqs);
-	gcState.sourceMaps.sources = sources;
-	gcState.sourceMaps.sourcesLength = cardof(sources);
-	gcState.profiling.isOn = FALSE;
-	gcState.profiling.kind = PROFILE_NONE;
+    fprintf(stderr, "**** setup ****\n");
+    gcState.alignment = sizeof(void *);
+    gcState.atMLtons = NULL;
+    gcState.atMLtonsLength = 0;
+    gcState.frameLayouts = NULL;
+    gcState.frameLayoutsLength = 0;
+    gcState.globals = (objptr*)NULL;
+    gcState.globalsLength = 0;
+    gcState.magic = 0x2112;
+    gcState.maxFrameSize = UM_CHUNK_PAYLOAD_SIZE;
+    gcState.objectTypes = objectTypes;
+    gcState.objectTypesLength = objectTypes_len;
+    gcState.vectorInits = NULL;
+    gcState.vectorInitsLength = 0;
+    gcState.sourceMaps.frameSources = frameSources;
+    gcState.sourceMaps.frameSourcesLength = cardof(frameSources);
+    gcState.sourceMaps.sourceLabels = sourceLabels;
+    gcState.sourceMaps.sourceLabelsLength = cardof(sourceLabels);
+    gcState.sourceMaps.sourceNames = sourceNames;
+    gcState.sourceMaps.sourceNamesLength = cardof(sourceNames);
+    gcState.sourceMaps.sourceSeqs = sourceSeqs;
+    gcState.sourceMaps.sourceSeqsLength = 0; //cardof(sourceSeqs);
+    gcState.sourceMaps.sources = sources;
+    gcState.sourceMaps.sourcesLength = cardof(sources);
+    gcState.profiling.isOn = FALSE;
+    gcState.profiling.kind = PROFILE_NONE;
 
-	char argv[0] = {NULL};
-	MLton_init (0, (char**)&argv, &gcState);
+    char argv[0] = {NULL};
+    MLton_init (0, (char**)&argv, &gcState);
 }
 
 int count_leafs(pointer r) {
-	int c = 0;
-	pointer n = r;
+    int c = 0;
+    pointer n = r;
 
-	while ((n = UM_walk_array_leafs(n, NULL))) {
-		c++;
-	}
-	return c;
+    while ((n = UM_walk_array_leafs(n, NULL))) {
+        c++;
+    }
+    return c;
 }
 
 int all_unmarked(struct GC_UM_Array_Chunk *r) {
@@ -107,7 +107,7 @@ int all_marked(struct GC_UM_Array_Chunk *r) {
 
 void teardown(void)
 {
-	fprintf(stderr, "teardown\n");
+    fprintf(stderr, "teardown\n");
 }
 
 /* can run individual cases with:
@@ -119,11 +119,11 @@ void teardown(void)
 #test array_alloc_1_test
     // tree construction
     pointer a = GC_arrayAllocate(&gcState, 0, 1, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == 1, "array len not 1?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == 1, "array len not 1?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
 
     /* note on element offset calculation: even tho the array is 1 el in size, mlton
        does bounds checking in the compiler and not the runtime, so we dont test
@@ -139,12 +139,12 @@ void teardown(void)
     ck_assert_msg (all_marked(root), "array not marked properly");
 
 #test array_alloc_2_test
-	pointer a = GC_arrayAllocate(&gcState, 0, 2, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == 2, "array len not 2?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
+    pointer a = GC_arrayAllocate(&gcState, 0, 2, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == 2, "array len not 2?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
     pointer b = UM_Array_offset(&gcState, a, 0, 1, 0); // el 0, elsize 1, offset 0
     ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[0]) == b, "element 0 is not at expected address");
     b = UM_Array_offset(&gcState, a, 1, 1, 0); // el 0, elsize 1, offset 0
@@ -158,13 +158,13 @@ void teardown(void)
 #tcase RootFull
 
 #test array_alloc_full_root_chunk_test
-	/* should fit in one chunk still */
-	pointer a = GC_arrayAllocate(&gcState, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == UM_CHUNK_ARRAY_PAYLOAD_SIZE, "array len not UM_CHUNK_ARRAY_PAYLOAD_SIZE?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
+    /* should fit in one chunk still */
+    pointer a = GC_arrayAllocate(&gcState, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == UM_CHUNK_ARRAY_PAYLOAD_SIZE, "array len not UM_CHUNK_ARRAY_PAYLOAD_SIZE?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "root should be LEAF");
     for (int i = 0 ; i < UM_CHUNK_ARRAY_PAYLOAD_SIZE ; i++) {
         pointer b = UM_Array_offset(&gcState, a, i, 1, 0);
         ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[i]) == b, "element %d is not at expected address", i);
@@ -178,18 +178,18 @@ void teardown(void)
 #tcase RootPlusOne
 
 #test array_alloc_full_root_plus_one_test
-	/* UM_CHUNK_ARRAY_PAYLOAD_SIZE+1 elements req 2 leafs + 1 root */
-	pointer a = GC_arrayAllocate(&gcState, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE+1, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 1, "height not 1 (root + leafs)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == UM_CHUNK_ARRAY_PAYLOAD_SIZE+1, "array len not UM_CHUNK_ARRAY_PAYLOAD_SIZE+1?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
+    /* UM_CHUNK_ARRAY_PAYLOAD_SIZE+1 elements req 2 leafs + 1 root */
+    pointer a = GC_arrayAllocate(&gcState, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE+1, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 1, "height not 1 (root + leafs)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == UM_CHUNK_ARRAY_PAYLOAD_SIZE+1, "array len not UM_CHUNK_ARRAY_PAYLOAD_SIZE+1?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
 
-	int c = count_leafs(a);
-	ck_assert_msg (c == 2, "should have only 2 leafs");
+    int c = count_leafs(a);
+    ck_assert_msg (c == 2, "should have only 2 leafs");
 
-	// these should all be in the first leaf
+    // these should all be in the first leaf
 
     for (int i = 0 ; i < UM_CHUNK_ARRAY_PAYLOAD_SIZE ; i++) {
         pointer b = UM_Array_offset(&gcState, a, i, 1, 0);
@@ -216,24 +216,24 @@ void teardown(void)
 #tcase H1Full
 
 #test array_alloc_fully_populated_height_1_test
-	/* UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE elements reqs
-	 * UM_CHUNK_ARRAY_INTERNAL_POINTERS leafs + 1 root
-	 * this means height must be 1 and c must be UM_CHUNK_ARRAY_INTERNAL_POINTERS
-	 */
-	int nels = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE;
-	pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 1, "height not 1 (root + leafs)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == nels, "array len not correct?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
+    /* UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE elements reqs
+     * UM_CHUNK_ARRAY_INTERNAL_POINTERS leafs + 1 root
+     * this means height must be 1 and c must be UM_CHUNK_ARRAY_INTERNAL_POINTERS
+     */
+    int nels = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE;
+    pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 1, "height not 1 (root + leafs)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == nels, "array len not correct?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
 
     /* check that num leafs is as expected */
 
-	int c = count_leafs(a);
-	ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS,
-	               "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS (%d) leafs",
-	               UM_CHUNK_ARRAY_INTERNAL_POINTERS);
+    int c = count_leafs(a);
+    ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+                   "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS (%d) leafs",
+                   UM_CHUNK_ARRAY_INTERNAL_POINTERS);
 
     /* check that all leafs are marked correctly */
 
@@ -267,34 +267,34 @@ void teardown(void)
 #tcase H1PlusOne
 
 #test array_alloc_fully_populated_height_1_plus_1_test
-	/* UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE elements reqs
-	 * UM_CHUNK_ARRAY_INTERNAL_POINTERS leafs + 1 root
-	 *
-	 * if we add one more element, it forces us to height 2 and one additional leaf.
-	 *
-	 * so what we should have is a root, two internal nodes, the first of which is
-	 * fully populated, the 2nd has only one leaf attached to it, the rest of the internal
-	 * nodes are unallocated.
-	 */
-	int nels = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
-	pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 2, "height not 2 (root + 1 internal layer + leafs)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == nels, "array len not correct?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
+    /* UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE elements reqs
+     * UM_CHUNK_ARRAY_INTERNAL_POINTERS leafs + 1 root
+     *
+     * if we add one more element, it forces us to height 2 and one additional leaf.
+     *
+     * so what we should have is a root, two internal nodes, the first of which is
+     * fully populated, the 2nd has only one leaf attached to it, the rest of the internal
+     * nodes are unallocated.
+     */
+    int nels = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
+    pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 2, "height not 2 (root + 1 internal layer + leafs)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == nels, "array len not correct?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
 
-	/* root has two Inode children */
+    /* root has two Inode children */
 
-	ck_assert_msg (root->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
-	               "root->internal[0] should be INTERNAL");
-	ck_assert_msg (root->ml_array_payload.um_array_pointers[1]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
-	               "root->internal[1] should be INTERNAL");
+    ck_assert_msg (root->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+                   "root->internal[0] should be INTERNAL");
+    ck_assert_msg (root->ml_array_payload.um_array_pointers[1]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+                   "root->internal[1] should be INTERNAL");
 
-	/* rest of roots children are NULL */
+    /* rest of roots children are NULL */
 
-	for (int i = 2 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
-		ck_assert_msg (root->ml_array_payload.um_array_pointers[i] == NULL, "root->internal[2..N] should be NULL");
+    for (int i = 2 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
+        ck_assert_msg (root->ml_array_payload.um_array_pointers[i] == NULL, "root->internal[2..N] should be NULL");
 
     /* roots first child is fully populated with leafs */
 
@@ -311,12 +311,12 @@ void teardown(void)
         ck_assert_msg (child->ml_array_payload.um_array_pointers[i] == NULL,
                        "child %d of roots second child is not NULL", i);
 
-	/* check that we have the expected num leafs */
+    /* check that we have the expected num leafs */
 
-	int c = count_leafs(a);
-	ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS+1,
-	                "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS+1 (%d) leafs, has %d",
-	                UM_CHUNK_ARRAY_INTERNAL_POINTERS+1, c);
+    int c = count_leafs(a);
+    ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS+1,
+                    "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS+1 (%d) leafs, has %d",
+                    UM_CHUNK_ARRAY_INTERNAL_POINTERS+1, c);
 
     /* check that a given offset maps to what we expect:
        offset 0 thru UM_CHUNK_ARRAY_INTERNAL_POINTERS^2 will be under the
@@ -349,38 +349,38 @@ void teardown(void)
 #tcase H3
 
 #test array_alloc_H3_test
-	/* (UM_CHUNK_ARRAY_INTERNAL_POINTERS^2) * UM_CHUNK_ARRAY_PAYLOAD_SIZE elements reqs
-	 * UM_CHUNK_ARRAY_INTERNAL_POINTERS^2 leafs
-	 *
-	 * if we add one more element, it forces us to height 3. which is 4 layers:
-	 * H0 is root, H1 contains 2 I's, H2 contains 75 I's off of the first node,
-	 * 1 I off of the 2nd node. H3 contains 75*2 L's on the left side of the tree
-	 * and 1 L on the right side of the tree.
-	 *
-	 * this means that H1 contains 2 Inodes
-	 * H2 contains 75 + 1 Inodes
-	 * H3 contains 75^2 + 1 Lnodes
-	 */
-	int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
-	int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
+    /* (UM_CHUNK_ARRAY_INTERNAL_POINTERS^2) * UM_CHUNK_ARRAY_PAYLOAD_SIZE elements reqs
+     * UM_CHUNK_ARRAY_INTERNAL_POINTERS^2 leafs
+     *
+     * if we add one more element, it forces us to height 3. which is 4 layers:
+     * H0 is root, H1 contains 2 I's, H2 contains 75 I's off of the first node,
+     * 1 I off of the 2nd node. H3 contains 75*2 L's on the left side of the tree
+     * and 1 L on the right side of the tree.
+     *
+     * this means that H1 contains 2 Inodes
+     * H2 contains 75 + 1 Inodes
+     * H3 contains 75^2 + 1 Lnodes
+     */
+    int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
+    int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
 
-	pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
-	struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
-	ck_assert_msg (root->array_height == 3, "height not 3 (root + 1 internal layer + leafs)");
-	ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
-	ck_assert_msg (root->array_chunk_length == nels, "array len not correct?");
-	ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
+    pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+    ck_assert_msg (root->array_height == 3, "height not 3 (root + 1 internal layer + leafs)");
+    ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
+    ck_assert_msg (root->array_chunk_length == nels, "array len not correct?");
+    ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
 
-	/* root should have 2 Inodes off of it */
-	ck_assert_msg (root->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
-	               "root->internal[0] should be INTERNAL");
+    /* root should have 2 Inodes off of it */
+    ck_assert_msg (root->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+                   "root->internal[0] should be INTERNAL");
     ck_assert_msg (root->ml_array_payload.um_array_pointers[1]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "root->internal[0] should be INTERNAL");
-	for (int i = 2 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
-	    ck_assert_msg (root->ml_array_payload.um_array_pointers[i] == NULL, "root->internal[2..N] should be NULL");
+    for (int i = 2 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
+        ck_assert_msg (root->ml_array_payload.um_array_pointers[i] == NULL, "root->internal[2..N] should be NULL");
 
-	/* H1 Inode 0 should have 75 Inodes hung off of it */
-	struct GC_UM_Array_Chunk *H1_inode0 = root->ml_array_payload.um_array_pointers[0];
+    /* H1 Inode 0 should have 75 Inodes hung off of it */
+    struct GC_UM_Array_Chunk *H1_inode0 = root->ml_array_payload.um_array_pointers[0];
     for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
         ck_assert_msg (H1_inode0 != NULL, "all of H1_inode's children should be populated");
         ck_assert_msg (H1_inode0->ml_array_payload.um_array_pointers[i]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
@@ -399,9 +399,9 @@ void teardown(void)
     }
 
 
-	/* H1 Inode 1 should have 1 Inode hung off of it */
-	struct GC_UM_Array_Chunk *H1_inode1 = root->ml_array_payload.um_array_pointers[1];
-	ck_assert_msg (H1_inode1->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+    /* H1 Inode 1 should have 1 Inode hung off of it */
+    struct GC_UM_Array_Chunk *H1_inode1 = root->ml_array_payload.um_array_pointers[1];
+    ck_assert_msg (H1_inode1->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "H1_inode1->internal[0] should be INTERNAL");
     for (int i = 1 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
         ck_assert_msg (H1_inode1->ml_array_payload.um_array_pointers[i] == NULL, "H1_Inode1 [1..N] children should be NULL");
@@ -419,8 +419,8 @@ void teardown(void)
     ck_assert_msg (H1_inode1_child0_child0->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "H1_inode1_child0_child0 is not LEAD");
 
     /* final sanity check */
-	int c = count_leafs(a);
-	ck_assert_msg (c == nleafs, "should have %d leafs (found %d)", nleafs, c);
+    int c = count_leafs(a);
+    ck_assert_msg (c == nleafs, "should have %d leafs (found %d)", nleafs, c);
 
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
     markUMArrayChunks(&gcState, root, MARK_MODE);
