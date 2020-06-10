@@ -18,8 +18,9 @@
 #include <assert.h>
 
 #ifndef PTHREAD_NUM
-# define PTHREAD_NUM get_pthread_num()
+# define PTHREAD_NUM pthread_num //get_tdata() //0 //get_pthread_num()
 #endif
+
 
 #include "ml-types.h"
 #include "c-types.h"
@@ -244,6 +245,7 @@ void um_dumpFrame (void *s, void *f);
                 struct cont cont;                               \
                 /* register unsigned int frontier asm("g5"); */       \
                 /*uintptr_t l_nextFun = nextFun; */                  \
+                uint32_t pthread_num = get_pthread_num();       \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
@@ -252,6 +254,7 @@ void um_dumpFrame (void *s, void *f);
      /*          Pointer frontier;  */             \
      /*          Pointer umfrontier; */              \
                 /*uintptr_t l_nextFun = nextFun; */ \
+                uint32_t pthread_num = get_pthread_num();       \
                 Pointer stackTop;
 #endif
 
