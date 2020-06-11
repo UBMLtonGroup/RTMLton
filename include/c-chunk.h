@@ -17,8 +17,9 @@
 #include <assert.h>
 
 #ifndef PTHREAD_NUM
-# define PTHREAD_NUM get_pthread_num()
+# define PTHREAD_NUM pthread_num //get_tdata() //0 //get_pthread_num()
 #endif
+
 
 #include "ml-types.h"
 #include "c-types.h"
@@ -100,7 +101,24 @@ void um_dumpFrame (void *s, void *f);
 
 
 #define CurrentFrame (*(Pointer*)(GCState + CurrentFrameOffset+(PTHREAD_NUM*WORDWIDTH)))
+#define NextFrame ((Pointer)((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->next_chunk+STACKHEADER)
 
+#define MLTON_S_NO(ty, i) *(ty*)(StackTop + (i))
+#define MLTON_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: StackTop=%018p Addr=%018p i=%d Val=%018p\n", __FILE__, __LINE__, PTHREAD_NUM, \
+                                (void*) StackTop, \
+                               (void*)(StackTop + (i)), i, \
+                               *(ty*)(StackTop + (i)))) , \
+                        (ty*)(StackTop + (i))))
+
+
+
+#define NS(ty, i) *(ty*)(NextFrame + (i))
+
+//#define NS(ty, i) NS_DBG(ty, i)
+#define NS_DBG(ty, i)(*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p NextFrame=%018p \n", \
+                                 __FILE__, __LINE__, PTHREAD_NUM, \
+                                (void*)CurrentFrame, (void*)NextFrame, i)),\
+                                (ty*)(NextFrame + (i))))
 #define STACKLET_S(ty, i) *(ty*)(CurrentFrame + (i))
 #define STACKLET_DBG_S(ty, i) (*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p Frame+Offset(%d)=%018p CurrentVal=%018p\n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
@@ -193,6 +211,7 @@ void um_dumpFrame (void *s, void *f);
                 struct cont cont;                               \
                 /* register unsigned int frontier asm("g5"); */       \
                 /*uintptr_t l_nextFun = nextFun; */                  \
+                uint32_t pthread_num = get_pthread_num();       \
                 register unsigned int stackTop asm("g6");
 #else
 #define Chunk(n)                                \
@@ -201,6 +220,7 @@ void um_dumpFrame (void *s, void *f);
      /*          Pointer frontier;  */             \
      /*          Pointer umfrontier; */              \
                 /*uintptr_t l_nextFun = nextFun; */ \
+                uint32_t pthread_num = get_pthread_num();       \
                 Pointer stackTop;
 #endif
 
@@ -341,8 +361,6 @@ void dump_hex(char *str, int len);
                                                  cf->next_chunk->ml_object+STACKHEADER, \
                                                  cf->ml_object+bytes+STACKHEADER,\
                                                  UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER); \
-                         memcpy(cf->next_chunk->ml_object+STACKHEADER, cf->ml_object+bytes+STACKHEADER, \
-                                UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER); \
                          cf->next_chunk->memcpy_addr = cf->ml_object+bytes+STACKHEADER; \
                          cf->next_chunk->memcpy_size = UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER; \
                          CurrentFrame = (pointer)cf->next_chunk + STACKHEADER; \
@@ -364,7 +382,6 @@ void dump_hex(char *str, int len);
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n"));              \
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n"));                              \
                 else {                                                                                              \
-                    memcpy(cf->memcpy_addr, cf->ml_object+STACKHEADER, cf->memcpy_size);                            \
                     l_nextFun = *(GC_returnAddress*)(cf->prev_chunk->ml_object + cf->prev_chunk->ra);               \
                     if (STACKLET_DEBUG || DEBUG_CCODEGEN)                                                           \
                             fprintf (stderr, GREEN("%s:%d: "GREEN("SKLT_Return()")                                  \

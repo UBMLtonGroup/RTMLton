@@ -34,7 +34,36 @@ structure Kind =
           | Func => true
           | Handler _ => true
           | _ => false
+
+
+
+      fun toString(k: t):string = 
+        case k of 
+             Cont _ => "Cont"
+           | CReturn _ => "CReturn"
+           | Func => "Func"
+           | Handler _ => "Handler"
+           | Jump => "Jump"
+
    end
+
+
+structure Transfer = 
+struct 
+  open Transfer
+
+  fun toString (tr: t):string =
+    case tr of 
+         Arith _ => "Arith"
+       | CCall {func, return, ...} => "CCall"
+       | Call _ => "Call"
+       | Goto _ => "Goto"
+       | Raise => "Raise"
+       | Return => "Return"
+       | Switch _ => "Switch" 
+
+end
+
 
 val traceGotoLabel = Trace.trace ("CCodegen.gotoLabel", Label.layout, Unit.layout)
 
@@ -161,6 +190,16 @@ structure Operand =
           | Contents _ => true
           | Offset _ => true
           | ChunkedOffset _ => true
+          | StackOffset _ => true
+          | _ => false
+
+    fun isStack (z: t): bool =
+         case z of
+            ArrayOffset _ => false
+          | Cast (z, _) => isStack z
+          | Contents _ => false
+          | Offset _ => false
+          | ChunkedOffset _ => false
           | StackOffset _ => true
           | _ => false
    end
@@ -524,6 +563,10 @@ structure StackOffset =
 
       fun toString (T {offset, ty}): string =
          concat ["S", C.args [Type.toC ty, C.bytes offset]]
+
+     fun shift (T {offset, ty}, size): t =
+         T {offset = Bytes.- (offset, size),
+            ty = ty}
    end
 
 fun contents (ty, z) = concat ["/*Contents*/ C", C.args [Type.toC ty, z]]
@@ -710,6 +753,7 @@ fun output {program as Machine.Program.T {chunks,
           ( case hd(String.explode dst) of
                 #"P" => oper
                | #"S" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",oper,"} );"]
+               | #"N" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",oper,"} );"]
                | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
           )
         |   false => oper
@@ -809,6 +853,35 @@ fun output {program as Machine.Program.T {chunks,
              | ChunkExnHandler h => concat ["ChunkExnHandler"]
              | ChunkExnLink => concat ["ChunkExnLink"]
 
+        fun checkdstoffset(dst: Operand.t, pushsize: Bytes.t option):string = 
+          case dst of 
+               StackOffset (so as StackOffset.T {offset, ty, ...}) =>
+                                        (case pushsize of 
+                                             NONE => toString dst
+                                           | SOME size=>  
+                                                    (if Bytes.>= (offset,size)
+                                                    then "N"^toString (StackOffset (StackOffset.shift(so,size)) )
+                                                    else toString dst)
+                                        )
+             | Cast (z, ty) => if Operand.isStack z 
+                                then concat ["(", Type.toC ty, ")", checkdstoffset (z,pushsize)]
+                                else toString dst
+             | _ => toString dst
+
+        fun checksrcoffset(src: Operand.t, framesize: Bytes.t option):string = 
+          case src of 
+               StackOffset (so as StackOffset.T {offset, ty, ...}) => 
+                                        (case framesize of 
+                                             NONE => toString src 
+                                           | SOME size =>
+                                                    (if Bytes.>= (offset,size)
+                                                    then "N"^toString(StackOffset (StackOffset.shift(so,size)) )
+                                                    else toString src) 
+                                        )
+             | Cast (z,ty) => if Operand.isStack z 
+                                then concat ["(", Type.toC ty, ")",checksrcoffset (z,framesize)]
+                                else toString src
+             | _ => toString src
 
         fun getbase(x: Operand.t):string = 
           case x of 
@@ -822,16 +895,19 @@ fun output {program as Machine.Program.T {chunks,
             | _ => toString x
       in
          val operandToString = toString
-         val getBase = getbase 
+         val getBase = getbase
+         val checkDstOffset = checkdstoffset
+         val checkSrcOffset = checksrcoffset 
       end
       fun fetchOperand (z: Operand.t): string =
          if handleMisaligned (Operand.ty z) andalso Operand.isMem z then
             fetch (operandToString z, Operand.ty z)
          else
             operandToString z
-      fun outputStatement (s, print) =
+      fun outputStatement (s, print,pushSize,contFrameSize) =
          let
             datatype z = datatype Statement.t
+
          in
             case s of
                Noop => ()
@@ -840,12 +916,16 @@ fun output {program as Machine.Program.T {chunks,
                    ; (case s of
                          Move {dst, src} =>
                             print
-                            (move {dst = operandToString dst,
+                            (move {dst = checkDstOffset (dst,pushSize),
                                    dstIsMem = Operand.isMem dst,
-                                   dbase = getBase dst,
-                                   src = operandToString src,
+                                   dbase = if Operand.isStack dst 
+                                           then checkDstOffset (dst,pushSize)
+                                           else getBase dst,
+                                   src = checkSrcOffset (src,contFrameSize),
                                    srcIsMem = Operand.isMem src,
-                                   sbase = getBase src,
+                                   sbase = if Operand.isStack src 
+                                            then checkSrcOffset (src,contFrameSize)
+                                            else getBase src,
                                    ty = Operand.ty dst,
                                    inCrit = inCritical})
                        | Noop => ()
@@ -872,9 +952,11 @@ fun output {program as Machine.Program.T {chunks,
                                   NONE => (print (app ())
                                            ; print ";\n")
                                 | SOME dst =>
-                                     print (move {dst = operandToString dst,
+                                     print (move {dst = checkDstOffset (dst,pushSize),
                                                   dstIsMem = Operand.isMem dst,
-                                                  dbase = getBase dst,
+                                                  dbase = if Operand.isStack dst 
+                                                            then checkDstOffset (dst,pushSize)
+                                                            else getBase dst,
                                                   src = app (),
                                                   srcIsMem = false,
                                                   sbase = app (),
@@ -1056,6 +1138,25 @@ fun output {program as Machine.Program.T {chunks,
                               ; print ":\n"
                            end
                       | _ => ()
+
+                  
+                 val _ = print ("/*Kind: "^Kind.toString(kind)^
+                            " Transfer: "^Transfer.toString(transfer)^" */\n") 
+
+                 val pushSize = (case transfer of
+                                 Transfer.Call {label, return, ...} =>
+                                             (case return of
+                                                    NONE => NONE
+                                                  | SOME{return,size, ...}  =>
+                                                      SOME size)
+                                | _ => NONE)
+
+                 val contFrameSize = (case kind of 
+                                    Kind.Cont {frameInfo, ...}=> SOME (Program.frameSize (program, frameInfo))
+                                  | _ => NONE)
+
+
+
                   fun pop (fi: FrameInfo.t) =
                      (C.push (Bytes.~ (Program.frameSize (program, fi)), print)
                       ; if amTimeProfiling
@@ -1077,9 +1178,11 @@ fun output {program as Machine.Program.T {chunks,
                                    print
                                    (concat
                                     ["\t",
-                                     move {dst = operandToString x,
+                                     move {dst = checkDstOffset (x,pushSize),
                                            dstIsMem = Operand.isMem x,
-                                           dbase = getBase x,
+                                           dbase = if Operand.isStack x
+                                                    then checkDstOffset(x,pushSize)
+                                                    else getBase x,
                                            src = creturn ty,
                                            srcIsMem = false,
                                            sbase = creturn ty,
@@ -1098,7 +1201,7 @@ fun output {program as Machine.Program.T {chunks,
                                           str " */\n"])
                                  end)
                   val _ = Vector.foreach (statements, fn s =>
-                                          outputStatement (s, print))
+                                          outputStatement (s,print,pushSize,contFrameSize))
                   val _ = outputTransfer (transfer, l)
                in ()
                end) arg
@@ -1331,11 +1434,14 @@ fun output {program as Machine.Program.T {chunks,
             ; C.callNoSemi ("ChunkSwitch", [chunkLabelToString chunkLabel],
                             print)
             ; print "\n"
-            ; Vector.foreach (blocks, fn Block.T {kind, label, ...} =>
+            ; Vector.foreach (blocks, fn Block.T {kind, label, transfer, ...} =>
                               if Kind.isEntry kind
                                  then (print "case "
                                        ; print (labelToStringIndex label)
                                        ; print ":\n"
+                                       ; print ("/*Kind: "^Kind.toString(kind)^
+                                       "Transfer: "^Transfer.toString(transfer)^
+                                       " */\n")
                                        ; gotoLabel label)
                               else ())
             ; print "EndChunk\n"
