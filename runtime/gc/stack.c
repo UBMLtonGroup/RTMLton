@@ -20,11 +20,15 @@ void displayStack (__attribute__ ((unused)) GC_state s,
 
 
 bool isStackEmpty (GC_stack stack) {
-  return 0 == stack->used;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
+
+	return 0 == stack->used;
 }
 
 #if ASSERT
 bool isStackReservedAligned (GC_state s, size_t reserved) {
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
+
   return isAligned (GC_STACK_HEADER_SIZE + sizeof (struct GC_stack) + reserved,
                     s->alignment);
 }
@@ -35,13 +39,16 @@ bool isStackReservedAligned (GC_state s, size_t reserved) {
  */
 size_t sizeofStackSlop (GC_state s) {
     //    return 100 * 1024 * 1024;
-    return (size_t)(2 * s->maxFrameSize);
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
+
+	return (size_t)(2 * s->maxFrameSize);
 }
 
 
 /* Pointer to the bottommost word in use on the stack. */
 pointer getStackBottom (ARG_USED_FOR_ASSERT GC_state s, GC_stack stack) {
   pointer res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res = ((pointer)stack) + sizeof (struct GC_stack);
   assert (isAligned ((size_t)res, s->alignment));
@@ -51,6 +58,7 @@ pointer getStackBottom (ARG_USED_FOR_ASSERT GC_state s, GC_stack stack) {
 /* Pointer to the topmost word in use on the stack. */
 pointer getStackTop (GC_state s, GC_stack stack) {
   pointer res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res = getStackBottom (s, stack) + stack->used;
   assert (isAligned ((size_t)res, s->alignment));
@@ -60,6 +68,7 @@ pointer getStackTop (GC_state s, GC_stack stack) {
 /* Pointer to the end of stack. */
 pointer getStackLimitPlusSlop (GC_state s, GC_stack stack) {
   pointer res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res = getStackBottom (s, stack) + stack->reserved;
   // assert (isAligned ((size_t)res, s->alignment));
@@ -69,6 +78,7 @@ pointer getStackLimitPlusSlop (GC_state s, GC_stack stack) {
 /* The maximum value which is valid for stackTop. */
 pointer getStackLimit (GC_state s, GC_stack stack) {
   pointer res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res  = getStackLimitPlusSlop (s, stack) - sizeofStackSlop (s);
   // assert (isAligned ((size_t)res, s->alignment));
@@ -77,11 +87,14 @@ pointer getStackLimit (GC_state s, GC_stack stack) {
 
 GC_frameIndex getCachedStackTopFrameIndex (GC_state s) {
 	// used s->stackTop
-    return (GC_frameIndex) -1;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
+
+	return (GC_frameIndex) -1;
 }
 
 GC_frameIndex getStackTopFrameIndex (GC_state s, GC_stack stack) {
   GC_frameIndex res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res =
     getFrameIndexFromReturnAddress
@@ -91,6 +104,7 @@ GC_frameIndex getStackTopFrameIndex (GC_state s, GC_stack stack) {
 
 GC_frameLayout getStackTopFrameLayout (GC_state s, GC_stack stack) {
   GC_frameLayout layout;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   layout = getFrameLayoutFromFrameIndex (s, getStackTopFrameIndex (s, stack));
   return layout;
@@ -98,6 +112,7 @@ GC_frameLayout getStackTopFrameLayout (GC_state s, GC_stack stack) {
 
 uint16_t getStackTopFrameSize (GC_state s, GC_stack stack) {
   GC_frameLayout layout;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   assert (not (isStackEmpty (stack)));
   layout = getStackTopFrameLayout (s, stack);
@@ -107,6 +122,7 @@ uint16_t getStackTopFrameSize (GC_state s, GC_stack stack) {
 
 size_t alignStackReserved (GC_state s, size_t reserved) {
   size_t res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res = alignWithExtra (s, reserved, GC_STACK_HEADER_SIZE + sizeof (struct GC_stack));
   if (DEBUG_STACKS)
@@ -118,6 +134,7 @@ size_t alignStackReserved (GC_state s, size_t reserved) {
 
 size_t sizeofStackWithHeader (ARG_USED_FOR_ASSERT GC_state s, size_t reserved) {
   size_t res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   assert (isStackReservedAligned (s, reserved));
   res = GC_STACK_HEADER_SIZE + sizeof (struct GC_stack) + reserved;
@@ -130,6 +147,7 @@ size_t sizeofStackWithHeader (ARG_USED_FOR_ASSERT GC_state s, size_t reserved) {
 
 size_t sizeofStackInitialReserved (GC_state s) {
   size_t res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res = alignStackReserved(s, sizeofStackSlop (s));
   return res;
@@ -137,6 +155,7 @@ size_t sizeofStackInitialReserved (GC_state s) {
 
 size_t sizeofStackMinimumReserved (GC_state s, GC_stack stack) {
   size_t res;
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   res = alignStackReserved (s,
                             stack->used
@@ -149,6 +168,7 @@ size_t sizeofStackGrowReserved (GC_state s, GC_stack stack) {
   double reservedD;
   size_t reservedGrow, reservedMin, reservedNew;
   const size_t RESERVED_MAX = (SIZE_MAX >> 2);
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   assert (isStackReservedAligned (s, stack->reserved));
   reservedD = (double)(stack->reserved);
@@ -170,6 +190,7 @@ size_t sizeofStackShrinkReserved (GC_state s, GC_stack stack, bool current) {
   double usedD, reservedD;
   size_t reservedMax, reservedShrink, reservedMin, reservedNew;
   const size_t RESERVED_MAX = (SIZE_MAX >> 2);
+	fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
 
   assert (isStackReservedAligned (s, stack->reserved));
   usedD = (double)(stack->used);
@@ -222,7 +243,7 @@ size_t sizeofStackShrinkReserved (GC_state s, GC_stack stack, bool current) {
 
 void copyStack (GC_state s, GC_stack from, GC_stack to) {
   pointer fromBottom, toBottom;
-
+fprintf(stderr, RED("WARN") " %s called?\n", __FUNCTION__);
   fromBottom = getStackBottom (s, from);
   toBottom = getStackBottom (s, to);
 

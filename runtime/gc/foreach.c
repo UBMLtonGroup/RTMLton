@@ -197,11 +197,11 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
+#if 0
 
 	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
 	  assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
-
-	  // FIX this needs to walk the tree
+	  // FIX this needs to walk the tree and for leafs, then process any objptrs
 	  if (fst_leaf->array_chunk_length > 0) {
           size_t length = fst_leaf->array_chunk_length;
           GC_UM_Array_Chunk cur_chunk = fst_leaf;
@@ -222,6 +222,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
                   cur_chunk = cur_chunk->next_chunk;
           }
       }
+#endif
   } else { /* stack frame */
   	  // mark the objptrs inside of the given frame
 

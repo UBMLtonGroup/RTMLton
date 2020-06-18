@@ -13,5 +13,6 @@ GC_UM_Array_Chunk UM_Group_Array_Chunk_new(GC_state s,
                                        size_t fan_out);
 
 pointer UM_walk_array_leafs(pointer _c, size_t *nels);
-
+pointer arrayChunkToPointer(GC_UM_Array_Chunk c);
+GC_UM_Array_Chunk pointerToArrayChunk(pointer p);
 #endif

@@ -35,6 +35,18 @@ int getLengthOfList(GC_UM_Array_Chunk head) {
     return i;
 }
 
+
+pointer arrayChunkToPointer(GC_UM_Array_Chunk c) {
+	assert (c->array_chunk_magic == UM_ARRAY_SENTINEL);
+	return (pointer)(c) + GC_HEADER_SIZE + sizeof(Word32_t);
+}
+
+GC_UM_Array_Chunk pointerToArrayChunk(pointer p) {
+	GC_UM_Array_Chunk c = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - sizeof(Word32_t));
+	assert (c->array_chunk_magic == UM_ARRAY_SENTINEL);
+	return c;
+}
+
 static
 GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
                                     GC_UM_Array_Chunk *chunks,
@@ -69,7 +81,8 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
         GC_UM_Array_Chunk anode = NULL, prevnode = NULL, firstnode = NULL;
         int chunks_to_link = min(getLengthOfList(*chunks),UM_CHUNK_ARRAY_INTERNAL_POINTERS);
         for (int i = 0 ; i < chunks_to_link ; i++) {
-            POPCHUNK(*chunks, anode);
+        	POPCHUNK(*chunks, anode);
+			pointer anodeptr = arrayChunkToPointer(anode);
             if (prevnode == NULL)
                 prevnode = firstnode = anode;
             else {
@@ -84,7 +97,7 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
             anode->next_chunk = NULL;
             anode->parent = root;
             anode->root = rootroot;
-            root->ml_array_payload.um_array_pointers[i] = anode;
+            root->ml_array_payload.um_array_pointers[i] = anodeptr;
         }
 
         return firstnode; // first leaf in this branch
@@ -100,13 +113,15 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
 
 		assert (getLengthOfList(*chunks) > 0);
         POPCHUNK(*chunks, anode);
-        anode->root = rootroot;
+		pointer anodeptr = arrayChunkToPointer(anode);
+
+		anode->root = rootroot;
         anode->parent = root;
         anode->array_chunk_length = numElements;
         anode->array_chunk_ml_header = header;
         anode->array_chunk_type = UM_CHUNK_ARRAY_INTERNAL;
         anode->array_chunk_header |= UM_CHUNK_IN_USE;
-        root->ml_array_payload.um_array_pointers[i] = anode;
+        root->ml_array_payload.um_array_pointers[i] = anodeptr;
 		aleaf = create_array_tree(anode,
 								  chunks,
 								  numChunks,
@@ -120,7 +135,10 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
 			/* aleaf really is a leaf. link it to previous leafs if
 			 * appropriate so linear walking works
 			 */
-			root->ml_array_payload.um_array_pointers[i-1]->ml_array_payload.um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS-1]->next_chunk = aleaf;
+			GC_UM_Array_Chunk prevleafIn = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[i-1]);
+			GC_UM_Array_Chunk prevleaf = pointerToArrayChunk(prevleafIn->ml_array_payload.um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS-1]);
+			//root->ml_array_payload.um_array_pointers[i-1]->ml_array_payload.um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS-1]->next_chunk = aleaf;
+			prevleaf->next_chunk = aleaf;
 		}
     }
     return root;
@@ -147,7 +165,7 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
 pointer
 UM_walk_array_leafs(pointer _c, size_t *nels)
 {
-    GC_UM_Array_Chunk c = (GC_UM_Array_Chunk)(_c - GC_HEADER_SIZE - sizeof(Word32_t));
+    GC_UM_Array_Chunk c = pointerToArrayChunk(_c);
 
     // this isnt an array, probably a global static string
     if (c->array_chunk_magic != UM_ARRAY_SENTINEL) {
@@ -161,7 +179,7 @@ UM_walk_array_leafs(pointer _c, size_t *nels)
             if (c->root) *nels = c->root->num_els;
             else *nels = c->num_els;
         }
-        c = c->ml_array_payload.um_array_pointers[0];
+        c = pointerToArrayChunk(c->ml_array_payload.um_array_pointers[0]);
         first_time = TRUE;
     }
 
@@ -234,11 +252,11 @@ pointer GC_arrayAllocate(GC_state s,
 
     assert (numChunks > 0);
 
-    /* reserve chunks: will block if there aren't enough chunks */
+	/* reserve chunks: will block if there aren't enough chunks */
 
-    reserveAllocation(s, numChunks);
-    GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap), numChunks);
-    assert (getLengthOfList(allocHead) == numChunks);
+	reserveAllocation(s, numChunks);
+	GC_UM_Array_Chunk allocHead = allocateArrayChunks(s, &(s->umheap), numChunks);
+	assert (getLengthOfList(allocHead) == numChunks);
 
     if (DEBUG_CHUNK_ARRAY)
         fprintf(stderr, "%d]   Initial allocHead "FMTPTR" length: %zd, numChunks = %zd\n",

@@ -453,7 +453,7 @@ void markStack(GC_state s, pointer thread_) {
 	do {
 		if (DEBUG_RTGC)
 			fprintf(stderr, "mark SF "FMTPTR"\n", (uintptr_t)stackFrame);
-		assert (stackFrame->sentinel == UM_CHUNK_SENTINEL);
+		assert (stackFrame->sentinel == UM_STACK_SENTINEL);
 		assert (stackFrame->ra != 0);
 		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);
 		foreachObjptrInObject(s, (((pointer)stackFrame) + GC_HEADER_SIZE),

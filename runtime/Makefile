@@ -407,3 +407,6 @@ check: libmlton-gdb.a
 	checkmk umarray-allocate-test.check > umarray-allocate-test.c
 	gcc -g -O0 -I. -Iplatform  -pthread  -o umarray-allocate-test umarray-allocate-test.c -lcheck  -lrt -lm -lpthread -lsubunit ./libmlton-gdb.a ./libgdtoa-gdb.a 
 	CK_VERBOSITY=verbose ./umarray-allocate-test
+
+splitheader: splitheader.c
+	gcc -g -O0 -I. -Iplatform  -pthread  -o splitheader splitheader.c  -lrt  -lpthread -L . -lmlton-gdb ./libgdtoa-gdb.a

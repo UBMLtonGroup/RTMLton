@@ -17,7 +17,7 @@
 #include <assert.h>
 
 #ifndef PTHREAD_NUM
-# define PTHREAD_NUM pthread_num //get_tdata() //0 //get_pthread_num()
+# define PTHREAD_NUM pthread_num
 #endif
 
 
@@ -317,11 +317,14 @@ void dump_hex(char *str, int len);
 #define YELLOW(x) "\033[1;33m"x"\033[0m"
 #define GREEN(x) "\033[1;32m"x"\033[0m"
 #define FW "08"
+#define UM_CHUNK_SENTINEL                0x9999
+#define UM_ARRAY_SENTINEL                0x9998
+#define UM_STACK_SENTINEL                0x9997
 
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER); \
-                assert (cf->sentinel == 0x9999); \
+                assert (cf->sentinel == UM_STACK_SENTINEL); \
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *xx = cf; \
                      StackDepth = StackDepth - 1; \
@@ -378,7 +381,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Return()                                                                                           \
         do {                                                                                                        \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER);                        \
-                assert (cf->sentinel == 0x9999 || 1!=1);                                                              \
+                assert (cf->sentinel == UM_STACK_SENTINEL || 1!=1);                                                              \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n"));              \
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n"));                              \
                 else {                                                                                              \
@@ -395,7 +398,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Raise()                                                                \
         do {                                                                    \
                 struct GC_UM_Chunk *cf = (ExnStack - STACKHEADER);  \
-                assert (cf->sentinel == 0x9999 || 2!=2); \
+                assert (cf->sentinel == UM_STACK_SENTINEL || 2!=2); \
                 if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
                          __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \
