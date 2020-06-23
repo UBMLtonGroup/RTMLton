@@ -222,11 +222,13 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 		   *    2a. process ptrs until end of leaf
 		   *    2b. go to leaf->next, repeat until done
 		   * 3. if mixed, note structure of array (see array.h)
-		   *    3a. walk leafs until end of block of
-		   *        non ptrs
-		   *    3b. process block of ptrs as in 2a/2b
-		   *    3c. repeat 3a-3b until end of array
+		   *    foreach element in array:
+		   *        objptrs = element + bytesNonObjptrs
+		   *        foreach objptr in objptrs:
+		   *            apply f to objptr
 		   *
+		   * note: calling UM_Array_offset foreach element is
+		   * inefficient.
 		   */
 
 		  if (0 == bytesNonObjptrs) {

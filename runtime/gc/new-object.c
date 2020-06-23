@@ -94,14 +94,12 @@ GC_stack newStack(GC_state s,
 	return NULL;
 }
 
-GC_thread newThread(GC_state s, size_t reserved) {
+GC_thread newThread(GC_state s, size_t stackSize) {
 	GC_thread thread;
 	pointer res;
 
 	if (DEBUG)
 		fprintf(stderr, GREEN("newThread\n"));
-
-	assert (isStackReservedAligned(s, reserved));
 
 	C_Size_t numchunks = (sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
 	assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
@@ -123,8 +121,8 @@ GC_thread newThread(GC_state s, size_t reserved) {
 	thread->markCycles = 0;
 
 	if (DEBUG_THREADS)
-		fprintf(stderr, FMTPTR" = newThreadOfSize (%"PRIuMAX")\n",
-				(uintptr_t) thread, (uintmax_t) reserved);
+		fprintf(stderr, FMTPTR" = newThread (stackSize=%"PRIuMAX")\n",
+				(uintptr_t) thread, (uintmax_t)stackSize);
 
 
 	return thread;
