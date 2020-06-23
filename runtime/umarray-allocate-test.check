@@ -549,6 +549,38 @@ void teardown(void)
     markUMArrayChunks(&gcState, root, MARK_MODE);
     ck_assert_msg (all_marked(root), "array not marked properly");
 
+#test array_alloc_H3_objptr_0_1_test
+    /* same as above but we will put objptrs in 2 locations and make
+     * sure foreach finds them
+     */
+    int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
+    int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
+    return;
+    pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    reserveAllocation(&gcState, 2);
+
+    /* place objptr in first leaf */
+    pointer b = UM_Array_offset(&gcState, a, 1, 4, 0);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    *(objptr*)b = (objptr)obj1;
+
+    /* place another objptr in another leaf */
+    b = UM_Array_offset(&gcState, a, nels/2, 4, 0);
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
 
 #main-pre
     setup();
