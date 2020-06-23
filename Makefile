@@ -133,7 +133,6 @@ docs: dirs
 	$(MAKE) -C doc/guide
 
 LIBRARIES := ckit-lib cml mllpt-lib mlnlffi-lib mlrisc-lib mlyacc-lib smlnj-lib
-TYPE_CHECK_LIBRARIES := ckit-lib cml mllpt-lib mlnlffi-lib mlrisc-lib mlyacc-lib 
 
 .PHONY: libraries-no-check
 libraries-no-check:
@@ -157,7 +156,7 @@ libraries-no-check:
 .PHONY: libraries
 libraries:
 	$(MAKE) libraries-no-check
-	for f in $(TYPE_CHECK_LIBRARIES); do				\
+	for f in $(LIBRARIES); do				\
 		echo "Type checking $$f library.";		\
 		"$(MLTON)" -disable-ann deadCode		\
 			-stop tc				\
