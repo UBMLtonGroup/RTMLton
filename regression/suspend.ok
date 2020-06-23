@@ -1,5 +1,0 @@
-child suspending
-parent sending int
-child got an int
-done
-done

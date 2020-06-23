@@ -1,2 +1,0 @@
-minusIEEENan = ~nan
-signBit (valOf (fromDecimal minusIEEENan)) = true
