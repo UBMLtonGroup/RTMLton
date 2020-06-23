@@ -181,8 +181,6 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
-	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
-
 	  /* In an array object, the bytesNonObjptrs
        * field indicates the number of bytes of non heap-pointer data in a
        * single array element, while the numObjptrs field indicates the
@@ -197,8 +195,14 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
       bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
       dataBytes = numElements * bytesPerElement;
 
-      if (0 == numObjptrs) {
+	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)")
+	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%d) bpe(%d)\n",
+	                                 PTHREAD_NUM,
+	                                 numObjptrs, bytesNonObjptrs, numElements, bytesPerElement);
+
+	  if (0 == numObjptrs) {
       	  /* no objptrs to process */;
+		  if (DEBUG_MEM) fprintf(stderr, "%d]  array has no objptrs to process\n", PTHREAD_NUM);
       } else {
 		  last += 0;
 		  curBytePosition = 0;
@@ -217,7 +221,11 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 		   */
 
 		  if (0 == bytesNonObjptrs) {
+			  if (DEBUG_MEM) fprintf(stderr, "%d]  array is all objptrs\n", PTHREAD_NUM);
+
 			  pointer leaf = UM_walk_array_leafs(p, NULL);
+			  if (leaf == NULL) leaf = p; // single chunk array
+
 			  /* Array with only pointers. */
 			  while (leaf && curBytePosition < dataBytes) {
 				  for (pointer cur = leaf; cur < leaf + UM_CHUNK_ARRAY_PAYLOAD_SIZE; cur += OBJPTR_SIZE) {
@@ -227,19 +235,18 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 				  leaf = UM_walk_array_leafs(leaf, NULL);
 			  }
 		  } else {
+			  if (DEBUG_MEM) fprintf(stderr, "%d]  array is mix of bytes and objptrs\n", PTHREAD_NUM);
+
 			  /* Array with a mix of data where each element is arranged as:
 			   *    ( (non heap-pointers)* :: (heap pointers)* )*
 			   */
-			  bool done = FALSE;
-			  while (!done) {
-				  size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
-				  size_t array_len = pointerToArrayChunk(p)->array_chunk_length;
-				  for (int i = 0; i < array_len; i++) {
-					  pointer elptr = UM_Array_offset(s, p, i, elem_size, 0) + bytesNonObjptrs;
-					  for (int j = 0; j < numObjptrs; j++) {
-						  callIfIsObjptr(s, f, (objptr *) elptr);
-						  elptr += OBJPTR_SIZE;
-					  }
+			  size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
+			  size_t array_len = pointerToArrayChunk(p)->array_chunk_length;
+			  for (int i = 0; i < array_len; i++) {
+				  pointer elptr = UM_Array_offset(s, p, i, elem_size, 0) + bytesNonObjptrs;
+				  for (int j = 0; j < numObjptrs; j++) {
+					  callIfIsObjptr(s, f, (objptr *) elptr);
+					  elptr += OBJPTR_SIZE;
 				  }
 			  }
 		  }

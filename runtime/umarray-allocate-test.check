@@ -7,12 +7,15 @@
 int frameLayouts_len = 1;
 
 #include "gc.h"
-uint32_t objectTypes_len = 4;
+uint32_t objectTypes_len = 6;
 static struct GC_objectType objectTypes[] = {
+        // type,     mutable, nonobjptrbytes, objptrs
         {STACK_TAG,  FALSE, 0,  0}, /* 0 */
-        {NORMAL_TAG, TRUE,  24, 0}, /* 1 */
+        {NORMAL_TAG, TRUE,  28, 0}, /* 1 */
         {WEAK_TAG,   FALSE, 8,  0}, /* 2 */
-        {ARRAY_TAG,  FALSE, 1,  0}  /* 3 */
+        {ARRAY_TAG,  FALSE, 1,  0}, /* 3 */
+        {ARRAY_TAG,  FALSE, 0,  1}, /* 4 */
+        {ARRAY_TAG,  FALSE, 4,  1}  /* 5 */
 };
 
 uint32_t sourceSeqs_len = 0;
@@ -84,6 +87,11 @@ int count_leafs(pointer r) {
     return c;
 }
 
+int obj_is_marked(pointer p) {
+    struct GC_UM_Chunk *c = (struct GC_UM_Chunk *)(p - sizeof(void*));
+    return (c->chunk_header & UM_CHUNK_MARK_MASK);
+}
+
 int all_unmarked(struct GC_UM_Array_Chunk *r) {
     if (r == NULL) return TRUE;
     if (r->array_chunk_header & UM_CHUNK_MARK_MASK) return FALSE;
@@ -111,14 +119,20 @@ void teardown(void)
     fprintf(stderr, "teardown\n");
 }
 
+
 /* can run individual cases with:
    CK_VERBOSITY=verbose CK_RUN_CASE=RootPlusOne ./umarray-allocate-test
+
+   GC_arrayAllocate (GC_state s,
+                     size_t ensureBytesFree,
+                     GC_arrayLength numElements,
+                     GC_header header);
  */
 
 #tcase Basic
 
 #test array_alloc_1_test
-    // tree construction
+    /* tree construction */
     pointer a = GC_arrayAllocate(&gcState, 0, 1, (0x3<<1) | 0x1);
     struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
     ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
@@ -138,6 +152,67 @@ void teardown(void)
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
     markUMArrayChunks(&gcState, root, MARK_MODE);
     ck_assert_msg (all_marked(root), "array not marked properly");
+
+
+#test array_alloc_1_gc_elsize_0_1_test
+    /* tree construction, we want 10 elements of 0 nonobjbytes and 1 objptr
+     * so 40 bytes total (determined by objectTypes slot 4)
+     */
+    pointer a = GC_arrayAllocate(&gcState, 0, 10, (0x4<<1) | 0x1); // 10 elements
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    /* place an objptr in element 0 and 10, check that foreach finds them
+     */
+    reserveAllocation(&gcState, 2);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    pointer b = UM_Array_offset(&gcState, a, 1, 4, 0); // el 1, elsize 4, offset 0
+    *(objptr*)b = (objptr)obj1;
+
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    b = UM_Array_offset(&gcState, a, 9, 4, 0); // el 9, elsize 4 (one objptr), offset 0
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
+
+#test array_alloc_1_gc_elsize_1_1_test
+    /* tree construction, we want 10 elements of 4 nonobjbytes and 1 objptr
+     * we choose 4 because the objptr must be aligned [FIX on 64bit]
+     */
+    pointer a = GC_arrayAllocate(&gcState, 0, 10, (0x5<<1) | 0x1); // 10 elements
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    /* place an objptr in element 0 and 10, check that foreach finds them
+     * we use an offset of 4 here because each element is 4 nonobjptr bytes followed
+     * by an objptr [FIX 64bit] - we could also just add 4 to b
+     */
+    reserveAllocation(&gcState, 2);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    pointer b = UM_Array_offset(&gcState, a, 1, 8, 4); // el 1, elsize 8, offset 4
+    *(objptr*)b = (objptr)obj1;
+
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    b = UM_Array_offset(&gcState, a, 9, 8, 4); // el 9, elsize 8, offset 4
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
 
 #test array_alloc_2_test
     pointer a = GC_arrayAllocate(&gcState, 0, 2, (0x3<<1) | 0x1);
@@ -214,6 +289,35 @@ void teardown(void)
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
     markUMArrayChunks(&gcState, root, MARK_MODE);
     ck_assert_msg (all_marked(root), "array not marked properly");
+
+#test array_alloc_full_root_plus_one_elsize_0_1_test
+    /* UM_CHUNK_ARRAY_PAYLOAD_SIZE+1 elements req 2 leafs + 1 root */
+    pointer a = GC_arrayAllocate(&gcState, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE+1, (0x4<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    reserveAllocation(&gcState, 2);
+
+    /* place objptr in first leaf */
+    pointer b = UM_Array_offset(&gcState, a, 1, 4, 0);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    *(objptr*)b = (objptr)obj1;
+
+    /* place another objptr in second leaf */
+    b = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE, 4, 0);
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
+
 
 
 #tcase H1Full
