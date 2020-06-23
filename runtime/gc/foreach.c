@@ -10,17 +10,6 @@
 //#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
 
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
-#if 0
-	fprintf(stderr, "callIfIsObjptr "FMTPTR" %x ?= %x\n", (unsigned int)opp,
-			(uint32_t)*opp, (uint32_t)s);
-#endif
-
-#if 0  // temp hack
-	if ((uint32_t)*opp == (uint32_t)s) {
-		die("  **gcstate is in a stack slot\n");
-	}
-#endif
-
     if (isObjptr (*opp)) {
     	if (is_on_um_heap(s, (Pointer)*opp))
 	        f (s, opp);
@@ -42,27 +31,23 @@ void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f) {
 	// where you can call SML /from/ C. our research is focused (?) on
 	// pure SML systems.
 
-	if (DEBUG)
-		fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->callFromCHandlerThread);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread);
 
 	callIfIsObjptr(s, f, &s->callFromCHandlerThread);
 
-	if (DEBUG)
-		fprintf(stderr, "%d] currentThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
 
 	callIfIsObjptr(s, f, &s->currentThread[PTHREAD_NUM]);
 
-	if (DEBUG)
-		fprintf(stderr, "%d] savedThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
 
 	callIfIsObjptr(s, f, &s->savedThread[PTHREAD_NUM]);
 
-	if (DEBUG)
-		fprintf(stderr, "%d] signalHandlerThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
 
 	callIfIsObjptr(s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }

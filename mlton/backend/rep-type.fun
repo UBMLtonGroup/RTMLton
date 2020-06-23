@@ -425,7 +425,7 @@ structure ObjectType =
                       | Control.Align8 => Bytes.fromInt 8
                   val bytesHeader =
                      Bits.toBytes (Control.Target.Size.header ())
-                  val bytesCSize = (* bytesNeeded and stack_depth *)
+                  val bytesCSize = (* bytesNeeded, stack_size_in_chunks, and stack_depth *)
                      Bits.toBytes (Control.Target.Size.csize ())
                   val bytesExnStack =
                      Bits.toBytes (Type.width (Type.exnStack ()))
@@ -440,7 +440,9 @@ structure ObjectType =
                        Bytes.+ (bytesExnStack,
                         Bytes.+ (bytesFirstFrame,
                          Bytes.+ (bytesCSize, (* markCycles *)
-                          Bytes.+ (bytesCurrentFrame, bytesCSize) (* stack_depth *)
+                          Bytes.+ (bytesCSize, (* stack_depth *)
+                           Bytes.+ (bytesCurrentFrame, bytesCSize)  (* stack_size_in_chunks *)
+                          )
                          )
                         )
                        )
@@ -454,12 +456,13 @@ structure ObjectType =
                end
          in
             Normal {hasIdentity = true,
-                    ty = Type.seq (Vector.new7 (padding,
+                    ty = Type.seq (Vector.new8 (padding,
                                                 Type.csize (),
                                                 Type.exnStack (),
                                                 Type.cpointer (), (* stacklet bottom *)
                                                 Type.cpointer (), (* stacklet top *)
                                                 Type.csize (),    (* stackDepth *)
+                                                Type.csize (),    (* stackSizeInChunks *)
                                                 Type.csize ()     (* markCycles *)
                                                 ))}
          end

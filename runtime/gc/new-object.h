@@ -13,7 +13,7 @@ static inline pointer newObject (GC_state s, GC_header header,
 static inline pointer newUMObject (GC_state s, GC_header header,
                                    size_t bytesRequested, bool allocInOldGen);
 static inline GC_stack newStack (GC_state s, size_t reserved, bool allocInOldGen);
-static inline objptr newStack_um (GC_state s);
+static inline objptr newStack_um (GC_state s, size_t stackSizeInBytes, size_t *stackSizeInChunks);
 
 static GC_thread newThread (GC_state s, size_t stackSize);
 
