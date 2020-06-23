@@ -438,11 +438,13 @@ int GC_init(GC_state s, int argc, char **argv) {
 	/* Check not needed as card mapping is disabled. Even in ssa-to-rssa.fun "updateCard" 
      * unless(isAligned(s->sysvals.pageSize, CARD_SIZE))
 	die("Page size must be a multiple of card size.");*/
+
 	processAtMLton(s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
 	res = processAtMLton(s, 1, argc, argv, &worldFile);
-	if (s->controls.fixedHeap > 0 and
-	s->controls.maxHeap > 0)
-	die("Cannot use both fixed-heap and max-heap.");
+
+	if (s->controls.fixedHeap > 0 and s->controls.maxHeap > 0)
+	     die("Cannot use both fixed-heap and max-heap.");
+
 	unless(s->controls.ratios.markCompact <= s->controls.ratios.copy
 	and
 	s->controls.ratios.copy <= s->controls.ratios.live)

@@ -197,32 +197,66 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
-#if 0
 
-	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-	  assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
-	  // FIX this needs to walk the tree and for leafs, then process any objptrs
-	  if (fst_leaf->array_chunk_length > 0) {
-          size_t length = fst_leaf->array_chunk_length;
-          GC_UM_Array_Chunk cur_chunk = fst_leaf;
-		  assert (cur_chunk->array_chunk_magic == UM_ARRAY_SENTINEL);
+	  /* In an array object, the bytesNonObjptrs
+       * field indicates the number of bytes of non heap-pointer data in a
+       * single array element, while the numObjptrs field indicates the
+ 	   * number of heap pointers in a single array element. [object.h]
+	   */
 
-		  size_t i, j;
-          size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
-          for (i=0; i<length; i++) {
-              pointer start = (pointer)&(cur_chunk->ml_array_payload.ml_object[0]);
-              size_t offset = (i % fst_leaf->num_els_per_chunk) * elem_size + bytesNonObjptrs;
-              pointer pobj = start + offset;
-              for (j=0; j<numObjptrs; j++) {
-                  callIfIsObjptr (s, f, (objptr*)pobj);
-                  pobj += OBJPTR_SIZE;
-              }
+	  size_t bytesPerElement;
+      size_t dataBytes, curBytePosition;
+      pointer last;
+	  GC_arrayLength numElements;
+      numElements = getArrayLength (p);
+      bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
+      dataBytes = numElements * bytesPerElement;
 
-              if (i > 0 && i % fst_leaf->num_els_per_chunk == 0)
-                  cur_chunk = cur_chunk->next_chunk;
-          }
-      }
-#endif
+      if (0 == numObjptrs) {
+      	  /* no objptrs to process */;
+      } else {
+		  last += 0;
+		  curBytePosition = 0;
+		  /* 1. find first leaf
+		   * 2. if all ptrs:
+		   *    2a. process ptrs until end of leaf
+		   *    2b. go to leaf->next, repeat until done
+		   * 3. if mixed, note structure of array (see array.h)
+		   *    3a. walk leafs until end of block of
+		   *        non ptrs
+		   *    3b. process block of ptrs as in 2a/2b
+		   *    3c. repeat 3a-3b until end of array
+		   *
+		   */
+
+		  if (0 == bytesNonObjptrs) {
+			  pointer leaf = UM_walk_array_leafs(p, NULL);
+			  /* Array with only pointers. */
+			  while (leaf && curBytePosition < dataBytes) {
+				  for (pointer cur = leaf; cur < leaf + UM_CHUNK_ARRAY_PAYLOAD_SIZE; cur += OBJPTR_SIZE) {
+					  callIfIsObjptr(s, f, (objptr *) cur);
+					  curBytePosition += OBJPTR_SIZE;
+				  }
+				  leaf = UM_walk_array_leafs(leaf, NULL);
+			  }
+		  } else {
+			  /* Array with a mix of data where each element is arranged as:
+			   *    ( (non heap-pointers)* :: (heap pointers)* )*
+			   */
+			  bool done = FALSE;
+			  while (!done) {
+				  size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
+				  size_t array_len = pointerToArrayChunk(p)->array_chunk_length;
+				  for (int i = 0; i < array_len; i++) {
+					  pointer elptr = UM_Array_offset(s, p, i, elem_size, 0) + bytesNonObjptrs;
+					  for (int j = 0; j < numObjptrs; j++) {
+						  callIfIsObjptr(s, f, (objptr *) elptr);
+						  elptr += OBJPTR_SIZE;
+					  }
+				  }
+			  }
+		  }
+	  }
   } else { /* stack frame */
   	  // mark the objptrs inside of the given frame
 

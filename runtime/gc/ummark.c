@@ -472,6 +472,10 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
+	/* Recursively mark the entire array tree; all Inodes and Lnodes will
+	 * be marked. Objects pointed to via an Lnode will not be marked.
+	 * The marking of those objects is performed in foreachObjptrInObject
+	 */
 	assert (p->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 	if (DEBUG_DFS_MARK)
