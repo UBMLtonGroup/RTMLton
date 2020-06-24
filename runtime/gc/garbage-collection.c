@@ -115,12 +115,20 @@ maybe_growstack(GC_state s, GC_thread thread) {
 	if (DEBUG_STACK_GROW)
 		fprintf(stderr, "%d] "YELLOW("%s\n"), PTHREAD_NUM, __FUNCTION__);
 
+	if (thread->stackSizeInChunks < 20) {
+		if (DEBUG_STACK_GROW)
+			fprintf(stderr,
+					"%d] stacksize < 20 chunks: "YELLOW("do nothing\n"),
+					PTHREAD_NUM);
+		return;
+	}
+
 	float utilization = thread->stackDepth / (float)thread->stackSizeInChunks;
 
 	if (utilization > .9) {
 		if (DEBUG_STACK_GROW)
 			fprintf(stderr, "  stack util is %2.2f%% (%d of %d): "YELLOW("grow")"\n",
-				utilization, thread->stackDepth, thread->stackSizeInChunks);
+				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks);
 
 		size_t need_chunks = thread->stackSizeInChunks * 1.25;
 
@@ -138,7 +146,7 @@ maybe_growstack(GC_state s, GC_thread thread) {
 	else if (utilization < .5) {
 		if (DEBUG_STACK_GROW)
 			fprintf(stderr, "  stack util is %2.2f%% (%d of %d): "YELLOW("shrink")"\n",
-				utilization, thread->stackDepth, thread->stackSizeInChunks);
+				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks);
 
 		GC_UM_Chunk c = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
 		int i;
