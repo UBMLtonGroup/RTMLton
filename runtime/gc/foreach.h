@@ -23,8 +23,8 @@ static inline void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f);
  *
  * If skipWeaks, then the object pointer in weak objects is skipped.
  */
-static inline pointer foreachObjptrInObject (GC_state s, pointer p,
-                                             GC_foreachObjptrFun f, bool skipWeaks);
+pointer foreachObjptrInObject (GC_state s, pointer p,
+                               GC_foreachObjptrFun f, bool skipWeaks);
 /* foreachObjptrInRange (s, front, back, f, skipWeaks)
  *
  * Apply f to each pointer between front and *back, which should be a

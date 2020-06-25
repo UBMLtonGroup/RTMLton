@@ -12,6 +12,7 @@ _Static_assert (UM_CHUNK_ARRAY_PAYLOAD_SIZE%sizeof(void*)==0,
 
 #define UM_CHUNK_SENTINEL                0x9999
 #define UM_ARRAY_SENTINEL                0x9998
+#define UM_STACK_SENTINEL                0x9997
 
 /*
  * Chunk header splitup

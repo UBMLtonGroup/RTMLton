@@ -60,7 +60,9 @@ static void displayChunkedGCStats(GC_state s, FILE *out) {
 	fprintf(out, "Mutator was blocked %d times\n", s->blocked);
 	fprintf(out, "Max mutator pause time = %s\n", uintmaxToCommaString(s->cGCStats.maxMutatorPauseTime));
 	fprintf(out, "Allocted by RT thread = %s\n", uintmaxToCommaString(s->allocedByRT));
-
+	fprintf(out, "Stack Shrinks = %s\n", uintmaxToCommaString(s->cumulativeStatistics.stackShrinks));
+	fprintf(out, "Stack Grows = %s\n", uintmaxToCommaString(s->cumulativeStatistics.stackGrows));
+	fprintf(out, "Stack Forced Grows = %s\n", uintmaxToCommaString(s->cumulativeStatistics.forcedStackGrows));
 }
 
 void RTGC_done(GC_state s) {
@@ -82,7 +84,7 @@ void RTGC_done(GC_state s) {
 
 	free(s->worklist);
 
-	if (1 ||DEBUG)
+	if (DEBUG)
 		displayChunkedGCStats(s, out);
 }
 __attribute__((noreturn))

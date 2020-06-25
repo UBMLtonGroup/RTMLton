@@ -5,9 +5,9 @@ sudo: required
 matrix:
   include:
   - os:   linux
-    env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=true
-  - os:   linux
-    env:  CC=clang  MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=false
+    env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=false
+  #- os:   linux
+  #  env:  CC=clang  MLTON_COMPILE_ARGS="-codegen c"      REGRESSION=false
 
 install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi

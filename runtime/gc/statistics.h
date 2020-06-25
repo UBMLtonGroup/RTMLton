@@ -15,6 +15,9 @@ struct GC_cumulativeStatistics {
   uintmax_t bytesHashConsed;
   uintmax_t bytesMarkCompacted;
   uintmax_t bytesScannedMinor;
+  uintmax_t stackShrinks;
+  uintmax_t stackGrows;
+  uintmax_t forcedStackGrows;
 
   size_t maxBytesLive;
   size_t maxHeapSize;

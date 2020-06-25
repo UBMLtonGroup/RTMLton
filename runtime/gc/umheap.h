@@ -27,9 +27,7 @@ typedef struct GC_UM_Chunk {
     GC_returnAddress ra;             /* +8 */
     GC_returnAddress handler;        /* +12 */
     GC_returnAddress link;           /* +16 */
-    void *memcpy_addr;               /* +20 */
-    size_t memcpy_size;              /* +24 */
-    struct GC_UM_Chunk* next_chunk;  /* +28 */
+    struct GC_UM_Chunk* next_chunk;  /* +20 */
     struct GC_UM_Chunk* prev_chunk;
 } *GC_UM_Chunk;
 
@@ -45,7 +43,7 @@ typedef struct GC_UM_heap {
 struct GC_UM_Array_Chunk;
 
 typedef union GC_UM_Array_Payload {
-    struct GC_UM_Array_Chunk* um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS]; //  38 - um_constants.h
+    pointer um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS]; //  38 - um_constants.h
     unsigned char ml_object[UM_CHUNK_ARRAY_PAYLOAD_SIZE];                          // 152 - um_constants.h
 } GC_UM_Array_Payload;
 
@@ -83,12 +81,10 @@ static void initUMHeap(GC_state s, GC_UM_heap h);
 //static void initUMArrayHeap(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_heap h, pointer c);
 GC_UM_Chunk allocateChunks(GC_state s, GC_UM_heap h,size_t numChunks,UM_header chunkType);
-GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
-bool createUMHeap(GC_state s, GC_UM_heap h,
-                  size_t diredSize,
-                  size_t minSize);
-static GC_UM_Chunk allocNextChunk(GC_state s,GC_UM_heap h,UM_header chunkType);
+bool createUMHeap(GC_state s, GC_UM_heap h, size_t diredSize, size_t minSize);
+static GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h, UM_header chunkType);
 
-GC_UM_Array_Chunk allocateArrayChunks(GC_state s,GC_UM_heap h,size_t numChunks);
+GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
+GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks);
 
 #endif

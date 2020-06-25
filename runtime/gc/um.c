@@ -75,6 +75,9 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         uint32_t *alias = (uint32_t * )(current->ml_object);
         *alias = header;
         assert(current->chunk_header & UM_CHUNK_IN_USE);
+        // default is UM_CHUNK_SENTINEL set in umheap::allocNextChunk
+        if (header == GC_STACK_HEADER)
+        	current->sentinel = UM_STACK_SENTINEL;
         current = current->next_chunk;
     }
 
@@ -304,11 +307,12 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     while (current->array_chunk_type != UM_CHUNK_ARRAY_LEAF) {
         if (DEBUG_ARRAY_OFFSET) {
+			GC_UM_Array_Chunk down = pointerToArrayChunk(current->ml_array_payload.um_array_pointers[0]);
             fprintf(stderr, "  chunk "FMTPTR" type %d ? leaf=%d\n",
                     (uintptr_t)&(current->ml_array_payload.ml_object[0]),
                     current->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
             fprintf(stderr, "   down-chunk type %d ? leaf=%d\n",
-                    current->ml_array_payload.um_array_pointers[0]->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
+                    down->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
             fprintf(stderr, "  curHeight %d elsPerChunk %d\n", curHeight, root->num_els_per_chunk);
         }
 
@@ -343,7 +347,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                     curHeight, root->num_els_per_chunk, e0, eX);
 
         assert (current->ml_array_payload.um_array_pointers[(int)next] != NULL);
-        current = current->ml_array_payload.um_array_pointers[(int)next];
+        current = pointerToArrayChunk(current->ml_array_payload.um_array_pointers[(int)next]);
         curHeight--;
     }
 

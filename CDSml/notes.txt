@@ -1,0 +1,3 @@
+(cd .. ; make runtime ) ; ../build/bin/mlton -type-check true -codegen c -debug true -keep g runCD.mlb
+
+ ./runCD @MLton rtobj 5 hpercent 0.9 --

@@ -216,7 +216,10 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 			else
 				pchunk = (GC_UM_Chunk)(p);
 
-			assert (pchunk->sentinel == UM_CHUNK_SENTINEL);
+			if (tag == NORMAL_TAG)
+				assert (pchunk->sentinel == UM_CHUNK_SENTINEL);
+			else if (tag == STACK_TAG)
+				assert (pchunk->sentinel == UM_STACK_SENTINEL);
 
 			if (m == MARK_MODE) {
 				pchunk->chunk_header &= ~UM_CHUNK_RED_MASK; /*Clear red marking*/
@@ -270,6 +273,8 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 			   p < s->umheap.start + s->umheap.size) {
 
 		GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
+
+
 		assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		if (DEBUG_DFS_MARK) {
@@ -467,6 +472,10 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 
 
 void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
+	/* Recursively mark the entire array tree; all Inodes and Lnodes will
+	 * be marked. Objects pointed to via an Lnode will not be marked.
+	 * The marking of those objects is performed in foreachObjptrInObject
+	 */
 	assert (p->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 	if (DEBUG_DFS_MARK)
@@ -491,8 +500,8 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 
 	if (p->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
 		for (int i = 0; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS; i++) {
-			GC_UM_Array_Chunk pcur = p->ml_array_payload.um_array_pointers[i];
-			if (!pcur) break;
+			if (p->ml_array_payload.um_array_pointers[i] == NULL) break;
+			GC_UM_Array_Chunk pcur = pointerToArrayChunk(p->ml_array_payload.um_array_pointers[i]);
 			markUMArrayChunks(s, pcur, m);
 		}
 	}

@@ -23,7 +23,7 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) from - offsetofThread(s), s->umheap.start);
 
-	to = newThread(s, alignStackReserved(s, used));
+	to = newThread(s, used);
 
 	from = (GC_thread) (objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread(s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;

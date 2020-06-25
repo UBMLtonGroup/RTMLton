@@ -222,6 +222,15 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 					s->controls.ratios.stackCurrentGrow = stringToFloat(argv[i++]);
 					unless(1.0 < s->controls.ratios.stackCurrentGrow)
 					die("@MLton stack-current-grow-ratio argument must greater than 1.0.");
+				} else if (0 == strcmp(arg, "stack-current-grow-threshold")) {
+					i++;
+					if (i == argc)
+						die("@MLton stack-current-grow-threshold missing argument.");
+					s->controls.ratios.stackCurrentShrinkThreshold = stringToFloat(argv[i++]);
+					unless(0.0 <= s->controls.ratios.stackCurrentGrowThreshold
+								   and
+								   s->controls.ratios.stackCurrentGrowThreshold <= 1.0)
+					die("@MLton stack-current-grow-ratio-threshold argument must be between 0.0 and 1.0.");
 				} else if (0 == strcmp(arg, "stack-current-max-reserved-ratio")) {
 					i++;
 					if (i == argc)
@@ -242,9 +251,18 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 						die("@MLton stack-current-shrink-ratio missing argument.");
 					s->controls.ratios.stackCurrentShrink = stringToFloat(argv[i++]);
 					unless(0.0 <= s->controls.ratios.stackCurrentShrink
-					and
-					s->controls.ratios.stackCurrentShrink <= 1.0)
+								   and
+								   s->controls.ratios.stackCurrentShrink <= 1.0)
 					die("@MLton stack-current-shrink-ratio argument must be between 0.0 and 1.0.");
+				} else if (0 == strcmp(arg, "stack-current-shrink-threshold")) {
+						i++;
+						if (i == argc)
+							die("@MLton stack-current-shrink-threshold missing argument.");
+						s->controls.ratios.stackCurrentShrinkThreshold = stringToFloat(argv[i++]);
+						unless(0.0 <= s->controls.ratios.stackCurrentShrinkThreshold
+									   and
+									   s->controls.ratios.stackCurrentShrinkThreshold <= 1.0)
+						die("@MLton stack-current-shrink-ratio-threshold argument must be between 0.0 and 1.0.");
 				} else if (0 == strcmp(arg, "stack-max-reserved-ratio")) {
 					i++;
 					if (i == argc)
@@ -325,12 +343,19 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->controls.ratios.markCompactGenerational = 8.0f;
 	s->controls.ratios.nursery = 10.0f;
 	s->controls.ratios.ramSlop = 0.5f;
-	s->controls.ratios.stackCurrentGrow = 2.0f;
+
+	s->controls.ratios.stackCurrentGrow = 1.25f;
+	s->controls.ratios.stackCurrentGrowThreshold = 0.90f;
+	s->controls.ratios.stackCurrentShrink = 0.10f;
+	s->controls.ratios.stackCurrentShrinkThreshold = 0.50f;
+
+	/* not used -> */
 	s->controls.ratios.stackCurrentMaxReserved = 32.0f;
 	s->controls.ratios.stackCurrentPermitReserved = 4.0f;
-	s->controls.ratios.stackCurrentShrink = 0.5f;
 	s->controls.ratios.stackMaxReserved = 8.0f;
 	s->controls.ratios.stackShrink = 0.5f;
+	/* <- not used */
+
 	s->controls.summary = FALSE;
 	s->hPercent = 0.3f; /**/
 	s->cumulativeStatistics.bytesAllocated = 0;
@@ -348,6 +373,10 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->cumulativeStatistics.numHashConsGCs = 0;
 	s->cumulativeStatistics.numMarkCompactGCs = 0;
 	s->cumulativeStatistics.numMinorGCs = 0;
+	s->cumulativeStatistics.stackGrows = 0;
+	s->cumulativeStatistics.stackShrinks = 0;
+	s->cumulativeStatistics.forcedStackGrows = 0;
+
 	rusageZero(&s->cumulativeStatistics.ru_gc);
 	rusageZero(&s->cumulativeStatistics.ru_gcCopying);
 	rusageZero(&s->cumulativeStatistics.ru_gcMarkCompact);
@@ -438,11 +467,13 @@ int GC_init(GC_state s, int argc, char **argv) {
 	/* Check not needed as card mapping is disabled. Even in ssa-to-rssa.fun "updateCard" 
      * unless(isAligned(s->sysvals.pageSize, CARD_SIZE))
 	die("Page size must be a multiple of card size.");*/
+
 	processAtMLton(s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
 	res = processAtMLton(s, 1, argc, argv, &worldFile);
-	if (s->controls.fixedHeap > 0 and
-	s->controls.maxHeap > 0)
-	die("Cannot use both fixed-heap and max-heap.");
+
+	if (s->controls.fixedHeap > 0 and s->controls.maxHeap > 0)
+	     die("Cannot use both fixed-heap and max-heap.");
+
 	unless(s->controls.ratios.markCompact <= s->controls.ratios.copy
 	and
 	s->controls.ratios.copy <= s->controls.ratios.live)

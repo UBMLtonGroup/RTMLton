@@ -1,17 +1,21 @@
 #define MLTON_GC_INTERNAL_TYPES
 #define MLTON_GC_INTERNAL_FUNCS
 #define MLTON_GC_INTERNAL_BASIS
+#undef _POSIX_C_SOURCE
 #include "platform.h"
 
 int frameLayouts_len = 1;
 
 #include "gc.h"
-uint32_t objectTypes_len = 4;
+uint32_t objectTypes_len = 6;
 static struct GC_objectType objectTypes[] = {
+        // type,     mutable, nonobjptrbytes, objptrs
         {STACK_TAG,  FALSE, 0,  0}, /* 0 */
-        {NORMAL_TAG, TRUE,  24, 0}, /* 1 */
+        {NORMAL_TAG, TRUE,  28, 0}, /* 1 */
         {WEAK_TAG,   FALSE, 8,  0}, /* 2 */
-        {ARRAY_TAG,  FALSE, 1,  0}  /* 3 */
+        {ARRAY_TAG,  FALSE, 1,  0}, /* 3 */
+        {ARRAY_TAG,  FALSE, 0,  1}, /* 4 */
+        {ARRAY_TAG,  FALSE, 4,  1}  /* 5 */
 };
 
 uint32_t sourceSeqs_len = 0;
@@ -83,12 +87,17 @@ int count_leafs(pointer r) {
     return c;
 }
 
+int obj_is_marked(pointer p) {
+    struct GC_UM_Chunk *c = (struct GC_UM_Chunk *)(p - sizeof(void*));
+    return (c->chunk_header & UM_CHUNK_MARK_MASK);
+}
+
 int all_unmarked(struct GC_UM_Array_Chunk *r) {
     if (r == NULL) return TRUE;
     if (r->array_chunk_header & UM_CHUNK_MARK_MASK) return FALSE;
     if (r->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
         for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
-            return all_unmarked(r->ml_array_payload.um_array_pointers[i]);
+            return all_unmarked(pointerToArrayChunk(r->ml_array_payload.um_array_pointers[i]));
         }
     }
     return TRUE;
@@ -99,7 +108,7 @@ int all_marked(struct GC_UM_Array_Chunk *r) {
     if (r->array_chunk_header & UM_CHUNK_MARK_MASK) return TRUE;
     if (r->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL) {
         for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
-            return all_marked(r->ml_array_payload.um_array_pointers[i]);
+            return all_marked(pointerToArrayChunk(r->ml_array_payload.um_array_pointers[i]));
         }
     }
     return FALSE;
@@ -110,14 +119,20 @@ void teardown(void)
     fprintf(stderr, "teardown\n");
 }
 
+
 /* can run individual cases with:
    CK_VERBOSITY=verbose CK_RUN_CASE=RootPlusOne ./umarray-allocate-test
+
+   GC_arrayAllocate (GC_state s,
+                     size_t ensureBytesFree,
+                     GC_arrayLength numElements,
+                     GC_header header);
  */
 
 #tcase Basic
 
 #test array_alloc_1_test
-    // tree construction
+    /* tree construction */
     pointer a = GC_arrayAllocate(&gcState, 0, 1, (0x3<<1) | 0x1);
     struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
     ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
@@ -137,6 +152,67 @@ void teardown(void)
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
     markUMArrayChunks(&gcState, root, MARK_MODE);
     ck_assert_msg (all_marked(root), "array not marked properly");
+
+
+#test array_alloc_1_gc_elsize_0_1_test
+    /* tree construction, we want 10 elements of 0 nonobjbytes and 1 objptr
+     * so 40 bytes total (determined by objectTypes slot 4)
+     */
+    pointer a = GC_arrayAllocate(&gcState, 0, 10, (0x4<<1) | 0x1); // 10 elements
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    /* place an objptr in element 0 and 10, check that foreach finds them
+     */
+    reserveAllocation(&gcState, 2);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    pointer b = UM_Array_offset(&gcState, a, 1, 4, 0); // el 1, elsize 4, offset 0
+    *(objptr*)b = (objptr)obj1;
+
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    b = UM_Array_offset(&gcState, a, 9, 4, 0); // el 9, elsize 4 (one objptr), offset 0
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
+
+#test array_alloc_1_gc_elsize_1_1_test
+    /* tree construction, we want 10 elements of 4 nonobjbytes and 1 objptr
+     * we choose 4 because the objptr must be aligned [FIX on 64bit]
+     */
+    pointer a = GC_arrayAllocate(&gcState, 0, 10, (0x5<<1) | 0x1); // 10 elements
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    /* place an objptr in element 0 and 10, check that foreach finds them
+     * we use an offset of 4 here because each element is 4 nonobjptr bytes followed
+     * by an objptr [FIX 64bit] - we could also just add 4 to b
+     */
+    reserveAllocation(&gcState, 2);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    pointer b = UM_Array_offset(&gcState, a, 1, 8, 4); // el 1, elsize 8, offset 4
+    *(objptr*)b = (objptr)obj1;
+
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    b = UM_Array_offset(&gcState, a, 9, 8, 4); // el 9, elsize 8, offset 4
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
 
 #test array_alloc_2_test
     pointer a = GC_arrayAllocate(&gcState, 0, 2, (0x3<<1) | 0x1);
@@ -193,7 +269,8 @@ void teardown(void)
 
     for (int i = 0 ; i < UM_CHUNK_ARRAY_PAYLOAD_SIZE ; i++) {
         pointer b = UM_Array_offset(&gcState, a, i, 1, 0);
-        ck_assert_msg ((pointer)&(root->ml_array_payload.um_array_pointers[0]->ml_array_payload.ml_object[i]) == b,
+        GC_UM_Array_Chunk x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[0]);
+        ck_assert_msg ((pointer)&(x->ml_array_payload.ml_object[i]) == b,
                        "element %d is not at expected address", i);
     }
 
@@ -202,15 +279,45 @@ void teardown(void)
        in the next chunk bc arrays are zero-indexed
      */
     pointer b = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE, 1, 0);
-    ck_assert_msg ((pointer)&(root->ml_array_payload.um_array_pointers[1]->ml_array_payload.ml_object[0]) == b,
+    GC_UM_Array_Chunk x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[1]);
+    ck_assert_msg ((pointer)&(x->ml_array_payload.ml_object[0]) == b,
                    "element %d is not at expected address %x != %x",
                    UM_CHUNK_ARRAY_PAYLOAD_SIZE+1,
                    b,
-                   (pointer)&(root->ml_array_payload.um_array_pointers[1]->ml_array_payload.ml_object[0]));
+                   (pointer)&(x->ml_array_payload.ml_object[0]));
 
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
     markUMArrayChunks(&gcState, root, MARK_MODE);
     ck_assert_msg (all_marked(root), "array not marked properly");
+
+#test array_alloc_full_root_plus_one_elsize_0_1_test
+    /* UM_CHUNK_ARRAY_PAYLOAD_SIZE+1 elements req 2 leafs + 1 root */
+    pointer a = GC_arrayAllocate(&gcState, 0, UM_CHUNK_ARRAY_PAYLOAD_SIZE+1, (0x4<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    reserveAllocation(&gcState, 2);
+
+    /* place objptr in first leaf */
+    pointer b = UM_Array_offset(&gcState, a, 1, 4, 0);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    *(objptr*)b = (objptr)obj1;
+
+    /* place another objptr in second leaf */
+    b = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE, 4, 0);
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
+
 
 
 #tcase H1Full
@@ -254,10 +361,12 @@ void teardown(void)
         pointer ec = UM_Array_offset(&gcState, a, i, 1, 0);
         int lc = i / UM_CHUNK_ARRAY_PAYLOAD_SIZE;
         int ei = i % UM_CHUNK_ARRAY_PAYLOAD_SIZE;
-        ck_assert_msg ((pointer)&(root->ml_array_payload.um_array_pointers[lc]->ml_array_payload.ml_object[ei]) == ec,
+        GC_UM_Array_Chunk x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[lc]);
+
+        ck_assert_msg ((pointer)&(x->ml_array_payload.ml_object[ei]) == ec,
                        "element %d is not in expected chunk #%d %x != %x",
                        i, lc, ec,
-                       (pointer)&(root->ml_array_payload.um_array_pointers[lc]->ml_array_payload.ml_object[ei]));
+                       (pointer)&(x->ml_array_payload.ml_object[ei]));
     }
 
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
@@ -286,9 +395,12 @@ void teardown(void)
 
     /* root has two Inode children */
 
-    ck_assert_msg (root->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+    GC_UM_Array_Chunk x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "root->internal[0] should be INTERNAL");
-    ck_assert_msg (root->ml_array_payload.um_array_pointers[1]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+
+    x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[1]);
+    ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "root->internal[1] should be INTERNAL");
 
     /* rest of roots children are NULL */
@@ -298,18 +410,22 @@ void teardown(void)
 
     /* roots first child is fully populated with leafs */
 
-    struct GC_UM_Array_Chunk *child = root->ml_array_payload.um_array_pointers[0];
-    for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
-        ck_assert_msg (child->ml_array_payload.um_array_pointers[i]->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
+    struct GC_UM_Array_Chunk *child = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[0]);
+    for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
+        x = pointerToArrayChunk(child->ml_array_payload.um_array_pointers[i]);
+        ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
                        "child %d of roots first child is not a leaf", i);
+    }
 
     /* second child has only one child leaf */
-    child = root->ml_array_payload.um_array_pointers[1];
-    ck_assert_msg (child->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
+    child = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[1]);
+    x = pointerToArrayChunk(child->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
                    "first child of roots second child is not a leaf");
-    for (int i = 1 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
+    for (int i = 1 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
         ck_assert_msg (child->ml_array_payload.um_array_pointers[i] == NULL,
                        "child %d of roots second child is not NULL", i);
+    }
 
     /* check that we have the expected num leafs */
 
@@ -322,24 +438,26 @@ void teardown(void)
        offset 0 thru UM_CHUNK_ARRAY_INTERNAL_POINTERS^2 will be under the
        first Inode, the extra +1 element will be under the 2nd Inode
        */
-    struct GC_UM_Array_Chunk *firstInode = root->ml_array_payload.um_array_pointers[0];
-    struct GC_UM_Array_Chunk *secondInode = root->ml_array_payload.um_array_pointers[1];
+    struct GC_UM_Array_Chunk *firstInode = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[0]);
+    struct GC_UM_Array_Chunk *secondInode = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[1]);
 
     for (int i = 0 ; i < nels-1 ; i++) {
         pointer ec = UM_Array_offset(&gcState, a, i, 1, 0);
         int lc = i / UM_CHUNK_ARRAY_PAYLOAD_SIZE;
         int ei = i % UM_CHUNK_ARRAY_PAYLOAD_SIZE;
-        ck_assert_msg ((pointer)&(firstInode->ml_array_payload.um_array_pointers[lc]->ml_array_payload.ml_object[ei]) == ec,
+        x = pointerToArrayChunk(firstInode->ml_array_payload.um_array_pointers[lc]);
+        ck_assert_msg ((pointer)&(x->ml_array_payload.ml_object[ei]) == ec,
                        "element %d is not in expected chunk #%d %x != %x",
                        i, lc, ec,
-                       (pointer)&(firstInode->ml_array_payload.um_array_pointers[lc]->ml_array_payload.ml_object[ei]));
+                       (pointer)&(x->ml_array_payload.ml_object[ei]));
     }
 
     pointer ec = UM_Array_offset(&gcState, a, nels-1, 1, 0);
-    ck_assert_msg ((pointer)&(secondInode->ml_array_payload.um_array_pointers[0]->ml_array_payload.ml_object[0]) == ec,
+    x = pointerToArrayChunk(secondInode->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg ((pointer)&(x->ml_array_payload.ml_object[0]) == ec,
                    "element %d is not in expected chunk %x != %x",
                    nels-1, ec,
-                   (pointer)&(secondInode->ml_array_payload.um_array_pointers[0]->ml_array_payload.ml_object[0]));
+                   (pointer)&(x->ml_array_payload.ml_object[0]));
 
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
     markUMArrayChunks(&gcState, root, MARK_MODE);
@@ -372,27 +490,31 @@ void teardown(void)
     ck_assert_msg (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "root should be INTERNAL");
 
     /* root should have 2 Inodes off of it */
-    ck_assert_msg (root->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+    struct GC_UM_Array_Chunk *x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "root->internal[0] should be INTERNAL");
-    ck_assert_msg (root->ml_array_payload.um_array_pointers[1]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+    x = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[1]);
+    ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "root->internal[0] should be INTERNAL");
     for (int i = 2 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
         ck_assert_msg (root->ml_array_payload.um_array_pointers[i] == NULL, "root->internal[2..N] should be NULL");
 
     /* H1 Inode 0 should have 75 Inodes hung off of it */
-    struct GC_UM_Array_Chunk *H1_inode0 = root->ml_array_payload.um_array_pointers[0];
+    struct GC_UM_Array_Chunk *H1_inode0 = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[0]);
     for (int i = 0 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++) {
         ck_assert_msg (H1_inode0 != NULL, "all of H1_inode's children should be populated");
-        ck_assert_msg (H1_inode0->ml_array_payload.um_array_pointers[i]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+        x = pointerToArrayChunk(H1_inode0->ml_array_payload.um_array_pointers[i]);
+        ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                      "H1_inode0->internal[0..N] should also be Inodes");
 
         /* each of the children of H1 Inode0's children should be non-NULL and LEAF */
 
-        struct GC_UM_Array_Chunk *H1_inode0_child = H1_inode0->ml_array_payload.um_array_pointers[i];
+        struct GC_UM_Array_Chunk *H1_inode0_child = pointerToArrayChunk(H1_inode0->ml_array_payload.um_array_pointers[i]);
         for (int j = 0 ; j < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; j++) {
+            x = pointerToArrayChunk(H1_inode0_child->ml_array_payload.um_array_pointers[j]);
             ck_assert_msg (H1_inode0_child->ml_array_payload.um_array_pointers[j] != NULL,
                             "all of children of H1_inode0's children should be populated");
-            ck_assert_msg (H1_inode0_child->ml_array_payload.um_array_pointers[j]->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
+            ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_LEAF,
                             "all of children of H1_inode0's children should be LEAFs");
 
         }
@@ -400,21 +522,22 @@ void teardown(void)
 
 
     /* H1 Inode 1 should have 1 Inode hung off of it */
-    struct GC_UM_Array_Chunk *H1_inode1 = root->ml_array_payload.um_array_pointers[1];
-    ck_assert_msg (H1_inode1->ml_array_payload.um_array_pointers[0]->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
+    struct GC_UM_Array_Chunk *H1_inode1 = pointerToArrayChunk(root->ml_array_payload.um_array_pointers[1]);
+    x = pointerToArrayChunk(H1_inode1->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg (x->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL,
                    "H1_inode1->internal[0] should be INTERNAL");
     for (int i = 1 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
         ck_assert_msg (H1_inode1->ml_array_payload.um_array_pointers[i] == NULL, "H1_Inode1 [1..N] children should be NULL");
 
     /* H2: and that node should have one Inode hung off of it */
-    struct GC_UM_Array_Chunk *H1_inode1_child0 = H1_inode1->ml_array_payload.um_array_pointers[0];
+    struct GC_UM_Array_Chunk *H1_inode1_child0 = pointerToArrayChunk(H1_inode1->ml_array_payload.um_array_pointers[0]);
     ck_assert_msg (H1_inode1_child0 != NULL, "H1_inode1_child0 is NULL");
     ck_assert_msg (H1_inode1_child0->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL, "H1_inode1_child0 is NULL");
     for (int i = 1 ; i < UM_CHUNK_ARRAY_INTERNAL_POINTERS ; i++)
         ck_assert_msg (H1_inode1_child0->ml_array_payload.um_array_pointers[i] == NULL, "H1_inode1_child0 [1..N] children should be NULL");
 
     /* H3: and /that/ node should be an Lnode */
-    struct GC_UM_Array_Chunk *H1_inode1_child0_child0 = H1_inode1_child0->ml_array_payload.um_array_pointers[0];
+    struct GC_UM_Array_Chunk *H1_inode1_child0_child0 = pointerToArrayChunk(H1_inode1_child0->ml_array_payload.um_array_pointers[0]);
     ck_assert_msg (H1_inode1_child0_child0 != NULL, "H1_inode1_child0_child0 is NULL");
     ck_assert_msg (H1_inode1_child0_child0->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "H1_inode1_child0_child0 is not LEAF");
 
@@ -426,6 +549,38 @@ void teardown(void)
     markUMArrayChunks(&gcState, root, MARK_MODE);
     ck_assert_msg (all_marked(root), "array not marked properly");
 
+#test array_alloc_H3_objptr_0_1_test
+    /* same as above but we will put objptrs in 2 locations and make
+     * sure foreach finds them
+     */
+    int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
+    int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
+    return;
+    pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
+
+    reserveAllocation(&gcState, 2);
+
+    /* place objptr in first leaf */
+    pointer b = UM_Array_offset(&gcState, a, 1, 4, 0);
+    pointer obj1 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj1), "obj1 should be unmarked");
+    *(objptr*)b = (objptr)obj1;
+
+    /* place another objptr in another leaf */
+    b = UM_Array_offset(&gcState, a, nels/2, 4, 0);
+    pointer obj2 = UM_Object_alloc(&gcState, 1, (0x1 << 1) | 1, GC_NORMAL_HEADER_SIZE);
+    ck_assert_msg (!obj_is_marked(obj2), "obj2 should be unmarked");
+    *(objptr*)b = (objptr)obj2;
+
+    ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
+    markUMArrayChunks(&gcState, root, MARK_MODE);
+    ck_assert_msg (all_marked(root), "array not marked properly");
+
+    foreachObjptrInObject (&gcState, a, umDfsMarkObjectsMarkToWL, FALSE);
+
+    ck_assert_msg (obj_is_marked(obj1), "obj1 should be marked");
+    ck_assert_msg (obj_is_marked(obj2), "obj2 should be marked");
 
 #main-pre
     setup();

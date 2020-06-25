@@ -10,17 +10,6 @@
 //#pragma GCC diagnostic ignored "-Wcast-qual" /*squishing wcast qual for callIfIsObjptr (s, f, (objptr *)&s->callFromCHandlerThread);*/
 
 void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
-#if 0
-	fprintf(stderr, "callIfIsObjptr "FMTPTR" %x ?= %x\n", (unsigned int)opp,
-			(uint32_t)*opp, (uint32_t)s);
-#endif
-
-#if 0  // temp hack
-	if ((uint32_t)*opp == (uint32_t)s) {
-		die("  **gcstate is in a stack slot\n");
-	}
-#endif
-
     if (isObjptr (*opp)) {
     	if (is_on_um_heap(s, (Pointer)*opp))
 	        f (s, opp);
@@ -42,27 +31,23 @@ void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f) {
 	// where you can call SML /from/ C. our research is focused (?) on
 	// pure SML systems.
 
-	if (DEBUG)
-		fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->callFromCHandlerThread);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread);
 
 	callIfIsObjptr(s, f, &s->callFromCHandlerThread);
 
-	if (DEBUG)
-		fprintf(stderr, "%d] currentThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
 
 	callIfIsObjptr(s, f, &s->currentThread[PTHREAD_NUM]);
 
-	if (DEBUG)
-		fprintf(stderr, "%d] savedThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
 
 	callIfIsObjptr(s, f, &s->savedThread[PTHREAD_NUM]);
 
-	if (DEBUG)
-		fprintf(stderr, "%d] signalHandlerThread: "FMTPTR
-	"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
+	if (DEBUG_DETAILED)
+		fprintf(stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
 
 	callIfIsObjptr(s, f, &s->signalHandlerThread[PTHREAD_NUM]);
 }
@@ -196,32 +181,76 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     }
     p += alignWithExtra (s, dataBytes, GC_ARRAY_HEADER_SIZE);
   } else if (ARRAY_TAG == tag) {
-	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)\n"), PTHREAD_NUM);
+	  /* In an array object, the bytesNonObjptrs
+       * field indicates the number of bytes of non heap-pointer data in a
+       * single array element, while the numObjptrs field indicates the
+ 	   * number of heap pointers in a single array element. [object.h]
+	   */
 
-	  GC_UM_Array_Chunk fst_leaf = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
-	  assert (fst_leaf->array_chunk_magic == UM_ARRAY_SENTINEL);
+	  size_t bytesPerElement;
+      size_t dataBytes, curBytePosition;
+      pointer last;
+	  GC_arrayLength numElements;
+      numElements = getArrayLength (p);
+      bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
+      dataBytes = numElements * bytesPerElement;
 
-	  // FIX this needs to walk the tree
-	  if (fst_leaf->array_chunk_length > 0) {
-          size_t length = fst_leaf->array_chunk_length;
-          GC_UM_Array_Chunk cur_chunk = fst_leaf;
-		  assert (cur_chunk->array_chunk_magic == UM_ARRAY_SENTINEL);
+	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)")
+	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%d) bpe(%d)\n",
+	                                 PTHREAD_NUM,
+	                                 numObjptrs, bytesNonObjptrs, numElements, bytesPerElement);
 
-		  size_t i, j;
-          size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
-          for (i=0; i<length; i++) {
-              pointer start = (pointer)&(cur_chunk->ml_array_payload.ml_object[0]);
-              size_t offset = (i % fst_leaf->num_els_per_chunk) * elem_size + bytesNonObjptrs;
-              pointer pobj = start + offset;
-              for (j=0; j<numObjptrs; j++) {
-                  callIfIsObjptr (s, f, (objptr*)pobj);
-                  pobj += OBJPTR_SIZE;
-              }
+	  if (0 == numObjptrs) {
+      	  /* no objptrs to process */;
+		  if (DEBUG_MEM) fprintf(stderr, "%d]  array has no objptrs to process\n", PTHREAD_NUM);
+      } else {
+		  last += 0;
+		  curBytePosition = 0;
+		  /* 1. find first leaf
+		   * 2. if all ptrs:
+		   *    2a. process ptrs until end of leaf
+		   *    2b. go to leaf->next, repeat until done
+		   * 3. if mixed, note structure of array (see array.h)
+		   *    foreach element in array:
+		   *        objptrs = element + bytesNonObjptrs
+		   *        foreach objptr in objptrs:
+		   *            apply f to objptr
+		   *
+		   * note: calling UM_Array_offset foreach element is
+		   * inefficient.
+		   */
 
-              if (i > 0 && i % fst_leaf->num_els_per_chunk == 0)
-                  cur_chunk = cur_chunk->next_chunk;
-          }
-      }
+		  if (0 == bytesNonObjptrs) {
+			  if (DEBUG_MEM) fprintf(stderr, "%d]  array is all objptrs\n", PTHREAD_NUM);
+
+			  pointer leaf = UM_walk_array_leafs(p, NULL);
+			  if (leaf == NULL) leaf = p; // single chunk array
+
+			  /* Array with only pointers. */
+			  while (leaf && curBytePosition < dataBytes) {
+				  for (pointer cur = leaf; cur < leaf + UM_CHUNK_ARRAY_PAYLOAD_SIZE; cur += OBJPTR_SIZE) {
+					  callIfIsObjptr(s, f, (objptr *) cur);
+					  curBytePosition += OBJPTR_SIZE;
+				  }
+				  leaf = UM_walk_array_leafs(leaf, NULL);
+			  }
+		  } else {
+			  if (DEBUG_MEM) fprintf(stderr, "%d]  array is mix of bytes and objptrs\n", PTHREAD_NUM);
+
+			  /* Array with a mix of data where each element is arranged as:
+			   *    ( (non heap-pointers)* :: (heap pointers)* )*
+			   */
+			  size_t elem_size = bytesNonObjptrs + numObjptrs * OBJPTR_SIZE;
+			  size_t array_len = pointerToArrayChunk(p)->array_chunk_length;
+			  for (int i = 0; i < array_len; i++) {
+				  pointer elptr = UM_Array_offset(s, p, i, elem_size, 0) + bytesNonObjptrs;
+				  for (int j = 0; j < numObjptrs; j++) {
+					  callIfIsObjptr(s, f, (objptr *) elptr);
+					  elptr += OBJPTR_SIZE;
+				  }
+			  }
+		  }
+	  }
   } else { /* stack frame */
   	  // mark the objptrs inside of the given frame
 

@@ -17,7 +17,7 @@
 #include <assert.h>
 
 #ifndef PTHREAD_NUM
-# define PTHREAD_NUM pthread_num //get_tdata() //0 //get_pthread_num()
+# define PTHREAD_NUM pthread_num
 #endif
 
 
@@ -276,7 +276,8 @@ void um_dumpFrame (void *s, void *f);
 
 
 /* this comes from umheap.h which isnt available outside of the runtime
- * .. need to find a better way to handle this
+ * .. need to find a better way to handle this. if you change GC_UM_Chunk
+ * you must keep umheap.h and this definition in sync.
  */
 
 #define UM_CHUNK_PAYLOAD_SIZE 302
@@ -292,8 +293,6 @@ typedef struct GC_UM_Chunk {
 	GC_returnAddress ra;
 	GC_returnAddress handler;
 	GC_returnAddress link;
-	void *memcpy_addr;
-	size_t memcpy_size;
 	struct GC_UM_Chunk* next_chunk;
 	struct GC_UM_Chunk* prev_chunk;
 };
@@ -317,11 +316,14 @@ void dump_hex(char *str, int len);
 #define YELLOW(x) "\033[1;33m"x"\033[0m"
 #define GREEN(x) "\033[1;32m"x"\033[0m"
 #define FW "08"
+#define UM_CHUNK_SENTINEL                0x9999
+#define UM_ARRAY_SENTINEL                0x9998
+#define UM_STACK_SENTINEL                0x9997
 
 #define STACKLET_Push(bytes)                                                     \
         do {                                                            \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER); \
-                assert (cf->sentinel == 0x9999); \
+                assert (cf->sentinel == UM_STACK_SENTINEL); \
                 if (bytes < 0) {                                        \
                      struct GC_UM_Chunk *xx = cf; \
                      StackDepth = StackDepth - 1; \
@@ -332,9 +334,6 @@ void dump_hex(char *str, int len);
                                 __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, \
                                 fnum, StackDepth, xx, \
                                 cf, cf->prev_chunk); \
-                                if(STACKLET_DEBUG > 1) {\
-                                  dump_hex(cf, (-bytes)+STACKHEADER); \
-                                } \
                      } \
                      if (cf->prev_chunk) { \
                          CurrentFrame = (pointer)(cf->prev_chunk) + STACKHEADER; \
@@ -344,6 +343,8 @@ void dump_hex(char *str, int len);
                 } else if (bytes > 0) {   \
                      struct GC_UM_Chunk *xx = cf; \
                      cf->ra = bytes; \
+                     /* if only 2 free chunks available on the stack, we must force grow it */ \
+                     if (cf->next_chunk->next_chunk == NULL) maybe_growstack(GCState, CurrentThread, TRUE); \
                      int fnum = *(GC_returnAddress*)((void *)&(cf->ml_object) + cf->ra ); \
                      StackDepth = StackDepth + 1; \
                      if (STACKLET_DEBUG)  { \
@@ -351,34 +352,21 @@ void dump_hex(char *str, int len);
                              YELLOW("ra:%d")" depth:%d\tbase %"FW"lx cur %"FW"lx next %"FW"lx\n", \
                              __FILE__, __LINE__, PTHREAD_NUM, bytes, CurrentThread, fnum, StackDepth, xx, \
                              cf, cf->next_chunk); \
-                        if (STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("current chunk:\n")); \
-                            dump_hex(cf, bytes+STACKHEADER); } \
-                        } \
+                     } \
                      if (cf->next_chunk) { \
                          if (UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER < STACKHEADER) \
                              die("impossible no room in next chunk"); \
-                         if (STACKLET_DEBUG > 2) fprintf(stderr, RED("memcpy: ") "(%"FW"lx, %"FW"lx, %d)\n", \
-                                                 cf->next_chunk->ml_object+STACKHEADER, \
-                                                 cf->ml_object+bytes+STACKHEADER,\
-                                                 UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER); \
-                         cf->next_chunk->memcpy_addr = cf->ml_object+bytes+STACKHEADER; \
-                         cf->next_chunk->memcpy_size = UM_CHUNK_PAYLOAD_SIZE-bytes-STACKHEADER; \
                          CurrentFrame = (pointer)cf->next_chunk + STACKHEADER; \
-                         if(STACKLET_DEBUG > 1) { fprintf(stderr, YELLOW("\nnext_chunk:\n")); \
-                             dump_hex(cf->next_chunk, 100); \
-                         } \
                      } else {                                                \
-                         if (STACKLET_DEBUG) fprintf(stderr, RED("!!!cant advance to next frame\n"));\
-                         die("out of stack");   \
+                         die("out of stack"); \
                      } if (STACKLET_DEBUG) fprintf(stderr, "\n"); \
-                     if (STACKLET_DEBUG > 2) um_dumpStack((void*)&gcState); \
                 } else { if (STACKLET_DEBUG) fprintf(stderr, RED("???SKLT_Push(0)\n")); } \
         } while (0)
 
 #define STACKLET_Return()                                                                                           \
         do {                                                                                                        \
                 struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)(CurrentFrame - STACKHEADER);                        \
-                assert (cf->sentinel == 0x9999 || 1!=1);                                                              \
+                assert (cf->sentinel == UM_STACK_SENTINEL || 1!=1);                                                 \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RETURN from first stack frame\n"));              \
                 else if (cf->prev_chunk->ra == 0) fprintf(stderr, RED("RA zero??\n"));                              \
                 else {                                                                                              \
@@ -395,7 +383,7 @@ void dump_hex(char *str, int len);
 #define STACKLET_Raise()                                                                \
         do {                                                                    \
                 struct GC_UM_Chunk *cf = (ExnStack - STACKHEADER);  \
-                assert (cf->sentinel == 0x9999 || 2!=2); \
+                assert (cf->sentinel == UM_STACK_SENTINEL || 2!=2); \
                 if (STACKLET_DEBUG) fprintf (stderr, RED("%s:%d: SKLT_Raise exn %x cur %x prev %x\n"),   \
                          __FILE__, __LINE__, ExnStack, cf, cf->prev_chunk);                       \
                 if (cf->prev_chunk == 0) fprintf(stderr, RED("Cant RAISE if null prev_chunk\n")); \

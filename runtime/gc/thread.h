@@ -40,6 +40,7 @@ typedef struct GC_thread {
   objptr firstFrame; /* similar to stackBottom, this contains a header+GC_frameLayout */
   objptr currentFrame; /* similar to stackTop (i.e. stackBottom+used), this contains a header+GC_frameLayout */
   size_t stackDepth;
+  size_t stackSizeInChunks;
   size_t markCycles;
 } __attribute__ ((packed)) *GC_thread;
 
@@ -49,6 +50,7 @@ COMPILE_TIME_ASSERT(GC_thread__packed,
                     + sizeof(objptr)
                     + sizeof(objptr)
                     + sizeof(objptr)
+                    + sizeof(size_t)
                     + sizeof(size_t)
                     + sizeof(size_t)
 				);

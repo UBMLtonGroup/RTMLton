@@ -97,11 +97,11 @@ void initWorld (GC_state s) {
   GC_thread thread;
 
   for (i = 0; i < s->globalsLength; ++i)
-    s->globals[i] = BOGUS_OBJPTR;
+  	s->globals[i] = BOGUS_OBJPTR;
   s->lastMajorStatistics.bytesLive = sizeofInitialBytesLive (s);
 
   /*ensure all chunks are of same size for best memory usage */
-    assert(sizeof(GC_UM_Chunk) == sizeof(GC_UM_Array_Chunk));
+  assert(sizeof(GC_UM_Chunk) == sizeof(GC_UM_Array_Chunk));
 
   /* alloc um first so normal heap can expand without overrunning us */
 
@@ -111,13 +111,9 @@ void initWorld (GC_state s) {
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
 
-  //createHeap (s, &s->heap, MEM_AVAILABLE * MEGABYTES, MEM_AVAILABLE * MEGABYTES);
-
-  createHeap(s, &s->globalHeap, 100*MEGABYTES, 100*MEGABYTES);
-
+  createHeap (s, &s->globalHeap, 100*MEGABYTES, 100*MEGABYTES);
   createHeap (s, &s->infHeap, 100*MEGABYTES, 100*MEGABYTES);
   
-  //setCardMapAndCrossMap (s);
   start = alignFrontier (s, s->globalHeap.start);
   s->frontier = start;
   s->infFrontier = s->infHeap.start;
@@ -126,7 +122,7 @@ void initWorld (GC_state s) {
   initVectors (s);
   assert ((size_t)(s->frontier - start) <= s->lastMajorStatistics.bytesLive);
 
-  thread = newThread (s, sizeofStackInitialReserved (s)); // defaults to pri 0
+  thread = newThread (s, 0);
   thread->currentFrame = thread->firstFrame;
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->umheap.start));
   GC_setCallFromCHandlerThread(s,(pointer)0x22);

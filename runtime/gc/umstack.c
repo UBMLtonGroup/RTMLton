@@ -19,6 +19,8 @@ void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
 	GC_frameOffsets frameOffsets;
 	GC_UM_Chunk chunk = (GC_UM_Chunk)frame;
 
+	assert (chunk->sentinel == UM_STACK_SENTINEL);
+
 	returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
 	if (raoverride > 0) {
 		returnAddress = raoverride;
@@ -121,6 +123,9 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         fprintf(stderr, "%d] um_copyStack from:%08x -> to:%08x\n", PTHREAD_NUM, (unsigned int) f, (unsigned int)t);
 
     for( ; f ; f = (GC_UM_Chunk)f->next_chunk, t = (GC_UM_Chunk)t->next_chunk) {
+    	assert (f->sentinel == UM_STACK_SENTINEL);
+    	assert (t->sentinel == UM_STACK_SENTINEL);
+
         GC_memcpy((pointer)f, (pointer)t, copyamt);
         if (DEBUG_CCODEGEN)
 	        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra + GC_HEADER_SIZE]);
