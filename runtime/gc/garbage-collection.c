@@ -101,21 +101,83 @@ struct thrctrl {
 #define CHECKDISABLEGC do { if (getenv("DISABLEGC")) { fprintf(stderr, "GC is disabled\n"); return; } } while(0)
 #endif
 
-/* This is called when we switch threads and every time a thread
- * marks its stack. We will grow the stack if
- * thread->stackDepth approaches thread->stackSizeInChunks
- * and will shrink it if they diverge by too much.
+/* this is just for sanity checking, it is only called if DEBUG_STACK_GROW
+ * is enabled
+ */
+static int
+count_stack_depth(GC_state s, GC_thread thread)
+{
+	GC_UM_Chunk sb = (GC_UM_Chunk)(thread->firstFrame - sizeof(void*));
+	GC_UM_Chunk cf = (GC_UM_Chunk)(s->currentFrame[PTHREAD_NUM] - sizeof(void*));
+
+	assert (sb->sentinel == UM_STACK_SENTINEL);
+	assert (cf->sentinel == UM_STACK_SENTINEL);
+
+	int d = 0;
+	while (sb != cf) {
+		d++;
+		sb = sb->next_chunk;
+	}
+	return d;
+}
+
+static int
+count_stack_chunks(GC_state s, GC_thread thread)
+{
+	GC_UM_Chunk sb = (GC_UM_Chunk)(thread->firstFrame - sizeof(void*));
+
+	assert (sb->sentinel == UM_STACK_SENTINEL);
+
+	int d = 0;
+	while (sb) {
+		d++;
+		sb = sb->next_chunk;
+	}
+	return d;
+}
+
+/* This is called when
+ *   1. we switch threads (switch_thread.c)
+ *   2. every time a thread marks its stack (markStack in this file)
+ *   3. if the stack has only two unused chunks left (c-chunk.h Push macro)
  *
- * The initial arbitrary implementation is that >90% utilization will
- * trigger growth of 25% and <50% utilization will trigger
- * a shrink by 10%
+ * We will grow the stack if thread->stackDepth approaches
+ * thread->stackSizeInChunks and will shrink it if they diverge by too much.
+ *
+ * The initial arbitrary implementation is that
+ *    1. >90% utilization or force_grow is true will trigger
+ *       growth of the greater of 25% or 10 chunks
+ *    2. <50% utilization will trigger a shrink by 10%
+ *    3. will not shrink below 20 chunks
+ *
+ * To disable stack shrinking
+ *    @MLton stack-current-shrink-threshold 0.0
+ *
+ * To disable stack growing
+ *    @MLton stack-current-grow-threshold 100.0
+ *
+ * Defaults:
+ *     stack-current-shrink-threshold 0.50
+ *     stack-current-shrink-ratio     0.10
+ *     stack-current-grow-threshold   0.90
+ *     stack-current-grow-ratio       1.25
+ *
+ *
  */
 void
-maybe_growstack(GC_state s, GC_thread thread) {
+maybe_growstack(GC_state s, GC_thread thread, bool force_grow) {
 	if (DEBUG_STACK_GROW)
 		fprintf(stderr, "%d] "YELLOW("%s\n"), PTHREAD_NUM, __FUNCTION__);
 
-	if (thread->stackSizeInChunks < 20) {
+	if ((s->controls.ratios.stackCurrentGrowThreshold >= 1.0) && force_grow) {
+		if (DEBUG_STACK_GROW)
+			fprintf(stderr, "  forced grow requested, but stack "RED("growing disabled\n"));
+		return;
+	}
+
+	if (force_grow) s->cumulativeStatistics.forcedStackGrows++;
+
+	if (!force_grow && (thread->stackSizeInChunks < 20)) {
 		if (DEBUG_STACK_GROW)
 			fprintf(stderr,
 					"%d] stacksize < 20 chunks: "YELLOW("do nothing\n"),
@@ -123,14 +185,19 @@ maybe_growstack(GC_state s, GC_thread thread) {
 		return;
 	}
 
+	int sd = s->stackDepth[PTHREAD_NUM];
 	float utilization = thread->stackDepth / (float)thread->stackSizeInChunks;
 
-	if (utilization > .9) {
-		if (DEBUG_STACK_GROW)
-			fprintf(stderr, "  stack util is %2.2f%% (%d of %d): "YELLOW("grow")"\n",
-				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks);
+	if (force_grow || (utilization > s->controls.ratios.stackCurrentGrowThreshold)) {
+		s->cumulativeStatistics.stackGrows++;
 
-		size_t need_chunks = thread->stackSizeInChunks * 1.25;
+		if (DEBUG_STACK_GROW)
+			fprintf(stderr, "  stack util is %2.2f%% (%d of %d) [force=%s]: "YELLOW("grow %d ?= %d")"\n",
+				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks,
+				force_grow ? "true" : "false",
+				sd, count_stack_depth(s, thread));
+
+		size_t need_chunks = max(thread->stackSizeInChunks * s->controls.ratios.stackCurrentGrow, 10);
 
 		reserveAllocation(s, need_chunks);
 		pointer new_growth = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE);
@@ -143,23 +210,27 @@ maybe_growstack(GC_state s, GC_thread thread) {
 		thread->stackSizeInChunks += need_chunks;
 	}
 
-	else if (utilization < .5) {
+	else if (utilization < s->controls.ratios.stackCurrentShrinkThreshold) {
+		s->cumulativeStatistics.stackShrinks++;
+
 		if (DEBUG_STACK_GROW)
-			fprintf(stderr, "  stack util is %2.2f%% (%d of %d): "YELLOW("shrink")"\n",
-				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks);
+			fprintf(stderr, "  stack util is %2.2f%% (%d of %d): "YELLOW("shrink %d ?= %d")"\n",
+				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks, sd,
+				count_stack_depth(s, thread));
 
 		GC_UM_Chunk c = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
 		int i;
-		for (i = 0 ; i < thread->stackSizeInChunks * .9 ; i++) {
+		for (i = 1 ; i < thread->stackSizeInChunks * (1 - s->controls.ratios.stackCurrentShrink) ; i++) {
 			c = c->next_chunk;
 		}
-
-		if (DEBUG_STACK_GROW)
-			fprintf(stderr, "  trimming stack to %d chunks\n", i);
 
 		c->next_chunk->prev_chunk = NULL;
 		c->next_chunk = NULL;
 		thread->stackSizeInChunks = i;
+
+		if (DEBUG_STACK_GROW)
+			fprintf(stderr, "  trimming stack to %d chunks (actual %d)\n", i,
+					count_stack_chunks(s, thread));
 	}
 }
 
@@ -425,7 +496,7 @@ void markStack(GC_state s, pointer thread_) {
 		fprintf(stderr, "%d] "YELLOW("Completed marking stack")" (garbage-collection.c)\n",
 				PTHREAD_NUM);
 
-	maybe_growstack(s, thread);
+	maybe_growstack(s, thread, FALSE);
 }
 
 

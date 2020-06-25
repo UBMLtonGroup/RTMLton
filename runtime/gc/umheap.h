@@ -27,9 +27,7 @@ typedef struct GC_UM_Chunk {
     GC_returnAddress ra;             /* +8 */
     GC_returnAddress handler;        /* +12 */
     GC_returnAddress link;           /* +16 */
-    void *memcpy_addr;               /* +20 */
-    size_t memcpy_size;              /* +24 */
-    struct GC_UM_Chunk* next_chunk;  /* +28 */
+    struct GC_UM_Chunk* next_chunk;  /* +20 */
     struct GC_UM_Chunk* prev_chunk;
 } *GC_UM_Chunk;
 

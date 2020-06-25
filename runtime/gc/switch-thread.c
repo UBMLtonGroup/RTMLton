@@ -70,7 +70,7 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
 		/* BEGIN: ensureInvariantForMutator */
 		if (not (invariantForMutatorFrontier(s))
 			or not (invariantForMutatorStack(s))) {
-			maybe_growstack(s, (GC_thread)p);
+			maybe_growstack(s, (GC_thread)p, FALSE);
 		}
 		/* END: ensureInvariantForMutator */
 		/* BEGIN: leave(s); */
