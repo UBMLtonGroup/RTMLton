@@ -76,7 +76,9 @@ typedef struct GC_UM_Array_Chunk {
 #endif /* MLTON_GC_INTERNAL_TYPES */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
-static void insertFreeChunk(GC_state s, GC_UM_heap h, pointer c);
+static void insertChunkToFL(GC_state s, GC_UM_heap h, pointer c);
+static void addSweepListToFL(GC_state s, GC_UM_heap h, UM_Mem_Chunk subHead, UM_Mem_Chunk subTail, size_t numChunks);
+static UM_Mem_Chunk prepChunkForFLInsert(pointer c);
 static void initUMHeap(GC_state s, GC_UM_heap h);
 //static void initUMArrayHeap(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s, GC_UM_heap h, pointer c);

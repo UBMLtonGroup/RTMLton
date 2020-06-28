@@ -202,7 +202,7 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks
 }
 
 
-void insertFreeChunk(GC_state s,
+void insertChunkToFL(GC_state s,
 					 GC_UM_heap h,
 					 pointer c) {
 	LOCK_FL;
@@ -222,6 +222,7 @@ void insertFreeChunk(GC_state s,
 		h->fl_tail = pc;
 		s->fl_chunks += 1;
 	}
+
 
 #if 0
 	fprintf(stderr, YELLOW("add %8x to free list (clear using 0xAA) %d\n"),
@@ -244,6 +245,51 @@ void insertFreeChunk(GC_state s,
 	UNLOCK_FL;
 
 }
+
+
+UM_Mem_Chunk prepChunkForFLInsert(pointer c){
+
+    UM_Mem_Chunk pc = (UM_Mem_Chunk) c;
+    pc->chunkType = UM_EMPTY;
+    pc->next_chunk = NULL;
+
+#ifdef STACK_GC_SANITY
+	// TODO jeff - sanity check to make sure stacks are not collected (yet)
+	// TODO remove before benchmarking
+	if (DEBUG_STACKS) {
+		for (unsigned int i = 0; i < stack_list_end; i++) {
+			if (stack_list[i] == (GC_UM_Chunk) pc) {
+				fprintf(stderr, RED("stack frame added to free list\n"));
+				die("abort");
+			}
+		}
+	}
+#endif
+
+    return pc;
+}
+
+void addSweepListToFL(GC_state s,GC_UM_heap h, UM_Mem_Chunk subHead, UM_Mem_Chunk subTail, size_t numChunks){
+
+    LOCK_FL;
+
+	/*Insert free chunk to back of free list*/
+	if (s->fl_chunks == 0) {
+		h->fl_head = subHead;
+		h->fl_tail = subHead;
+		s->fl_chunks += numChunks;
+	} else {
+		h->fl_tail->next_chunk = subHead;
+		h->fl_tail = subTail;
+		s->fl_chunks += numChunks;
+	}
+
+    UNLOCK_FL;
+
+
+
+}
+
 
 
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
@@ -291,7 +337,7 @@ bool createUMHeap(GC_state s,
 	for (pchunk = h->start;
 		 pchunk < end;
 		 pchunk += step) {
-		insertFreeChunk(s, h, pchunk);
+		insertChunkToFL(s, h, pchunk);
 	}
 	gettimeofday(&t1, NULL);
 	long elapsed = (t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec;

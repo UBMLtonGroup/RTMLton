@@ -534,6 +534,10 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 	assert(PTHREAD_NUM == 1);
 
+    UM_Mem_Chunk subListHead = NULL;
+    UM_Mem_Chunk subList = NULL;
+    size_t subListLen =0;
+
 
 	if (DEBUG_RTGC_MARKING)
 		fprintf(stderr, "%d] GC sweep started. Worklist length: %d\n", PTHREAD_NUM, s->wl_length);
@@ -559,7 +563,20 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					 * If it were reachable, then the Red would have been marked or Shaded*/
 					if (s->collectAll) {
 						header = UM_CHUNK_HEADER_CLEAN;
-						insertFreeChunk(s, &(s->umheap), pchunk);
+
+                        if(subListHead == NULL)
+                        {
+                            subListHead = prepChunkForFLInsert(pchunk);
+                            subList = subListHead;
+                        }
+                        else
+                        {
+                            subList->next_chunk = prepChunkForFLInsert(pchunk);
+                            subList = subList->next_chunk;
+                        }
+
+                        subListLen++;
+
 						s->cGCStats.numChunksFreed++;
 						freed++;
 					} else {
@@ -599,8 +616,20 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					//memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
 
 					header = UM_CHUNK_HEADER_CLEAN;
-					insertFreeChunk(s, &(s->umheap), pchunk);
-					s->cGCStats.numChunksFreed++;
+                    
+                    if(subListHead == NULL)
+                    {
+                        subListHead = prepChunkForFLInsert(pchunk);
+                        subList = subListHead;
+                    }
+                    else
+                    {
+                        subList->next_chunk = prepChunkForFLInsert(pchunk);
+                        subList = subList->next_chunk;
+                    }
+                    subListLen++;
+					
+                    s->cGCStats.numChunksFreed++;
 					freed++;
 
 				}
@@ -622,7 +651,20 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					 * If it were reachable, then the Red would have been marked or Shaded*/
 					if (s->collectAll) {
 						header = UM_CHUNK_HEADER_CLEAN;
-						insertFreeChunk(s, &(s->umheap), pchunk);
+
+                        if(subListHead == NULL)
+                        {
+                            subListHead = prepChunkForFLInsert(pchunk);
+                            subList = subListHead;
+                        }
+                        else
+                        {
+                            subList->next_chunk = prepChunkForFLInsert(pchunk);
+                            subList = subList->next_chunk;
+                        }
+
+                        
+                       subListLen++; 
 						s->cGCStats.numChunksFreed++;
 						freed++;
 					} else {
@@ -662,7 +704,20 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					//memset(pc->ml_array_payload.ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE+UM_CHUNK_PAYLOAD_SAFE_REGION);
 
 					header = UM_CHUNK_HEADER_CLEAN;
-					insertFreeChunk(s, &(s->umheap), pchunk);
+
+                    if(subListHead == NULL)
+                    {
+                        subListHead = prepChunkForFLInsert(pchunk);
+                        subList = subListHead;
+                    }
+                    else
+                    {
+                        subList->next_chunk = prepChunkForFLInsert(pchunk);
+                        subList = subList->next_chunk;
+                    }
+
+
+                    subListLen++;
 					s->cGCStats.numChunksFreed++;
 					freed++;
 
@@ -681,6 +736,16 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 	/*Training wheels. Makes sure that at the end of sweep, pchunk is at heap limit.
 	 * which indicates that i counted right in the for loop*/
 	assert(pchunk == s->umheap.limit);
+
+
+    
+    if(subListHead !=NULL)
+    {
+
+        assert(subList != NULL && subList->next_chunk == NULL);
+        
+        addSweepListToFL(s, &(s->umheap), subListHead,subList, subListLen);
+    }
 
 	s->cGCStats.numSweeps++;
 
