@@ -132,13 +132,19 @@ bool invariantForMutatorStack (GC_state s) {
 
 #if ASSERT
 bool invariantForMutator (GC_state s, bool frontier, bool stack) {
-  if (DEBUG)
+ 
+/* Obsolete. Check for CLEANUP*/
+
+ return TRUE;
+ 
+ if (DEBUG)
     displayGCState (s, stderr);
   if (frontier)
     assert (invariantForMutatorFrontier(s));
   if (stack)
     assert (invariantForMutatorStack(s));
   assert (invariantForGC (s));
-  return TRUE;
+  
+   //return TRUE;
 }
 #endif

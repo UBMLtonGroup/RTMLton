@@ -315,7 +315,7 @@ void *GCrunner(void *_s) {
 
 #ifdef CONCURRENT
 	while (1) {
-		if (DEBUG)
+		if (DEBUG_RTGC)
 			fprintf(stderr, "%d] GC thread is Idle: FC=%d \n", PTHREAD_NUM, s->fl_chunks);
 
 		/* GC sweep is performed under RTSYNC_LOCK because this lock also prevents the mutators from marking their stacks*/
@@ -324,7 +324,7 @@ void *GCrunner(void *_s) {
 		while (!s->dirty)
 			RTSYNC_BLOCK;
 
-		if (DEBUG)
+		if (DEBUG_RTGC)
 			fprintf(stderr, "%d] GC sweep starting: FC=%d \n", PTHREAD_NUM, s->fl_chunks);
 
 		//if (! s->dirty) goto not_dirty;
