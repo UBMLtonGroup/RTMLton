@@ -276,7 +276,7 @@ void addSweepListToFL(GC_state s,GC_UM_heap h, UM_Mem_Chunk subHead, UM_Mem_Chun
 	/*Insert free chunk to back of free list*/
 	if (s->fl_chunks == 0) {
 		h->fl_head = subHead;
-		h->fl_tail = subHead;
+		h->fl_tail = subTail;
 		s->fl_chunks += numChunks;
 	} else {
 		h->fl_tail->next_chunk = subHead;

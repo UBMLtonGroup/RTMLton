@@ -568,12 +568,14 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                         {
                             subListHead = prepChunkForFLInsert(pchunk);
                             subList = subListHead;
+
                         }
                         else
                         {
                             subList->next_chunk = prepChunkForFLInsert(pchunk);
                             subList = subList->next_chunk;
                         }
+
 
                         subListLen++;
 
@@ -627,6 +629,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                         subList->next_chunk = prepChunkForFLInsert(pchunk);
                         subList = subList->next_chunk;
                     }
+
+
                     subListLen++;
 					
                     s->cGCStats.numChunksFreed++;
@@ -663,7 +667,6 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                             subList = subList->next_chunk;
                         }
 
-                        
                        subListLen++; 
 						s->cGCStats.numChunksFreed++;
 						freed++;
@@ -716,7 +719,6 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                         subList = subList->next_chunk;
                     }
 
-
                     subListLen++;
 					s->cGCStats.numChunksFreed++;
 					freed++;
@@ -742,7 +744,25 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
     if(subListHead !=NULL)
     {
 
-        assert(subList != NULL && subList->next_chunk == NULL);
+#if 0
+       UM_Mem_Chunk tmp = subListHead;
+
+        int i =0;
+        while(tmp != NULL)
+        {
+           if ( ((pointer)tmp >= s->umheap.start) && ((pointer)tmp < s->umheap.limit) )
+           {
+              tmp = tmp->next_chunk;
+              i++;
+           }
+           else
+              die("invalid FL chunks\n"); 
+        }
+
+        assert(subListLen == i) ;
+#endif
+
+        assert( (subList != NULL) && (subList->next_chunk == NULL));
         
         addSweepListToFL(s, &(s->umheap), subListHead,subList, subListLen);
     }
