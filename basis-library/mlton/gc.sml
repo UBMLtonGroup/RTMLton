@@ -35,11 +35,10 @@ structure MLtonGC =
                val mkUIntmax = mk C_UIntmax.toLargeInt
             in
                val bytesAllocated = mkUIntmax getBytesAllocated
-               val lastBytesLive = mkSize getLastBytesLive
-               val maxBytesLive = mkSize getMaxBytesLive
-               val numCopyingGCs = mkUIntmax getNumCopyingGCs
-               val numMarkCompactGCs = mkUIntmax getNumMarkCompactGCs
-               val numMinorGCs = mkUIntmax getNumMinorGCs
+               val numSweeps = mkUIntmax getNumSweeps
+               val totalGCTime = mkUIntmax getTotalGCTime
+               val numChunksFreed = mkUIntmax getNumChunksFreed
+               val maxMutatorPause = mkUIntmax getMaxMutatorPause
             end
          end
 

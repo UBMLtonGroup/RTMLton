@@ -171,24 +171,25 @@ void GC_setControlsRusageMeasureGC(GC_state s, bool b) {
 	s->controls.rusageMeasureGC = b;
 }
 
+
 uintmax_t GC_getCumulativeStatisticsBytesAllocated(GC_state s) {
-	return s->cumulativeStatistics.bytesAllocated;
+	return s->cGCStats.numChunksAllocated;
 }
 
-uintmax_t GC_getCumulativeStatisticsNumCopyingGCs(GC_state s) {
-	return s->cumulativeStatistics.numCopyingGCs;
+uintmax_t GC_getCumulativeStatisticsNumSweeps(GC_state s) {
+	return s->cGCStats.numSweeps;
 }
 
-uintmax_t GC_getCumulativeStatisticsNumMarkCompactGCs(GC_state s) {
-	return s->cumulativeStatistics.numMarkCompactGCs;
+uintmax_t GC_getCumulativeStatisticsTotalGCTime(GC_state s) {
+	return s->cGCStats.totalGCTime;
 }
 
-uintmax_t GC_getCumulativeStatisticsNumMinorGCs(GC_state s) {
-	return s->cumulativeStatistics.numMinorGCs;
+uintmax_t GC_getCumulativeStatisticsNumChunksFreed(GC_state s) {
+	return s->cGCStats.numChunksFreed;
 }
 
-size_t GC_getCumulativeStatisticsMaxBytesLive(GC_state s) {
-	return s->cumulativeStatistics.maxBytesLive;
+uintmax_t GC_getCumulativeStatisticsMaxMutatorPauseTime(GC_state s) {
+	return s->cGCStats.maxMutatorPauseTime;
 }
 
 void GC_setHashConsDuringGC(GC_state s, bool b) {

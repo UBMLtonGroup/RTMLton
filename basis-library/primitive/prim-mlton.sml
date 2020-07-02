@@ -123,14 +123,14 @@ structure GC =
       val pack = _import "GC_pack" runtime private: GCState.t -> unit;
       val getBytesAllocated =
          _import "GC_getCumulativeStatisticsBytesAllocated" runtime private: GCState.t -> C_UIntmax.t;
-      val getNumCopyingGCs =
-         _import "GC_getCumulativeStatisticsNumCopyingGCs" runtime private: GCState.t -> C_UIntmax.t;
-      val getNumMarkCompactGCs =
-         _import "GC_getCumulativeStatisticsNumMarkCompactGCs" runtime private: GCState.t -> C_UIntmax.t;
-      val getNumMinorGCs =
-         _import "GC_getCumulativeStatisticsNumMinorGCs" runtime private: GCState.t -> C_UIntmax.t;
-      val getLastBytesLive =
-         _import "GC_getLastMajorStatisticsBytesLive" runtime private: GCState.t -> C_Size.t;
+      val getNumSweeps =
+         _import "GC_getCumulativeStatisticsNumSweeps" runtime private: GCState.t -> C_UIntmax.t;
+      val getTotalGCTime =
+         _import "GC_getCumulativeStatisticsTotalGCTime" runtime private: GCState.t -> C_UIntmax.t;
+      val getNumChunksFreed =
+         _import "GC_getCumulativeStatisticsNumChunksFreed" runtime private: GCState.t -> C_UIntmax.t;
+      val getMaxMutatorPause =
+         _import "GC_getCumulativeStatisticsMaxMutatorPauseTime" runtime private: GCState.t -> C_UIntmax.t;
       val getMaxBytesLive =
          _import "GC_getCumulativeStatisticsMaxBytesLive" runtime private: GCState.t -> C_Size.t;
       val setHashConsDuringGC =

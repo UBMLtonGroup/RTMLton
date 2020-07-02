@@ -149,10 +149,10 @@ PRIVATE void GC_setControlsMessages (GC_state s, bool b);
 PRIVATE void GC_setControlsSummary (GC_state s, bool b);
 PRIVATE void GC_setControlsRusageMeasureGC (GC_state s, bool b);
 PRIVATE uintmax_t GC_getCumulativeStatisticsBytesAllocated (GC_state s);
-PRIVATE uintmax_t GC_getCumulativeStatisticsNumCopyingGCs (GC_state s);
-PRIVATE uintmax_t GC_getCumulativeStatisticsNumMarkCompactGCs (GC_state s);
-PRIVATE uintmax_t GC_getCumulativeStatisticsNumMinorGCs (GC_state s);
-PRIVATE size_t GC_getCumulativeStatisticsMaxBytesLive (GC_state s);
+PRIVATE uintmax_t GC_getCumulativeStatisticsNumSweeps (GC_state s);
+PRIVATE uintmax_t GC_getCumulativeStatisticsTotalGCTime (GC_state s);
+PRIVATE uintmax_t GC_getCumulativeStatisticsNumChunksFreed (GC_state s);
+PRIVATE uintmax_t GC_getCumulativeStatisticsMaxMutatorPauseTime (GC_state s);
 PRIVATE void GC_setHashConsDuringGC (GC_state s, bool b);
 PRIVATE size_t GC_getLastMajorStatisticsBytesLive (GC_state s);
 

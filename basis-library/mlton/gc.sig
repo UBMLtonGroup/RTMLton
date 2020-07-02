@@ -18,10 +18,9 @@ signature MLTON_GC =
       structure Statistics :
          sig
             val bytesAllocated: unit -> IntInf.int
-            val lastBytesLive: unit -> IntInf.int
-            val numCopyingGCs: unit -> IntInf.int
-            val numMarkCompactGCs: unit -> IntInf.int
-            val numMinorGCs: unit -> IntInf.int
-            val maxBytesLive: unit -> IntInf.int
+            val numSweeps: unit -> IntInf.int
+            val totalGCTime: unit -> IntInf.int
+            val numChunksFreed: unit -> IntInf.int
+            val maxMutatorPause: unit -> IntInf.int
          end
    end
