@@ -84,7 +84,7 @@ void RTGC_done(GC_state s) {
 
 	free(s->worklist);
 
-	if (DEBUG)
+	if (DISPLAY_GC_STATS)
 		displayChunkedGCStats(s, out);
 }
 __attribute__((noreturn))

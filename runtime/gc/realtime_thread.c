@@ -156,27 +156,28 @@ realtimeRunner (void *paramsPtr)
         UNLOCK_RT_THREADS; 
     }
 
+    if (DEBUG)
      fprintf(stderr,"%d] RT thread ALLOCATING\n",tNum);
- while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
-  {
-    pointer res; 
-     state->rtSync[PTHREAD_NUM]= true;
-      if(DEBUG_THREADS)
-          fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
-  
-      reserveAllocation(state,state->numAllocedByRT);
 
-      res = UM_Object_alloc(state,state->numAllocedByRT,(GC_header)3,GC_NORMAL_HEADER_SIZE);  
+	while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
+	{
+		pointer res;
+		state->rtSync[PTHREAD_NUM]= true;
+		if(DEBUG_THREADS)
+		    fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
 
-      state->allocedByRT+=state->numAllocedByRT; 
-     
+		reserveAllocation(state,state->numAllocedByRT);
 
-      if(DEBUG_THREADS)
-          fprintf(stderr, "Empty chunk: "FMTPTR" \n", (uintptr_t) res);
-   
-      sched_yield();
-    
-  }
+		res = UM_Object_alloc(state,state->numAllocedByRT,(GC_header)3,GC_NORMAL_HEADER_SIZE);
+
+		state->allocedByRT+=state->numAllocedByRT;
+
+		if(DEBUG_THREADS)
+		    fprintf(stderr, "Empty chunk: "FMTPTR" \n", (uintptr_t) res);
+
+		sched_yield();
+
+	}
 
    /* fprintf(stderr,"%d] RT thread\n",PTHREAD_NUM)   ;
 

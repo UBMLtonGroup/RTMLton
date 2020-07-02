@@ -51,7 +51,7 @@ unsigned int stack_list_end = 0;
 
 objptr newStack_um(GC_state s, size_t stackSizeInBytes, size_t *stackSizeInChunks) {
 	pointer um_stack;
-	uint32_t need_chunks = frameLayouts_len * 20;
+	uint32_t need_chunks = 20; //frameLayouts_len;
 
 	if (DEBUG_STACKS)
 		fprintf(stderr, "newStack_um(stackSizeInBytes=%d) -> chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
@@ -134,7 +134,7 @@ GC_thread newThread(GC_state s, size_t stackSize) {
 }
 
 static inline void setFrontier(GC_state s, pointer p,
-							   ARG_USED_FOR_ASSERT size_t bytes) {
+			       ARG_USED_FOR_ASSERT size_t bytes) {
 	p = alignFrontier(s, p);
 	assert ((size_t)(p - s->frontier) <= bytes);
 	GC_profileAllocInc(s, (size_t)(p - s->frontier));

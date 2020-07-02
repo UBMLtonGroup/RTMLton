@@ -43,6 +43,7 @@ enum {
   DEBUG_RTGC = FALSE,
   DEBUG_RTGC_MARKING = FALSE,
   DEBUG_WB = FALSE,
+  DISPLAY_GC_STATS = TRUE
 };
 
 #define RED(x) "\033[1;31m"x"\033[0m"

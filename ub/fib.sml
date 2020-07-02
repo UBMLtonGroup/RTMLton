@@ -5,7 +5,7 @@ fun intFromString(s) = case Int.fromString(s) of SOME x => x | NONE => 0;
 
 fun fib 0 = 0
     | fib 1 = 1
-    | fib n = fib (n-2) + fib (n-1)
+    | fib n = fib (n-2) + fib (n-1) + 1
 
 fun fib_tail n = 
     let
