@@ -28,6 +28,7 @@ struct GC_state {
 
   volatile uint32_t reserved;
   volatile uint32_t heuristicChunks;
+  uint32_t sl_chunks;
 
   /* Alphabetized fields follow. */
   size_t alignment; /* */

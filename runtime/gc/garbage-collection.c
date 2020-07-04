@@ -534,9 +534,6 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 	assert(PTHREAD_NUM == 1);
 
-    UM_Mem_Chunk subListHead = NULL;
-    UM_Mem_Chunk subList = NULL;
-    size_t subListLen =0;
 
 
 	if (DEBUG_RTGC_MARKING)
@@ -564,20 +561,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					if (s->collectAll) {
 						header = UM_CHUNK_HEADER_CLEAN;
 
-                        if(subListHead == NULL)
-                        {
-                            subListHead = prepChunkForFLInsert(pchunk);
-                            subList = subListHead;
 
-                        }
-                        else
-                        {
-                            subList->next_chunk = prepChunkForFLInsert(pchunk);
-                            subList = subList->next_chunk;
-                        }
-
-
-                        subListLen++;
+                        #ifdef ONEBYONE
+                        insertChunktoFL(s, &(s->umheap), pchunk);
+                        #else
+                        insertChunktoSubList(s, &(s->umheap), pchunk);
+                        #endif
 
 						s->cGCStats.numChunksFreed++;
 						freed++;
@@ -619,19 +608,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 					header = UM_CHUNK_HEADER_CLEAN;
                     
-                    if(subListHead == NULL)
-                    {
-                        subListHead = prepChunkForFLInsert(pchunk);
-                        subList = subListHead;
-                    }
-                    else
-                    {
-                        subList->next_chunk = prepChunkForFLInsert(pchunk);
-                        subList = subList->next_chunk;
-                    }
-
-
-                    subListLen++;
+                    #ifdef ONEBYONE
+                    insertChunktoFL(s, &(s->umheap), pchunk);
+                    #else
+                    insertChunktoSubList(s, &(s->umheap), pchunk);
+                    #endif 
+                 
 					
                     s->cGCStats.numChunksFreed++;
 					freed++;
@@ -655,19 +637,13 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					 * If it were reachable, then the Red would have been marked or Shaded*/
 					if (s->collectAll) {
 						header = UM_CHUNK_HEADER_CLEAN;
-
-                        if(subListHead == NULL)
-                        {
-                            subListHead = prepChunkForFLInsert(pchunk);
-                            subList = subListHead;
-                        }
-                        else
-                        {
-                            subList->next_chunk = prepChunkForFLInsert(pchunk);
-                            subList = subList->next_chunk;
-                        }
-
-                       subListLen++; 
+                        
+                        #ifdef ONEBYONE
+                        insertChunktoFL(s, &(s->umheap), pchunk);
+                        #else
+                        insertChunktoSubList(s, &(s->umheap), pchunk);
+                        #endif 
+                        
 						s->cGCStats.numChunksFreed++;
 						freed++;
 					} else {
@@ -708,19 +684,13 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 					header = UM_CHUNK_HEADER_CLEAN;
 
-                    if(subListHead == NULL)
-                    {
-                        subListHead = prepChunkForFLInsert(pchunk);
-                        subList = subListHead;
-                    }
-                    else
-                    {
-                        subList->next_chunk = prepChunkForFLInsert(pchunk);
-                        subList = subList->next_chunk;
-                    }
+                    #ifdef ONEBYONE
+                    insertChunktoFL(s, &(s->umheap), pchunk);
+                    #else
+                    insertChunktoSubList(s, &(s->umheap), pchunk);
+                    #endif
 
-                    subListLen++;
-					s->cGCStats.numChunksFreed++;
+        			s->cGCStats.numChunksFreed++;
 					freed++;
 
 
@@ -739,33 +709,11 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 	 * which indicates that i counted right in the for loop*/
 	assert(pchunk == s->umheap.limit);
 
-
-    
-    if(subListHead !=NULL)
-    {
-
-#if 0
-       UM_Mem_Chunk tmp = subListHead;
-
-        int i =0;
-        while(tmp != NULL)
-        {
-           if ( ((pointer)tmp >= s->umheap.start) && ((pointer)tmp < s->umheap.limit) )
-           {
-              tmp = tmp->next_chunk;
-              i++;
-           }
-           else
-              die("invalid FL chunks\n"); 
-        }
-
-        assert(subListLen == i) ;
+#ifndef ONEBYONE
+    /*Add the sublist to the free list REQUIRES: locking the FL*/
+    addSweepListToFL(s,&(s->umheap));
 #endif
-
-        assert( (subList != NULL) && (subList->next_chunk == NULL));
-        
-        addSweepListToFL(s, &(s->umheap), subListHead,subList, subListLen);
-    }
+    
 
 	s->cGCStats.numSweeps++;
 

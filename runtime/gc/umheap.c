@@ -16,7 +16,10 @@ void initUMHeap(GC_state s,
 	h->limit = NULL;
 	h->fl_head = NULL;
 	h->fl_tail = NULL;
+    h->sl_head = NULL;
+    h->sl_tail = NULL;
 	s->fl_chunks = 0;
+    s->sl_chunks = 0;
 	s->maxChunksAvailable = 0;
 	s->heuristicChunks = 0;
 }
@@ -246,45 +249,59 @@ void insertChunkToFL(GC_state s,
 
 }
 
+/*No one except GC thread should be calling this*/
+void insertChunktoSubList(GC_state s, GC_UM_heap h, pointer c) {
 
-UM_Mem_Chunk prepChunkForFLInsert(pointer c){
-
-    UM_Mem_Chunk pc = (UM_Mem_Chunk) c;
-    pc->chunkType = UM_EMPTY;
-    pc->next_chunk = NULL;
-
-#ifdef STACK_GC_SANITY
-	// TODO jeff - sanity check to make sure stacks are not collected (yet)
-	// TODO remove before benchmarking
-	if (DEBUG_STACKS) {
-		for (unsigned int i = 0; i < stack_list_end; i++) {
-			if (stack_list[i] == (GC_UM_Chunk) pc) {
-				fprintf(stderr, RED("stack frame added to free list\n"));
-				die("abort");
-			}
-		}
+/*Insert free chunk to back of sub list*/
+	UM_Mem_Chunk pc = (UM_Mem_Chunk) c;
+	if (s->sl_chunks == 0) {
+		h->sl_head = pc;
+		h->sl_tail = pc;
+		pc->chunkType = UM_EMPTY;
+		pc->next_chunk = NULL;
+        s->sl_chunks += 1;
+	} else {
+		h->sl_tail->next_chunk = pc;
+		pc->next_chunk = NULL;
+		pc->chunkType = UM_EMPTY;
+		h->sl_tail = pc;
+        s->sl_chunks +=1;
 	}
-#endif
 
-    return pc;
+
 }
 
-void addSweepListToFL(GC_state s,GC_UM_heap h, UM_Mem_Chunk subHead, UM_Mem_Chunk subTail, size_t numChunks){
 
-    LOCK_FL;
 
-	/*Insert free chunk to back of free list*/
-	if (s->fl_chunks == 0) {
-		h->fl_head = subHead;
-		h->fl_tail = subTail;
-		s->fl_chunks += numChunks;
-	} else {
-		h->fl_tail->next_chunk = subHead;
-		h->fl_tail = subTail;
-		s->fl_chunks += numChunks;
-	}
+void addSweepListToFL(GC_state s,GC_UM_heap h){
 
-    UNLOCK_FL;
+    if(s->sl_chunks == 0)
+        return;
+    else
+    {
+        assert((h->sl_head != NULL) && (h->sl_tail != NULL));
+        LOCK_FL;
+
+         
+        if (s->fl_chunks == 0) {
+            h->fl_head = h->sl_head;
+            h->fl_tail = h->sl_tail;
+            s->fl_chunks += s->sl_chunks;
+        } else {
+            h->fl_tail->next_chunk = h->sl_head;
+            h->fl_tail = h->sl_tail;
+            s->fl_chunks += s->sl_chunks;
+        }
+        
+        /*clear the sub list*/
+        h->sl_head = NULL;
+        h->sl_tail = NULL;
+        s->sl_chunks =0;
+
+
+
+        UNLOCK_FL;
+    }
 
 
 
