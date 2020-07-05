@@ -4,8 +4,7 @@ local
     fib.sml
     mandelbrot.sml
     md5.sml
-    gcbench.sml
-    nucleic.sml
+    barnes-hut.sml
     matrix-multiply.sml (*redefines Array structure*)
 in
     main.sml

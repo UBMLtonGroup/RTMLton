@@ -121,6 +121,7 @@ struct GC_state {
   int blocked;
   uintmax_t allocedByRT;
   size_t numAllocedByRT;
+  bool oneByOne;
 
   /* end of rt-threading additions */
 

@@ -293,7 +293,12 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 					if (i == argc)
 						die("@MLton rtobj missing argument.");
 					s->numAllocedByRT = stringToBytesNum(argv[i++]);
-				} else if (0 == strcmp(arg, "use-mmap")) {
+				} else if (0 == strcmp(arg, "gc-onebyone")) {
+					i++;
+					if (i == argc)
+						die("@MLton gc-onebyone missing argument.");
+					s->oneByOne = stringToBool(argv[i++]);
+				}else if (0 == strcmp(arg, "use-mmap")) {
 					i++;
 					if (i == argc)
 						die("@MLton use-mmap missing argument.");
@@ -396,6 +401,7 @@ int GC_init(GC_state s, int argc, char **argv) {
 
 	s->allocedByRT = 0;
 	s->numAllocedByRT = 0;
+    s->oneByOne = false;
 
 	s->wl_size = 10000;
 	s->wl_length = 0;

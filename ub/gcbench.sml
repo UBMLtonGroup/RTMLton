@@ -198,16 +198,24 @@ struct
 end
 
 
-fun timeit f x = let
-  val tmr = Timer.startRealTimer ()
-  val result = f x
-in
-  (Real.toString((Time.toReal(Timer.checkRealTimer tmr)) *1000.0)^"\n",result)
-end
+fun run () =
+  let
+    fun timeme ()=
+          let
+            val start = Time.toMicroseconds(Time.now())
+          in
+            (Main.doit ());
+            Real.toString(Real.fromLargeInt(Time.toMicroseconds(Time.now())-start)/1000000.00 )
+          end
 
-val (s,_) = timeit Main.doit ()
 
-val _ = print ("Time taken :"^s^"\n")
+
+  in
+    print ("Time taken : " ^ (timeme ()) ^ " s \n")
+  end
+
+
+val _ = run ()
 
 
 val _ = print "Done\n"

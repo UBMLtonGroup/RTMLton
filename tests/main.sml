@@ -22,12 +22,10 @@ structure FibTest = BenchTest(Fib)
 structure MandelbrotTest = BenchTest(Mandelbrot)
 structure Md5Test = BenchTest(Md5)
 structure MatrixTest = BenchTest(MatrixMultiply)
-structure NucleicTest = BenchTest(Nucleic)
-structure GCBench = BenchTest(GCBench
+structure BarnesHutTest = BenchTest(BarnesHut)
 
 val () = FibTest.run 5
 val () = MandelbrotTest.run 5
 val () = Md5Test.run 5
+val () = BarnesHutTest.run 5
 val () = MatrixTest.run 5
-val () = NucleicTest.run 5
-val () = GCBench.run 5
