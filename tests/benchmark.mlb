@@ -2,6 +2,13 @@ local
     $(SML_LIB)/basis/basis.mlb
     microbench.sig
     fib.sml
+    tak.sml
+    peek.sml
+    psdes-random.sml
+    imp-for.sml
+    tailfib.sml
+    even-odd.sml
+    flat-array.sml
     mandelbrot.sml
     md5.sml
     barnes-hut.sml
