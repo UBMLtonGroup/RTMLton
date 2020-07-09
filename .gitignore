@@ -331,3 +331,4 @@ runtime/umarray-allocate-test
 runtime/umarray-allocate-test.c
 ub/arraytest
 ub/last
+ub/rstrip
