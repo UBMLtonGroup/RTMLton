@@ -501,7 +501,7 @@ void teardown(void)
     int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
     int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
     fprintf(stderr, "%s::nels = %d\n", __FUNCTION__, nels);
-    
+
     START_TIMER;
     pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
     REPORT_TIME_FOR("alloc");
@@ -567,6 +567,25 @@ void teardown(void)
     struct GC_UM_Array_Chunk *H1_inode1_child0_child0 = pointerToArrayChunk(H1_inode1_child0->ml_array_payload.um_array_pointers[0]);
     ck_assert_msg (H1_inode1_child0_child0 != NULL, "H1_inode1_child0_child0 is NULL");
     ck_assert_msg (H1_inode1_child0_child0->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "H1_inode1_child0_child0 is not LEAF");
+
+    // index 0 should be root->[0]->[0]->[0]
+    z = UM_Array_offset(&gcState, a, 0, 1, 0);
+    struct GC_UM_Array_Chunk *H1_inode0_child0 = pointerToArrayChunk(H1_inode0->ml_array_payload.um_array_pointers[0]);
+    struct GC_UM_Array_Chunk *H1_inode0_child0_child0 = pointerToArrayChunk(H1_inode0_child0->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg ((pointer)&(H1_inode0_child0_child0->ml_array_payload.ml_object) == z, "el not root->[0]->[0]->[0]");
+
+    // index UM_CHUNK_ARRAY_PAYLOAD_SIZE should be root->[0]->[1]->[0]
+    z = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE, 1, 0);
+    struct GC_UM_Array_Chunk *H1_inode0_child0_child1 = pointerToArrayChunk(H1_inode0_child0->ml_array_payload.um_array_pointers[1]);
+    ck_assert_msg ((pointer)&(H1_inode0_child0_child1->ml_array_payload.ml_object) == z, "el not root->[0]->[1]->[0]");
+
+    // index UM_CHUNK_ARRAY_PAYLOAD_SIZE*UM_CHUNK_ARRAY_INTERNAL_POINTERS should be root->[1]->[0]->[0]
+    // H1_inode0->[1]->[0]->[0]
+    z = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE*UM_CHUNK_ARRAY_INTERNAL_POINTERS, 1, 0);
+    struct GC_UM_Array_Chunk *H1_inode0_child1 = pointerToArrayChunk(H1_inode0->ml_array_payload.um_array_pointers[1]);
+    struct GC_UM_Array_Chunk *H1_inode0_child1_child0 = pointerToArrayChunk(H1_inode0_child1->ml_array_payload.um_array_pointers[0]);
+
+    ck_assert_msg ((pointer)&(H1_inode0_child1_child0->ml_array_payload.ml_object) == z, "el not root->[1]->[0]->[0]");
 
     /* final sanity check */
     int c = count_leafs(a);
