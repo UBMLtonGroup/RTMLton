@@ -28,15 +28,26 @@ let
     val start = Time.toMicroseconds(Time.now())
     val _ = Array.all f a
     val _ = ttime(xs ^ " walk", start)
+
+    fun loop i = 
+    let
+        val start = Time.toMicroseconds(Time.now())
+    in
+        if i < Array.length(a) then 
+            (Array.update(a, i, 2); print (Int.toString(i)^"\n"); loop (i+1))
+        else
+            ttime("setter loop", start)
+    end
 in
-    ()
+    loop 0
 end
 
 
-val _ = time_array 5
+(*
 val _ = time_array 500
 val _ = time_array 500000
-val _ = time_array 1687501
+*)
+val _ = time_array 1687501 
 
 
 

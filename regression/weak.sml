@@ -6,6 +6,7 @@ val _ =
       then raise Fail "bug int"
    else ()
 
+(*
 fun testIntInf (i: IntInf.int) =
    let
       val w = Weak.new i
@@ -18,6 +19,20 @@ fun testIntInf (i: IntInf.int) =
    end
 val _ = testIntInf 13
 val _ = testIntInf 12345678901234567890
+*)
+
+fun testInt (i: string) =
+   let
+      val w = Weak.new i
+      val _ =
+         case Weak.get w of
+            NONE => raise Fail "bug testInt"
+          | SOME i => print (concat [i, "\n"])
+   in
+      ()
+   end
+val _ = testInt "13"
+val _ = testInt "123456789"
       
 val r = ref 13
 val n = 2
