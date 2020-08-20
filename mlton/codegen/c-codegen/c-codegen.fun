@@ -855,35 +855,34 @@ fun output {program as Machine.Program.T {chunks,
              | ChunkExnHandler h => concat ["ChunkExnHandler"]
              | ChunkExnLink => concat ["ChunkExnLink"]
 
-        fun checkdstoffset(dst: Operand.t, pushsize: Bytes.t option):string = 
-          case dst of 
+        fun nextstackletoffset(ops: Operand.t, currentframesize: Bytes.t option):string = 
+          case ops of 
                StackOffset (so as StackOffset.T {offset, ty, ...}) =>
-                                        (case pushsize of 
-                                             NONE => toString dst
+                                        (case currentframesize of 
+                                             NONE => toString ops
                                            | SOME size=>  
-                                                    (if Bytes.>= (offset,size)
+                                                    if Bytes.>= (offset,size)
                                                     then "N"^toString (StackOffset (StackOffset.shift(so,size)) )
-                                                    else toString dst)
+                                                    else toString ops
                                         )
              | Cast (z, ty) => if Operand.isStack z 
-                                then concat ["(", Type.toC ty, ")", checkdstoffset (z,pushsize)]
-                                else toString dst
-             | _ => toString dst
+                                then concat ["(", Type.toC ty, ")", nextstackletoffset (z,currentframesize)]
+                                else toString ops
+             | _ => toString ops
 
-        fun checksrcoffset(src: Operand.t, framesize: Bytes.t option):string = 
+        fun issrcinnextchunk(src: Operand.t, framesize:Bytes.t option):bool = 
           case src of 
                StackOffset (so as StackOffset.T {offset, ty, ...}) => 
-                                        (case framesize of 
-                                             NONE => toString src 
-                                           | SOME size =>
-                                                    (if Bytes.>= (offset,size)
-                                                    then "N"^toString(StackOffset (StackOffset.shift(so,size)) )
-                                                    else toString src) 
-                                        )
-             | Cast (z,ty) => if Operand.isStack z 
-                                then concat ["(", Type.toC ty, ")",checksrcoffset (z,framesize)]
-                                else toString src
-             | _ => toString src
+                    (case framesize of 
+                            NONE => false
+                          | SOME size => if Bytes.>= (offset,size)
+                                         then true
+                                         else false
+                    )
+            | Cast (z, ty) => if Operand.isStack z
+                              then issrcinnextchunk (z,framesize)
+                              else false
+            | _ => false
 
         fun getbase(x: Operand.t):string = 
           case x of 
@@ -898,8 +897,8 @@ fun output {program as Machine.Program.T {chunks,
       in
          val operandToString = toString
          val getBase = getbase
-         val checkDstOffset = checkdstoffset
-         val checkSrcOffset = checksrcoffset 
+         val nextStackletOffset = nextstackletoffset
+         val isSrcInNextChunk =  issrcinnextchunk
       end
       fun fetchOperand (z: Operand.t): string =
          if handleMisaligned (Operand.ty z) andalso Operand.isMem z then
@@ -917,19 +916,26 @@ fun output {program as Machine.Program.T {chunks,
                   (print "\t"
                    ; (case s of
                          Move {dst, src} =>
-                            print
-                            (move {dst = checkDstOffset (dst,pushSize),
-                                   dstIsMem = Operand.isMem dst,
-                                   dbase = if Operand.isStack dst 
-                                           then checkDstOffset (dst,pushSize)
-                                           else getBase dst,
-                                   src = checkSrcOffset (src,contFrameSize),
-                                   srcIsMem = Operand.isMem src,
-                                   sbase = if Operand.isStack src 
-                                            then checkSrcOffset (src,contFrameSize)
-                                            else getBase src,
-                                   ty = Operand.ty dst,
-                                   inCrit = inCritical})
+                            let 
+                              val srcInNC = isSrcInNextChunk(src,contFrameSize)
+                            in
+                              print
+                              (move {dst = if srcInNC
+                                           then operandToString dst
+                                           else nextStackletOffset (dst,pushSize),
+                                     dstIsMem = Operand.isMem dst,
+                                     dbase = if Operand.isStack dst 
+                                                andalso (not srcInNC) 
+                                             then nextStackletOffset (dst,pushSize)
+                                             else getBase dst,
+                                     src = nextStackletOffset (src,contFrameSize),
+                                     srcIsMem = Operand.isMem src,
+                                     sbase = if Operand.isStack src 
+                                              then nextStackletOffset (src,contFrameSize)
+                                              else getBase src,
+                                     ty = Operand.ty dst,
+                                     inCrit = inCritical})
+                            end
                        | Noop => ()
                        | PrimApp {args, dst, prim} =>
                             let
@@ -954,11 +960,11 @@ fun output {program as Machine.Program.T {chunks,
                                   NONE => (print (app ())
                                            ; print ";\n")
                                 | SOME dst =>
-                                     print (move {dst = checkDstOffset (dst,pushSize),
+                                     print (move {dst = nextStackletOffset (dst,pushSize),
                                                   dstIsMem = Operand.isMem dst,
                                                   dbase = if Operand.isStack dst 
-                                                            then checkDstOffset (dst,pushSize)
-                                                            else getBase dst,
+                                                          then nextStackletOffset (dst,pushSize)
+                                                          else getBase dst,
                                                   src = app (),
                                                   srcIsMem = false,
                                                   sbase = app (),
@@ -1177,14 +1183,14 @@ fun output {program as Machine.Program.T {chunks,
                                    val x = Live.toOperand x
                                    val ty = Operand.ty x
                                 in
-                                   print
+                                  print
                                    (concat
                                     ["\t",
-                                     move {dst = checkDstOffset (x,pushSize),
+                                     move {dst = nextStackletOffset (x,pushSize),
                                            dstIsMem = Operand.isMem x,
                                            dbase = if Operand.isStack x
-                                                    then checkDstOffset(x,pushSize)
-                                                    else getBase x,
+                                                   then nextStackletOffset(x,pushSize)
+                                                   else getBase x,
                                            src = creturn ty,
                                            srcIsMem = false,
                                            sbase = creturn ty,
@@ -1480,3 +1486,4 @@ fun output {program as Machine.Program.T {chunks,
    end
 
 end
+
