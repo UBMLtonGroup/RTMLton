@@ -601,7 +601,7 @@ void teardown(void)
      */
     int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
     int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
-    //return;
+    return;
     pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
     struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
 
