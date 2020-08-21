@@ -34,6 +34,7 @@ _Static_assert (UM_CHUNK_ARRAY_PAYLOAD_SIZE%sizeof(void*)==0,
 #define UM_NORMAL_CHUNK                  1
 #define UM_ARRAY_CHUNK                   2
 #define UM_STACK_CHUNK                   3
+#define UM_WEAK_CHUNK                    4
 
 #define ISINUSE(header) (header & UM_CHUNK_IN_USE)
 #define ISMARKED(header) (header & UM_CHUNK_MARK_MASK)

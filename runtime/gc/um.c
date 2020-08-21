@@ -130,7 +130,7 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
     if (o + s + 4 <= UM_CHUNK_PAYLOAD_SIZE) {
         if (DEBUG_MEM) {
             DBG(p, o, s, "current chunk");
-            fprintf(stderr, " sentinel: %d, val: "FMTPTR"\n",
+            fprintf(stderr, " sentinel: %x, val: "FMTPTR"\n",
                     current_chunk->sentinel,
                     *(p + o));
         }
@@ -204,8 +204,6 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
             fprintf(stderr,"%d]In writebarrier, srcbase= "FMTPTR", dstbase= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)srcbase,(uintptr_t)dstbase, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
     }
 }
-
-#define DEBUG_ARRAY_OFFSET 0
 
 Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset) {

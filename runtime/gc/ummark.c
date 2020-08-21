@@ -18,6 +18,35 @@ void umDfsMarkObjectsMarkToWL(GC_state s, objptr *opp) {
 	umDfsMarkObjectsToWorklist(s, opp, MARK_MODE);
 }
 
+void printTag(const char *f, GC_objectTypeTag tag, pointer p);
+
+void printTag(const char *f, GC_objectTypeTag tag, pointer _p) {
+	uintptr_t p = (uintptr_t)_p;
+	switch (tag) {
+		case STACK_TAG:
+			fprintf(stderr, "%d] %s: Stack Chunk %x\n", PTHREAD_NUM, f, p);
+			break;
+
+		case WEAK_TAG:
+			fprintf(stderr, "%d] %s: Weak Chunk %x\n", PTHREAD_NUM, f, p);
+			break;
+
+		case ERROR_TAG:
+			fprintf(stderr, "%d] %s: Error tag %x\n", PTHREAD_NUM, f, p);
+			break;
+
+		case NORMAL_TAG:
+			fprintf(stderr, "%d] %s: Normal Chunk %x\n", PTHREAD_NUM, f, p);
+			break;
+
+		case ARRAY_TAG:
+			fprintf(stderr, "%d] %s: Array Chunk %x\n", PTHREAD_NUM, f, p);
+			break;
+
+		default:
+			die("%d] %s: garbage tag %d: %x\n", PTHREAD_NUM, f, tag, p);
+	}
+}
 
 void addToWorklist(GC_state s, objptr *opp) {
 	LOCK_WL;
@@ -84,10 +113,21 @@ bool isObjectShaded(GC_state s, objptr *opp) {
 	GC_objectTypeTag tag = ERROR_TAG;
 	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
-	if (!isObjectOnUMHeap(s, p))
-		return true;
-	else
-		return isContainerChunkMarkedByMode(p, GREY_MODE, tag);
+	printTag(__func__, tag, p);
+
+	bool verdict = true;
+
+	if (!isObjectOnUMHeap(s, p)) {
+		if (DEBUG)
+			fprintf(stderr, "%d] %s: "RED("warn: obj not on umheap")"\n", PTHREAD_NUM, __func__);
+		verdict = true;
+	} else
+		verdict = isContainerChunkMarkedByMode(p, GREY_MODE, tag);
+
+	if (DEBUG)
+		fprintf(stderr, "%d] %s verdict %d\n", PTHREAD_NUM, __func__, verdict);
+
+	return verdict;
 }
 
 bool isObjectMarked(GC_state s, objptr *opp) {
@@ -99,20 +139,24 @@ bool isObjectMarked(GC_state s, objptr *opp) {
 	GC_objectTypeTag tag = ERROR_TAG;
 	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
+	bool verdict = isContainerChunkMarkedByMode(p, MARK_MODE, tag);
 
-	return isContainerChunkMarkedByMode(p, MARK_MODE, tag);
+	if (DEBUG) {
+		printTag(__func__, tag, p);
+		fprintf(stderr, "%d] %s verdict %d\n", PTHREAD_NUM, __func__, verdict);
+	}
+	return verdict;
 }
 
 
 static
 void umShadeObject(GC_state s, objptr *opp) {
-
 	pointer p = objptrToPointer(*opp, s->umheap.start);
 
-	/*Shade the object only if it is on the UM heap. If not it doesn't
-   * matter if the object is shaded or not since GC 
-   * will not collect it. This check will also ensure we aren't trying 
-   * to shade if *opp has been cleared by mutator (is null) */
+	/* Shade the object only if it is on the UM heap. If not it doesn't
+     * matter if the object is shaded or not since GC
+     * will not collect it. This check will also ensure we aren't trying
+     * to shade if *opp has been cleared by mutator (is null) */
 	if (isObjectOnUMHeap(s, p)) {
 		GC_header *headerp = getHeaderp(p);
 		GC_header header = *headerp;
@@ -122,27 +166,26 @@ void umShadeObject(GC_state s, objptr *opp) {
 		splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 		markChunk(p, tag, GREY_MODE, s, numObjptrs);
+		if (DEBUG) {
+			printTag(__func__, tag, p);
+			fprintf(stderr, "%d] shade %x\n", PTHREAD_NUM, (uintptr_t) p);
+		}
 	}
-
-
 }
 
 GC_objectTypeTag getObjectType(GC_state s, pointer p) {
-	//pointer p = objptrToPointer(*opp, s->umheap.start);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
-	uint16_t bytesNonObjptrs = 0;
-	uint16_t numObjptrs = 0;
 	GC_objectTypeTag tag = ERROR_TAG;
-	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
+
+	splitHeader(s, header, &tag, NULL, NULL, NULL);
 
 	return tag;
-
 }
 
 bool isWorklistShaded(GC_state s) {
-	/*Enforce invariant:
-		* Mutator holds no white references*/
+	/* Enforce invariant:
+	 * Mutator holds no white references*/
 
 	LOCK_WL;
 	int i;
@@ -205,18 +248,18 @@ static void markWorklist(GC_state s) {
 
 static
 void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint16_t numObjptrs) {
-	if (tag == NORMAL_TAG || tag == STACK_TAG) {
+	if (tag == NORMAL_TAG || tag == STACK_TAG || tag == WEAK_TAG)  {
 
 		if (p >= s->umheap.start &&
 			p < (s->umheap.start + s->umheap.size)) /*if object is on UM heap */
 		{
 			GC_UM_Chunk pchunk;
-			if (tag == NORMAL_TAG || tag == STACK_TAG)
+			if (tag == NORMAL_TAG || tag == STACK_TAG || tag == WEAK_TAG)
 				pchunk = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
 			else
 				pchunk = (GC_UM_Chunk)(p);
 
-			if (tag == NORMAL_TAG)
+			if (tag == NORMAL_TAG || tag == WEAK_TAG)
 				assert (pchunk->sentinel == UM_CHUNK_SENTINEL);
 			else if (tag == STACK_TAG)
 				assert (pchunk->sentinel == UM_STACK_SENTINEL);
@@ -242,12 +285,12 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 			if (DEBUG_DFS_MARK) {
 				fprintf(stderr, "umDfsMarkObjects: chunk: "
 				FMTPTR
-				", sentinel: %d,"
+				", sentinel: %x,"
 				" mark_mode: %d, objptrs: %d\n", (uintptr_t) pchunk,
 						pchunk->sentinel, m, numObjptrs);
 			}
 
-			if (tag == NORMAL_TAG) {
+			if (tag == NORMAL_TAG || tag == WEAK_TAG) {
 				/*Mark linked chunk if there is a linked chunk*/
 				if (NULL != pchunk->next_chunk) {
 					if (m == MARK_MODE) {
@@ -275,7 +318,7 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 		GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(p - GC_HEADER_SIZE - GC_HEADER_SIZE);
 
 
-		assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
+		assert(root->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 		if (DEBUG_DFS_MARK) {
 			fprintf(stderr, "umDfsMarkObjects: marking array: %p, markmode: %d, "
@@ -283,9 +326,8 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 		}
 
 		markUMArrayChunks(s, root, m);
-
 	} else {
-		if (0) {
+		if (1) {
 			switch (tag) {
 				case STACK_TAG:
 					fprintf(stderr, "%d] Trying to mark Stack Chunk\n", PTHREAD_NUM);
@@ -525,8 +567,10 @@ void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
 
 	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
-//    if (DEBUG_DFS_MARK)
-	//getObjectType(s, opp);
+    if (DEBUG_DFS_MARK) {
+		GC_objectTypeTag t = getObjectType(s, p);
+		fprintf(stderr, "%s: 0x%x tag:%d\n", __FUNCTION__, (uintptr_t) p, t);
+	}
 
 
 

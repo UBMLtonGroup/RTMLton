@@ -747,14 +747,16 @@ fun output {program as Machine.Program.T {chunks,
         )
 
 
+      fun strip s = String.implode (List.allButLast (String.explode s)) 
+
       fun writeBarrier( {dbase,sbase},{dst,src},ty :Type.t,oper :string) :string = 
         case(Type.isObjptr ty)
           of true => 
           ( case hd(String.explode dst) of
                 #"P" => oper
-               | #"S" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",oper,"} );"]
-               | #"N" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",oper,"} );"]
-               | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",oper,"} );"]
+               | #"S" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",(strip oper),"} );\n"]
+               | #"N" => concat ["WB(",CType.toString (Type.toCType ty),",","0xdeadbeef",",",sbase,",",dst,",",src,", {",(strip oper),"} );\n"]
+               | _ => concat ["WB(",CType.toString (Type.toCType ty),",",dbase,",",sbase,",",dst,",",src,", {",(strip oper),"} );\n"]
           )
         |   false => oper
 

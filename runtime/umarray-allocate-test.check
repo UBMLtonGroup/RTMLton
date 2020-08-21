@@ -7,6 +7,8 @@
 int frameLayouts_len = 1;
 
 #include "gc.h"
+#include <time.h>
+
 uint32_t objectTypes_len = 6;
 static struct GC_objectType objectTypes[] = {
         // type,     mutable, nonobjptrbytes, objptrs
@@ -41,6 +43,12 @@ static char* atMLtons[] = {
 
 struct GC_state gcState;
 static int setup_once = 0;
+
+static clock_t start, end;
+static double time_taken;
+#define START_TIMER start = clock()
+#define STOP_TIMER do { end = clock(); time_taken = ((double) (end - start)) / CLOCKS_PER_SEC; } while(0)
+#define REPORT_TIME_FOR(X) STOP_TIMER; fprintf(stderr, "time taken for %s::"X" is %f sec\n", __FUNCTION__, time_taken)
 
 void setup(void)
 {
@@ -133,7 +141,9 @@ void teardown(void)
 
 #test array_alloc_1_test
     /* tree construction */
+    START_TIMER;
     pointer a = GC_arrayAllocate(&gcState, 0, 1, (0x3<<1) | 0x1);
+    REPORT_TIME_FOR("alloc");
     struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
     ck_assert_msg (root->array_height == 0, "height not 0 (root only)");
     ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
@@ -146,7 +156,10 @@ void teardown(void)
 
        el 0 should be at address root->ml_array_payload->ml_object[0]
      */
+    START_TIMER;
     pointer b = UM_Array_offset(&gcState, a, 0, 1, 0); // el 0, elsize 1, offset 0
+    REPORT_TIME_FOR("array_offset");
+
     ck_assert_msg ((pointer)&(root->ml_array_payload.ml_object[0]) == b, "element 0 is not at expected address");
 
     ck_assert_msg (all_unmarked(root), "array marked but shouldn't be");
@@ -386,7 +399,9 @@ void teardown(void)
      * nodes are unallocated.
      */
     int nels = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
+    START_TIMER;
     pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    REPORT_TIME_FOR("alloc");
     struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
     ck_assert_msg (root->array_height == 2, "height not 2 (root + 1 internal layer + leafs)");
     ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
@@ -433,6 +448,10 @@ void teardown(void)
     ck_assert_msg (c == UM_CHUNK_ARRAY_INTERNAL_POINTERS+1,
                     "should have UM_CHUNK_ARRAY_INTERNAL_POINTERS+1 (%d) leafs, has %d",
                     UM_CHUNK_ARRAY_INTERNAL_POINTERS+1, c);
+
+    START_TIMER;
+    pointer z = UM_Array_offset(&gcState, a, nels/2, 1, 0);
+    REPORT_TIME_FOR("finding one element");
 
     /* check that a given offset maps to what we expect:
        offset 0 thru UM_CHUNK_ARRAY_INTERNAL_POINTERS^2 will be under the
@@ -481,8 +500,16 @@ void teardown(void)
      */
     int nleafs = UM_CHUNK_ARRAY_INTERNAL_POINTERS * UM_CHUNK_ARRAY_INTERNAL_POINTERS;
     int nels = nleafs * UM_CHUNK_ARRAY_PAYLOAD_SIZE + 1;
+    fprintf(stderr, "%s::nels = %d\n", __FUNCTION__, nels);
 
+    START_TIMER;
     pointer a = GC_arrayAllocate(&gcState, 0, nels, (0x3<<1) | 0x1);
+    REPORT_TIME_FOR("alloc");
+
+    START_TIMER;
+    pointer z = UM_Array_offset(&gcState, a, nels/2, 1, 0);
+    REPORT_TIME_FOR("finding one element");
+
     struct GC_UM_Array_Chunk *root = (struct GC_UM_Array_Chunk *)(a - 2*(sizeof(void *)));
     ck_assert_msg (root->array_height == 3, "height not 3 (root + 1 internal layer + leafs)");
     ck_assert_msg (root->array_chunk_magic == UM_ARRAY_SENTINEL, "magic wrong");
@@ -540,6 +567,25 @@ void teardown(void)
     struct GC_UM_Array_Chunk *H1_inode1_child0_child0 = pointerToArrayChunk(H1_inode1_child0->ml_array_payload.um_array_pointers[0]);
     ck_assert_msg (H1_inode1_child0_child0 != NULL, "H1_inode1_child0_child0 is NULL");
     ck_assert_msg (H1_inode1_child0_child0->array_chunk_type == UM_CHUNK_ARRAY_LEAF, "H1_inode1_child0_child0 is not LEAF");
+
+    // index 0 should be root->[0]->[0]->[0]
+    z = UM_Array_offset(&gcState, a, 0, 1, 0);
+    struct GC_UM_Array_Chunk *H1_inode0_child0 = pointerToArrayChunk(H1_inode0->ml_array_payload.um_array_pointers[0]);
+    struct GC_UM_Array_Chunk *H1_inode0_child0_child0 = pointerToArrayChunk(H1_inode0_child0->ml_array_payload.um_array_pointers[0]);
+    ck_assert_msg ((pointer)&(H1_inode0_child0_child0->ml_array_payload.ml_object) == z, "el not root->[0]->[0]->[0]");
+
+    // index UM_CHUNK_ARRAY_PAYLOAD_SIZE should be root->[0]->[1]->[0]
+    z = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE, 1, 0);
+    struct GC_UM_Array_Chunk *H1_inode0_child0_child1 = pointerToArrayChunk(H1_inode0_child0->ml_array_payload.um_array_pointers[1]);
+    ck_assert_msg ((pointer)&(H1_inode0_child0_child1->ml_array_payload.ml_object) == z, "el not root->[0]->[1]->[0]");
+
+    // index UM_CHUNK_ARRAY_PAYLOAD_SIZE*UM_CHUNK_ARRAY_INTERNAL_POINTERS should be root->[1]->[0]->[0]
+    // H1_inode0->[1]->[0]->[0]
+    z = UM_Array_offset(&gcState, a, UM_CHUNK_ARRAY_PAYLOAD_SIZE*UM_CHUNK_ARRAY_INTERNAL_POINTERS, 1, 0);
+    struct GC_UM_Array_Chunk *H1_inode0_child1 = pointerToArrayChunk(H1_inode0->ml_array_payload.um_array_pointers[1]);
+    struct GC_UM_Array_Chunk *H1_inode0_child1_child0 = pointerToArrayChunk(H1_inode0_child1->ml_array_payload.um_array_pointers[0]);
+
+    ck_assert_msg ((pointer)&(H1_inode0_child1_child0->ml_array_payload.ml_object) == z, "el not root->[1]->[0]->[0]");
 
     /* final sanity check */
     int c = count_leafs(a);

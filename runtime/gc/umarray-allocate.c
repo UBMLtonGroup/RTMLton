@@ -145,8 +145,6 @@ GC_UM_Array_Chunk create_array_tree(GC_UM_Array_Chunk root,
 
 }
 
-#define DEBUG_MEM 0
-#define DEBUG_CHUNK_ARRAY 0
 #if GC_MODEL_OBJPTR_SIZE == 32
 # define POW ipow
 #else
