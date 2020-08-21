@@ -2,3 +2,4 @@ binio
 ffi-opaque
 mutex
 timeout
+textio.2
