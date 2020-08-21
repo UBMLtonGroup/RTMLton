@@ -2,31 +2,37 @@ language: generic
 
 sudo: required
 
-matrix:
+install:
+      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
+      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
+
+services:
+  - docker
+
+jobs:
   include:
   - stage: Build RTMLton
     os:   linux
     env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c" 
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-build\""
-  - stage: regression-part1
+  - stage: Regression tests
     os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-1"
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
-  - env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-2"
-  - env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-3"
-  - env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-4"
+  - os: linux
+    env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-2"
+    script:
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
+  - os: linux
+    env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-3"
+    script:
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
+  - os: linux
+    env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-4"
+    script:
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
   
 
 notifications:
