@@ -16,11 +16,7 @@ matrix:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-build\""
   - stage: regression-part1
     os: linux
-    env: 
-        -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-1"
-        -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-2"
-        -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-3"
-        -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-4"
+    env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-1"
     install:
       - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
       - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
@@ -28,6 +24,9 @@ matrix:
       - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
+  - env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-2"
+  - env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-3"
+  - env : -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" REGRESSION="-p part-4"
   
 
 notifications:
