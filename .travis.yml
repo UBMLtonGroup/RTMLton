@@ -24,7 +24,7 @@ jobs:
     services:
       - docker
     script:
-      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-2\""
   - stage: Regression tests
     os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-3"
@@ -34,7 +34,7 @@ jobs:
     services:
       - docker
     script:
-      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-3\""
   - stage: Regression tests
     os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-4"
@@ -44,7 +44,7 @@ jobs:
     services:
       - docker
     script:
-      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-4\""
   - stage: Build RTMLton
     os:   linux
     env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c" 

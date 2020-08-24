@@ -9,7 +9,7 @@ apt-get install -y libgmp3-dev  smlnj check
 
 CC=gcc
 MLTON_COMPILE_ARGS="-codegen c"
-PART="-p part-1"
+PART="-p part-4"
 
 echo
 mlton
