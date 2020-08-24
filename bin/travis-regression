@@ -24,10 +24,11 @@ llc -version
 echo
 fi
 
+echo "Regression part :  $PART "
+
 echo "Building MLton..."
 cd /RTMLton
 ./compile.sh
 
-echo "Running regression $REGRESSION ..."
-./bin/regression $MLTON_COMPILE_ARGS $REGRESSION
-
+echo "Running regression $PART ..."
+./bin/regression $PART $MLTON_COMPILE_ARGS 
