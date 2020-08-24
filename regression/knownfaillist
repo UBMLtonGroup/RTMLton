@@ -3,6 +3,8 @@ ffi-opaque
 mutex
 timeout
 callcc2
+exn-history
+exn-history3
 filesys
 finalize.2
 finalize.3

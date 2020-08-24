@@ -8,9 +8,13 @@ install:
 services:
       - docker
 
+stages:
+    - Build
+    - Regression
+
 jobs:
   include:
-  - stage: Regression tests
+  - stage: Regression
     os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-1"
     script:
@@ -28,10 +32,10 @@ jobs:
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-4\""
   - os: linux
-    env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" RUNBENCH="-benchmark -skip-parts"
+    env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-benchmark -skip-parts"
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-bench\""
-  - stage: Build RTMLton
+  - stage: Build
     os:   linux
     env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c" 
     script:

@@ -9,7 +9,7 @@ apt-get install -y libgmp3-dev  smlnj check
 
 CC=gcc
 MLTON_COMPILE_ARGS="-codegen c"
-RUNBENCH="-benchmark -skip-parts"
+PART="-benchmark -skip-parts"
 
 echo
 mlton
@@ -31,5 +31,5 @@ cd /RTMLton
 ./compile.sh
 
 echo "Running regression benchmark tests ..."
-./bin/regression $RUNBENCH $MLTON_COMPILE_ARGS 
+./bin/regression $PART $MLTON_COMPILE_ARGS 
 
