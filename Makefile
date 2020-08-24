@@ -280,10 +280,11 @@ version:
 
 .PHONY: check
 check:
-	./bin/regression -p part-1
-	./bin/regression -p part-2
-	./bin/regression -p part-3
-	./bin/regression -p part-4
+	./bin/regression -p part-1 -no-stop-onfail 
+	./bin/regression -p part-2 -no-stop-onfail
+	./bin/regression -p part-3 -no-stop-onfail
+	./bin/regression -p part-4 -no-stop-onfail
+	./bin/regression -skip-parts -benchmark
 
 # The TBIN and TLIB are where the files are going to be after installing.
 # The DESTDIR and is added onto them to indicate where the Makefile actually

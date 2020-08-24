@@ -2,57 +2,38 @@ language: generic
 
 sudo: required
 
+install:
+      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
+      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
+services:
+      - docker
 
 jobs:
   include:
   - stage: Regression tests
     os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-1"
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression\""
-  - stage: Regression tests
-    os: linux
+  - os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-2"
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-2\""
-  - stage: Regression tests
-    os: linux
+  - os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-3"
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-3\""
-  - stage: Regression tests
-    os: linux
+  - os: linux
     env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" PART="-p part-4"
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-4\""
+  - os: linux
+    env: -CC=gcc    MLTON_COMPILE_ARGS="-codegen c" RUNBENCH="-benchmark -skip-parts"
+    script:
+      - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-regression-bench\""
   - stage: Build RTMLton
     os:   linux
     env:  CC=gcc    MLTON_COMPILE_ARGS="-codegen c" 
-    install:
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get -qq update;        fi
-      - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install -qq mlton; fi
-    services:
-      - docker
     script:
       - "docker run -i -v \"${PWD}:/RTMLton\" i386/ubuntu:xenial /bin/bash -c \"linux32 --32bit i386 /RTMLton/bin/travis-build\""
 

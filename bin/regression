@@ -17,9 +17,9 @@ short='false'
 testReg='false'
 exitFail=false
 part="part-1"
-passed=0
-failed=0
-declare -a testRegs
+benchmark='false'
+stopscript='true'
+skipParts='false'
 declare -a flags
 declare -a extraFlags
 flags[${#flags[@]}]="-type-check"
@@ -49,6 +49,18 @@ while [ "$#" -gt 0 ]; do
               usage
           fi
           part="$1"
+          shift
+          ;;
+  -benchmark)
+          benchmark='true'
+          shift
+          ;;
+  -no-stop-onfail)
+          stopscript='false'
+          shift
+          ;;
+  -skip-parts)
+          skipParts='true'
           shift
           ;;
   *)
@@ -131,181 +143,176 @@ if [ $TARGET_OS = mingw ]; then
 	forMinGW='true'
 fi
 
-for f in *.sml; do
-        f=`basename "$f" .sml`
-        ignore=$(isKnownfaillisted $f)
-        if [ "$ignore" -eq 1 ] ; then
-            echo "skipping $f"
-            failed=$((failed+1))
-            continue
-        fi
-
-        if ($testReg); then
-                skip='true'
-                for (( i = 0 ; $i < ${#testRegs[@]} ; i++ )); do
-                        if [ "$f" = "${testRegs[$i]}" ]; then
-                                skip='false'
-                        fi
-                done
-                if ($skip); then
-                        continue
-                fi
-        fi
-        case $TARGET_OS in
-        cygwin)
-                case "$f" in
-                textio.2)
-                        continue
-                ;;
-                esac
-        ;;
-        hurd)
-                # Work-around hurd bug (http://bugs.debian.org/551470)
-                case "$f" in
-                mutex|prodcons|signals|signals2|signals3|signals4|suspend|thread2|timeout|world5)
-                        continue
-                ;;
-                esac
-        ;;
-        mingw)
-                case "$f" in
-                cmdline|command-line|echo|filesys|posix-exit|signals|signals2|signals3|signals4|socket|suspend|textio.2|unixpath|world*)
-                        continue
-                ;;
-                esac
-        ;;
-        esac
-        case "$f" in
-        serialize)
+if ! $skipParts; then 
+    for f in *.sml; do
+            f=`basename "$f" .sml`
+            ignore=$(isKnownfaillisted $f)
+            if [ "$ignore" -eq 1 ] ; then
+                echo "skipping $f"
                 continue
-        ;;
-	      esac
-        echo "testing $f"
-        unset extraFlags
-        case "$f" in
-        exn-history*)
-                extraFlags[${#extraFlags[@]}]="-const"
-                extraFlags[${#extraFlags[@]}]="Exn.keepHistory true"
-        ;;
-        gc-collect2)
-                extraFlags[${#extraFlags[@]}]="-runtime"
-                extraFlags[${#extraFlags[@]}]="mark-compact-ratio 1.001 copy-ratio 1.001 live-ratio 1.001"
-        ;;
-        world*)
-                extraFlags[${#extraFlags[@]}]="-link-opt"
-                extraFlags[${#extraFlags[@]}]="-no-pie"
-        ;;
-        esac
-
-        mlb="$f.mlb"
-        echo "\$(SML_LIB)/basis/basis.mlb
-                \$(SML_LIB)/basis/mlton.mlb
-                \$(SML_LIB)/basis/sml-nj.mlb
-                ann 
-                        \"allowFFI true\"
-                        \"allowOverload true\"
-                        \"nonexhaustiveMatch ignore\"
-                        \"redundantMatch ignore\"
-                in $f.sml 
-                end" >"$mlb"
-        "$mlton" "${flags[@]}" "${extraFlags[@]}" -output "$f" "$mlb"
-        if [ "$?" -ne '0' ] || [ ! -x "$f" ]; then
-                compFail "$f"
-                failed=$((failed+1))
-                exitFail=true
-        fi
-        rm "$mlb"
-
-        if [ ! -r "$f".nonterm -a -x "$f" ]; then
-                nonZeroMsg='Nonzero exit status.'
-                if $forMinGW; then
-                        nonZeroMsg="$nonZeroMsg"'\r'
-                fi
-                ( "./$f" || echo -e "$nonZeroMsg" ) >$tmp 2>&1 
-                if [ -r "$f.ok" ]; then
-                        compare="$f.ok"
-                        for x in "$OBJPTR_REP" "${OBJPTR_REP}a$ALIGN" "$TARGET_OS" "$TARGET_ARCH" "$TARGET_ARCH-$TARGET_OS"; do
-                                if [ -r "$f.$x.ok" ]; then
-                                        compare="$f.$x.ok"
-                                fi
-                        done
-                        if $forMinGW; then
-                                newcompare="$f.sed.ok"
-                                sed $'s/$/\r/' <"$compare" > "$newcompare"
-                                compare="$newcompare"
-                        fi
-                        if ! diff "$compare" "$tmp"; then
-                                echo "$f: difference with ${flags[*]} ${extraFlags[*]}"
-                                ignore=$(isKnownfaillisted $f)
-                                if [ "$ignore" -eq 0 ] ; then
-                                    failed=$((failed+1))
-                                    exitFail=true
-                                fi
-                        else
-                            passed=$((passed+1))
-                        fi
-                fi
-        fi
-done
-
-if $short || $testReg ; then
-  if [ "$exitFail" = true ] ; then
-    echo "ok: $passed, failed: $failed"
-#    exit 1
-  else
-    echo "ok: $passed, failed: $failed"
-    exit 0
-  fi
+            fi
+    
+            if ($testReg); then
+                    skip='true'
+                    for (( i = 0 ; $i < ${#testRegs[@]} ; i++ )); do
+                            if [ "$f" = "${testRegs[$i]}" ]; then
+                                    skip='false'
+                            fi
+                    done
+                    if ($skip); then
+                            continue
+                    fi
+            fi
+            case $TARGET_OS in
+            cygwin)
+                    case "$f" in
+                    textio.2)
+                            continue
+                    ;;
+                    esac
+            ;;
+            hurd)
+                    # Work-around hurd bug (http://bugs.debian.org/551470)
+                    case "$f" in
+                    mutex|prodcons|signals|signals2|signals3|signals4|suspend|thread2|timeout|world5)
+                            continue
+                    ;;
+                    esac
+            ;;
+            mingw)
+                    case "$f" in
+                    cmdline|command-line|echo|filesys|posix-exit|signals|signals2|signals3|signals4|socket|suspend|textio.2|unixpath|world*)
+                            continue
+                    ;;
+                    esac
+            ;;
+            esac
+            case "$f" in
+            serialize)
+                    continue
+            ;;
+    	      esac
+            echo "testing $f"
+            unset extraFlags
+            case "$f" in
+            exn-history*)
+                    extraFlags[${#extraFlags[@]}]="-const"
+                    extraFlags[${#extraFlags[@]}]="Exn.keepHistory true"
+            ;;
+            gc-collect2)
+                    extraFlags[${#extraFlags[@]}]="-runtime"
+                    extraFlags[${#extraFlags[@]}]="mark-compact-ratio 1.001 copy-ratio 1.001 live-ratio 1.001"
+            ;;
+            world*)
+                    extraFlags[${#extraFlags[@]}]="-link-opt"
+                    extraFlags[${#extraFlags[@]}]="-no-pie"
+            ;;
+            esac
+    
+            mlb="$f.mlb"
+            echo "\$(SML_LIB)/basis/basis.mlb
+                    \$(SML_LIB)/basis/mlton.mlb
+                    \$(SML_LIB)/basis/sml-nj.mlb
+                    ann 
+                            \"allowFFI true\"
+                            \"allowOverload true\"
+                            \"nonexhaustiveMatch ignore\"
+                            \"redundantMatch ignore\"
+                    in $f.sml 
+                    end" >"$mlb"
+            "$mlton" "${flags[@]}" "${extraFlags[@]}" -output "$f" "$mlb"
+            if [ "$?" -ne '0' ] || [ ! -x "$f" ]; then
+                    compFail "$f"
+                    exitFail=true
+            fi
+            rm "$mlb"
+    
+            if [ ! -r "$f".nonterm -a -x "$f" ]; then
+                    nonZeroMsg='Nonzero exit status.'
+                    if $forMinGW; then
+                            nonZeroMsg="$nonZeroMsg"'\r'
+                    fi
+                    ( "./$f" || echo -e "$nonZeroMsg" ) >$tmp 2>&1 
+                    if [ -r "$f.ok" ]; then
+                            compare="$f.ok"
+                            for x in "$OBJPTR_REP" "${OBJPTR_REP}a$ALIGN" "$TARGET_OS" "$TARGET_ARCH" "$TARGET_ARCH-$TARGET_OS"; do
+                                    if [ -r "$f.$x.ok" ]; then
+                                            compare="$f.$x.ok"
+                                    fi
+                            done
+                            if $forMinGW; then
+                                    newcompare="$f.sed.ok"
+                                    sed $'s/$/\r/' <"$compare" > "$newcompare"
+                                    compare="$newcompare"
+                            fi
+                            if ! diff "$compare" "$tmp"; then
+                                    echo "$f: difference with ${flags[*]} ${extraFlags[*]}"
+                                    ignore=$(isKnownfaillisted $f)
+                                    if [ "$ignore" -eq 0 ] ; then
+                                        exitFail=true
+                                    fi
+                            fi
+                    fi
+            fi
+    done
+    
+    if ($short || $testReg) && $stopscript ; then
+      if [ "$exitFail" = true ] ; then
+        exit 1
+      else
+        exit 0
+      fi
+    fi
 fi
 
-#"$src/bin/mmake" clean >/dev/null
-#cd "$src/benchmark/tests"
-#for f in *.sml; do
-#        f=`basename "$f" .sml`
-#        tmpf="/tmp/$f.$$"
-#        case "$f" in
-#        fxp)
-#                echo "skipping $f"
-#        ;;
-#        *)
-#                echo "testing $f"
-#                echo "val _ = Main.doit 0" | cat "$f.sml" - > "$tmpf.sml"
-#                $mlton -output "$tmpf" "${flags[@]}"            \
-#                        -default-ann 'nonexhaustiveBind ignore'\
-#                        -default-ann 'nonexhaustiveMatch ignore'\
-#                        -default-ann 'redundantBind ignore'    \
-#                        -default-ann 'redundantMatch ignore'    \
-#                        "$tmpf.sml"
-#                if [ $? -ne 0 ]; then
-#                        compFail "$f"
-#                        exitFail=true
-#                fi
-#                rm -f "$tmpf" "$tmpf.sml"
-#        ;;
-#        esac
-#done
-#"$src/bin/mmake" clean >/dev/null
-#cd "$src"
-#for f in mllex mlyacc mlprof; do
-#    tmpf="/tmp/$f.$$"
-#    cd "$src/$f"
-#    echo "testing $f"
-#    "$src/bin/mmake" -W "$f" >/dev/null
-#    "$mlton" "${flags[@]}" -output "$tmpf" "$f.mlb"
-#    if [ $? -ne 0 ]; then
-#        compFail "$f"
-#        exitFail=true
-#    fi
-#    rm -f "$tmpf"
-#done
+
+if $benchmark ; then 
+
+    #"$src/bin/mmake" clean >/dev/null
+    cd "$src/benchmark/tests"
+    for f in *.sml; do
+            f=`basename "$f" .sml`
+            tmpf="/tmp/$f.$$"
+            case "$f" in
+            fxp)
+                    echo "skipping $f"
+            ;;
+            *)
+                    echo "testing $f"
+                    echo "val _ = Main.doit 0" | cat "$f.sml" - > "$tmpf.sml"
+                    $mlton -output "$tmpf" "${flags[@]}"            \
+                            -default-ann 'nonexhaustiveMatch ignore'\
+                            -default-ann 'redundantMatch ignore'    \
+                            "$tmpf.sml"
+                    if [ $? -ne 0 ]; then
+                            compFail "$f"
+                            exitFail=true
+                    fi
+                    rm -f "$tmpf" "$tmpf.sml"
+            ;;
+            esac
+    done
+    #"$src/bin/mmake" clean >/dev/null
+    cd "$src"
+    for f in mllex mlyacc mlprof; do
+        tmpf="/tmp/$f.$$"
+        cd "$src/$f"
+        echo "testing $f"
+        "$src/bin/mmake" -W "$f" >/dev/null
+        "$mlton" "${flags[@]}" -output "$tmpf" "$f.mlb"
+        if [ $? -ne 0 ]; then
+            compFail "$f"
+            exitFail=true
+        fi
+        rm -f "$tmpf"
+    done
+fi
 
 rm -f "$tmp"
 
-if [ "$exitFail" = true ] ; then
-  echo "ok: $passed, failed: $failed"
-#  exit 1
+if [ "$exitFail" = true ] && $stopscript ; then
+  exit 1
 else
-  echo "ok: $passed, failed: $failed"
   exit 0
 fi
 
