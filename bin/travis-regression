@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -e
+
+apt-get update
+apt-get install -y mlton gcc build-essential docker docker-compose
+apt-get install -y gcc-multilib g++-multilib libc6 libc6-dev
+apt-get install -y libgmp3-dev  smlnj check
+
+CC=gcc
+MLTON_COMPILE_ARGS="-codegen c"
+PART="-p part-1"
+
+echo
+mlton
+echo
+make -version
+echo
+$CC --version
+echo
+if [[ "$MLTON_COMPILE_ARGS" == *"llvm"* ]]; then
+llvm-as -version
+opt -version
+llc -version
+echo
+fi
+
+
+echo "Building MLton..."
+cd /RTMLton
+./compile.sh
+
+echo "Running regression $PART ..."
+./bin/regression $PART $MLTON_COMPILE_ARGS 

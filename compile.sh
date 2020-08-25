@@ -9,7 +9,8 @@ make $arch_flags compiler &&
 make $arch_flags basis-no-check &&
 make $arch_flags script &&
 make $arch_flags mlbpathmap &&
-make $arch_flags constants 
+make $arch_flags constants &&
+make $arch_flags libraries
 
 cat <<EOF
 Try:
@@ -34,6 +35,7 @@ make  basis-no-check &&
 make  script &&
 make  mlbpathmap &&
 make  constants  &&
+make  libraries &&
 cd runtime && make clean && cd .. &&
 mkdir build/lib/targets/$TARGET/ &&
 mkdir build/lib/targets/$TARGET/include &&
