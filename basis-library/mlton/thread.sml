@@ -101,6 +101,7 @@ local
          end
    end
    val switching = ref false
+   val switchingRT = ref false
 in
    fun 'a atomicSwitch (f: 'a t -> Runnable.t): 'a =
       (* Atomic 1 *)
@@ -136,6 +137,45 @@ in
          in
             !r ()
          end
+  
+   fun 'a atomicSwitchRT (f: 'a t -> Runnable.t): 'a =
+      (* Atomic 1 *)
+      if !switchingRT
+         then let
+                 val () = atomicEnd ()
+                 (* Atomic 0 *)
+              in
+                 raise Fail "nested Thread.switch"
+              end
+      else
+         let
+            val _ = switchingRT := true
+            val r : (unit -> 'a) ref = 
+               ref (fn () => die "Thread.atomicSwitch didn't set r.\n")
+            val t: 'a thread ref =
+               ref (Paused (fn x => r := x, Prim.current gcState))
+            fun fail e = (t := Dead
+                          ; switchingRT := false
+                          ; atomicEnd ()
+                          ; raise e)    
+            val (T t': Runnable.t) = f (T t) handle e => fail e
+            val primThread =
+               case !t' before t' := Dead of
+                  Dead => fail (Fail "switch to a Dead thread")
+                | Interrupted t => t
+                | New g => (atomicBegin (); newThread g)
+                | Paused (f, t) => (f (fn () => ()); t)
+            val _ = switchingRT := false
+            (* Atomic 1 when Paused/Interrupted, Atomic 2 when New *)
+            val _ = Prim.setSavedRT (gcState,primThread) (* implicit atomicEnd() *)
+            (* Atomic 0 when resuming *)
+         in
+            !r ()
+         end
+
+   fun switchRT f =
+      (atomicBegin ()
+       ; atomicSwitchRT f)
 
    fun switch f =
       (atomicBegin ()

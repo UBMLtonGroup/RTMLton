@@ -46,7 +46,6 @@ void GC_copyCurrentThread(GC_state s, bool b) {
 	//GC_stack fromStack;
 	GC_thread toThread;
 	//LOCAL_USED_FOR_ASSERT GC_stack toStack;
-
 	if (DEBUG_THREADS)
 		fprintf(stderr, GREEN("GC_copyCurrentThread\n"));
 	enter(s);
@@ -63,6 +62,29 @@ void GC_copyCurrentThread(GC_state s, bool b) {
 
 	if (b)
 		s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) toThread - offsetofThread(s), s->umheap.start);
+
+}
+
+
+pointer GC_copyThread_ML (GC_state s, pointer p) {
+  GC_thread fromThread;
+  //GC_stack fromStack;
+  GC_thread toThread;
+  //LOCAL_USED_FOR_ASSERT GC_stack toStack;
+
+  if (DEBUG_THREADS)
+    fprintf (stderr, "GC_copyThread from ML ("FMTPTR", pthread=%u)\n", (uintptr_t)p, PTHREAD_NUM);
+  enter (s);
+  fromThread = (GC_thread)(p + offsetofThread (s));
+  //fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->heap.start));
+  toThread = copyThread (s, fromThread, 0);
+  //toStack = (GC_stack)(objptrToPointer(toThread->stack, s->heap.start));
+  //assert (toStack->reserved == alignStackReserved (s, toStack->used));
+  leave (s);
+  if (DEBUG_THREADS)
+    fprintf (stderr, FMTPTR" = GC_copyThread ("FMTPTR")\n", 
+             (uintptr_t)toThread, (uintptr_t)fromThread);
+  return ((pointer)toThread - offsetofThread (s));
 }
 
 pointer GC_copyThread(GC_state s, pointer p) {

@@ -89,7 +89,7 @@ structure CFunction =
                         end,
             return = Type.thread (),
             symbolScope = Private,
-            target = Direct "GC_copyThread"}
+            target = Direct "GC_copyThread_ML"}
 
       val halt = fn () =>
          T {args = Vector.new2 (Type.gcState (), Type.cint ()),

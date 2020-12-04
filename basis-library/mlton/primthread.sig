@@ -25,7 +25,9 @@ signature PRIM_THREAD =
         type thread = Thread.t
         val savedPre: unit -> preThread
         val copyCurrent: unit -> unit
-        val copy: preThread -> Thread.t        
+        val copy: preThread -> Thread.t 
+        val spawn: (unit->unit) -> unit
+        val run: unit ->unit       
      end
 
      type 'a t

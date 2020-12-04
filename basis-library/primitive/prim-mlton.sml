@@ -348,6 +348,7 @@ structure Thread =
       val setSignalHandler =
          _import "GC_setSignalHandlerThread" runtime private: GCState.t * thread -> unit;
       val setSaved = _import "GC_setSavedThread" runtime private: GCState.t * thread -> unit;
+      val setSavedRT = _import "GC_setSavedThread_RT" runtime private: GCState.t * thread -> unit;
       val startSignalHandler = _import "GC_startSignalHandler" runtime private: GCState.t -> unit;
       val switchTo = _prim "Thread_switchTo": thread -> unit;
    end
