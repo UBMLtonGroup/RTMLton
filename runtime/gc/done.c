@@ -69,6 +69,12 @@ void RTGC_done(GC_state s) {
 	FILE *out;
 	out = stderr;
 
+    while(PTHREAD_NUM != 2)
+    {
+		fprintf(stderr, "%d] Main thread spinning\n", PTHREAD_NUM);
+        sched_yield();
+    }
+
 	/*If GC is running wait till its done*/
 	if (s->isGCRunning) {
 		LOCK_FL;

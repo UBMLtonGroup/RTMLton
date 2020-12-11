@@ -22,6 +22,7 @@ int32_t GC_setBooted(int32_t thr_num,GC_state s);
 int32_t GC_safePoint(int32_t thr_num);
 int32_t GC_threadYield(GC_state s);
 int32_t GC_myPriority(GC_state s);
+void RT_init (GC_state state);
 
 #endif
 

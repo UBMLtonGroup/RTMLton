@@ -23,6 +23,9 @@ void switchToThread (GC_state s, objptr op) {
 
 	s->currentThread[PTHREAD_NUM] = op;
 	setGCStateCurrentThreadAndStack (s);  // sets s->currentFrame, s->exnStack
+    
+
+
 }
 
 void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {

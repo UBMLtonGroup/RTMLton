@@ -212,9 +212,9 @@ void GC_setCallFromCHandlerThread(GC_state s, pointer p) {
 	if (DEBUG_THREADS)
 		fprintf(stderr, "%d] call handler set,\n", PTHREAD_NUM);
 	GC_copyCurrentThread(s, false);
-	LOCK_RT_TH;
-	BROADCAST_RT_THREADS;
-	UNLOCK_RT_TH;
+	//LOCK_RT_TH;
+	//BROADCAST_RT_THREADS;
+	//UNLOCK_RT_TH;
 }
 
 pointer GC_getCurrentThread(GC_state s) {

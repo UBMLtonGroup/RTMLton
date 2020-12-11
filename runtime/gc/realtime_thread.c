@@ -9,10 +9,12 @@
 #define SIGNAL_RT_THREADS IFED(pthread_cond_signal(&state->rtThreads_cond))
 #define BLOCK_RT_THREADS IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
 
+#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&state->rtThreads_cond))
 #define CONCURRENT
 //#define DEBUG true
 
 static volatile int initialized = 0;
+volatile bool rtinitfromML = FALSE;
 
 extern void Copy_globalObjptrs (int f, int t);
 
@@ -93,6 +95,27 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
     state->isRealTimeThreadInitialized = TRUE;
 }
 
+/*Will be called by the main thread*/
+void RT_init (GC_state state)
+{
+    
+    for(int i =2 ; i< MAXPRI;i++)
+    {
+        pointer cpThread = GC_copyThread (state, objptrToPointer(state->currentThread[PTHREAD_NUM],
+                                          state->umheap.start));
+        state->currentThread[i] = pointerToObjptr(cpThread, state->umheap.start);
+
+        state->currentFrame[i] = ((GC_thread) (cpThread + offsetofThread(state)))->currentFrame;
+    }
+
+    rtinitfromML = TRUE;
+
+    
+//	LOCK_RT_THREADS;
+//	BROADCAST_RT_THREADS;
+//	UNLOCK_RT_THREADS;
+}
+
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
 
 void *
@@ -107,42 +130,43 @@ realtimeRunner (void *paramsPtr)
     state->rtSync[PTHREAD_NUM]= true;
 
 
-    LOCK_RT_THREADS;
+    /*LOCK_RT_THREADS;
     while(!(state->callFromCHandlerThread != BOGUS_OBJPTR))
     {
-        /*This will be unblocked in GC_setcallFromCHandlerThread */
+        *This will be unblocked in GC_setcallFromCHandlerThread *
         if(DEBUG)
             fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
-
-    /*while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-        if (DEBUG) {
-            fprintf (stderr,
-                     "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
-        }
-        state->rtSync[PTHREAD_NUM]= true;
-        ssleep (1, 0);
-    }*/
-
-    if (DEBUG)
+     if (DEBUG)
         fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
                  state->callFromCHandlerThread);
 
-  
- /*if(state->currentThread[PTHREAD_NUM] == BOGUS_OBJPTR)
- {
-     if(DEBUG_THREADS)
-         fprintf(stderr,"%d] creating green thread to link with RT thread\n");
-     
-     GC_thread thread = newThread (state, sizeofStackInitialReserved (state));
-     switchToThread (state, pointerToObjptr((pointer)thread - offsetofThread (state), state->heap.start));
- }*/
-  
+    */
+
+   // LOCK_RT_THREADS;
+    while(!rtinitfromML)
+    {
+        /*This will be unblocked in rtInit */
+        if(DEBUG)
+            fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
+       // BLOCK_RT_THREADS;
+       // UNLOCK_RT_THREADS;
+    }
+
+
+ 
+     fprintf (stderr, "%d] calling parallel_run \n", tNum);
+     state->rtSync[PTHREAD_NUM]= true;
+     Parallel_run ();
+   
+#if 0
     /*Using same lock to BLOCK again. This time it wont be unblocked. 
      * TODO: Define what RT threads should do*/
-     
+
+
+    /* RT thread allocates on UM heap without stack*/
     if(state->numAllocedByRT <= 0)
     {
     if(DEBUG)
@@ -178,6 +202,7 @@ realtimeRunner (void *paramsPtr)
 		sched_yield();
 
 	}
+#endif
 
    /* fprintf(stderr,"%d] RT thread\n",PTHREAD_NUM)   ;
 

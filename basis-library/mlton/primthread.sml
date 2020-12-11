@@ -22,8 +22,10 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
-    fun thread_main () = (*MLtonThread.run ()*)print "Parallel_run::thread_main running!"
+    fun thread_main () = (*MLtonThread.run ()*) print "Parallel_run::thread_main running!"  
 		
     val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
+    val () = (_import "RT_init": Primitive.MLton.GCState.t -> unit;) Primitive.MLton.GCState.gcState
+    
 end
 
