@@ -20,7 +20,7 @@ void loadWorldFromFILE (GC_state s, FILE *f) {
   s->heap.oldGenSize = readSize (f);
   /* this is only set during initial restoration of the 'world' so no lock is needed */
   s->atomicState = readUint32 (f);
-  s->callFromCHandlerThread = readObjptr (f);
+  s->callFromCHandlerThread[PTHREAD_NUM] = readObjptr (f);
   s->currentThread[PTHREAD_NUM] = readObjptr (f);
   s->signalHandlerThread[PTHREAD_NUM] = readObjptr (f);
   createHeap (s, &s->heap,

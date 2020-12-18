@@ -202,13 +202,13 @@ size_t GC_getLastMajorStatisticsBytesLive(GC_state s) {
 
 
 pointer GC_getCallFromCHandlerThread(GC_state s) {
-	pointer p = objptrToPointer(s->callFromCHandlerThread, s->umheap.start);
+	pointer p = objptrToPointer(s->callFromCHandlerThread[PTHREAD_NUM], s->umheap.start);
 	return p;
 }
 
 void GC_setCallFromCHandlerThread(GC_state s, pointer p) {
 	objptr op = pointerToObjptr(p, s->umheap.start);
-	s->callFromCHandlerThread = op;
+	s->callFromCHandlerThread[PTHREAD_NUM] = op;
 	if (DEBUG_THREADS)
 		fprintf(stderr, "%d] call handler set,\n", PTHREAD_NUM);
 	GC_copyCurrentThread(s, false);

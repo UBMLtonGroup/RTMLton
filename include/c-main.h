@@ -30,8 +30,6 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
         GC_state s;                                                     \
                                                                         \
         s = &gcState;                                                   \
-	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame %08x\n", PTHREAD_NUM,(unsigned int)s->currentFrame[PTHREAD_NUM]);   \
-        struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)s->currentFrame[PTHREAD_NUM];    \
         if (1|| DEBUG_CCODEGEN)                                             \
                 fprintf (stderr, "MLton_callFromC() starting\n");       \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
@@ -42,6 +40,8 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
         GC_switchToThread (s, GC_getCallFromCHandlerThread (s), 0);     \
+	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame %08x\n", PTHREAD_NUM,(unsigned int)s->currentFrame[PTHREAD_NUM]);   \
+        struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)s->currentFrame[PTHREAD_NUM];    \
 	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame after switch to cHandler %08x\n", PTHREAD_NUM,(unsigned int)cf);   \
         cont.nextFun =                                                  \
            *(uintptr_t*)(cf->ml_object + cf->ra); \

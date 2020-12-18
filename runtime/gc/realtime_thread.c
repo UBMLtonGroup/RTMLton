@@ -101,19 +101,26 @@ void RT_init (GC_state state)
     
     for(int i =2 ; i< MAXPRI;i++)
     {
-        pointer cpThread = GC_copyThread (state, objptrToPointer(state->currentThread[PTHREAD_NUM],
+        pointer cpThread = GC_copyThread (state, objptrToPointer(state->callFromCHandlerThread[PTHREAD_NUM],
                                           state->umheap.start));
-        state->currentThread[i] = pointerToObjptr(cpThread, state->umheap.start);
+        state->callFromCHandlerThread[i] = pointerToObjptr(cpThread, state->umheap.start);
 
-        state->currentFrame[i] = ((GC_thread) (cpThread + offsetofThread(state)))->currentFrame;
+        pointer curThread = GC_copyThread (state, objptrToPointer(state->currentThread[PTHREAD_NUM],
+                                          state->umheap.start));
+
+        state->currentThread[i] = pointerToObjptr(curThread, state->umheap.start);
+
+        state->currentFrame[i] = ((GC_thread) (curThread + offsetofThread(state)))->currentFrame;
+
+
     }
 
     rtinitfromML = TRUE;
 
     
-//	LOCK_RT_THREADS;
-//	BROADCAST_RT_THREADS;
-//	UNLOCK_RT_THREADS;
+	LOCK_RT_THREADS;
+	BROADCAST_RT_THREADS;
+	UNLOCK_RT_THREADS;
 }
 
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
@@ -145,14 +152,14 @@ realtimeRunner (void *paramsPtr)
 
     */
 
-   // LOCK_RT_THREADS;
+    LOCK_RT_THREADS;
     while(!rtinitfromML)
     {
         /*This will be unblocked in rtInit */
         if(DEBUG)
             fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
-       // BLOCK_RT_THREADS;
-       // UNLOCK_RT_THREADS;
+        BLOCK_RT_THREADS;
+        UNLOCK_RT_THREADS;
     }
 
 

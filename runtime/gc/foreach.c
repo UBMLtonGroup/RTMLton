@@ -31,25 +31,30 @@ void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f) {
 	// where you can call SML /from/ C. our research is focused (?) on
 	// pure SML systems.
 
-	if (DEBUG_DETAILED)
-		fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread);
+    /*When running multiple RT threads with SML code, we need to go through the entire array of thread structures.
+     * This is not required when running only the main thread and GC */
+    for(int __i =0; __i < MAXPRI; __i++)
+    {
+        if (DEBUG_DETAILED)
+            fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread[__i]);
 
-	callIfIsObjptr(s, f, &s->callFromCHandlerThread);
+        callIfIsObjptr(s, f, &s->callFromCHandlerThread[__i]);
 
-	if (DEBUG_DETAILED)
-		fprintf(stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[PTHREAD_NUM]);
+        if (DEBUG_DETAILED)
+            fprintf(stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[__i]);
 
-	callIfIsObjptr(s, f, &s->currentThread[PTHREAD_NUM]);
+        callIfIsObjptr(s, f, &s->currentThread[__i]);
 
-	if (DEBUG_DETAILED)
-		fprintf(stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[PTHREAD_NUM]);
+        if (DEBUG_DETAILED)
+            fprintf(stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[__i]);
 
-	callIfIsObjptr(s, f, &s->savedThread[PTHREAD_NUM]);
+        callIfIsObjptr(s, f, &s->savedThread[PTHREAD_NUM]);
 
-	if (DEBUG_DETAILED)
-		fprintf(stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[PTHREAD_NUM]);
+        if (DEBUG_DETAILED)
+            fprintf(stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[__i]);
 
-	callIfIsObjptr(s, f, &s->signalHandlerThread[PTHREAD_NUM]);
+        callIfIsObjptr(s, f, &s->signalHandlerThread[PTHREAD_NUM]);
+    }
 }
 
 
