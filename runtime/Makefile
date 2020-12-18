@@ -401,12 +401,18 @@ flags:
 clean:
 	../bin/clean
 
-.PHONY: check
-check: libmlton-gdb.a
-	# if you want to use gdb on this exec, first export CK_FORK=no
+.PHONY: check debugcheck buildcheck
+buildcheck: libmlton-gdb.a
 	checkmk umarray-allocate-test.check > umarray-allocate-test.c
 	gcc -g -O0 -I. -Iplatform  -pthread  -o umarray-allocate-test umarray-allocate-test.c -lcheck  -lrt -lm -lpthread -lsubunit ./libmlton-gdb.a ./libgdtoa-gdb.a 
+
+
+check: buildcheck
 	CK_VERBOSITY=verbose ./umarray-allocate-test
+
+debugcheck: buildcheck
+	# if you want to use gdb on this exec, first export CK_FORK=no
+	CF_FORK=no CK_VERBOSITY=verbose gdb ./umarray-allocate-test
 
 splitheader: splitheader.c
 	gcc -g -O0 -I. -Iplatform  -pthread  -o splitheader splitheader.c  -lrt  -lpthread -L . -lmlton-gdb ./libgdtoa-gdb.a
