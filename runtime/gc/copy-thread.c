@@ -12,77 +12,108 @@
 GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	GC_thread to;
 
-	if (DEBUG_THREADS)
-		fprintf(stderr, GREEN("%d] copyThread from=("
-									  FMTPTR
-									  ")\n"), PTHREAD_NUM, (uintptr_t) from);
-
 	/* newThread may do a GC, which invalidates from.
 	 * Hence we need to stash from someplace that the GC can find it.
 	 */
-	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
-	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) from - offsetofThread(s), s->umheap.start);
 
+	if (s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
+		fprintf(stderr, PURPLE("%d] savedThread "FMTPTR" currentThread "FMTPTR" \n"),
+		  PTHREAD_NUM,
+		  s->savedThread[PTHREAD_NUM],
+		  s->currentThread[PTHREAD_NUM]);
+	}
+
+	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+
+	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) from - offsetofThread(s), s->umheap.start);
+	if (DEBUG_THREADS)
+		fprintf(stderr, "%d]    %s "RED("setting savedThread")" to "FMTPTR"\n",
+			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
+
+	if (DEBUG_THREADS)
+		fprintf(stderr, GREEN("%d]    copyThread from="FMTPTR" to="YELLOW("not-available-yet")"\n"
+									  ), PTHREAD_NUM, (uintptr_t) from);
 	to = newThread(s, used);
+
+	if (DEBUG_THREADS)
+		fprintf(stderr, GREEN("%d]    copyThread from="FMTPTR" to="
+									  FMTPTR
+									  "\n"), PTHREAD_NUM, (uintptr_t) from, (uintptr_t) to);
 
 	from = (GC_thread) (objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread(s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
+	fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
+			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
 
 	to->bytesNeeded = from->bytesNeeded; // TODO what does this do in stacklets?
 	//to->exnStack = from->exnStack; // this will be adjusted in um_copyStack below
 
 	um_copyStack(s, from, to); // note we pass in GC_threads not the actual stacklets
 
-	if (DEBUG_THREADS)
-		fprintf(stderr, GREEN("%d] copyThread new=("
-									  FMTPTR
-									  ")\n"), PTHREAD_NUM, (uintptr_t) to);
-
 	return to;
 }
 
 void GC_copyCurrentThread(GC_state s, bool b) {
 	GC_thread fromThread;
-	//GC_stack fromStack;
 	GC_thread toThread;
-	//LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
-	if (DEBUG_THREADS)
-		fprintf(stderr, GREEN("GC_copyCurrentThread\n"));
 	enter(s);
 	fromThread = (GC_thread) (objptrToPointer(s->currentThread[PTHREAD_NUM], s->umheap.start)
 							  + offsetofThread(s));
-	//fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->umheap.start));
-	toThread = copyThread(s, fromThread, 0);
-	//toStack = (GC_stack)(objptrToPointer(toThread->stack, s->umheap.start));
-	//assert (toStack->reserved == alignStackReserved (s, toStack->used));
-	leave(s);
+	fromThread->currentFrame = s->currentFrame[PTHREAD_NUM];
+
 	if (DEBUG_THREADS)
-		fprintf(stderr, FMTPTR" = GC_copyCurrentThread\n", (uintptr_t) toThread);
+		fprintf(stderr, "%d] GC_copyCurrentThread from="FMTPTR" to="YELLOW("not-available-yet")"\n",
+			PTHREAD_NUM, (uintptr_t) fromThread);
+
+	toThread = copyThread(s, fromThread, 0);
+	leave(s);
+
+	if (DEBUG_THREADS) {
+		fprintf(stderr, "%d] GC_copyCurrentThread from="FMTPTR" to="FMTPTR"\n",
+				PTHREAD_NUM, (uintptr_t) fromThread, (uintptr_t) toThread);
+
+		fprintf(stderr, "   fromThread stack:\n");
+		displayThread(s, (GC_thread)fromThread, stderr);
+		fprintf(stderr, "   toThread stack:\n");
+		displayThread(s, (GC_thread)toThread, stderr);
+	}
+
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 
-	if (b)
-		s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) toThread - offsetofThread(s), s->umheap.start);
+	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) toThread - offsetofThread(s), s->umheap.start);
+	fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
+			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
 }
 
 pointer GC_copyThread(GC_state s, pointer p) {
 	GC_thread fromThread;
-	//GC_stack fromStack;
 	GC_thread toThread;
-	//LOCAL_USED_FOR_ASSERT GC_stack toStack;
 
-	if (DEBUG_THREADS)
-		fprintf(stderr, GREEN("GC_copyThread")" ("FMTPTR", pthread=%u)\n", (uintptr_t) p, PTHREAD_NUM);
 	enter(s);
 	fromThread = (GC_thread) (p + offsetofThread(s));
-	//fromStack = (GC_stack)(objptrToPointer(fromThread->stack, s->umheap.start));
+	if (DEBUG_THREADS) {
+		fprintf(stderr, "%d] GC_copyThread from="FMTPTR" to="YELLOW("not-available-yet")"\n",
+				PTHREAD_NUM, (uintptr_t) fromThread);
+	}
+	if ((GC_thread)(s->currentThread[PTHREAD_NUM]) == fromThread) {
+		fprintf(stderr,
+				RED("%d]   looks like you are trying to copy the currentThread with copyThread?\n"),
+				PTHREAD_NUM);
+		fromThread->currentFrame = s->currentFrame[PTHREAD_NUM];
+	}
 	toThread = copyThread(s, fromThread, 0);
-	//toStack = (GC_stack)(objptrToPointer(toThread->stack, s->umheap.start));
-	//assert (toStack->reserved == alignStackReserved (s, toStack->used));
 	leave(s);
-	if (DEBUG_THREADS)
-		fprintf(stderr, FMTPTR" = GC_copyThread ("FMTPTR")\n",
-				(uintptr_t) toThread, (uintptr_t) fromThread);
+	if (DEBUG_THREADS) {
+		fprintf(stderr, "%d] GC_copyThread from="FMTPTR" to="FMTPTR"\n",
+				PTHREAD_NUM,
+				(uintptr_t) fromThread, (uintptr_t) toThread);
+		fprintf(stderr, "   fromThread stack:\n");
+		displayThread(s, (GC_thread)fromThread, stderr);
+		fprintf(stderr, "   toThread stack:\n");
+		displayThread(s, (GC_thread)toThread, stderr);
+	}
+
 	return ((pointer) toThread - offsetofThread(s));
 }
 

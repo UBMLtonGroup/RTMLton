@@ -125,5 +125,4 @@ void initWorld (GC_state s) {
   thread = newThread (s, 0);
   thread->currentFrame = thread->firstFrame;
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->umheap.start));
-  GC_setCallFromCHandlerThread(s,(pointer)0x22);
 }

@@ -62,11 +62,14 @@ fun prepend (T r: 'a t, f: 'b -> 'a): 'b t =
           | New g => New (g o f)
           | Paused (g, t) => Paused (fn h => g (f o h), t)
    in r := Dead
+      ; print ">>> mltonthread: prepend\n"
       ; T (ref t)
    end
 
-fun prepare (t: 'a t, v: 'a): Runnable.t =
-   prepend (t, fn () => v)
+fun prepare (t: 'a t, v: 'a): Runnable.t = (
+     print ">>> mltonthread: prepare\n"
+   ; prepend (t, fn () => v)
+   )
 
 fun new f = T (ref (New f))
 
@@ -97,7 +100,9 @@ local
             (* Atomic 2 *)
             val () = func := SOME f
          in
-            Prim.copy base
+            (   print ">>> mltonthread: newThread\n"
+              ; Prim.copy base
+              )
          end
    end
    val switching = ref false
@@ -134,7 +139,7 @@ in
             val _ = Prim.switchTo primThread (* implicit atomicEnd() *)
             (* Atomic 0 when resuming *)
          in
-            !r ()
+            (print ">>> mltonthread: atomicSwitch\n" ; !r ())
          end
 
    fun switch f =
@@ -143,7 +148,7 @@ in
 end
 
 fun fromPrimitive (t: Prim.thread): Runnable.t =
-   T (ref (Interrupted t))
+   (print ">>> mltonthread: fromPrimitive\n" ; T (ref (Interrupted t)))
 
 fun toPrimitive (t as T r : unit t): Prim.thread =
    case !r of
@@ -162,6 +167,7 @@ fun toPrimitive (t as T r : unit t): Prim.thread =
            ()))
     | Paused (f, t) =>
          (r := Dead
+          ; print ">>> mltonthread: toPrimitive\n"
           ; f (fn () => ()) 
           ; t)
 
@@ -202,7 +208,7 @@ in
             (new (fn () => loop () handle e => MLtonExn.topLevelHandler e))
          val _ = signalHandler := SOME p
       in
-         Prim.setSignalHandler (gcState, p)
+         (print ">>> mltonthread: setSignalHandler\n" ; Prim.setSignalHandler (gcState, p))
       end
 
    fun switchToSignalHandler () =
@@ -213,10 +219,13 @@ in
          val () = Prim.startSignalHandler gcState (* implicit atomicBegin () *)
          (* Atomic 2 *)
       in
+      (print ">>> mltonthread: switchToSignalHandler\n";
          case !signalHandler of
             NONE => raise Fail "no signal handler installed"
           | SOME t => Prim.switchTo t (* implicit atomicEnd() *)
+       )
       end
+      
 end
 
 
@@ -282,49 +291,5 @@ in
          fn (i, f) => Array.update (exports, i, f)
       end
 end
-structure Queue =
-   struct
-      datatype 'a t = T of {front: 'a list ref, back: 'a list ref}
 
-      fun new () = T {front = ref [], back = ref []}
-
-      fun enque (T {back, ...}, x) = back := x :: !back
-
-      fun deque (T {front, back}) =
-         case !front of
-            [] => (case !back of
-                      [] => NONE
-                    | l => let val l = rev l
-                           in case l of
-                              [] => raise Fail "deque"
-                            | x :: l => (back := []; front := l; SOME x)
-                           end)
-          | x :: l => (front := l; SOME x)
-   end
-
-    val topLevel: Runnable.t option ref = ref NONE
-    val threads:Runnable.t Queue.t = Queue.new ()
-
-    fun ready (t:Runnable.t) : unit =
-            Queue.enque(threads, t)
-
-    fun next () :Runnable.t =
-            case Queue.deque threads of
-               NONE => valOf (!topLevel)
-             | SOME t => t
-
-    fun 'a exit (): 'a = switch (fn _ => next ())
-
-    fun preparenew (f: unit -> unit):Runnable.t =
-         prepare
-         (new (fn () => ((f () handle _ => exit ())
-                                ; exit ())),
-          ())
-    val spawn = ready o preparenew
-
-    fun run(): unit =
-         (switch (fn t =>
-                  (topLevel := SOME (prepare (t, ()))
-                   ; next()))
-                   ; topLevel := NONE)
 end

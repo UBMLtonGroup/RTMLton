@@ -54,7 +54,8 @@ objptr newStack_um(GC_state s, size_t stackSizeInBytes, size_t *stackSizeInChunk
 	uint32_t need_chunks = 20; //frameLayouts_len;
 
 	if (DEBUG_STACKS)
-		fprintf(stderr, "newStack_um(stackSizeInBytes=%d) -> chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
+		fprintf(stderr, "%d] newStack_um(stackSizeInBytes=%d) -> chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
+				PTHREAD_NUM,
 				stackSizeInBytes,
 				need_chunks,
 				s->maxFrameSize,
@@ -103,9 +104,6 @@ GC_thread newThread(GC_state s, size_t stackSize) {
 	GC_thread thread;
 	pointer res;
 
-	if (DEBUG_THREADS)
-		fprintf(stderr, GREEN("newThread\n"));
-
 	C_Size_t numchunks = (sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE) ? 1 : 2;
 	assert(sizeofThread(s) < UM_CHUNK_PAYLOAD_SIZE); // TODO we should size chunk so it fits
 
@@ -126,8 +124,8 @@ GC_thread newThread(GC_state s, size_t stackSize) {
 	thread->markCycles = 0;
 
 	if (DEBUG_THREADS)
-		fprintf(stderr, FMTPTR" = newThread (stackSize=%"PRIuMAX")\n",
-				(uintptr_t) thread, (uintmax_t)stackSize);
+		fprintf(stderr, "%d]      newThread(stackSize=%"PRIuMAX") = "FMTPTR"\n",
+				PTHREAD_NUM, (uintmax_t)stackSize, (uintptr_t) thread);
 
 
 	return thread;

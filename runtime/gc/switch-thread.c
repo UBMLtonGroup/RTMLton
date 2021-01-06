@@ -17,8 +17,9 @@ void switchToThread (GC_state s, objptr op) {
 		//					 + offsetofThread (s));
 		//stack = (GC_stack)(objptrToPointer (thread->stack, s->umheap.start));
 
-		fprintf (stderr, "switchToThread ("FMTOBJPTR")\n",
-				op);
+		fprintf (stderr, "%d]  switchToThread ("FMTOBJPTR")\n",
+				 PTHREAD_NUM, op);
+		displayThread(s, (GC_thread)op, stderr);
 	}
 
 	s->currentThread[PTHREAD_NUM] = op;
@@ -29,9 +30,10 @@ void switchToThread (GC_state s, objptr op) {
 }
 
 void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
-	if (DEBUG_THREADS)
-		fprintf (stderr, GREEN("GC_switchToThread")" ("FMTPTR", %"PRIuMAX")\n",
-			(uintptr_t)p, (uintmax_t)ensureBytesFree);
+	if (DEBUG_THREADS) {
+		fprintf (stderr, "%d] "GREEN("GC_switchToThread")" ("FMTPTR", %"PRIuMAX")\n",
+			PTHREAD_NUM, (uintptr_t)p, (uintmax_t)ensureBytesFree);
+        }
 	if (FALSE) {
 		/* This branch is slower than the else branch, especially
 		 * when debugging is turned on, because it does an invariant
@@ -51,12 +53,6 @@ void GC_switchToThread (GC_state s, pointer p, size_t ensureBytesFree) {
 	} else {
 		/* BEGIN: enter(s); */
 		//getStackCurrent(s)->used = sizeofGCStateCurrentStackUsed (s);
-
-		if (DEBUG_THREADS)
-			fprintf(stderr, YELLOW("CurFrame CHECK")
-			    " t->cf %08x s->cf[%d] %08x\n",
-				(unsigned int)getThreadCurrent(s)->currentFrame , PTHREAD_NUM,
-				(unsigned int)s->currentFrame[PTHREAD_NUM]);
 
 		beginAtomic (s);
 		/* END: enter(s); */
