@@ -10,18 +10,23 @@ GC_frameIndex getFrameIndexFromReturnAddress (GC_state s, GC_returnAddress ra) {
   GC_frameIndex res;
 
   res = s->returnAddressToFrameIndex (ra);
-  if (DEBUG_DETAILED)
-    fprintf (stderr, FMTFI" = getFrameIndexFromReturnAddress ("FMTRA")\n",
-             res, ra);
+  if (1||DEBUG_DETAILED)
+    fprintf (stderr, "%d] "FMTFI" = getFrameIndexFromReturnAddress ("FMTRA")\n",
+             PTHREAD_NUM, res, ra);
   return res;
 }
 
 GC_frameLayout getFrameLayoutFromFrameIndex (GC_state s, GC_frameIndex findex) {
   GC_frameLayout layout;
 
-  if (DEBUG_DETAILED)
-    fprintf (stderr,"Thread num= %d findex = "FMTFI"  frameLayoutsLength = %"PRIu32"\n",
+  if (1||DEBUG_DETAILED)
+    fprintf (stderr, "%d] findex = "FMTFI"  frameLayoutsLength = %"PRIu32"\n",
             PTHREAD_NUM,findex, s->frameLayoutsLength);
+  if (findex >= s->frameLayoutsLength) {
+  	fprintf (stderr, "%d] findex %d >= %d s->frameLayoutsLength\n",
+			PTHREAD_NUM, findex,
+			s->frameLayoutsLength);
+  }
   assert (findex < s->frameLayoutsLength);
   layout = &(s->frameLayouts[findex]);
   assert (layout->size > 0);

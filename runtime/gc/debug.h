@@ -50,3 +50,5 @@ enum {
 #define RED(x) "\033[1;31m"x"\033[0m"
 #define YELLOW(x) "\033[1;33m"x"\033[0m"
 #define GREEN(x) "\033[1;32m"x"\033[0m"
+#define BLUE(x) "\033[1;34m"x"\033[0m"
+#define PURPLE(x) "\033[1;35m"x"\033[0m"

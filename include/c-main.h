@@ -31,7 +31,8 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
                                                                         \
         s = &gcState;                                                   \
         if (1|| DEBUG_CCODEGEN)                                             \
-                fprintf (stderr, "MLton_callFromC() starting\n");       \
+                fprintf (stderr, "%d] MLton_callFromC() starting\n", PTHREAD_NUM);       \
+        assert (GC_getCurrentThread (s) != BOGUS_OBJPTR);                                                                \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
         incAtomicBy(s, 3); /*s->atomicState += 3;*/                     \
         s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
@@ -43,12 +44,21 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
 	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame %08x\n", PTHREAD_NUM,(unsigned int)s->currentFrame[PTHREAD_NUM]);   \
         struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)s->currentFrame[PTHREAD_NUM];    \
 	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame after switch to cHandler %08x\n", PTHREAD_NUM,(unsigned int)cf);   \
-        cont.nextFun =                                                  \
-           *(uintptr_t*)(cf->ml_object + cf->ra); \
+um_dumpStack(s); \
+fprintf(stderr, " C::cf->ml_object %x cf->ra %d\n", cf->ml_object, cf->ra); \
+fprintf(stderr, " N::cf->ml_object %x cf->ra %d\n", cf->next_chunk->ml_object, cf->next_chunk->ra); \
+fprintf(stderr, "NN::cf->ml_object %x cf->ra %d\n", cf->next_chunk->next_chunk->ml_object, cf->next_chunk->next_chunk->ra); \
+        cont.nextFun = *(uintptr_t*)(cf->ml_object + cf->ra);           \
+        cont.nextFun = *(uintptr_t*)(cf->next_chunk->ml_object + cf->next_chunk->ra);           \
+fprintf(stderr, "here1 cont.nextFun %d\n", cont.nextFun); \
+fprintf(stderr, "hereN cont.nextFun %d\n", *(uintptr_t*)(cf->next_chunk->ml_object + cf->next_chunk->ra)); \
         cont.nextChunk = nextChunks[cont.nextFun];                      \
+fprintf(stderr, "here2\n"); \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
+fprintf(stderr, "here3\n"); \
         if (1||DEBUG_CCODEGEN) fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
         do {                                                            \
+                fprintf(stderr, "%d] cont.nextFun %d\n", PTHREAD_NUM, cont.nextFun); \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
         } while (not returnToC[PTHREAD_NUM]);                           \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
@@ -60,7 +70,7 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
             && s->signalsInfo.signalIsPending)                          \
                 s->limit = 0;                                           \
         if (1||DEBUG_CCODEGEN)                                             \
-                fprintf (stderr, "MLton_callFromC done\n");             \
+                fprintf (stderr, "%d] MLton_callFromC done\n", PTHREAD_NUM);             \
 }
 
 #define MLtonMain(al, mg, mfs, mmc, pk, ps, gc, mc, ml)                 \
@@ -78,23 +88,16 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
                 cont.nextChunk = nextChunks[cont.nextFun];              \
         }                                                               \
         setvbuf(stderr, NULL, _IONBF, 0);                               \
-	pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));             \
-	set_pthread_num(0);                                                 \
-	MYASSERT(GCrunner_thread, !=, NULL);                                \
-	MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
-	while (!gcState.GCrunnerRunning){if (DEBUG) fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
-	realtimeThreadInit(&gcState, pthread_self(), GCrunner_thread);      \
-	realtimeThreadWaitForInit();                                        \
+	    pthread_t *GCrunner_thread = malloc(sizeof(pthread_t));         \
+        set_pthread_num(0);                                             \
+	    MYASSERT(GCrunner_thread, !=, NULL);                            \
+        MYASSERT(pthread_create(GCrunner_thread, NULL, &GCrunner, (void*)&gcState), ==, 0); \
+	    while (!gcState.GCrunnerRunning){if (DEBUG) fprintf(stderr, "spin [GC booting]\n"); ssleep(1, 0);}          \
+	    realtimeThreadInit(&gcState, pthread_self(), GCrunner_thread);  \
+	    realtimeThreadWaitForInit();                                    \
        									                                \
         /* Trampoline */                                                \
-		while (1) {     \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
-				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
+		while (1) {    fprintf (stderr, RED("%d] F=%d\n"), PTHREAD_NUM, cont.nextFun); \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 		}                                                               \
         return 1;                                                       \

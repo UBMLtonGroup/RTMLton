@@ -357,10 +357,6 @@ in
    in
       ../mlton/ffi.sml
    end
-   ../mlton/primthread.sig
-   ann "allowFFI true" in
-	   ../mlton/primthread.sml
-   end
    ../mlton/int-inf.sig
    ../mlton/proc-env.sig
    ../mlton/proc-env.sml
@@ -383,6 +379,12 @@ in
    ../mlton/world.sml
    ../mlton/mono-array.sig
    ../mlton/mono-vector.sig
+
+      ../mlton/primthread.sig
+      ann "allowFFI true" in
+   	   ../mlton/primthread.sml
+      end
+
    ../mlton/mlton.sig
    ../mlton/mlton.sml
 

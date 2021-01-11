@@ -21,7 +21,7 @@ void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
 
 	assert (chunk->sentinel == UM_STACK_SENTINEL);
 
-	returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
+	returnAddress = *(GC_returnAddress*)(chunk->ml_object + chunk->ra);
 	if (raoverride > 0) {
 		returnAddress = raoverride;
 	}
@@ -30,6 +30,11 @@ void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
 			PTHREAD_NUM,
 			(uintptr_t)chunk, returnAddress, returnAddress,
 			chunk->ra);
+
+	if (chunk->ra == 0) {
+		fprintf(stderr, "%d]   ra=0, so cant decode this frame\n", PTHREAD_NUM);
+		return;
+	}
 
 	frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
 	frameOffsets = frameLayout->offsets;
@@ -101,6 +106,10 @@ pointer um_getStackTop (GC_state s, objptr stack) {
 /* given two thread structs, copy the stacklet (list of chunks)
  * from the first to the second. figure out what the correct
  * currentFrame is for the destination thread and set it.
+ *
+ * if you are copying the stack of the current thread then you
+ * should copy gcstate->currentframe[x] into fromthread->currentframe
+ * to make sure it is sync'd correctly.
  *
  * both stacklets must be already allocated
  * both stacklets must be the same number of chunks (asserted)
