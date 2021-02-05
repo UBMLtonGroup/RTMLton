@@ -146,6 +146,17 @@ if(1)
 	UNLOCK_RT_THREADS;
 }
 
+Int32 RTThread_maxpri (void)
+{
+    return MAXPRI;
+}
+
+Int32 RTThread_get_pthread_num(void)
+{
+    return PTHREAD_NUM;
+}
+
+
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
 
 void Parallel_run(void);
@@ -177,7 +188,9 @@ realtimeRunner (void *paramsPtr)
      fprintf (stderr, "%d] calling parallel_run \n", tNum);
      state->rtSync[PTHREAD_NUM]= true;
      Parallel_run ();
-   
+     fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
+                 tNum);
+        exit (-1); 
 #if 0
     /*Using same lock to BLOCK again. This time it wont be unblocked. 
      * TODO: Define what RT threads should do*/

@@ -350,6 +350,8 @@ structure Thread =
       val setSaved = _import "GC_setSavedThread" runtime private: GCState.t * thread -> unit;
       val startSignalHandler = _import "GC_startSignalHandler" runtime private: GCState.t -> unit;
       val switchTo = _prim "Thread_switchTo": thread -> unit;
+      val numberOfPThreads = _import "RTThread_maxpri": unit -> Int32.int;
+      val pthreadNum = _import "RTThread_get_pthread_num": unit -> Int32.int;
    end
 
 structure Weak =
