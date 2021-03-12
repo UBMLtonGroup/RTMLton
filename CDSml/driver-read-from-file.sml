@@ -135,7 +135,7 @@ struct
 
 
 
-    fun main() = 
+    fun driver_main() = 
     let 
       val frameBuffer = Frames.readFromFile("./input/frames_col.txt")
 
@@ -167,8 +167,8 @@ struct
 
         
 
-      fun loop ([],i,frameBuf) = if not (i=maxFrames) then loop(frameBuf,i,frameBuf) else ()
-        | loop(x::xs,i,frameBuf) = if not(i = maxFrames) then (Array.update(ts,i,Time.toMicroseconds (Time.now()));
+      fun loop_framesim ([],i,frameBuf) = if not (i=maxFrames) then loop_framesim(frameBuf,i,frameBuf) else ()
+        | loop_framesim(x::xs,i,frameBuf) = if not(i = maxFrames) then (Array.update(ts,i,Time.toMicroseconds (Time.now()));
                                                         (*print(IntInf.toString(Array.sub(ts,i))^"\n"); *)
                                                         TransientDetector.TRANSIENTDETECTOR_run(x) ;
                                                         
@@ -177,12 +177,12 @@ struct
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
                                                         (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
                                                         maybeSleep (Array.sub(ts,i));
-                                                        loop(xs,(i+1),frameBuf) ) 
+                                                        loop_framesim(xs,(i+1),frameBuf) ) 
                           else
                             ()
     in
       (*print (Int.toString(List.length(maxFrames)))*)
-      loop(frameBuffer, 0,frameBuffer);
+      loop_framesim(frameBuffer, 0,frameBuffer);
 
       (*printArray(ts);*)
         
@@ -211,7 +211,7 @@ val rec loop =
 (*val _ = (PThread.spawn(fn () => Driver.main());PThread.spawn(fn () => loop
 * 10); PThread.run())*)
 
-val _ = Driver.main();
+val _ = Driver.driver_main();
 
 (*Run with rtobj 5 for RTMLton*)
 
