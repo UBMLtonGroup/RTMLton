@@ -1,3 +1,5 @@
+*.dot
+
 .idea
 /build/
 /install/

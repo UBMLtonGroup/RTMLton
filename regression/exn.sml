@@ -5,4 +5,4 @@ fun loop n =
       then raise E
    else (loop(n - 1) handle e => (print "z"; raise e))
 
-val _ = loop 13 handle _ => print "\n"
+val _ = loop 13 handle _ => print "done\n"

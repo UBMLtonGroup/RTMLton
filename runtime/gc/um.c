@@ -354,7 +354,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
      * 455 and this chunk contains indices 450-500, we need to extract index 5 from this
      * chunk.
      */
-	if (DEBUG_ARRAY_OFFSET || 1)
+	if (DEBUG_ARRAY_OFFSET)
 		fprintf(stderr, "   (%d-%d)*%d+%d = %d = (index-e0) * elemSize + offset\n",
 				index, e0,
 				elemSize, offset, (index-e0)*elemSize+offset);
