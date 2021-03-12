@@ -9,6 +9,7 @@ apt-get install -y libgmp3-dev  smlnj check
 
 CC=gcc
 MLTON_COMPILE_ARGS="-codegen c"
+PART="-benchmark -skip-parts"
 
 echo
 mlton
@@ -24,14 +25,11 @@ llc -version
 echo
 fi
 
+
 echo "Building MLton..."
 cd /RTMLton
-# make CC="$CC" MLTON_COMPILE_ARGS="$MLTON_COMPILE_ARGS" all
 ./compile.sh
-(cd runtime ; make check)
 
-if [ "$REGRESSION" == "true" ]; then
-echo "Running regression tests..."
-./bin/regression $MLTON_COMPILE_ARGS
-fi
+echo "Running regression benchmark tests ..."
+./bin/regression $PART $MLTON_COMPILE_ARGS 
 
