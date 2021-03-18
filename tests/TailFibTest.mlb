@@ -14,5 +14,5 @@ local
     barnes-hut.sml
     matrix-multiply.sml (*redefines Array structure*)
 in
-    main.sml
+    mainTailFibTest.sml
 end
