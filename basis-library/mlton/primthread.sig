@@ -32,6 +32,7 @@ signature PRIM_THREAD =
 
      type 'a t
 
+     val spawnp: (unit->unit) -> unit
      val thread_main: unit -> unit
      val gcstate: Primitive.MLton.GCState.t
  end

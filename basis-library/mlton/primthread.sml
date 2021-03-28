@@ -45,6 +45,7 @@ struct
                             | x :: l => (back := []; front := l; SOME x)
                            end)
           | x :: l => (front := l; SOME x)
+
    end
 
   structure NPThread:
@@ -53,6 +54,7 @@ struct
       val run: unit -> unit
       val spawn: (unit -> unit) -> unit
       val yield: unit -> unit
+     (* val loop: unit -> unit*)
    end =
    struct
       open MLton
@@ -69,6 +71,7 @@ struct
             case Queue.deque threads of
                NONE => valOf (!topLevel)
              | SOME t => t
+
       end
 
       fun 'a exit (): 'a = switch (fn _ => next ())
@@ -90,6 +93,11 @@ struct
                   (topLevel := SOME (prepare (t, ()))
                    ; next()))
           ; topLevel := NONE)
+
+      (*fun loop () =
+        case empty () of
+             true => loop ()
+           | false =>  (run () ; loop ())*)
    end
 
 
@@ -115,8 +123,20 @@ struct
 
     type 'a t = (unit -> 'a) -> unit
 
+    val workQ : (unit->unit) Queue.t = Queue.new ()
+    
+    fun loop () =
+      case Queue.deque workQ of
+           NONE => loop ()
+         | SOME w => (w () ; loop ())
 
-    fun thread_main () = (*MLtonThread.run ()*)print "\n\nParallel_run::thread_main running!\n\n" 
+    fun test () = print "Parallel_run::thread_main running!\n";
+
+    fun spawnp f = Queue.enque(workQ,f);
+
+    fun thread_main () = (*MLtonThread.run ()print
+      "\n\nParallel_run::thread_main running!\n\n"*) (print "looping...\n";
+      Queue.enque(workQ, test); loop ())
 
     val gcstate = Primitive.MLton.GCState.gcState
 
