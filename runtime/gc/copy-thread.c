@@ -42,7 +42,9 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 
 	from = (GC_thread) (objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread(s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
-	fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
+	
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
 			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
 
 	to->bytesNeeded = from->bytesNeeded; // TODO what does this do in stacklets?
@@ -82,7 +84,8 @@ void GC_copyCurrentThread(GC_state s, bool b) {
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 
 	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) toThread - offsetofThread(s), s->umheap.start);
-	fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
 			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
 }
 
@@ -97,8 +100,8 @@ pointer GC_copyThread(GC_state s, pointer p) {
 				PTHREAD_NUM, (uintptr_t) fromThread);
 	}
 	if ((GC_thread)(s->currentThread[PTHREAD_NUM]) == fromThread) {
-		fprintf(stderr,
-				RED("%d]   looks like you are trying to copy the currentThread with copyThread?\n"),
+        if(DEBUG_THREADS)
+            fprintf(stderr,	RED("%d] looks like you are trying to copy the currentThread with copyThread?\n"),
 				PTHREAD_NUM);
 		fromThread->currentFrame = s->currentFrame[PTHREAD_NUM];
 	}

@@ -11,6 +11,6 @@ val _ = print "The following is a test, ignore:\n"
 val _ = print "Calling rtinit...\n"
 val _ = (rtinit gcstate)*)
 
-val _ = spawnp (fn () => print "Called from user program!\n")
-val _ = spawnp (fn () => print "Second call from user program!\n")
+val _ = pspawn (fn () => print "Called from user program!\n", 2)
+val _ = pspawn (fn () => let val a = 2+2 in print ("Ans = "^Int.toString(a)^"\n") end, 2)
 val _ = print "\n\nTest app exits... (this will hang until we shut down all threads)\n"

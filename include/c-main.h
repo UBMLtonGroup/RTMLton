@@ -25,51 +25,44 @@ static GC_frameIndex returnAddressToFrameIndex (GC_returnAddress ra) {
 /* Globals */                                                           \
 PRIVATE int returnToC[MAXPRI];                                          \
 static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
-	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
+	if (DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main MLton_callFromC\n", PTHREAD_NUM);   \
         struct cont cont;                                               \
         GC_state s;                                                     \
                                                                         \
         s = &gcState;                                                   \
-        if (1|| DEBUG_CCODEGEN)                                             \
+        if (DEBUG_CCODEGEN)                                             \
                 fprintf (stderr, "%d] MLton_callFromC() starting\n", PTHREAD_NUM);       \
         assert (GC_getCurrentThread (s) != BOGUS_OBJPTR);                                                                \
         GC_setSavedThread (s, GC_getCurrentThread (s));                 \
         incAtomicBy(s, 3); /*s->atomicState += 3;*/                     \
         s->ffiOpArgsResPtr[PTHREAD_NUM] = ffiOpArgsResPtr;              \
-        if (1|| DEBUG_CCODEGEN) fprintf(stderr,"%d] ffiOpArgsResPtr = %x\n",PTHREAD_NUM,ffiOpArgsResPtr); \
+        if (DEBUG_CCODEGEN) fprintf(stderr,"%d] ffiOpArgsResPtr = %x\n",PTHREAD_NUM,ffiOpArgsResPtr); \
         if (s->signalsInfo.signalIsPending)                             \
                 s->limit = s->limitPlusSlop - GC_HEAP_LIMIT_SLOP;       \
         /* Switch to the C Handler thread. */                           \
         GC_switchToThread (s, GC_getCallFromCHandlerThread (s), 0);     \
-	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame %08x\n", PTHREAD_NUM,(unsigned int)s->currentFrame[PTHREAD_NUM]);   \
+	if (DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame %08x\n", PTHREAD_NUM,(unsigned int)s->currentFrame[PTHREAD_NUM]);   \
         struct GC_UM_Chunk *cf = (struct GC_UM_Chunk *)s->currentFrame[PTHREAD_NUM];    \
-	if (1 || DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame after switch to cHandler %08x\n", PTHREAD_NUM,(unsigned int)cf);   \
-um_dumpStack(s); \
-fprintf(stderr, " C::cf->ml_object %x cf->ra %d\n", cf->ml_object, cf->ra); \
-fprintf(stderr, " N::cf->ml_object %x cf->ra %d\n", cf->next_chunk->ml_object, cf->next_chunk->ra); \
-fprintf(stderr, "NN::cf->ml_object %x cf->ra %d\n", cf->next_chunk->next_chunk->ml_object, cf->next_chunk->next_chunk->ra); \
+	if (DEBUG_CCODEGEN) fprintf(stderr, "%d] c-main currentFrame after switch to cHandler %08x\n", PTHREAD_NUM,(unsigned int)cf);   \
+        if (DEBUG_CCODEGEN) um_dumpStack(s); \
         cont.nextFun = *(uintptr_t*)(cf->ml_object + cf->ra);           \
         cont.nextFun = *(uintptr_t*)(cf->next_chunk->ml_object + cf->next_chunk->ra);           \
-fprintf(stderr, "here1 cont.nextFun %d\n", cont.nextFun); \
-fprintf(stderr, "hereN cont.nextFun %d\n", *(uintptr_t*)(cf->next_chunk->ml_object + cf->next_chunk->ra)); \
         cont.nextChunk = nextChunks[cont.nextFun];                      \
-fprintf(stderr, "here2\n"); \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
-fprintf(stderr, "here3\n"); \
-        if (1||DEBUG_CCODEGEN) fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
+        if (DEBUG_CCODEGEN) fprintf(stderr, "%d] go to C->SML call %x\n", PTHREAD_NUM, s);  \
         do {                                                            \
-                fprintf(stderr, "%d] cont.nextFun %d\n", PTHREAD_NUM, cont.nextFun); \
+                if (DEBUG_CCODEGEN) fprintf(stderr, "%d] cont.nextFun %d\n", PTHREAD_NUM, cont.nextFun); \
                 cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
         } while (not returnToC[PTHREAD_NUM]);                           \
         returnToC[PTHREAD_NUM] = FALSE;                                 \
         incAtomic(s); /*s->atomicState += 1; */                         \
-        if (1||DEBUG_CCODEGEN) fprintf(stderr, "%d] back from C->SML call\n", PTHREAD_NUM);    \
+        if (DEBUG_CCODEGEN) fprintf(stderr, "%d] back from C->SML call\n", PTHREAD_NUM);    \
         GC_switchToThread (s, GC_getSavedThread (s), 0);                \
         decAtomic(s); /*s->atomicState -= 1;*/                          \
         if (0 == s->atomicState                                         \
             && s->signalsInfo.signalIsPending)                          \
                 s->limit = 0;                                           \
-        if (1||DEBUG_CCODEGEN)                                             \
+        if (DEBUG_CCODEGEN)                                             \
                 fprintf (stderr, "%d] MLton_callFromC done\n", PTHREAD_NUM);             \
 }
 
@@ -97,7 +90,7 @@ PUBLIC int MLton_main (int argc, char* argv[]) {                        \
 	    realtimeThreadWaitForInit();                                    \
        									                                \
         /* Trampoline */                                                \
-		while (1) {    fprintf (stderr, RED("%d] F=%d\n"), PTHREAD_NUM, cont.nextFun); \
+		while (1) {   /* fprintf (stderr, RED("%d] F=%d\n"), PTHREAD_NUM, cont.nextFun);*/ \
 				cont=(*(struct cont(*)(uintptr_t))cont.nextChunk)(cont.nextFun);         \
 		}                                                               \
         return 1;                                                       \

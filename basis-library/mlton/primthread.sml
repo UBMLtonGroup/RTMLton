@@ -13,12 +13,18 @@ struct
     open MLtonThread
 
 
-    fun die (s: string): 'a =
+  fun die (s: string): 'a =
    (PrimitiveFFI.Stdio.print s
     ; PrimitiveFFI.Posix.Process.exit 1
     ; let exception DieFailed
       in raise DieFailed
       end)
+
+  fun dbg (s: string): unit = 
+    if false 
+    then PrimitiveFFI.Stdio.print (Int.toString (pthreadNum ())^">> "^s)
+    else ()
+
 
   structure Queue:
    sig
@@ -101,18 +107,17 @@ struct
    end
 
 
-
     structure PThread =
     struct
-        val _ = print "before open\n"
+        val _ = dbg "before open\n"
         open Primitive.MLton.Thread
-        val _ = print "after open\n"
+        val _ = dbg "after open\n"
         val savedPre = fn () => savedPre Primitive.MLton.GCState.gcState
-        val _ = print "After savedPre\n"
+        val _ = dbg "After savedPre\n"
         val copyCurrent = fn () => copyCurrent ()
-        val _ = print "After copyCurrent\n"
+        val _ = dbg "After copyCurrent\n"
         val copy = fn (base) => copy(base)
-        val _ = print "After copy\n"
+        val _ = dbg "After copy\n"
 
 
          
@@ -121,22 +126,69 @@ struct
 
     end
 
+  local
+    val lock_ = _import "ML_lock": unit -> unit;
+    val unlock_ = _import "ML_unlock": unit -> unit;
+  in
+    fun lock () = lock_ ()
+    fun unlock () = unlock_ ()
+  end
+
+
+  structure WorkQueue:
+    sig
+      type 'a t
+
+      val new : unit -> 'a t
+      val addWork : 'a t * 'a * int -> unit
+      val getWork : 'a t * int -> 'a option
+    end = 
+    struct
+      datatype 'a t = T of 'a list Array.array
+
+      fun new () = T (Array.tabulate(numberOfPThreads (), fn _ => []))
+      
+      fun addWork (T wq, w, p) = 
+      let 
+      in
+        lock ();
+        Array.unsafeUpdate (wq, p, Array.unsafeSub (wq, p) @ [w]);
+        unlock ()
+      end
+      handle Subscript => ( unlock(); die "Invalid priority")
+
+
+      fun getWork (T wq, p) =
+      let in
+        lock ();
+        case Array.unsafeSub (wq, p) of 
+             [] => (unlock(); NONE)
+           | w :: l => (Array.unsafeUpdate (wq, p, l); unlock(); SOME w)
+      end
+      handle Subscript => (unlock (); die "Invalid priority")
+
+    end
+
+
+
+
     type 'a t = (unit -> 'a) -> unit
 
-    val workQ : (unit->unit) Queue.t = Queue.new ()
+    val workQ : (unit->unit) WorkQueue.t = WorkQueue.new ()
+
     
-    fun loop () =
-      case Queue.deque workQ of
-           NONE => loop ()
-         | SOME w => (w () ; loop ())
+    fun loop p =
+      case WorkQueue.getWork (workQ, p) of
+           NONE => loop p
+         | SOME w => (dbg "Working .. \n";w () ; loop p)
 
     fun test () = print "Parallel_run::thread_main running!\n";
 
-    fun spawnp f = Queue.enque(workQ,f);
+    fun pspawn (f: unit->unit, p: int) = WorkQueue.addWork(workQ, f, p) 
 
     fun thread_main () = (*MLtonThread.run ()print
-      "\n\nParallel_run::thread_main running!\n\n"*) (print "looping...\n";
-      Queue.enque(workQ, test); loop ())
+      "\n\nParallel_run::thread_main running!\n\n"*) ( dbg "looping...\n";
+      WorkQueue.addWork(workQ, test, 2); loop (pthreadNum ()) ) 
 
     val gcstate = Primitive.MLton.GCState.gcState
 

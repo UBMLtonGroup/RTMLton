@@ -25,7 +25,8 @@ int32_t GC_myPriority(GC_state s);
 void RT_init (GC_state state);
 Int32 RTThread_maxpri (void);
 Int32 RTThread_get_pthread_num(void);
-
+void ML_lock (void);
+void ML_unlock (void);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */
