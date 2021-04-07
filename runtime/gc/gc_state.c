@@ -227,8 +227,8 @@ pointer GC_getSavedThread(GC_state s) {
 	pointer p;
 	assert(s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR);
 	p = objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start);
-	fprintf(stderr, "%d] %s "RED("get savedThread")" returns="FMTPTR
-			 " (and resets saved thread to "FMTPTR")\n",
+    if (DEBUG_THREADS)
+        fprintf(stderr, "%d] %s "RED("get savedThread")" returns="FMTPTR" (and resets saved thread to "FMTPTR")\n",
 			PTHREAD_NUM, __FUNCTION__, (uintptr_t)p, BOGUS_OBJPTR);
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
 	return p;
@@ -240,7 +240,8 @@ void GC_setSavedThread(GC_state s, pointer p) {
 	assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 	op = pointerToObjptr(p, s->umheap.start);
 	s->savedThread[PTHREAD_NUM] = op;
-	fprintf(stderr, "%d] %s "RED("setting savedThread")" to "FMTPTR"\n",
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] %s "RED("setting savedThread")" to "FMTPTR"\n",
 			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
 }
 

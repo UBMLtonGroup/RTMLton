@@ -20,7 +20,8 @@ fun die (s: string): 'a =
 
 
 fun dbg (s: string): unit = 
-  PrimitiveFFI.Stdio.print (Int.toString (Prim.pthreadNum ())^s)
+  if false then PrimitiveFFI.Stdio.print (Int.toString (Prim.pthreadNum ())^s) else
+    ()
 
 val gcState = Primitive.MLton.GCState.gcState
 

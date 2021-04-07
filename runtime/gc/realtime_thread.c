@@ -18,6 +18,8 @@ volatile bool rtinitfromML = FALSE;
 
 extern void Copy_globalObjptrs (int f, int t);
 
+/* TID of holding thread or -1 if no one*/
+volatile int32_t ML_mutex;
 
 int32_t
 GC_myPriority ( __attribute__ ((unused)) GC_state s)
@@ -51,6 +53,36 @@ GC_safePoint(int32_t thr_num) {
 
     return 0;
 }
+
+
+
+void ML_lock (void) {
+
+  do {
+  AGAIN:
+    //maybeWaitForGC (s);
+    if (ML_mutex >= 0)
+      goto AGAIN;
+  } while (not __sync_bool_compare_and_swap (&ML_mutex,
+                                             -1,
+                                             PTHREAD_NUM));
+  /* 
+  if (needGCTime (s))
+    stopTiming (&ru_lock, &s->cumulativeStatistics->ru_lock);
+  */
+}
+
+void ML_unlock (void) {
+
+  //fprintf (stderr, "unlock %d\n", Parallel_holdingMutex);
+
+  if (not __sync_bool_compare_and_swap (&ML_mutex,
+                                        PTHREAD_NUM,
+                                        -1)) {
+    fprintf (stderr, "can't unlock if you don't hold the lock\n");
+  }
+}
+
 
 void
 realtimeThreadWaitForInit (void)
@@ -98,12 +130,12 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 /*Will be called by the main thread*/
 void RT_init (GC_state state)
 {
-    fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
+   // fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
 
-    fprintf(stderr, "%d] "FMTPTR" "FMTPTR" \n",
-			PTHREAD_NUM,
-			state->currentThread[PTHREAD_NUM],
-			state->savedThread[PTHREAD_NUM]);
+    //fprintf(stderr, "%d] "FMTPTR" "FMTPTR" \n",
+	//		PTHREAD_NUM,
+	//		state->currentThread[PTHREAD_NUM],
+	//		state->savedThread[PTHREAD_NUM]);
 
 	assert (state->callFromCHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR);
 	assert (state->currentThread[PTHREAD_NUM] != BOGUS_OBJPTR);
@@ -113,7 +145,7 @@ void RT_init (GC_state state)
 if(1)
     for(int i = 2 ; i < MAXPRI ; i++)
     {
-		fprintf(stderr, "%d] %s copy cfch thread\n", PTHREAD_NUM, __FUNCTION__);
+		//fprintf(stderr, "%d] %s copy cfch thread\n", PTHREAD_NUM, __FUNCTION__);
         pointer cpThread = GC_copyThread (state,
 										  objptrToPointer(state->callFromCHandlerThread[PTHREAD_NUM],
                                           state->umheap.start));
@@ -129,14 +161,15 @@ if(1)
 		GC_thread t = (GC_thread)(state->currentThread[PTHREAD_NUM]);
 		GC_UM_Chunk frame = (GC_UM_Chunk)(t->currentFrame - GC_HEADER_SIZE);
 		frame = frame->prev_chunk;
-		fprintf(stderr, "frame for %d is "FMTPTR" thread "FMTPTR"\n", i,
-		  (uintptr_t)frame, (uintptr_t) t);
+		//fprintf(stderr, "frame for %d is "FMTPTR" thread "FMTPTR"\n", i, (uintptr_t)frame, (uintptr_t) t);
 		t->currentFrame = (objptr)(frame + GC_HEADER_SIZE);
 		state->currentFrame[i] = t->currentFrame;
 
         //state->currentFrame[i] = ((GC_thread) (curThread + offsetofThread(state)))->currentFrame;
 		state->savedThread[i] = BOGUS_OBJPTR;
     }
+    
+    ML_mutex = -1;
 
     rtinitfromML = TRUE;
 
