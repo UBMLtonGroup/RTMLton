@@ -134,6 +134,15 @@ struct
     fun unlock () = unlock_ ()
   end
 
+  local
+    val lock__ = _import "User_lock" : int -> unit;
+    val unlock__ = _import "User_unlock" : int -> unit;
+  in
+    fun rtlock a = if a <=9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+    fun rtunlock a = if a<=9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+  end 
+
+
 
   structure WorkQueue:
     sig

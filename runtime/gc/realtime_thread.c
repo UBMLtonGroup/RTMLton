@@ -20,6 +20,7 @@ extern void Copy_globalObjptrs (int f, int t);
 
 /* TID of holding thread or -1 if no one*/
 volatile int32_t ML_mutex;
+volatile int32_t *User_mutexes;
 
 int32_t
 GC_myPriority ( __attribute__ ((unused)) GC_state s)
@@ -79,10 +80,32 @@ void ML_unlock (void) {
   if (not __sync_bool_compare_and_swap (&ML_mutex,
                                         PTHREAD_NUM,
                                         -1)) {
-    fprintf (stderr, "can't unlock if you don't hold the lock\n");
+    fprintf (stderr, "ML-LOCK: can't unlock if you don't hold the lock\n");
   }
 }
 
+
+void User_lock (Int32 p){
+
+    do {
+        AGAIN:
+            if (User_mutexes[p] >= 0)
+                goto AGAIN;
+       } while (not __sync_bool_compare_and_swap (&User_mutexes[p],
+                                             -1,
+                                             PTHREAD_NUM));
+}
+
+void User_unlock (Int32 p) {
+
+  //fprintf (stderr, "unlock %d\n", Parallel_holdingMutex);
+
+  if (not __sync_bool_compare_and_swap (&User_mutexes[p],
+                                        PTHREAD_NUM,
+                                        -1)) {
+    fprintf (stderr, "USER-LOCK: can't unlock if you don't hold the lock\n");
+  }
+}
 
 void
 realtimeThreadWaitForInit (void)
@@ -130,7 +153,8 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
 /*Will be called by the main thread*/
 void RT_init (GC_state state)
 {
-   // fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
 
     //fprintf(stderr, "%d] "FMTPTR" "FMTPTR" \n",
 	//		PTHREAD_NUM,
@@ -170,7 +194,13 @@ if(1)
     }
     
     ML_mutex = -1;
-
+    /*10 -- arbitrary number of locks the user can create through ML program*/
+    User_mutexes = (int32_t *) malloc (10 * sizeof (int32_t));
+    
+    for(int i=0;i< 10;i++)
+    {
+        User_mutexes[i] = -1;
+    }
     rtinitfromML = TRUE;
 
     

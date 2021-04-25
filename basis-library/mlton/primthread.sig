@@ -31,7 +31,9 @@ signature PRIM_THREAD =
      end
 
      type 'a t
-
+    
+     val rtlock : int -> unit
+     val rtunlock : int -> unit
      val pspawn: (unit->unit) * int -> unit
      val thread_main: unit -> unit
      val gcstate: Primitive.MLton.GCState.t
