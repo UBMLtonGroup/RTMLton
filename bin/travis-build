@@ -28,6 +28,6 @@ echo "Building MLton..."
 cd /RTMLton
 # make CC="$CC" MLTON_COMPILE_ARGS="$MLTON_COMPILE_ARGS" all
 ./compile.sh
-(cd runtime ; make check)
+#(cd runtime ; make check)
 
 
