@@ -125,29 +125,38 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
     initialized = 2;
 
     int tNum;
-    for (tNum = 2; tNum < MAXPRI; tNum++) {
-        if (DEBUG_THREADS)
-            fprintf (stderr, "spawning posix thread %d\n", tNum);
 
-        struct realtimeRunnerParameters *params =
-            malloc (sizeof (struct realtimeRunnerParameters));
+    if(state->useRTThreads)
+    {
+        for (tNum = 2; tNum < MAXPRI; tNum++) {
+            if (DEBUG_THREADS)
+                fprintf (stderr, "spawning posix thread %d\n", tNum);
 
-        params->tNum = tNum;
-        params->state = state;
+            struct realtimeRunnerParameters *params =
+                malloc (sizeof (struct realtimeRunnerParameters));
 
-        pthread_t *pt = malloc (sizeof (pthread_t));
-        memset (pt, 0, sizeof (pthread_t));
+            params->tNum = tNum;
+            params->state = state;
 
-        if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
-            fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
-            exit (-1);
+            pthread_t *pt = malloc (sizeof (pthread_t));
+            memset (pt, 0, sizeof (pthread_t));
+
+            if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
+                fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
+                exit (-1);
+            }
+            else {
+                state->realtimeThreads[tNum] = pt;
+                initialized++;
+            }
         }
-        else {
-            state->realtimeThreads[tNum] = pt;
-            initialized++;
-        }
+        state->isRealTimeThreadInitialized = TRUE;
     }
-    state->isRealTimeThreadInitialized = TRUE;
+    else
+    {
+        /*HAck to ensure the main thread doesnt wait for RT threads to be created*/
+        initialized = MAXPRI;
+    }
 }
 
 /*Will be called by the main thread*/

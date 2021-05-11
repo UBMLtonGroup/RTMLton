@@ -69,7 +69,7 @@ void RTGC_done(GC_state s) {
 	FILE *out;
 	out = stderr;
 
-    while(PTHREAD_NUM != 2)
+    while(PTHREAD_NUM != 2 && s->useRTThreads)
     {
 	//fprintf(stderr, "%d] Main thread spinning\n", PTHREAD_NUM);
         sched_yield();
