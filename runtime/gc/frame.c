@@ -10,7 +10,7 @@ GC_frameIndex getFrameIndexFromReturnAddress (GC_state s, GC_returnAddress ra) {
   GC_frameIndex res;
 
   res = s->returnAddressToFrameIndex (ra);
-  if (1||DEBUG_DETAILED)
+  if (DEBUG_DETAILED)
     fprintf (stderr, "%d] "FMTFI" = getFrameIndexFromReturnAddress ("FMTRA")\n",
              PTHREAD_NUM, res, ra);
   return res;
@@ -19,7 +19,7 @@ GC_frameIndex getFrameIndexFromReturnAddress (GC_state s, GC_returnAddress ra) {
 GC_frameLayout getFrameLayoutFromFrameIndex (GC_state s, GC_frameIndex findex) {
   GC_frameLayout layout;
 
-  if (1||DEBUG_DETAILED)
+  if (DEBUG_DETAILED)
     fprintf (stderr, "%d] findex = "FMTFI"  frameLayoutsLength = %"PRIu32"\n",
             PTHREAD_NUM,findex, s->frameLayoutsLength);
   if (findex >= s->frameLayoutsLength) {

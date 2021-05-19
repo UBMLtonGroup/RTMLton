@@ -16,12 +16,12 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	 * Hence we need to stash from someplace that the GC can find it.
 	 */
 
-	if (s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
+	/*if (s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
 		fprintf(stderr, PURPLE("%d] savedThread "FMTPTR" currentThread "FMTPTR" \n"),
 		  PTHREAD_NUM,
 		  s->savedThread[PTHREAD_NUM],
 		  s->currentThread[PTHREAD_NUM]);
-	}
+	}*/
 
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 
