@@ -298,6 +298,11 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 					if (i == argc)
 						die("@MLton gc-onebyone missing argument.");
 					s->oneByOne = stringToBool(argv[i++]);
+				}else if (0 == strcmp(arg, "rtthreads")) {
+					i++;
+					if (i == argc)
+						die("@MLton rtthreads missing argument.");
+					s->useRTThreads = stringToBool(argv[i++]);
 				}else if (0 == strcmp(arg, "use-mmap")) {
 					i++;
 					if (i == argc)
@@ -401,6 +406,7 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->allocedByRT = 0;
 	s->numAllocedByRT = 0;
     s->oneByOne = false;
+    s->useRTThreads  = false;
 
 	s->wl_size = 10000;
 	s->wl_length = 0;

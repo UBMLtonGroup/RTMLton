@@ -1,7 +1,7 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
-#define MAXPRI 3 /* 0 = main, 1 = GC, also in include/c-common.h */
+#define MAXPRI 6 /* 0 = main, 1 = GC, also in include/c-common.h */
 #define PTHREAD_MAX MAXPRI  /* transitioning to this instead of MAXPRI */
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
@@ -27,6 +27,8 @@ Int32 RTThread_maxpri (void);
 Int32 RTThread_get_pthread_num(void);
 void ML_lock (void);
 void ML_unlock (void);
+void User_lock (Int32);
+void User_unlock (Int32);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */

@@ -122,6 +122,7 @@ struct GC_state {
   uintmax_t allocedByRT;
   size_t numAllocedByRT;
   bool oneByOne;
+  bool useRTThreads;
 
   /* end of rt-threading additions */
 
