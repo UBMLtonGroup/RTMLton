@@ -95,10 +95,20 @@ val rec loop' =
 
 val _ = Thread.spawn (fn () => loop' 10)
 
-val ff = Thread.run ()
 
+val _ =
+   if 13 = 1 + switch(fn t => prepare (t, 12))
+      then print "1 succeeded\n"
+   else () 
+
+
+   
 val f = let val a = 2+2 in print ("Ans = "^Int.toString(a)^"\n") end
 
 val _ = pspawn (fn () => print "Called from user program!\n",3)
 val _ = pspawn (fn () => f, 2)
+
+val _ = Thread.run ()
+
+
 val _ = print "\n\nTest app exits... (this will hang until we shut down all threads)\n"
