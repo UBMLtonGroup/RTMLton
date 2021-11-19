@@ -191,6 +191,8 @@ struct
            NONE => loop p
          | SOME w => (dbg "Working .. \n";w () ; loop p)
 
+    val getMyPriority = _import "GC_myPriority": unit -> int;
+
     fun test () = print "Parallel_run::thread_main running!\n";
 
     fun pspawn (f: unit->unit, p: int) = WorkQueue.addWork(workQ, f, p) 

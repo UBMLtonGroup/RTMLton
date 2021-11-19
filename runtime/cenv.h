@@ -96,7 +96,7 @@ COMPILE_TIME_ASSERT(sizeof_double__is_eight, sizeof(double) == 8);
 #elif (defined (__sun__))
 #include "platform/solaris.h"
 #elif (defined (__rtems__))
-#warn todo rtems platform include
+#include "platform/rtems_platform.h"
 #else
 #error unknown platform os
 #endif

@@ -37,4 +37,7 @@ signature PRIM_THREAD =
      val pspawn: (unit->unit) * int -> unit
      val thread_main: unit -> unit
      val gcstate: Primitive.MLton.GCState.t
+
+     val getMyPriority: unit -> int
+
  end

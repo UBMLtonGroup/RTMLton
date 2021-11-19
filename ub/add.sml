@@ -1,3 +1,4 @@
+(* ./ub/add @MLton rtthreads true -- *)
 val funnyname = 2+2;
 
 open MLton.PrimThread
@@ -102,10 +103,13 @@ val _ =
    else () 
 
 
+val mp = getMyPriority ()
    
-val f = let val a = 2+2 in print ("Ans = "^Int.toString(a)^"\n") end
+val _ = print (Int.toString(mp)^"] this is in the main thread\n")
 
-val _ = pspawn (fn () => print "Called from user program!\n",3)
+val f = let val a = 2+2 in print (Int.toString(getMyPriority ())^"] Ans = "^Int.toString(a)^"\n") end
+
+val _ = pspawn (fn () => print (Int.toString(getMyPriority ())^"] Called from user program!\n"), 3)
 val _ = pspawn (fn () => f, 2)
 
 val _ = Thread.run ()
