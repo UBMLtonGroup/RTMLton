@@ -56,10 +56,10 @@ objptr newStack_um(GC_state s, size_t stackSizeInBytes, size_t *stackSizeInChunk
 	if (DEBUG_STACKS)
 		fprintf(stderr, "%d] newStack_um(stackSizeInBytes=%d) -> chunksneeded=%d maxFrameSize=%d chunkSize=%d\n",
 				PTHREAD_NUM,
-				stackSizeInBytes,
-				need_chunks,
-				s->maxFrameSize,
-				sizeof(struct GC_UM_Chunk));
+				(int)stackSizeInBytes,
+				(int)need_chunks,
+				(int)s->maxFrameSize,
+				(int)sizeof(struct GC_UM_Chunk));
 
 	if (stackSizeInChunks)
 		*stackSizeInChunks = need_chunks;

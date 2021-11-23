@@ -25,9 +25,10 @@ void GC_startSignalHandler (GC_state s) {
   s->signalsInfo.signalIsPending = FALSE;
   s->signalsInfo.amInSignalHandler = TRUE;
   assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
-  if (DEBUG_SIGNALS)
+  if (DEBUG_SIGNALS) {
       fprintf(stderr, "%d] %s "RED("setting savedThread")" to "FMTPTR"\n",
-		  PTHREAD_NUM, __FUNCTION__, s->currentThread[PTHREAD_NUM]);
+	  	  PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->currentThread[PTHREAD_NUM]);
+  }
   s->savedThread[PTHREAD_NUM] = s->currentThread[PTHREAD_NUM];
   /* Set s->atomicState to 2 when switching to the signal handler
    * thread; leaving the runtime will decrement s->atomicState to 1,

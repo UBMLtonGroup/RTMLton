@@ -1,3 +1,22 @@
+
+#if defined(__rtems__)
+#define _RLIM_T_DECLARED
+#include <rtems.h>
+#include <sys/times.h>
+#undef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#include <sys/time.h>
+#include <string.h>
+#include <time.h>
+#include <rtems/seterr.h>
+#include <rtems/score/todimpl.h>
+#include <rtems/score/timestamp.h>
+#include <rtems/score/threadimpl.h>
+#include <time.h>
+#include <sys/time.h>
+#include <errno.h>
+#include <rtems/seterr.h>
+#endif
 #include "platform.h"
 
 C_Errno_t(C_Int_t) 

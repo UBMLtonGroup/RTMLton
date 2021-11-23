@@ -1,0 +1,9 @@
+ARCHS = ['i386-rtems6']
+ARCH_BSPS = ['i386-rtems6-pc386']
+BINDIR = '/usr/local/bin'
+LIBDIR = '/usr/local/lib'
+LONG_COMMANDS = 'no'
+PREFIX = '/usr/local'
+RTEMS_ARCH_BSP_LIST = ['i386-rtems6-pc386']
+RTEMS_TOOLS = ['/home/jcmurphy/quick-start/rtems/6/bin']
+SHOW_COMMANDS = 'no'

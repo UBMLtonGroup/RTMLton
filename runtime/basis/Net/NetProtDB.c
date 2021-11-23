@@ -1,5 +1,8 @@
 #include "platform.h"
-
+#if defined(__rtems__)
+#include <netdb.h>
+#include <netinet/in.h>
+#endif
 static struct protoent *NetProtDB_protoent;
 
 C_String_t NetProtDB_getEntryName(void) {

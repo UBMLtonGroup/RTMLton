@@ -36,22 +36,22 @@ void foreachGlobalThreadObjptr(GC_state s, GC_foreachObjptrFun f) {
     for(int __i =0; __i < MAXPRI; __i++)
     {
         if (DEBUG_DETAILED)
-            fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->callFromCHandlerThread[__i]);
+            fprintf(stderr, "%d] callFromCHandlerThread: "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)s->callFromCHandlerThread[__i]);
 
         callIfIsObjptr(s, f, &s->callFromCHandlerThread[__i]);
 
         if (DEBUG_DETAILED)
-            fprintf(stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, s->currentThread[__i]);
+            fprintf(stderr, "%d] currentThread: "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)s->currentThread[__i]);
 
         callIfIsObjptr(s, f, &s->currentThread[__i]);
 
         if (DEBUG_DETAILED)
-            fprintf(stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, s->savedThread[__i]);
+            fprintf(stderr, "%d] savedThread: "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)s->savedThread[__i]);
 
         callIfIsObjptr(s, f, &s->savedThread[PTHREAD_NUM]);
 
         if (DEBUG_DETAILED)
-            fprintf(stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, s->signalHandlerThread[__i]);
+            fprintf(stderr, "%d] signalHandlerThread: "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)s->signalHandlerThread[__i]);
 
         callIfIsObjptr(s, f, &s->signalHandlerThread[PTHREAD_NUM]);
     }
@@ -84,7 +84,7 @@ void foreachGlobalObjptr (GC_state s, GC_foreachObjptrFun f) {
 pointer foreachObjptrInObject (GC_state s, pointer p,
                                GC_foreachObjptrFun f, bool skipWeaks) {
   if (DEBUG_MEM) {
-      fprintf(stderr, "%d] foreach object in 0x%x\n", PTHREAD_NUM, (uintptr_t)p);
+      fprintf(stderr, "%d] foreach object in "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)p);
   }
   GC_header header;
   uint16_t bytesNonObjptrs = 0;
@@ -203,7 +203,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)")
 	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%d) bpe(%d)\n",
 	                                 PTHREAD_NUM,
-	                                 numObjptrs, bytesNonObjptrs, numElements, bytesPerElement);
+	                                 numObjptrs, bytesNonObjptrs, numElements, (int)bytesPerElement);
 
 	  if (0 == numObjptrs) {
       	  /* no objptrs to process */;
@@ -270,8 +270,8 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 				  PTHREAD_NUM,
 				  (uintptr_t)stackFrame,
 				  returnAddress,
-				  returnAddress,
-				  stackFrame->ra,
+				  (int)returnAddress,
+				  (int)stackFrame->ra,
 				  (uintptr_t)(
 						  stackFrame->ml_object + stackFrame->ra + GC_HEADER_SIZE));
 	  }
@@ -293,7 +293,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 				  PTHREAD_NUM,
 				  frameOffsets[i + 1],
 				  frameOffsets[i + 1],
-				  x,
+				  (int)x,
 				  xv);
 
 		  callIfIsObjptr(s, f, (objptr *)x);

@@ -175,7 +175,6 @@ void RT_init (GC_state state)
 	//assert (state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 	state->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
 
-if(1)
     for(int i = 2 ; i < MAXPRI ; i++)
     {
 		//fprintf(stderr, "%d] %s copy cfch thread\n", PTHREAD_NUM, __FUNCTION__);

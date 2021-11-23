@@ -1,4 +1,12 @@
 #include "platform.h"
+#if defined(__rtems__)
+#undef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#undef __POSIX_VISIBLE
+#define __POSIX_VISIBLE  200112
+#include <netdb.h>
+#include <netinet/in.h>
+#endif
 
 void 
 Socket_INetSock_toAddr (Vector(Word8_t) in_addr, Word16_t port, 

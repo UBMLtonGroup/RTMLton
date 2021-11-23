@@ -1,3 +1,18 @@
+
+#if defined(__rtems__)
+#define _RLIM_T_DECLARED
+#undef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#include <rtems.h>
+#include <sys/times.h>
+#include <sys/time.h>
+#include <string.h>
+#include <time.h>
+#include <rtems/seterr.h>
+#include <rtems/score/todimpl.h>
+#include <rtems/score/timestamp.h>
+#include <rtems/score/threadimpl.h>
+#endif
 #include "platform.h"
 
 static struct tms Posix_ProcEnv_Times_tms;

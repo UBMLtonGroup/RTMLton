@@ -1,5 +1,15 @@
 #include "platform.h"
 
+#if defined(__rtems__)
+#undef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#include <sys/socket.h>
+#define MSG_DONTWAIT 0
+#define IPPROTO_TCP 0
+#define TCP_NODELAY 0
+#define IPPROTO_TCP 0
+#endif
+
 const C_Size_t Socket_sockAddrStorageLen = sizeof (struct sockaddr_storage);
 const C_Int_t Socket_AF_INET = AF_INET;
 const C_Int_t Socket_AF_INET6 = AF_INET6;

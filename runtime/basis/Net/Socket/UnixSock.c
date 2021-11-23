@@ -1,4 +1,13 @@
 #include "platform.h"
+#if defined(__rtems__)
+#undef __BSD_VISIBLE
+#define __BSD_VISIBLE 1
+#undef __POSIX_VISIBLE
+#define __POSIX_VISIBLE  200112
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/un.h>
+#endif
 
 #define UNIXSOCK_PATH_MAX (sizeof(struct sockaddr_un) - offsetof(struct sockaddr_un, sun_path))
 

@@ -28,7 +28,7 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) from - offsetofThread(s), s->umheap.start);
 	if (DEBUG_THREADS)
 		fprintf(stderr, "%d]    %s "RED("setting savedThread")" to "FMTPTR"\n",
-			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
+			PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->savedThread[PTHREAD_NUM]);
 
 	if (DEBUG_THREADS)
 		fprintf(stderr, GREEN("%d]    copyThread from="FMTPTR" to="YELLOW("not-available-yet")"\n"
@@ -43,9 +43,10 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	from = (GC_thread) (objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread(s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
 	
-    if(DEBUG_THREADS)
+    if (DEBUG_THREADS) {
         fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
-			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
+			PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->savedThread[PTHREAD_NUM]);
+	}
 
 	to->bytesNeeded = from->bytesNeeded; // TODO what does this do in stacklets?
 	//to->exnStack = from->exnStack; // this will be adjusted in um_copyStack below
@@ -86,7 +87,7 @@ void GC_copyCurrentThread(GC_state s, bool b) {
 	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) toThread - offsetofThread(s), s->umheap.start);
     if(DEBUG_THREADS)
         fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
-			PTHREAD_NUM, __FUNCTION__, s->savedThread[PTHREAD_NUM]);
+			PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->savedThread[PTHREAD_NUM]);
 }
 
 pointer GC_copyThread(GC_state s, pointer p) {

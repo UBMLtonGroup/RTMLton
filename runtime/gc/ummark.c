@@ -24,27 +24,27 @@ void printTag(const char *f, GC_objectTypeTag tag, pointer _p) {
 	uintptr_t p = (uintptr_t)_p;
 	switch (tag) {
 		case STACK_TAG:
-			fprintf(stderr, "%d] %s: Stack Chunk %x\n", PTHREAD_NUM, f, p);
+			fprintf(stderr, "%d] %s: Stack Chunk "FMTPTR"\n", PTHREAD_NUM, f, p);
 			break;
 
 		case WEAK_TAG:
-			fprintf(stderr, "%d] %s: Weak Chunk %x\n", PTHREAD_NUM, f, p);
+			fprintf(stderr, "%d] %s: Weak Chunk "FMTPTR"\n", PTHREAD_NUM, f, p);
 			break;
 
 		case ERROR_TAG:
-			fprintf(stderr, "%d] %s: Error tag %x\n", PTHREAD_NUM, f, p);
+			fprintf(stderr, "%d] %s: Error tag "FMTPTR"\n", PTHREAD_NUM, f, p);
 			break;
 
 		case NORMAL_TAG:
-			fprintf(stderr, "%d] %s: Normal Chunk %x\n", PTHREAD_NUM, f, p);
+			fprintf(stderr, "%d] %s: Normal Chunk "FMTPTR"\n", PTHREAD_NUM, f, p);
 			break;
 
 		case ARRAY_TAG:
-			fprintf(stderr, "%d] %s: Array Chunk %x\n", PTHREAD_NUM, f, p);
+			fprintf(stderr, "%d] %s: Array Chunk "FMTPTR"\n", PTHREAD_NUM, f, p);
 			break;
 
 		default:
-			die("%d] %s: garbage tag %d: %x\n", PTHREAD_NUM, f, tag, p);
+			die("%d] %s: garbage tag %d: "FMTPTR"\n", PTHREAD_NUM, f, tag, p);
 	}
 }
 
@@ -168,7 +168,7 @@ void umShadeObject(GC_state s, objptr *opp) {
 		markChunk(p, tag, GREY_MODE, s, numObjptrs);
 		if (DEBUG) {
 			printTag(__func__, tag, p);
-			fprintf(stderr, "%d] shade %x\n", PTHREAD_NUM, (uintptr_t) p);
+			fprintf(stderr, "%d] shade "FMTPTR"\n", PTHREAD_NUM, (uintptr_t) p);
 		}
 	}
 }
@@ -287,7 +287,7 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 				FMTPTR
 				", sentinel: %x,"
 				" mark_mode: %d, objptrs: %d\n", (uintptr_t) pchunk,
-						pchunk->sentinel, m, numObjptrs);
+						(int)pchunk->sentinel, m, numObjptrs);
 			}
 
 			if (tag == NORMAL_TAG || tag == WEAK_TAG) {
@@ -459,7 +459,7 @@ bool isContainerChunkMarkedByMode(pointer p, GC_markMode m, GC_objectTypeTag tag
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 	pointer p = objptrToPointer(*opp, s->umheap.start);
 	if (DEBUG_DFS_MARK)
-		fprintf(stderr, "umDFSMarkObjects: original obj: 0x%x, obj: 0x%x\n",
+		fprintf(stderr, "umDFSMarkObjects: original obj: "FMTPTR", obj: "FMTPTR"\n",
 				(uintptr_t) * opp, (uintptr_t) p);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
@@ -553,7 +553,7 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
 	pointer p = objptrToPointer(*opp, s->umheap.start);
 	if (DEBUG_DFS_MARK)
-		fprintf(stderr, "original obj: 0x%x, obj: 0x%x\n",
+		fprintf(stderr, "original obj: "FMTPTR", obj: "FMTPTR"\n",
 				(uintptr_t) * opp, (uintptr_t) p);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
@@ -562,14 +562,14 @@ void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
 	GC_objectTypeTag tag = ERROR_TAG;
 
 	if (header == 0) {
-		fprintf(stderr, "invalid header for obj: 0x%x\n", (uintptr_t) p);
+		fprintf(stderr, "invalid header for obj: "FMTPTR"\n", (uintptr_t) p);
 	}
 
 	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
     if (DEBUG_DFS_MARK) {
 		GC_objectTypeTag t = getObjectType(s, p);
-		fprintf(stderr, "%s: 0x%x tag:%d\n", __FUNCTION__, (uintptr_t) p, t);
+		fprintf(stderr, "%s: "FMTPTR" tag:%d\n", __FUNCTION__, (uintptr_t) p, t);
 	}
 
 

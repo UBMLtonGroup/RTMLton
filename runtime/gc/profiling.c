@@ -7,6 +7,7 @@
  * See the file MLton-LICENSE for details.
  */
 
+
 GC_profileMasterIndex sourceIndexToProfileMasterIndex (GC_state s,
                                                        GC_sourceIndex i)
  {
@@ -313,14 +314,19 @@ void GC_profileWrite (GC_state s, GC_profileData p, NullString8_t fileName) {
 }
 
 void setProfTimer (suseconds_t usec) {
+#if defined(__rtems__)
+  die ("setProfTimer not supported in rtems");
+#else
   struct itimerval iv;
 
   iv.it_interval.tv_sec = 0;
   iv.it_interval.tv_usec = usec;
   iv.it_value.tv_sec = 0;
   iv.it_value.tv_usec = usec;
+
   unless (0 == setitimer (ITIMER_PROF, &iv, NULL))
     die ("setProfTimer: setitimer failed");
+#endif
 }
 
 #if not HAS_TIME_PROFILING

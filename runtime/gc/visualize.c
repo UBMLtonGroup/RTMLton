@@ -1,5 +1,5 @@
 void printObjptr(GC_state s, objptr* opp) {
-    fprintf(stdout, FMTPTR", ", *opp);
+    fprintf(stdout, FMTPTR", ", (uintptr_t)*opp);
 }
 
 

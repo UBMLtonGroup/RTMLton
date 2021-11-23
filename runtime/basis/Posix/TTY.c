@@ -24,11 +24,19 @@ void Posix_TTY_Termios_getCC (Array(C_CC_t) a) {
 }
 
 C_Speed_t Posix_TTY_Termios_cfGetOSpeed (void) {
+#if defined(__rtems__)
+  return (C_Speed_t)NULL;
+#else
   return cfgetospeed (&Posix_TTY_Termios_termios);
+#endif
 }
 
 C_Speed_t Posix_TTY_Termios_cfGetISpeed (void) {
+#if defined(__rtems__)
+  return (C_Speed_t)NULL;
+#else
   return cfgetispeed (&Posix_TTY_Termios_termios);
+#endif
 }
 
 void Posix_TTY_Termios_setIFlag (C_TCFlag_t f) {
@@ -53,27 +61,51 @@ void Posix_TTY_Termios_setCC (Array(C_CC_t) a) {
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_Termios_cfSetOSpeed (C_Speed_t s) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return cfsetospeed (&Posix_TTY_Termios_termios, s);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_Termios_cfSetISpeed (C_Speed_t s) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return cfsetispeed (&Posix_TTY_Termios_termios, s);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_drain (C_Fd_t f) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return tcdrain (f);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_flow (C_Fd_t f, C_Int_t i) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return tcflow (f, i);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_flush (C_Fd_t f, C_Int_t i) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return tcflush (f, i);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_getattr (C_Fd_t f) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return tcgetattr (f, &Posix_TTY_Termios_termios);
+#endif
 }
 
 C_Errno_t(C_PId_t) Posix_TTY_TC_getpgrp (C_Fd_t f) {
@@ -81,11 +113,19 @@ C_Errno_t(C_PId_t) Posix_TTY_TC_getpgrp (C_Fd_t f) {
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_sendbreak (C_Fd_t f, C_Int_t i) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return tcsendbreak (f, i);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_setattr (C_Fd_t f, C_Int_t i) {
+#if defined(__rtems__)
+  return (C_Int_t)NULL;
+#else
   return tcsetattr (f, i, &Posix_TTY_Termios_termios);
+#endif
 }
 
 C_Errno_t(C_Int_t) Posix_TTY_TC_setpgrp (C_Fd_t f, C_PId_t p) {

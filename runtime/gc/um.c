@@ -131,8 +131,8 @@ UM_CPointer_offset(GC_state gc_stat, Pointer p, C_Size_t o, C_Size_t s)
         if (DEBUG_MEM) {
             DBG(p, o, s, "current chunk");
             fprintf(stderr, " sentinel: %x, val: "FMTPTR"\n",
-                    current_chunk->sentinel,
-                    *(p + o));
+                    (int)current_chunk->sentinel,
+                    (uintptr_t)*(p + o));
         }
         return (p + o);
     }
@@ -211,7 +211,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     if (DEBUG_ARRAY_OFFSET)
         fprintf(stderr, "UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
-                (unsigned int)base, index, elemSize, offset);
+                (uintptr_t)base, index, elemSize, offset);
 
     if (base < gc_stat->umheap.start || base >= heap_end) {
         if (DEBUG_ARRAY_OFFSET) {
@@ -296,11 +296,11 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     if (DEBUG_ARRAY_OFFSET) {
         fprintf(stderr, " IP^CH * EPC = %d^%d (%d) * %d = %d (max width_in_elements)\n",
-                UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight,
+                (int)UM_CHUNK_ARRAY_INTERNAL_POINTERS, (int)curHeight,
                 POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight),
-                root->num_els_per_chunk, width_in_elements);
-        fprintf(stderr, " root->num_els_per_chunk %d\n", root->num_els_per_chunk);
-        fprintf(stderr, " e0 %d eX %d (starting case)\n", e0, eX);
+                (int)root->num_els_per_chunk, (int)width_in_elements);
+        fprintf(stderr, " root->num_els_per_chunk %d\n", (int)root->num_els_per_chunk);
+        fprintf(stderr, " e0 %d eX %d (starting case)\n", (int)e0, (int)eX);
     }
 
     while (current->array_chunk_type != UM_CHUNK_ARRAY_LEAF) {
@@ -308,10 +308,10 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 			GC_UM_Array_Chunk down = pointerToArrayChunk(current->ml_array_payload.um_array_pointers[0]);
             fprintf(stderr, "  chunk "FMTPTR" type %d ? leaf=%d\n",
                     (uintptr_t)&(current->ml_array_payload.ml_object[0]),
-                    current->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
+                    (int)current->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
             fprintf(stderr, "   down-chunk type %d ? leaf=%d\n",
-                    down->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
-            fprintf(stderr, "  curHeight %d elsPerChunk %d\n", curHeight, root->num_els_per_chunk);
+                    (int)down->array_chunk_type, UM_CHUNK_ARRAY_LEAF);
+            fprintf(stderr, "  curHeight %d elsPerChunk %d\n", (int)curHeight, (int)root->num_els_per_chunk);
         }
 
         assert (current->array_chunk_magic == UM_ARRAY_SENTINEL);
@@ -332,17 +332,17 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
         if (DEBUG_ARRAY_OFFSET)
             fprintf(stderr, "  leafs_below_next %d total width %d slice width %d\n",
-                    num_leaf_chunks_below_next,
-                    width_in_elements,
-                    slice_width_in_elements);
+                    (int)num_leaf_chunks_below_next,
+                    (int)width_in_elements,
+                    (int)slice_width_in_elements);
 
         assert (index >= e0);
 
 
         if (DEBUG_ARRAY_OFFSET)
             fprintf(stderr, "  next: %f = (%d-%d)/%d * %d, h=%d e/c=%d, e0 %d eX %d\n",
-                    next, index, e0, slice_width_in_elements, UM_CHUNK_ARRAY_INTERNAL_POINTERS,
-                    curHeight, root->num_els_per_chunk, e0, eX);
+                    next, index, (int)e0, (int)slice_width_in_elements, (int)UM_CHUNK_ARRAY_INTERNAL_POINTERS,
+                    (int)curHeight, (int)root->num_els_per_chunk, (int)e0, (int)eX);
 
         assert (current->ml_array_payload.um_array_pointers[(int)next] != NULL);
         current = pointerToArrayChunk(current->ml_array_payload.um_array_pointers[(int)next]);
@@ -356,8 +356,8 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
      */
 	if (DEBUG_ARRAY_OFFSET)
 		fprintf(stderr, "   (%d-%d)*%d+%d = %d = (index-e0) * elemSize + offset\n",
-				index, e0,
-				elemSize, offset, (index-e0)*elemSize+offset);
+				index, (int)e0,
+				elemSize, offset, (int)(index-e0)*elemSize+offset);
 
 	assert (e0 <= index);
     assert ((index-e0) * elemSize + offset <= UM_CHUNK_ARRAY_PAYLOAD_SIZE);
@@ -372,7 +372,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                 " char: %c\n",
             (uintptr_t)root,
             index,
-            (uintptr_t)root->ml_array_payload.ml_object, (index-e0) * elemSize + offset,
+            (uintptr_t)root->ml_array_payload.ml_object, (int)(index-e0) * elemSize + offset,
             (uintptr_t)res,
             *((Word32_t*)(res)),
             *((Word32_t*)(res)),
