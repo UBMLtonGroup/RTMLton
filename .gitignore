@@ -1,3 +1,8 @@
+runtime/gen-rtems/waf
+runtime/arithchk-rtems/waf
+runtime/qnan-rtems/waf
+runtime/*-rtems/.lock*
+runtime/*-rtems/build/**
 runtime/gen-rtems/.waf-2.0.19-1f3c580272b15a03d2566843c5fe872a/
 runtime/qnan-rtems/.waf-2.0.19-1f3c580272b15a03d2566843c5fe872a/
 runtime/arithchk-rtems/.waf-2.0.19-1f3c580272b15a03d2566843c5fe872a/

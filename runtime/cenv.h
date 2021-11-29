@@ -11,7 +11,9 @@
 #define _MLTON_CENV_H_
 
 /* GNU C Library Feature Macros */
+#ifndef _ISOC99_SOURCE
 #define _ISOC99_SOURCE
+#endif
 //#define _BSD_SOURCE
 #define DEFAULT_SOURCE
 // #define _XOPEN_SOURCE 600

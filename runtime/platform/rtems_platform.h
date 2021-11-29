@@ -48,7 +48,7 @@
 
 typedef unsigned long MLton_Rlim_t;
 typedef unsigned int nfds_t;
-typedef MLton_Rlim_t rlim_t;
+//typedef MLton_Rlim_t rlim_t;
 
 #define HAS_FEROUND FALSE
 #define HAS_REMAP FALSE

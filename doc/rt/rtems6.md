@@ -18,6 +18,8 @@ cd $HOME/quick-start/src/rsb/rtems
 ../source-builder/sb-set-builder --prefix=$HOME/quick-start/rtems/6 6/rtems-i386
 ../source-builder/sb-set-builder --prefix=$HOME/quick-start/rtems/6 6/rtems-sparc
 ../source-builder/sb-set-builder --prefix=$HOME/quick-start/rtems/6 6/rtems-arm
+
+jcmurphy@ubuntu32:~/quick-start/src/rsb/rtems$ ../source-builder/sb-set-builder --prefix=$HOME/quick-start/rtems/6     --with-rtems-tests=yes bsps/pc
 ```
 
 ### Configure for qemu x86 
