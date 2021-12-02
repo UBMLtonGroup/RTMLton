@@ -42,6 +42,7 @@ structure SMLofNJ: SML_OF_NJ =
                    | NetBSD => UNIX
                    | OpenBSD => UNIX
                    | Solaris => UNIX
+                   | RTEMS => UNIX
                end
 
             fun getOSName () = MLton.Platform.OS.toString MLton.Platform.OS.host

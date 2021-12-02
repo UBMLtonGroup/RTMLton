@@ -2,12 +2,16 @@
 #define RTEMS_H_
 
 #include <rtems.h>
+#include <stdio.h>
 #include <bsp.h>
 #include <sys/dirent.h>
 
 #if defined(__sparc__) || defined(__arm__)
 #include <sys/termios.h>
 #endif
+
+#include <rtems/rtems/types.h>
+#include <rtems/rtems/barrier.h>
 
 #include <sys/fcntl.h>
 #include <sys/utsname.h>
@@ -69,6 +73,19 @@ struct MLton_pollfd {
 #define POLLIN 1
 #define POLLPRI 2
 #define POLLOUT 4
+
+#include <stdio.h>
+#include <stdarg.h>
+int vprintf_chk(const char *fmt, va_list list);
+int __vfprintf_chk(FILE *fp, int x, const char *fmt, va_list list);
+int vsprintf_chk(char *str, const char *fmt, va_list list);
+int vsnprintf_chk(char *str, size_t size, const char *fmt, va_list list);
+int __fprintf_chk(FILE * stream, int flag, const char * format, ...);
+
+int * __errno_location(void);
+
+
+
 
 ////// rtems i386
 #ifndef NCCS

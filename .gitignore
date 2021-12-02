@@ -1,3 +1,6 @@
+ub/rtems/justprint/.lock-waf_linux2_build
+ub/rtems/justprint/waf
+ub/rtems/justprint/build
 runtime/gen-rtems/waf
 runtime/arithchk-rtems/waf
 runtime/qnan-rtems/waf

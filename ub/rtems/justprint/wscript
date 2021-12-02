@@ -1,0 +1,52 @@
+#
+# Hello world Waf script
+#
+from __future__ import print_function
+
+rtems_version = "6"
+
+try:
+    import rtems_waf.rtems as rtems
+except:
+    print('error: no rtems_waf git submodule')
+    import sys
+    sys.exit(1)
+
+def init(ctx):
+    rtems.init(ctx, version = rtems_version, long_commands = True)
+
+def bsp_configure(conf, arch_bsp):
+    # Add BSP specific configuration checks
+    pass
+
+def options(opt):
+    rtems.options(opt)
+
+def configure(conf):
+    rtems.configure(conf, bsp_configure = bsp_configure)
+
+def build(bld):
+    rtems.build(bld)
+
+    x = """
+ -I/home/jcmurphy/quick-start/rtems/6/include/
+ -I/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6/include 
+          -I/home/jcmurphy/RTMLton/build/lib/include -O1 -fno-common 
+          -D_GNU_SOURCE -D__USE_GNU -fno-strict-aliasing -fomit-frame-pointer 
+          -w -m32 -fno-strength-reduce -fschedule-insns -fschedule-insns2 
+          -falign-functions=5 -falign-jumps=2 -falign-loops=2 """
+
+    y = """ -L/home/jcmurphy/quick-start/rtems/6/i386-rtems6/pc386/lib/
+            -L/home/jcmurphy/quick-start/rtems/6/lib/
+            -L/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6 -lmlton -lgdtoa -lm 
+            -lgmp  """
+
+    bld(features = 'c cprogram',
+        target = 'hello.exe',
+        cflags = '-g -O2 ' + x,
+        ldflags = y,
+        source = ['hello.c', 
+                  'justprint.0.c',
+                  'justprint.1.c',
+                  'justprint.2.c',
+                  'init.c'])

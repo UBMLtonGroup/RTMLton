@@ -3,7 +3,8 @@
 export PATH=$HOME/quick-start/rtems/6/bin:$PATH
 
 mkdir -p build/lib/targets/i386-rtems6/sml
-find runtime -name \*.a -ls -exec rm {} \;
+mkdir -p build/lib/targets/i386-rtems6/include
+find runtime -name \*.a -name \*.o -ls -exec rm {} \;
 
 export TARGET=i386-rtems6
 export TARGET_OS=rtems
@@ -19,10 +20,5 @@ echo $make_flags
 
 
 #make $make_flags dirs     &&
-make $make_flags runtime  &&
-make $make_flags compiler &&
-make $make_flags basis-no-check &&
-make $make_flags script &&
-make $make_flags mlbpathmap &&
-make $make_flags constants &&
-make $make_flags libraries
+make $make_flags runtime 
+#make $make_flags compiler && make $make_flags basis-no-check && make $make_flags script && make $make_flags mlbpathmap && make $make_flags constants && make $make_flags libraries

@@ -18,10 +18,6 @@ volatile bool rtinitfromML = FALSE;
 
 extern void Copy_globalObjptrs (int f, int t);
 
-/* TID of holding thread or -1 if no one*/
-volatile int32_t ML_mutex;
-volatile int32_t *User_mutexes;
-
 int32_t
 GC_myPriority ( __attribute__ ((unused)) GC_state s)
 {
@@ -55,6 +51,66 @@ GC_safePoint(int32_t thr_num) {
     return 0;
 }
 
+#if defined(__rtems__)
+
+rtems_id            ML_mutex;
+rtems_id            User_mutexes[NUM_USER_MUTEXES];
+
+void ML_lock (void) {
+    while (RTEMS_SUCCESSFUL != rtems_barrier_wait(ML_mutex, RTEMS_NO_TIMEOUT)) {
+        //die("ML_lock::rtems_barrier_wait failed");
+    }
+}
+
+void ML_unlock (void) {
+    uint32_t released;
+    if (RTEMS_SUCCESSFUL != rtems_barrier_release(ML_mutex, &released)) {
+        die("ML_unlock::rtems_barrier_release failed");
+    }
+}
+
+void User_lock (Int32 p) {
+    while (RTEMS_SUCCESSFUL != rtems_barrier_wait(User_mutexes[p], RTEMS_NO_TIMEOUT)) {
+        //die("User_lock::rtems_barrier_wait failed");
+    }
+}
+
+void User_unlock (Int32 p) {
+    uint32_t released;
+    if (RTEMS_SUCCESSFUL != rtems_barrier_release(User_mutexes[p], &released)) {
+        die("User_unlock::rtems_barrier_release failed");
+    }
+}
+
+void InitializeMutexes(void) {
+    if (RTEMS_SUCCESSFUL != rtems_barrier_create(
+            0xDEADBEEF,
+            RTEMS_BARRIER_MANUAL_RELEASE,
+            MAXPRI+1,
+            &ML_mutex
+        )) {
+            die("InitializeMutexes::rtems_barrier_create failed");
+    }
+
+    for(int i=0 ; i < NUM_USER_MUTEXES ; i++)
+    {
+        if (RTEMS_SUCCESSFUL != rtems_barrier_create(
+            0xDEADBEF0+i,
+            RTEMS_BARRIER_MANUAL_RELEASE,
+            MAXPRI+1,
+            &User_mutexes[NUM_USER_MUTEXES]
+        )) {
+            die("rtems_barrier_create failed");
+        }
+    }
+
+}
+
+#else
+
+/* TID of holding thread or -1 if no one*/
+volatile int32_t ML_mutex;
+volatile int32_t *User_mutexes;
 
 
 void ML_lock (void) {
@@ -106,6 +162,19 @@ void User_unlock (Int32 p) {
     fprintf (stderr, "USER-LOCK: can't unlock if you don't hold the lock\n");
   }
 }
+
+void InitializeMutexes(void) {
+    ML_mutex = -1;
+    /*10 -- arbitrary number of locks the user can create through ML program*/
+    User_mutexes = (int32_t *) malloc (NUM_USER_MUTEXES * sizeof (int32_t));
+    
+    for(int i=0 ; i < NUM_USER_MUTEXES ; i++)
+    {
+        User_mutexes[i] = -1;
+    }
+}
+
+#endif
 
 void
 realtimeThreadWaitForInit (void)
@@ -201,14 +270,8 @@ void RT_init (GC_state state)
 		state->savedThread[i] = BOGUS_OBJPTR;
     }
     
-    ML_mutex = -1;
-    /*10 -- arbitrary number of locks the user can create through ML program*/
-    User_mutexes = (int32_t *) malloc (10 * sizeof (int32_t));
-    
-    for(int i=0;i< 10;i++)
-    {
-        User_mutexes[i] = -1;
-    }
+    InitializeMutexes();
+
     rtinitfromML = TRUE;
 
     
