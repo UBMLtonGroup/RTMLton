@@ -1,14 +1,8 @@
-## RTEMS 6
+#!/bin/bash
+#
+# this builds rtems6 in /opt/rtems6
+# the rtmlton compile-rtems.sh script expects it in this location
 
-Refer to [RTEMS doc](https://docs.rtems.org/branches/master/user/start/sources.html#git) for full details. 
-
-
-### Build and install RTEMS i386/pc386
-
-After this finishes, add `/opt/rtems6/bin` to your path.
-
-
-```
 mkdir -p /opt/src /opt/rtems6
 
 
@@ -38,9 +32,3 @@ cd /opt/src && \
     --prefix=/opt/rtems6 && \
     ./waf && \
     ./waf install
-    ```
-
-### Build RTMLton 
-
-`./compile-rtems.sh`
-

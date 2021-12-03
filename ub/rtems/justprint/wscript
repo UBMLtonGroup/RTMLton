@@ -29,21 +29,22 @@ def build(bld):
     rtems.build(bld)
 
     x = """
- -I/home/jcmurphy/quick-start/rtems/6/include/
- -I/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6/include 
-          -I/home/jcmurphy/RTMLton/build/lib/include -O1 -fno-common 
+ -I/opt/rtems6/include
+ -I/opt/rtems6/i386-rtems6/include 
+ -I/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6/include
+          -I/home/jcmurphy/RTMLton/build/lib/include -fno-common 
           -D_GNU_SOURCE -D__USE_GNU -fno-strict-aliasing -fomit-frame-pointer 
           -w -m32 -fno-strength-reduce -fschedule-insns -fschedule-insns2 
           -falign-functions=5 -falign-jumps=2 -falign-loops=2 """
 
-    y = """ -L/home/jcmurphy/quick-start/rtems/6/i386-rtems6/pc386/lib/
-            -L/home/jcmurphy/quick-start/rtems/6/lib/
-            -L/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6 -lmlton -lgdtoa -lm 
+    y = """ -L/opt/rtems6/i386-rtems6/pc386/lib/
+            -L/opt/rtems6/lib/
+            -L/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6 -lmlton-gdb -lgdtoa-gdb -lm 
             -lgmp  """
 
     bld(features = 'c cprogram',
         target = 'hello.exe',
-        cflags = '-g -O2 ' + x,
+        cflags = ' -g -O0 ' + x,
         ldflags = y,
         source = ['hello.c', 
                   'justprint.0.c',
