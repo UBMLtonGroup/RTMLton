@@ -73,33 +73,45 @@ build/lib/targets/self/constants:fl_lock_Size = 24
 
 ### Hello world app.
 
-We deal with the above contants difference by swapping the `constants` file. This isn't ideal, but as if this
+We deal with the above differences by swapping the `constants` file. This isn't ideal, but as of this
 writing, the compiler itself is not aware of the RTEMS target platform, so we can't just say `-target i386-rtems`
 
 ```
 $ cd ub
+
+# this doesnt work
+
 $ ../build/bin/mlton -target i386-rtems6 -keep g -verbose 1 justprint.sml
 invalid target: i386-rtems6
 
+# this works
+
+$ ../build/bin/mlton -target self -verbose 1 -keep g justprint.sml
+
 # save the native constants and install our rtems one
+
 $ cp ../build/lib/targets/self/constants ../build/lib/targets/self/constants.native
 $ cp ../build/lib/targets/i386-rtems6/constants ../build/lib/targets/self/constants
 
 # notice the native offset..
+
 $ grep Lock_fl justprint.?.c | head -1
 justprint.1.c:	Lock_fl (O(CPointer, GCState, 1420));
 
 $ ../build/bin/mlton -target self -verbose 1 -keep g justprint.sml
 
 # notice now the offset is different
+
 $ grep Lock_fl justprint.?.c | head -1
 justprint.1.c:	Lock_fl (O(CPointer, GCState, 1012));
 
 
 $ cd rtems/justprint
 $ cp ../../justprint.?.c .
+
 $ vi justprint.1.c
 # rename "main" to "mainX" at the bottom
+
 $ RTEMS=/opt/rtems6 make
 [various output]
 something
