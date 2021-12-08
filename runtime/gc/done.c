@@ -9,7 +9,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+#define IFED(X) do { if (X) { printf(__FUNCTION__);perror("-perror " #X); exit(-1); } } while(0)
 #define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
 #define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
 

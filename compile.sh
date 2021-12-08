@@ -1,7 +1,7 @@
 #!/bin/bash
-rm -rf build
+#rm -rf build
 
-find runtime -name \*.a -name \*.o -ls -exec rm {} \;
+find runtime -name \*.[ao]  -ls -exec rm {} \;
 
 export CFLAGS="-Wunused-but-set-variable -DSTACK_GC_SANITY -Wall"
 arch_flags="-j 8"

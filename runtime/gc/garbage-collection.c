@@ -15,6 +15,8 @@
 #include <sched.h>
 #include <errno.h>
 
+#undef DEBUG
+#define DEBUG 1
 
 struct thrctrl {
 	pthread_mutex_t lock;
@@ -28,7 +30,7 @@ struct thrctrl {
 	int requested_by;
 } TC;
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+//#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 
 #define LOCK_FL_FROMGC IFED(pthread_mutex_lock(&s->fl_lock))
 #define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock))
@@ -939,9 +941,9 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 
 		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n", PTHREAD_NUM,
 					s->dirty ? "Y" : "N", ensureChunksAvailable(s) ? "Y" : "N");
-			fprintf(stderr, "%d]ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
 
 		}

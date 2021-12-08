@@ -102,7 +102,7 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 		and i<argc
 		and(0 == strcmp(argv[i], "@MLton"))) {
 		bool done;
-
+printf("xxx  %d %s\n", i, argv[i]);
 		i++;
 		done = FALSE;
 		while (!done) {
@@ -483,7 +483,8 @@ int GC_init(GC_state s, int argc, char **argv) {
 
 	processAtMLton(s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
 	res = processAtMLton(s, 1, argc, argv, &worldFile);
-
+	printf("argc %d\n", argc);
+printf("processAtMLton %ld %ld\n", (long int)s->controls.fixedHeap, (long int)s->controls.maxHeap);
 	if (s->controls.fixedHeap > 0 and s->controls.maxHeap > 0)
 	     die("Cannot use both fixed-heap and max-heap.");
 

@@ -1,3 +1,4 @@
+runtime/constants-rtems/waf
 ub/rtems/justprint/.lock-waf_linux2_build
 ub/rtems/justprint/waf
 ub/rtems/justprint/build

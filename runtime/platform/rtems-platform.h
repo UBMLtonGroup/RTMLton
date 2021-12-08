@@ -30,10 +30,13 @@
 # include <process.h>
 #endif
 
+
 #define PRIuMAX "llu"
 #define PRIxMAX "llx"
 #define PRIx32 "d"
+#define PRIx64 "ld"
 #define PRIu32 "u"
+#define PRIu64 "lu"
 #ifdef UINTPTR_MAX
 # undef UINTPTR_MAX
 #endif

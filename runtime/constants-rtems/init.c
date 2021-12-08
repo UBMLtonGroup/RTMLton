@@ -10,17 +10,9 @@
 
 #define CONFIGURE_RTEMS_INIT_TASKS_TABLE
 
-#define CONFIGURE_RTEMS_POSIX_API
-
-//#define CONFIGURE_POSIX_INIT_THREAD_TABLE
-
-#define CONFIGURE_MAXIMUM_POSIX_THREADS 6
-
-#define CONFIGURE_MEMORY_OVERHEAD 1
-
 #define CONFIGURE_INIT
 
-//#define CONFIGURE_SCHEDULER_EDF
-//#define CONFIGURE_SCHEDULER_NAME rtems_build_name('U', 'E', 'D', 'F')
+#define CONFIGURE_SCHEDULER_EDF
+#define CONFIGURE_SCHEDULER_NAME rtems_build_name('U', 'E', 'D', 'F')
 
 #include <rtems/confdefs.h>

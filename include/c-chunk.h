@@ -134,7 +134,7 @@ void um_dumpFrame (void *s, void *f);
                                *(ty*)(CurrentFrame + (i)))),      \
                                 (ty*)(CurrentFrame + (i))))
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+#define IFED(X) do { int x = X; if (x) { perror("(in codegen code) perror " #X); printf(" rv=%d\n", x); exit(-1); } } while(0)
 #define Lock_fl(s) IFED(pthread_mutex_lock(&s))
 #define Unlock_fl(s) IFED(pthread_mutex_unlock(&s))
 

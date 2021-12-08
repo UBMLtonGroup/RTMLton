@@ -6,7 +6,7 @@ export PATH=$RTEMS/bin:$PATH
 
 mkdir -p build/lib/targets/i386-rtems6/sml
 mkdir -p build/lib/targets/i386-rtems6/include
-find runtime -name \*.a -name \*.o -ls -exec rm {} \;
+find runtime -name \*.[oa] -ls -exec rm {} \;
 
 export TARGET=i386-rtems6
 export TARGET_OS=rtems

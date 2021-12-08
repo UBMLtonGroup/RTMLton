@@ -2,6 +2,7 @@
 # Hello world Waf script
 #
 from __future__ import print_function
+import os
 
 rtems_version = "6"
 
@@ -29,27 +30,18 @@ def build(bld):
     rtems.build(bld)
 
     x = """
- -I/opt/rtems6/include
- -I/opt/rtems6/i386-rtems6/include 
- -I/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6/include
-          -I/home/jcmurphy/RTMLton/build/lib/include -fno-common 
+ -I/home/jcmurphy/RTMLton/build/lib/targets/self/include 
+          -I/home/jcmurphy/RTMLton/build/lib/include -O1 -fno-common 
           -D_GNU_SOURCE -D__USE_GNU -fno-strict-aliasing -fomit-frame-pointer 
           -w -m32 -fno-strength-reduce -fschedule-insns -fschedule-insns2 
-          -falign-functions=5 -falign-jumps=2 -falign-loops=2 
- -w
-"""
+          -falign-functions=5 -falign-jumps=2 -falign-loops=2 """
 
-    y = """ -L/opt/rtems6/i386-rtems6/pc386/lib/
-            -L/opt/rtems6/lib/
-            -L/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6 -lmlton-gdb -lgdtoa-gdb -lm 
-            -lgmp  """
+    y = """ -L/cse/CSE/B/RTMLton/build/lib/targets/self -lmlton -lgdtoa -lm 
+          -lgmp -lpthread -lrt -m32 """
 
     bld(features = 'c cprogram',
         target = 'hello.exe',
-        cflags = ' -g -O0 ' + x,
-        ldflags = y,
-        source = ['hello.c', 
-                  'justprint.0.c',
-                  'justprint.1.c',
-                  'justprint.2.c',
+        cflags = '-g -O0 -I../../.. -I' + os.environ['RTEMS'] + '/include' ,
+        ldflags = '-L/home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6 -lmlton -L/opt/rtems6/i386-rtems6/pc386/lib -lrtemsdefaultconfig ',
+        source = ['hello.c', 'tmp.c',
                   'init.c'])
