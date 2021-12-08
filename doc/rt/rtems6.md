@@ -45,7 +45,7 @@ cd /opt/src && \
     --prefix=/opt/rtems6 && \
     ./waf && \
     ./waf install
-    ```
+```
 
 ### Build RTMLton for RTEMS
 
