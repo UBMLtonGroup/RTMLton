@@ -7,6 +7,10 @@
  * See the file MLton-LICENSE for details.
  */
 
+#if defined(__rtems__)
+#pragma GCC diagnostic ignored "-Waddress-of-packed-member"
+#endif
+
 /*
  * Test if a intInf is a fixnum.
  */

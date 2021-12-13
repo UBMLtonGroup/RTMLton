@@ -140,7 +140,7 @@ fun declareExports {print} =
                    print (concat ["\t", CType.toString t, " localRes;\n",
                                   "\tlocalOpArgsRes[", Int.toString (Vector.length args + 1), "] = ",
                                   "(Pointer)(&localRes);\n"]))
-          ; print ("\tMLton_callFromC ((Pointer)(localOpArgsRes));\n")
+          ; print ("\tMLton_callFromC ((Pointer)(localOpArgsRes));\n/*(Pointer)(localOpArgsRes));*/\n")
           ; (case res of
                 NONE => ()
               | SOME _ => print "\treturn localRes;\n")

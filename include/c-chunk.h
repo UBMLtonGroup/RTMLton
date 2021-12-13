@@ -77,7 +77,14 @@ void um_dumpFrame (void *s, void *f);
 
 #define X(ty, gc_stat, b, i, s, o) X_NORMAL(ty, gc_stat, b, i, s, o)
 
-#define O(ty, b, o) (*(ty*)((b) + (o)))
+#define O(ty, b, o) O_NORMAL(ty, b, o)
+
+#define O_NORMAL(ty, b, o) (*(ty*)((b) + (o)))
+#define O_DBG(ty, b, o) (*((fprintf(stderr,"%s:%d %d] O : Addr=%018p Val=%018p\n" \
+                        ,__FILE__,__LINE__,PTHREAD_NUM, (void*)((b)+(o)),*(ty*)((b) + (o)))), \
+                        (ty*)((b) + (o)) ))
+                        
+
 #define X_NORMAL(ty, gc_stat, b, i, s, o) (*(ty*)(UM_Array_offset((gc_stat), (b), (i), (s), (o))))
 #define X_DBG(ty, gc_stat, b, i, s, o) (*((fprintf (stderr, "%s:%d X: Addr=%018p Val=%018p\n", __FILE__, __LINE__, \
                                                  (void*)((b) + ((i) * (s)) + (o)), \
@@ -112,10 +119,10 @@ void um_dumpFrame (void *s, void *f);
 
 
 
-#define NS(ty, i) *(ty*)(NextFrame + (i))
 
-//#define NS(ty, i) NS_DBG(ty, i)
-#define NS_DBG(ty, i)(*((fprintf (stderr, "%s:%d %d] S: CurrentFrame=%018p NextFrame=%018p \n", \
+#define NS(ty, i) NS_NORMAL(ty, i)
+#define NS_NORMAL(ty, i) *(ty*)(NextFrame + (i))
+#define NS_DBG(ty, i)(*((fprintf (stderr, "%s:%d %d] NS: CurrentFrame=%018p NextFrame=%018p \n", \
                                  __FILE__, __LINE__, PTHREAD_NUM, \
                                 (void*)CurrentFrame, (void*)NextFrame, i)),\
                                 (ty*)(NextFrame + (i))))
@@ -127,7 +134,7 @@ void um_dumpFrame (void *s, void *f);
                                *(ty*)(CurrentFrame + (i)))),      \
                                 (ty*)(CurrentFrame + (i))))
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+#define IFED(X) do { int x = X; if (x) { perror("(in codegen code) perror " #X); printf(" rv=%d\n", x); exit(-1); } } while(0)
 #define Lock_fl(s) IFED(pthread_mutex_lock(&s))
 #define Unlock_fl(s) IFED(pthread_mutex_unlock(&s))
 

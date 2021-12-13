@@ -18,13 +18,17 @@
 void GC_startSignalHandler (GC_state s) {
   /* Switch to the signal handler thread. */
   if (DEBUG_SIGNALS) {
-    fprintf (stderr, "GC_startSignalHandler\n");
+    fprintf (stderr, "%d] GC_startSignalHandler\n", PTHREAD_NUM);
   }
   assert (s->atomicState == 1);
   assert (s->signalsInfo.signalIsPending);
   s->signalsInfo.signalIsPending = FALSE;
   s->signalsInfo.amInSignalHandler = TRUE;
   assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+  if (DEBUG_SIGNALS) {
+      fprintf(stderr, "%d] %s "RED("setting savedThread")" to "FMTPTR"\n",
+	  	  PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->currentThread[PTHREAD_NUM]);
+  }
   s->savedThread[PTHREAD_NUM] = s->currentThread[PTHREAD_NUM];
   /* Set s->atomicState to 2 when switching to the signal handler
    * thread; leaving the runtime will decrement s->atomicState to 1,

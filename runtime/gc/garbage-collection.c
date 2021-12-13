@@ -15,6 +15,8 @@
 #include <sched.h>
 #include <errno.h>
 
+#undef DEBUG
+#define DEBUG 1
 
 struct thrctrl {
 	pthread_mutex_t lock;
@@ -28,7 +30,7 @@ struct thrctrl {
 	int requested_by;
 } TC;
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+//#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 
 #define LOCK_FL_FROMGC IFED(pthread_mutex_lock(&s->fl_lock))
 #define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock))
@@ -193,7 +195,7 @@ maybe_growstack(GC_state s, GC_thread thread, bool force_grow) {
 
 		if (DEBUG_STACK_GROW)
 			fprintf(stderr, "  stack util is %2.2f%% (%d of %d) [force=%s]: "YELLOW("grow %d ?= %d")"\n",
-				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks,
+				100.0*utilization, (int)thread->stackDepth, (int)thread->stackSizeInChunks,
 				force_grow ? "true" : "false",
 				sd, count_stack_depth(s, thread));
 
@@ -215,7 +217,7 @@ maybe_growstack(GC_state s, GC_thread thread, bool force_grow) {
 
 		if (DEBUG_STACK_GROW)
 			fprintf(stderr, "  stack util is %2.2f%% (%d of %d): "YELLOW("shrink %d ?= %d")"\n",
-				100.0*utilization, thread->stackDepth, thread->stackSizeInChunks, sd,
+				100.0*utilization, (int)thread->stackDepth, (int)thread->stackSizeInChunks, sd,
 				count_stack_depth(s, thread));
 
 		GC_UM_Chunk c = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
@@ -462,7 +464,7 @@ void markStack(GC_state s, pointer thread_) {
 	if (DEBUG_RTGC) {
 		fprintf(stderr, "%d] Checking Stack "FMTPTR" \n", PTHREAD_NUM, (uintptr_t) stackFrame);
 		fprintf(stderr, "%d] "YELLOW("Marking stack")" (garbage-collection.c): cycle=%d\n",
-				PTHREAD_NUM, thread->markCycles);
+				PTHREAD_NUM, (int)thread->markCycles);
 		displayThread(s, thread, stderr);
 	}
 
@@ -509,7 +511,7 @@ void startMarking(GC_state s) {
 	foreachGlobalObjptr(s, umDfsMarkObjectsMark);
 
 	if (DEBUG_RTGC_MARKING)
-		fprintf(stderr, "%d] GC finished marking globals. Worklist length: %d\n", PTHREAD_NUM, s->wl_length);
+		fprintf(stderr, "%d] GC finished marking globals. Worklist length: %d\n", PTHREAD_NUM, (int)s->wl_length);
 	/*Marking worklist*/
 	markWorklist(s);
 
@@ -537,7 +539,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 
 	if (DEBUG_RTGC_MARKING)
-		fprintf(stderr, "%d] GC sweep started. Worklist length: %d\n", PTHREAD_NUM, s->wl_length);
+		fprintf(stderr, "%d] GC sweep started. Worklist length: %d\n", PTHREAD_NUM, (int)s->wl_length);
 	//dumpUMHeap(s);
 
 	for (pchunk = s->umheap.start;
@@ -596,7 +598,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 						fprintf(stderr, "Collecting: "
 						FMTPTR
 						", %d, %d\n",
-								(uintptr_t) pc, pc->sentinel, pc->chunk_header);
+								(uintptr_t) pc, (int)pc->sentinel, (int)pc->chunk_header);
 					}
 
 					//Set header of cleared object to magic number
@@ -705,9 +707,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 	assert(pchunk == s->umheap.limit);
 
     /*Add the sublist to the free list REQUIRES: locking the FL*/
-    if(!s->oneByOne)
+    if(!s->oneByOne) {
         addSweepListToFL(s,&(s->umheap));
-    
+	}
 
 	s->cGCStats.numSweeps++;
 
@@ -857,8 +859,8 @@ void ensureInvariantForMutator(GC_state s, bool force) {
 
 bool ensureChunksAvailable(GC_state s) {
 	if (DEBUG_RTGC)
-		fprintf(stderr, "%d] ensureChunksAvailable: FC = %d, Max Chunks = %d\n", PTHREAD_NUM, s->fl_chunks,
-				s->maxChunksAvailable);
+		fprintf(stderr, "%d] ensureChunksAvailable: FC = %d, Max Chunks = %d\n", PTHREAD_NUM, (int)s->fl_chunks,
+				(int)s->maxChunksAvailable);
 
 	if (s->fl_chunks > (size_t)((30 * s->maxChunksAvailable) / 100))
 		return true;
@@ -939,9 +941,9 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 
 		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d]GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n", PTHREAD_NUM,
 					s->dirty ? "Y" : "N", ensureChunksAvailable(s) ? "Y" : "N");
-			fprintf(stderr, "%d]ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
 
 		}

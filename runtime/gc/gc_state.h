@@ -37,7 +37,7 @@ struct GC_state {
   char **atMLtons; /* Initial @MLton args, processed before command line. */
   int atMLtonsLength;
   volatile uint32_t atomicState;
-  objptr callFromCHandlerThread; /* Handler for exported C calls (in heap). */
+  objptr callFromCHandlerThread[MAXPRI]; /* Handler for exported C calls (in heap). */
   bool canMinor; /* TRUE iff there is space for a minor gc. */
   struct GC_controls controls;
   struct GC_cumulativeStatistics cumulativeStatistics;
@@ -122,6 +122,7 @@ struct GC_state {
   uintmax_t allocedByRT;
   size_t numAllocedByRT;
   bool oneByOne;
+  bool useRTThreads;
 
   /* end of rt-threading additions */
 

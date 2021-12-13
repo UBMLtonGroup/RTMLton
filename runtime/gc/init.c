@@ -102,7 +102,7 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 		and i<argc
 		and(0 == strcmp(argv[i], "@MLton"))) {
 		bool done;
-
+printf("xxx  %d %s\n", i, argv[i]);
 		i++;
 		done = FALSE;
 		while (!done) {
@@ -298,6 +298,11 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 					if (i == argc)
 						die("@MLton gc-onebyone missing argument.");
 					s->oneByOne = stringToBool(argv[i++]);
+				}else if (0 == strcmp(arg, "rtthreads")) {
+					i++;
+					if (i == argc)
+						die("@MLton rtthreads missing argument.");
+					s->useRTThreads = stringToBool(argv[i++]);
 				}else if (0 == strcmp(arg, "use-mmap")) {
 					i++;
 					if (i == argc)
@@ -329,7 +334,6 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->amInGC = TRUE;
 	s->amOriginal = TRUE;
 	s->atomicState = 0;
-	s->callFromCHandlerThread = BOGUS_OBJPTR;
 	s->isRealTimeThreadRunning = FALSE;
 	s->mainBooted = FALSE;
 	s->controls.fixedHeap = 0;
@@ -402,6 +406,7 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->allocedByRT = 0;
 	s->numAllocedByRT = 0;
     s->oneByOne = false;
+    s->useRTThreads  = false;
 
 	s->wl_size = 10000;
 	s->wl_length = 0;
@@ -416,6 +421,8 @@ int GC_init(GC_state s, int argc, char **argv) {
 	}
 
 	for (__i = 0; __i < MAXPRI; __i++) {
+	    
+        s->callFromCHandlerThread[__i] = BOGUS_OBJPTR;
 		s->currentThread[__i] = BOGUS_OBJPTR;
 		s->savedThread[__i] = BOGUS_OBJPTR;
 		s->signalHandlerThread[__i] = BOGUS_OBJPTR;
@@ -476,7 +483,8 @@ int GC_init(GC_state s, int argc, char **argv) {
 
 	processAtMLton(s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
 	res = processAtMLton(s, 1, argc, argv, &worldFile);
-
+	printf("argc %d\n", argc);
+printf("processAtMLton %ld %ld\n", (long int)s->controls.fixedHeap, (long int)s->controls.maxHeap);
 	if (s->controls.fixedHeap > 0 and s->controls.maxHeap > 0)
 	     die("Cannot use both fixed-heap and max-heap.");
 

@@ -9,13 +9,14 @@
 #define SIGNAL_RT_THREADS IFED(pthread_cond_signal(&state->rtThreads_cond))
 #define BLOCK_RT_THREADS IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
 
+#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&state->rtThreads_cond))
 #define CONCURRENT
 //#define DEBUG true
 
 static volatile int initialized = 0;
+volatile bool rtinitfromML = FALSE;
 
 extern void Copy_globalObjptrs (int f, int t);
-
 
 int32_t
 GC_myPriority ( __attribute__ ((unused)) GC_state s)
@@ -50,6 +51,131 @@ GC_safePoint(int32_t thr_num) {
     return 0;
 }
 
+#if defined(__rtems__)
+
+rtems_id            ML_mutex;
+rtems_id            User_mutexes[NUM_USER_MUTEXES];
+
+void ML_lock (void) {
+    while (RTEMS_SUCCESSFUL != rtems_barrier_wait(ML_mutex, RTEMS_NO_TIMEOUT)) {
+        //die("ML_lock::rtems_barrier_wait failed");
+    }
+}
+
+void ML_unlock (void) {
+    uint32_t released;
+    if (RTEMS_SUCCESSFUL != rtems_barrier_release(ML_mutex, &released)) {
+        die("ML_unlock::rtems_barrier_release failed");
+    }
+}
+
+void User_lock (Int32 p) {
+    while (RTEMS_SUCCESSFUL != rtems_barrier_wait(User_mutexes[p], RTEMS_NO_TIMEOUT)) {
+        //die("User_lock::rtems_barrier_wait failed");
+    }
+}
+
+void User_unlock (Int32 p) {
+    uint32_t released;
+    if (RTEMS_SUCCESSFUL != rtems_barrier_release(User_mutexes[p], &released)) {
+        die("User_unlock::rtems_barrier_release failed");
+    }
+}
+
+void InitializeMutexes(void) {
+    if (RTEMS_SUCCESSFUL != rtems_barrier_create(
+            0xDEADBEEF,
+            RTEMS_BARRIER_MANUAL_RELEASE,
+            MAXPRI+1,
+            &ML_mutex
+        )) {
+            die("InitializeMutexes::rtems_barrier_create failed");
+    }
+
+    for(int i=0 ; i < NUM_USER_MUTEXES ; i++)
+    {
+        if (RTEMS_SUCCESSFUL != rtems_barrier_create(
+            0xDEADBEF0+i,
+            RTEMS_BARRIER_MANUAL_RELEASE,
+            MAXPRI+1,
+            &User_mutexes[NUM_USER_MUTEXES]
+        )) {
+            die("rtems_barrier_create failed");
+        }
+    }
+
+}
+
+#else
+
+/* TID of holding thread or -1 if no one*/
+volatile int32_t ML_mutex;
+volatile int32_t *User_mutexes;
+
+
+void ML_lock (void) {
+
+  do {
+  AGAIN:
+    //maybeWaitForGC (s);
+    if (ML_mutex >= 0)
+      goto AGAIN;
+  } while (not __sync_bool_compare_and_swap (&ML_mutex,
+                                             -1,
+                                             PTHREAD_NUM));
+  /* 
+  if (needGCTime (s))
+    stopTiming (&ru_lock, &s->cumulativeStatistics->ru_lock);
+  */
+}
+
+void ML_unlock (void) {
+
+  //fprintf (stderr, "unlock %d\n", Parallel_holdingMutex);
+
+  if (not __sync_bool_compare_and_swap (&ML_mutex,
+                                        PTHREAD_NUM,
+                                        -1)) {
+    fprintf (stderr, "ML-LOCK: can't unlock if you don't hold the lock\n");
+  }
+}
+
+
+void User_lock (Int32 p){
+
+    do {
+        AGAIN:
+            if (User_mutexes[p] >= 0)
+                goto AGAIN;
+       } while (not __sync_bool_compare_and_swap (&User_mutexes[p],
+                                             -1,
+                                             PTHREAD_NUM));
+}
+
+void User_unlock (Int32 p) {
+
+  //fprintf (stderr, "unlock %d\n", Parallel_holdingMutex);
+
+  if (not __sync_bool_compare_and_swap (&User_mutexes[p],
+                                        PTHREAD_NUM,
+                                        -1)) {
+    fprintf (stderr, "USER-LOCK: can't unlock if you don't hold the lock\n");
+  }
+}
+
+void InitializeMutexes(void) {
+    ML_mutex = -1;
+    /*10 -- arbitrary number of locks the user can create through ML program*/
+    User_mutexes = (int32_t *) malloc (NUM_USER_MUTEXES * sizeof (int32_t));
+    
+    for(int i=0 ; i < NUM_USER_MUTEXES ; i++)
+    {
+        User_mutexes[i] = -1;
+    }
+}
+
+#endif
+
 void
 realtimeThreadWaitForInit (void)
 {
@@ -68,33 +194,108 @@ realtimeThreadInit (struct GC_state *state, pthread_t * main, pthread_t * gc)
     initialized = 2;
 
     int tNum;
-    for (tNum = 2; tNum < MAXPRI; tNum++) {
-        if (DEBUG_THREADS)
-            fprintf (stderr, "spawning posix thread %d\n", tNum);
 
-        struct realtimeRunnerParameters *params =
-            malloc (sizeof (struct realtimeRunnerParameters));
+    if(state->useRTThreads)
+    {
+        for (tNum = 2; tNum < MAXPRI; tNum++) {
+            if (DEBUG_THREADS)
+                fprintf (stderr, "spawning posix thread %d\n", tNum);
 
-        params->tNum = tNum;
-        params->state = state;
+            struct realtimeRunnerParameters *params =
+                malloc (sizeof (struct realtimeRunnerParameters));
 
-        pthread_t *pt = malloc (sizeof (pthread_t));
-        memset (pt, 0, sizeof (pthread_t));
+            params->tNum = tNum;
+            params->state = state;
 
-        if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
-            fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
-            exit (-1);
+            pthread_t *pt = malloc (sizeof (pthread_t));
+            memset (pt, 0, sizeof (pthread_t));
+
+            if (pthread_create (pt, NULL, &realtimeRunner, (void *) params)) {
+                fprintf (stderr, "pthread_create failed: %s\n", strerror (errno));
+                exit (-1);
+            }
+            else {
+                state->realtimeThreads[tNum] = pt;
+                initialized++;
+            }
         }
-        else {
-            state->realtimeThreads[tNum] = pt;
-            initialized++;
-        }
+        state->isRealTimeThreadInitialized = TRUE;
     }
-    state->isRealTimeThreadInitialized = TRUE;
+    else
+    {
+        /*HAck to ensure the main thread doesnt wait for RT threads to be created*/
+        initialized = MAXPRI;
+    }
 }
+
+/*Will be called by the main thread*/
+void RT_init (GC_state state)
+{
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
+
+    //fprintf(stderr, "%d] "FMTPTR" "FMTPTR" \n",
+	//		PTHREAD_NUM,
+	//		state->currentThread[PTHREAD_NUM],
+	//		state->savedThread[PTHREAD_NUM]);
+
+	assert (state->callFromCHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR);
+	assert (state->currentThread[PTHREAD_NUM] != BOGUS_OBJPTR);
+	//assert (state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+	state->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
+
+    for(int i = 2 ; i < MAXPRI ; i++)
+    {
+		//fprintf(stderr, "%d] %s copy cfch thread\n", PTHREAD_NUM, __FUNCTION__);
+        pointer cpThread = GC_copyThread (state,
+										  objptrToPointer(state->callFromCHandlerThread[PTHREAD_NUM],
+                                          state->umheap.start));
+        state->callFromCHandlerThread[i] = pointerToObjptr(cpThread, state->umheap.start);
+
+
+		pointer curThread = GC_copyThread (state,
+										   objptrToPointer(state->currentThread[PTHREAD_NUM],
+                                           state->umheap.start));
+
+        state->currentThread[i] = pointerToObjptr(curThread, state->umheap.start);
+
+		GC_thread t = (GC_thread)(state->currentThread[PTHREAD_NUM]);
+		GC_UM_Chunk frame = (GC_UM_Chunk)(t->currentFrame - GC_HEADER_SIZE);
+		frame = frame->prev_chunk;
+		//fprintf(stderr, "frame for %d is "FMTPTR" thread "FMTPTR"\n", i, (uintptr_t)frame, (uintptr_t) t);
+		t->currentFrame = (objptr)(frame + GC_HEADER_SIZE);
+		state->currentFrame[i] = t->currentFrame;
+
+        //state->currentFrame[i] = ((GC_thread) (curThread + offsetofThread(state)))->currentFrame;
+		state->savedThread[i] = BOGUS_OBJPTR;
+    }
+    
+    InitializeMutexes();
+
+    rtinitfromML = TRUE;
+
+    
+	LOCK_RT_THREADS;
+	BROADCAST_RT_THREADS;
+	UNLOCK_RT_THREADS;
+}
+
+Int32 RTThread_maxpri (void)
+{
+    return MAXPRI;
+}
+
+Int32 RTThread_get_pthread_num(void)
+{
+    return PTHREAD_NUM;
+}
+
 
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
 
+void Parallel_run(void);
+
+__attribute__((noreturn))
 void *
 realtimeRunner (void *paramsPtr)
 {
@@ -106,43 +307,30 @@ realtimeRunner (void *paramsPtr)
       
     state->rtSync[PTHREAD_NUM]= true;
 
-
     LOCK_RT_THREADS;
-    while(!(state->callFromCHandlerThread != BOGUS_OBJPTR))
+    while(!rtinitfromML)
     {
-        /*This will be unblocked in GC_setcallFromCHandlerThread */
+        /*This will be unblocked in rtInit */
         if(DEBUG)
             fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
 
-    /*while (!(state->callFromCHandlerThread != BOGUS_OBJPTR)) {
-        if (DEBUG) {
-            fprintf (stderr,
-                     "%d] spin [callFromCHandlerThread boot] ..\n", tNum);
-        }
-        state->rtSync[PTHREAD_NUM]= true;
-        ssleep (1, 0);
-    }*/
 
-    if (DEBUG)
-        fprintf (stderr, "%d] callFromCHandlerThread %x is ready\n", tNum,
-                 state->callFromCHandlerThread);
-
-  
- /*if(state->currentThread[PTHREAD_NUM] == BOGUS_OBJPTR)
- {
-     if(DEBUG_THREADS)
-         fprintf(stderr,"%d] creating green thread to link with RT thread\n");
-     
-     GC_thread thread = newThread (state, sizeofStackInitialReserved (state));
-     switchToThread (state, pointerToObjptr((pointer)thread - offsetofThread (state), state->heap.start));
- }*/
-  
+ 
+     fprintf (stderr, "%d] calling parallel_run \n", tNum);
+     state->rtSync[PTHREAD_NUM]= true;
+     Parallel_run ();
+     fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
+                 tNum);
+        exit (-1); 
+#if 0
     /*Using same lock to BLOCK again. This time it wont be unblocked. 
      * TODO: Define what RT threads should do*/
-     
+
+
+    /* RT thread allocates on UM heap without stack*/
     if(state->numAllocedByRT <= 0)
     {
     if(DEBUG)
@@ -178,44 +366,15 @@ realtimeRunner (void *paramsPtr)
 		sched_yield();
 
 	}
-
-   /* fprintf(stderr,"%d] RT thread\n",PTHREAD_NUM)   ;
-
-    GC_thread rtTH = (GC_thread) (objptrToPointer (state->savedThread[PTHREAD_NUM], state->heap.start) +
-                                   offsetofThread (state));
-
-    state->currentThread[PTHREAD_NUM] = state->savedThread[PTHREAD_NUM];
-    setGCStateCurrentThreadAndStack (state);
-
-    GC_switchToThread(state,rtTH,0);
-    */
+#endif
 
 #ifdef THREADED
+#pragma message "*********   THREADED enabled    **********"
+	die("wrong");
     while (!TC.booted) {
         if (DEBUG_THREADS) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
         ssleep (1, 0);
     }
-
-    /* state->currentThread objptr
-       curct->stack         objptr
-
-       ref: https://github.com/UBMLtonGroup/MLton/blob/master/runtime/gc/switch-thread.c#L14-L16
-
-       given an objptr, to get GC_thread 
-
-       thread = (GC_thread)(objptrToPointer (op, s->heap.start)
-       + offsetofThread (s));
-
-       given a pointer, to get objptr 
-
-       stack = (GC_stack)objptrToPointer (thread->stack, s->heap.start))
-
-       from is a GC_thread in the following.
-       (objptr) s->savedThread = pointerToObjptr((pointer)from - offsetofThread (s), s->heap.start);
-
-       pointer GC_copyThread (GC_state s, pointer p) 
-
-     */
 
     /* set currentThread of new RT thread to that of main thread until copied thread is setup */
     state->currentThread[PTHREAD_NUM] = state->currentThread[0];
@@ -269,8 +428,18 @@ realtimeRunner (void *paramsPtr)
                  tNum);
         exit (-1);
     }
-
+#else
+#pragma message "*********   THREADED NOT enabled    **********"
 #endif
+
+	/*NOTREACHED*/
+	/* since the above is wrapped in while(1) this code should never
+	 * be reached and is only here to suppress gcc 'noreturn function
+	 * returns' compiler warnings (since we use -Wall)
+	 */
+	while (1)
+		fprintf (stderr, "%d] Should not get here. Spinning.\n",
+				 tNum);
 }
 
 pointer

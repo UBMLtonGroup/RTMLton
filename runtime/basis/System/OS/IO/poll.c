@@ -1,11 +1,17 @@
 #include "platform.h"
 
-C_Errno_t(C_Int_t) 
+C_Errno_t(C_Int_t)
+#if defined(__rtems__)
+__attribute__((noreturn))
+#endif
 OS_IO_poll (Vector(C_Fd_t) fds, 
             Vector(C_Short_t) eventss, 
             C_NFds_t n, 
             C_Int_t timeout, 
             Array(C_Short_t) reventss) {
+#if defined(__rtems__)
+   die ("no poll");
+#else
   unsigned int i;
   int res;
   struct pollfd ufds[n];
@@ -19,4 +25,5 @@ OS_IO_poll (Vector(C_Fd_t) fds,
     ((short*)reventss)[i] = ufds[i].revents;
   }
   return res;
+#endif
 }

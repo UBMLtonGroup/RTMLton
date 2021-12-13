@@ -18,6 +18,11 @@ fun die (s: string): 'a =
       in raise DieFailed
       end)
 
+
+fun dbg (s: string): unit = 
+  if false then PrimitiveFFI.Stdio.print (Int.toString (Prim.pthreadNum ())^s) else
+    ()
+
 val gcState = Primitive.MLton.GCState.gcState
 
 structure AtomicState =
@@ -62,28 +67,38 @@ fun prepend (T r: 'a t, f: 'b -> 'a): 'b t =
           | New g => New (g o f)
           | Paused (g, t) => Paused (fn h => g (f o h), t)
    in r := Dead
+      ; dbg ">>> mltonthread: prepend\n"
       ; T (ref t)
    end
 
-fun prepare (t: 'a t, v: 'a): Runnable.t =
-   prepend (t, fn () => v)
+fun prepare (t: 'a t, v: 'a): Runnable.t = (
+     dbg ">>> mltonthread: prepare\n"
+   ; prepend (t, fn () => v)
+   )
 
 fun new f = T (ref (New f))
 
 local
+   val maxpri = Prim.numberOfPThreads ()
+   val pNum = Prim.pthreadNum
    local
-      val func: (unit -> unit) option ref = ref NONE
+      val () = dbg ">>>> mltonthread: building base\n"
+   (* Create one reference per PThread *)
+      val func: (unit -> unit) option Array.array = 
+        Array.tabulate (maxpri, fn _ => NONE)
       val base: Prim.preThread =
          let
             val () = Prim.copyCurrent ()
+            (*should come after copycurrent acc to spoons*)
+            val pthread = pNum ()
          in
-            case !func of
+            case Array.unsafeSub (func, pthread) of
                NONE => Prim.savedPre gcState
              | SOME x =>
                   (* This branch never returns. *)
                   let
                      (* Atomic 1 *)
-                     val () = func := NONE
+                     val () = Array.update (func, pthread, NONE)
                      val () = atomicEnd ()
                      (* Atomic 0 *)
                   in
@@ -95,16 +110,19 @@ local
       fun newThread (f: unit -> unit) : Prim.thread =
          let
             (* Atomic 2 *)
-            val () = func := SOME f
+            val () = Array.update (func, pNum (), SOME f)
          in
-            Prim.copy base
+            (   dbg ">>> mltonthread: newThread\n"
+              ; Prim.copy base
+              )
          end
    end
-   val switching = ref false
+   val switching = Array.tabulate (maxpri, fn _ => false)
 in
    fun 'a atomicSwitch (f: 'a t -> Runnable.t): 'a =
+      let val pthread = pNum () in 
       (* Atomic 1 *)
-      if !switching
+      if Array.unsafeSub (switching, pthread)
          then let
                  val () = atomicEnd ()
                  (* Atomic 0 *)
@@ -113,13 +131,13 @@ in
               end
       else
          let
-            val _ = switching := true
+            val _ = Array.update (switching, pthread, true)
             val r : (unit -> 'a) ref = 
                ref (fn () => die "Thread.atomicSwitch didn't set r.\n")
             val t: 'a thread ref =
                ref (Paused (fn x => r := x, Prim.current gcState))
             fun fail e = (t := Dead
-                          ; switching := false
+                          ; Array.update (switching, pthread, false)
                           ; atomicEnd ()
                           ; raise e)    
             val (T t': Runnable.t) = f (T t) handle e => fail e
@@ -129,13 +147,19 @@ in
                 | Interrupted t => t
                 | New g => (atomicBegin (); newThread g)
                 | Paused (f, t) => (f (fn () => ()); t)
-            val _ = switching := false
+
+            val _ = if not (Array.unsafeSub (switching, pthread))
+                    then raise Fail "switching switched?"
+                    else ()
+
+            val _ = Array.update (switching, pthread, false)
             (* Atomic 1 when Paused/Interrupted, Atomic 2 when New *)
             val _ = Prim.switchTo primThread (* implicit atomicEnd() *)
             (* Atomic 0 when resuming *)
          in
-            !r ()
+            (dbg ">>> mltonthread: atomicSwitch\n" ; !r ())
          end
+      end
 
    fun switch f =
       (atomicBegin ()
@@ -143,7 +167,7 @@ in
 end
 
 fun fromPrimitive (t: Prim.thread): Runnable.t =
-   T (ref (Interrupted t))
+   (dbg ">>> mltonthread: fromPrimitive\n" ; T (ref (Interrupted t)))
 
 fun toPrimitive (t as T r : unit t): Prim.thread =
    case !r of
@@ -152,7 +176,8 @@ fun toPrimitive (t as T r : unit t): Prim.thread =
          (r := Dead
           ; t)
     | New _ =>
-         switch
+       (dbg ">>> mltonthread: toPrimitive New\n"
+        ;switch
          (fn cur : Prim.thread t =>
           prepare
           (prepend (t, fn () =>
@@ -160,8 +185,10 @@ fun toPrimitive (t as T r : unit t): Prim.thread =
                     (fn t' : unit t =>
                      prepare (cur, toPrimitive t'))),
            ()))
+           )
     | Paused (f, t) =>
          (r := Dead
+          ; dbg ">>> mltonthread: toPrimitive\n"
           ; f (fn () => ()) 
           ; t)
 
@@ -202,7 +229,7 @@ in
             (new (fn () => loop () handle e => MLtonExn.topLevelHandler e))
          val _ = signalHandler := SOME p
       in
-         Prim.setSignalHandler (gcState, p)
+         (dbg ">>> mltonthread: setSignalHandler\n" ; Prim.setSignalHandler (gcState, p))
       end
 
    fun switchToSignalHandler () =
@@ -213,10 +240,13 @@ in
          val () = Prim.startSignalHandler gcState (* implicit atomicBegin () *)
          (* Atomic 2 *)
       in
+      (dbg ">>> mltonthread: switchToSignalHandler\n";
          case !signalHandler of
             NONE => raise Fail "no signal handler installed"
           | SOME t => Prim.switchTo t (* implicit atomicEnd() *)
+       )
       end
+      
 end
 
 
@@ -254,16 +284,18 @@ in
                      val _ = savedRef := NONE
                      val _ = Prim.returnToC () (* implicit atomicEnd() *)
                   in
-                     workerLoop ()
+                    (print ">>>> mltonthread: workerLoop\n"; workerLoop ())
                   end
                val workerThread = toPrimitive (new workerLoop)
                val _ = thisWorker := SOME (workerThread, savedRef)
             in
-               (workerThread, savedRef)
+              (dbg ">>>> mltonthread: mkworker\n"; (workerThread,
+              savedRef))
             end
          fun handlerLoop (): unit =
             let
                (* Atomic 2 *)
+               val () = dbg ">>>> mltonthread: get saved thread in handler loop\n"
                val saved = Prim.saved gcState
                val (workerThread, savedRef) =
                   case !worker of
@@ -274,57 +306,14 @@ in
                val _ = savedRef := SOME saved
                val _ = Prim.switchTo (workerThread) (* implicit atomicEnd() *)
             in
-               handlerLoop ()
+                ( dbg ">>>> mltonthread: handlerLoop\n"; handlerLoop ())
             end
          val handlerThread = toPrimitive (new handlerLoop)
          val _ = Prim.setCallFromCHandler (gcState, handlerThread)
       in
-         fn (i, f) => Array.update (exports, i, f)
+        (dbg ">>> mltonthread: register\n"; fn (i, f) => Array.update
+        (exports, i, f))
       end
 end
-structure Queue =
-   struct
-      datatype 'a t = T of {front: 'a list ref, back: 'a list ref}
 
-      fun new () = T {front = ref [], back = ref []}
-
-      fun enque (T {back, ...}, x) = back := x :: !back
-
-      fun deque (T {front, back}) =
-         case !front of
-            [] => (case !back of
-                      [] => NONE
-                    | l => let val l = rev l
-                           in case l of
-                              [] => raise Fail "deque"
-                            | x :: l => (back := []; front := l; SOME x)
-                           end)
-          | x :: l => (front := l; SOME x)
-   end
-
-    val topLevel: Runnable.t option ref = ref NONE
-    val threads:Runnable.t Queue.t = Queue.new ()
-
-    fun ready (t:Runnable.t) : unit =
-            Queue.enque(threads, t)
-
-    fun next () :Runnable.t =
-            case Queue.deque threads of
-               NONE => valOf (!topLevel)
-             | SOME t => t
-
-    fun 'a exit (): 'a = switch (fn _ => next ())
-
-    fun preparenew (f: unit -> unit):Runnable.t =
-         prepare
-         (new (fn () => ((f () handle _ => exit ())
-                                ; exit ())),
-          ())
-    val spawn = ready o preparenew
-
-    fun run(): unit =
-         (switch (fn t =>
-                  (topLevel := SOME (prepare (t, ()))
-                   ; next()))
-                   ; topLevel := NONE)
 end

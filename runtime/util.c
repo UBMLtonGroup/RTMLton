@@ -6,5 +6,11 @@
  */
 
 #define MLTON_UTIL
+#if defined(__rtems__)
+#include "/opt/rtems6/i386-rtems6/include/stdio.h"
+#else
+#pragma message "not rtems"
+#endif
+
 #include "util/die.c"
 #include "util/to-string.c"

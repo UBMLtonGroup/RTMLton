@@ -212,6 +212,7 @@ structure Platform =
              | NetBSD
              | OpenBSD
              | Solaris
+             | RTEMS
 
             val host: t =
                case _const "MLton_Platform_OS_host": String8.string; of
@@ -226,6 +227,8 @@ structure Platform =
                 | "netbsd" => NetBSD
                 | "openbsd" => OpenBSD
                 | "solaris" => Solaris
+                | "rtems" => RTEMS
+                | "rtems6" => RTEMS
                 | _ => raise Primitive.Exn.Fail8 "strange MLton_Platform_OS_host"
 
             val forkIsEnabled =
@@ -350,6 +353,8 @@ structure Thread =
       val setSaved = _import "GC_setSavedThread" runtime private: GCState.t * thread -> unit;
       val startSignalHandler = _import "GC_startSignalHandler" runtime private: GCState.t -> unit;
       val switchTo = _prim "Thread_switchTo": thread -> unit;
+      val numberOfPThreads = _import "RTThread_maxpri": unit -> Int32.int;
+      val pthreadNum = _import "RTThread_get_pthread_num": unit -> Int32.int;
    end
 
 structure Weak =

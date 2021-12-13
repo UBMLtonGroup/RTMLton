@@ -1,0 +1,52 @@
+#
+# Hello world Waf script
+#
+from __future__ import print_function
+import os
+
+rtems_version = "6"
+
+try:
+    import rtems_waf.rtems as rtems
+except:
+    print('error: no rtems_waf git submodule')
+    import sys
+    sys.exit(1)
+
+def init(ctx):
+    rtems.init(ctx, version = rtems_version, long_commands = True)
+
+def bsp_configure(conf, arch_bsp):
+    # Add BSP specific configuration checks
+    pass
+
+def options(opt):
+    rtems.options(opt)
+
+def configure(conf):
+    rtems.configure(conf, bsp_configure = bsp_configure)
+
+def build(bld):
+    rtems.build(bld)
+
+    x = """
+ -I/home/jcmurphy/quick-start/rtems/6/include/
+ -I/cse/CSE/B/RTMLton/build/lib/targets/self/include 
+          -I/cse/CSE/B/RTMLton/build/lib/include -O1 -fno-common 
+          -D_GNU_SOURCE -D__USE_GNU -fno-strict-aliasing -fomit-frame-pointer 
+          -w -m32 -fno-strength-reduce -fschedule-insns -fschedule-insns2 
+          -falign-functions=5 -falign-jumps=2 -falign-loops=2 """
+
+    y = """ -L/cse/CSE/B/RTMLton/build/lib/targets/self -lmlton -lgdtoa -lm 
+          -lgmp -lpthread -lrt -m32 """
+
+    cwd = os.getcwd()
+    print(cwd)
+    cflags = '-g -O2 -I/home/jcmurphy/quick-start/rtems/6/include/ -I' + cwd + '/.. -I'+cwd+'/../util '
+    print(cflags)
+
+    bld(features = 'c cprogram',
+        target = 'hello.exe',
+        cflags = cflags,
+        source = ['hello.c', 'gen-types.c', '../util.c',
+                  'init.c'])

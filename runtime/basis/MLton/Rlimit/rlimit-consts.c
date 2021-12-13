@@ -32,4 +32,4 @@ const C_Int_t MLton_Rlimit_RSS = -1;
 #endif
 /* */
 const C_Int_t MLton_Rlimit_STACK = RLIMIT_STACK;
-const C_RLim_t MLton_Rlimit_INFINITY = RLIM_INFINITY;
+const C_RLim_t MLton_Rlimit_INFINITY = (C_RLim_t) RLIM_INFINITY;

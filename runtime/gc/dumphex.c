@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <ctype.h>
 
+#pragma GCC diagnostic ignored "-Wchar-subscripts"
+#define ISASCII ()
 void dump_hex(char *str, int len)
 {
     int loop, l2, start;
@@ -17,7 +19,7 @@ void dump_hex(char *str, int len)
         {
             fprintf(stderr, "|");
             for (l2 = start; l2 <= loop; l2++)
-                if (isprint(str[l2]) && !iscntrl(str[l2]) && isascii(str[l2]))
+                if (isprint(str[l2]) && !iscntrl(str[l2]))
                     fprintf(stderr, "%c", str[l2]);
                 else
                     fprintf(stderr, ".");
@@ -30,7 +32,7 @@ void dump_hex(char *str, int len)
     {
         fprintf(stderr, "|");
         for (l2 = start; l2 < len; l2++)
-            if (isprint(str[l2]) && !iscntrl(str[l2]) && isascii(str[l2]))
+            if (isprint(str[l2]) && !iscntrl(str[l2]))
                 fprintf(stderr, "%c", str[l2]);
             else
                 fprintf(stderr, ".");

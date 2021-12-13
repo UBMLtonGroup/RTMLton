@@ -1,7 +1,7 @@
 #include "../gc.h"
 
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+//#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 #define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
 #define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
 
@@ -208,9 +208,11 @@ GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks
 void insertChunkToFL(GC_state s,
 					 GC_UM_heap h,
 					 pointer c) {
+
 	LOCK_FL;
 
 	/*Insert free chunk to back of free list*/
+
 	UM_Mem_Chunk pc = (UM_Mem_Chunk) c;
 	if (s->fl_chunks == 0) {
 		h->fl_head = pc;
@@ -230,7 +232,7 @@ void insertChunkToFL(GC_state s,
 #if 0
 	fprintf(stderr, YELLOW("add %8x to free list (clear using 0xAA) %d\n"),
 			(unsigned int)pc, UM_CHUNK_PAYLOAD_SIZE);
-	memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE);
+	//memset(pc->ml_object, 0xaa, UM_CHUNK_PAYLOAD_SIZE);
 #endif
 
 #ifdef STACK_GC_SANITY
@@ -245,8 +247,8 @@ void insertChunkToFL(GC_state s,
 		}
 	}
 #endif
-	UNLOCK_FL;
 
+	UNLOCK_FL;
 }
 
 /*No one except GC thread should be calling this*/
@@ -329,7 +331,11 @@ bool createUMHeap(GC_state s,
 				  size_t desiredSize,
 				  __attribute__ ((unused)) size_t minSize) {
 	pointer newStart;
-	newStart = GC_mmapAnon(NULL, desiredSize);;
+	if (DEBUG) {
+		fprintf(stderr, "%d] createUMHeap: %ld\n", PTHREAD_NUM, (long int)desiredSize);
+	}
+
+	newStart = GC_mmapAnon(NULL, desiredSize);
 
 	if (newStart == (void *) -1) {
 		fprintf(stderr, "[GC: MMap Failure]\n");
@@ -345,9 +351,9 @@ bool createUMHeap(GC_state s,
 	size_t step = max_chunk_size + sizeof(UM_header); /*account for size of chunktype field*/
 	pointer end = h->start + h->size - step;
 	if (DEBUG) {
-		fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk) = %d\n", PTHREAD_NUM, sizeof(struct GC_UM_Chunk));
-		fprintf(stderr, "    sizeof(struct GC_UM_Array_Chunk) = %d\n", sizeof(struct GC_UM_Array_Chunk));
-		fprintf(stderr, "    final chunk size = %d\n", max_chunk_size);
+		fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk) = %d\n", PTHREAD_NUM, (int)sizeof(struct GC_UM_Chunk));
+		fprintf(stderr, "    sizeof(struct GC_UM_Array_Chunk) = %d\n", (int)sizeof(struct GC_UM_Array_Chunk));
+		fprintf(stderr, "    final chunk size = %d\n", (int)max_chunk_size);
 	}
 	struct timeval t0, t1;
 	gettimeofday(&t0, NULL);
@@ -378,7 +384,7 @@ bool createUMHeap(GC_state s,
 	if (DEBUG or s->controls.messages) {
 		fprintf(stderr, "[GC] Created heap of %d chunks in %lu us step=%d sz(umchunk)=%d sz(umhdr)=%d\n",
 				s->fl_chunks, elapsed,
-				step, sizeof(struct GC_UM_Chunk), sizeof(UM_header));
+				(int)step, (int)sizeof(struct GC_UM_Chunk), (int)sizeof(UM_header));
 		fprintf(stderr,
 				"[GC: Created heap at "FMTPTR
 		" of size %s bytes\n",

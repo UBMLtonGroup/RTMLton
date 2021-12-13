@@ -13,3 +13,11 @@ programming language.
 For more information, go to the MLton home page. 
 
         http://mlton.org/
+
+
+
+## RTEMS
+
+- runtime/platform/rtems.c
+- runtime/platform/rtems_env.h
+- runtime/cenv.h  (__rtems__ define includes platform file)

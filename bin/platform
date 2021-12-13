@@ -67,6 +67,9 @@ SunOS)
 	        optisa $arch > /dev/null && break
 	done
 ;;
+Rtems6)
+	HOST_OS='rtems'
+;;
 *)
         die "Unknown OS $uname."
 ;;

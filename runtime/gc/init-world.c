@@ -106,13 +106,21 @@ void initWorld (GC_state s) {
   /* alloc um first so normal heap can expand without overrunning us */
 
 #define MEGABYTES 1024*1024
-#define MEM_AVAILABLE 1024
+#if defined(__rtems__)
+# define MEM_AVAILABLE 10
+# define MLTON_LEGACY_MEM_MB 10
+#else
+# define MEM_AVAILABLE 1000
+# define MLTON_LEGACY_MEM_MB 10
+#endif
+
   size_t avail_mem = s->controls.maxHeap ? s->controls.maxHeap : (MEM_AVAILABLE * MEGABYTES);
+
   createUMHeap (s, &s->umheap, avail_mem, avail_mem);
 
 
-  createHeap (s, &s->globalHeap, 100*MEGABYTES, 100*MEGABYTES);
-  createHeap (s, &s->infHeap, 100*MEGABYTES, 100*MEGABYTES);
+  createHeap (s, &s->globalHeap, MLTON_LEGACY_MEM_MB*MEGABYTES, MLTON_LEGACY_MEM_MB*MEGABYTES);
+  createHeap (s, &s->infHeap, MLTON_LEGACY_MEM_MB*MEGABYTES, MLTON_LEGACY_MEM_MB*MEGABYTES);
   
   start = alignFrontier (s, s->globalHeap.start);
   s->frontier = start;
@@ -125,5 +133,4 @@ void initWorld (GC_state s) {
   thread = newThread (s, 0);
   thread->currentFrame = thread->firstFrame;
   switchToThread (s, pointerToObjptr((pointer)thread - offsetofThread (s), s->umheap.start));
-  GC_setCallFromCHandlerThread(s,(pointer)0x22);
 }

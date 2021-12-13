@@ -1,3 +1,8 @@
+#if defined(__rtems__)
+#include <unistd.h>
+#include <sys/mman.h>
+#endif
+
 void *GC_mmapAnon_safe_protect (void *start, size_t length,
                                 size_t dead_low, size_t dead_high) {
         void *base,*low,*result,*high;

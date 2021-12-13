@@ -21,15 +21,20 @@ void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
 
 	assert (chunk->sentinel == UM_STACK_SENTINEL);
 
-	returnAddress = *(uintptr_t*)(chunk->ml_object + chunk->ra + GC_HEADER_SIZE);
+	returnAddress = *(GC_returnAddress*)(chunk->ml_object + chunk->ra);
 	if (raoverride > 0) {
 		returnAddress = raoverride;
 	}
 
 	fprintf (stderr, "%d] frame:  chunkAddr = "FMTPTR"  return address = "FMTRA" (%d) (ra=%d)\n",
 			PTHREAD_NUM,
-			(uintptr_t)chunk, returnAddress, returnAddress,
-			chunk->ra);
+			(uintptr_t)chunk, (uintptr_t) returnAddress, (int)returnAddress,
+			(int)chunk->ra);
+
+	if (chunk->ra == 0) {
+		fprintf(stderr, "%d]   ra=0, so cant decode this frame\n", PTHREAD_NUM);
+		return;
+	}
 
 	frameLayout = getFrameLayoutFromReturnAddress (s, returnAddress);
 	frameOffsets = frameLayout->offsets;
@@ -44,7 +49,7 @@ void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
 		fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
 				PTHREAD_NUM,
 				frameOffsets[i + 1], frameOffsets[i + 1],
-				x,
+				(int)x,
 				xv);
 	}
 
@@ -102,6 +107,10 @@ pointer um_getStackTop (GC_state s, objptr stack) {
  * from the first to the second. figure out what the correct
  * currentFrame is for the destination thread and set it.
  *
+ * if you are copying the stack of the current thread then you
+ * should copy gcstate->currentframe[x] into fromthread->currentframe
+ * to make sure it is sync'd correctly.
+ *
  * both stacklets must be already allocated
  * both stacklets must be the same number of chunks (asserted)
  */
@@ -128,14 +137,15 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
 
         GC_memcpy((pointer)f, (pointer)t, copyamt);
         if (DEBUG_CCODEGEN)
-	        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, f->ra, f->ml_object[f->ra + GC_HEADER_SIZE]);
+	        fprintf(stderr, "%d]    raoffset %d ra %d\n", PTHREAD_NUM, (int)f->ra, f->ml_object[f->ra + GC_HEADER_SIZE]);
+
         if (from->exnStack == (objptr)f + GC_HEADER_SIZE) {
 			if (DEBUG_CCODEGEN) {
 				fprintf(stderr, GREEN("found exnStack: from:%08x -> to:%08x (handler %d, ra %d)\n"),
 						(unsigned int) f,
 						(unsigned int) t,
-						f->handler,
-						*(uintptr_t*)(f->ml_object + f->ra + GC_HEADER_SIZE));
+						(int)f->handler,
+						(int)*(uintptr_t*)(f->ml_object + f->ra + GC_HEADER_SIZE));
 			}
 			to->exnStack = (objptr)t + GC_HEADER_SIZE;
         }

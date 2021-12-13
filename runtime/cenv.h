@@ -11,7 +11,9 @@
 #define _MLTON_CENV_H_
 
 /* GNU C Library Feature Macros */
+#ifndef _ISOC99_SOURCE
 #define _ISOC99_SOURCE
+#endif
 //#define _BSD_SOURCE
 #define DEFAULT_SOURCE
 // #define _XOPEN_SOURCE 600
@@ -96,7 +98,7 @@ COMPILE_TIME_ASSERT(sizeof_double__is_eight, sizeof(double) == 8);
 #elif (defined (__sun__))
 #include "platform/solaris.h"
 #elif (defined (__rtems__))
-#warn todo rtems platform include
+#include "platform/rtems-platform.h" // dont rename this to rtems.h because rtems already uses that filename
 #else
 #error unknown platform os
 #endif

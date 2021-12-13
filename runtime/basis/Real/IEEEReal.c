@@ -15,6 +15,10 @@
 #define SSE_ROUNDING_CONTROL_MASK 0x00006000
 #define SSE_ROUNDING_CONTROL_SHIFT 13
 
+#if defined(__rtems__)
+#pragma GCC diagnostic ignored "-Wshadow"
+#endif
+
 static inline C_Int_t fegetround (void) {
         uint16_t fpuControl;
         

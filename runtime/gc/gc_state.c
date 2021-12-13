@@ -9,7 +9,8 @@
  * See the file MLton-LICENSE for details.
  */
 
-#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&s->rtThreads_cond))
+
+//#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&s->rtThreads_cond))
 #define LOCK_RT_TH IFED(pthread_mutex_lock(&s->rtThreads_lock))
 #define UNLOCK_RT_TH IFED(pthread_mutex_unlock(&s->rtThreads_lock))
 
@@ -202,19 +203,19 @@ size_t GC_getLastMajorStatisticsBytesLive(GC_state s) {
 
 
 pointer GC_getCallFromCHandlerThread(GC_state s) {
-	pointer p = objptrToPointer(s->callFromCHandlerThread, s->umheap.start);
+	pointer p = objptrToPointer(s->callFromCHandlerThread[PTHREAD_NUM], s->umheap.start);
 	return p;
 }
 
 void GC_setCallFromCHandlerThread(GC_state s, pointer p) {
 	objptr op = pointerToObjptr(p, s->umheap.start);
-	s->callFromCHandlerThread = op;
+	s->callFromCHandlerThread[PTHREAD_NUM] = op;
 	if (DEBUG_THREADS)
-		fprintf(stderr, "%d] call handler set,\n", PTHREAD_NUM);
+		fprintf(stderr, "%d] "PURPLE("call handler set")": "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)op);
 	GC_copyCurrentThread(s, false);
-	LOCK_RT_TH;
-	BROADCAST_RT_THREADS;
-	UNLOCK_RT_TH;
+	//LOCK_RT_TH;
+	//BROADCAST_RT_THREADS;
+	//UNLOCK_RT_TH;
 }
 
 pointer GC_getCurrentThread(GC_state s) {
@@ -226,6 +227,10 @@ pointer GC_getSavedThread(GC_state s) {
 	pointer p;
 	assert(s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR);
 	p = objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start);
+    if (DEBUG_THREADS) {
+        fprintf(stderr, "%d] %s "RED("get savedThread")" returns="FMTPTR" (and resets saved thread to "FMTPTR")\n",
+			PTHREAD_NUM, __FUNCTION__, (uintptr_t)p, (uintptr_t)BOGUS_OBJPTR);
+	}
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
 	return p;
 }
@@ -233,15 +238,20 @@ pointer GC_getSavedThread(GC_state s) {
 void GC_setSavedThread(GC_state s, pointer p) {
 	objptr op;
 
-	//assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
+	assert(s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 	op = pointerToObjptr(p, s->umheap.start);
 	s->savedThread[PTHREAD_NUM] = op;
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] %s "RED("setting savedThread")" to "FMTPTR"\n",
+			PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->savedThread[PTHREAD_NUM]);
 }
 
 
 void GC_setSignalHandlerThread(GC_state s, pointer p) {
 	objptr op = pointerToObjptr(p, s->umheap.start);
 	s->signalHandlerThread[PTHREAD_NUM] = op;
+	if (DEBUG_THREADS)
+		fprintf(stderr, "%d] "PURPLE("signal handler set")": "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)op);
 }
 
 struct rusage *GC_getRusageGCAddr(GC_state s) {

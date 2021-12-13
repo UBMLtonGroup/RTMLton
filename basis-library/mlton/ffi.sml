@@ -8,7 +8,18 @@
 structure MLtonFFI: MLTON_FFI =
 struct
 
+local 
+    open Primitive.MLton.Thread
+in
+    fun dbg (s: string): unit = 
+      if false 
+      then PrimitiveFFI.Stdio.print (Int.toString (pthreadNum ())^">> "^s)
+      else  ()
+end
+
+val _ = dbg "FFI: before register\n"
 val register = MLtonThread.register
+val _ = dbg "FFI: after register\n"
 
 local
    fun makeGet get (p,i) = get (MLtonPointer.getPointer (p, i), 0)

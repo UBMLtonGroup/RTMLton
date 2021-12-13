@@ -25,8 +25,19 @@ signature PRIM_THREAD =
         type thread = Thread.t
         val savedPre: unit -> preThread
         val copyCurrent: unit -> unit
-        val copy: preThread -> Thread.t        
+        val copy: preThread -> Thread.t   
+        val spawnp: (unit->unit) -> unit
+        val run: unit ->unit      
      end
 
      type 'a t
+    
+     val rtlock : int -> unit
+     val rtunlock : int -> unit
+     val pspawn: (unit->unit) * int -> unit
+     val thread_main: unit -> unit
+     val gcstate: Primitive.MLton.GCState.t
+
+     val getMyPriority: unit -> int
+
  end

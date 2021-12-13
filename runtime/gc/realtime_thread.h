@@ -1,8 +1,9 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
-#define MAXPRI 3 /* 0 = main, 1 = GC, also in include/c-common.h */
+#define MAXPRI 6 /* 0 = main, 1 = GC, also in include/c-common.h */
 #define PTHREAD_MAX MAXPRI  /* transitioning to this instead of MAXPRI */
+#define NUM_USER_MUTEXES 10
 
 #if (defined (MLTON_GC_INTERNAL_FUNCS))
 struct realtimeRunnerParameters {
@@ -22,7 +23,14 @@ int32_t GC_setBooted(int32_t thr_num,GC_state s);
 int32_t GC_safePoint(int32_t thr_num);
 int32_t GC_threadYield(GC_state s);
 int32_t GC_myPriority(GC_state s);
-
+void RT_init (GC_state state);
+Int32 RTThread_maxpri (void);
+Int32 RTThread_get_pthread_num(void);
+void InitializeMutexes(void);
+void ML_lock (void);
+void ML_unlock (void);
+void User_lock (Int32);
+void User_unlock (Int32);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */

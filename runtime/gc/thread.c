@@ -36,7 +36,7 @@ void displayThread (GC_state s,
 	}
 
 	fprintf(stream, "\t\tstack size = %d chunks\n", count);
-	fprintf(stream, "\t\tstack depth = %d chunks\n", count);
+	fprintf(stream, "\t\tstack depth = %d chunks\n", depth);
 
 
 #if 0

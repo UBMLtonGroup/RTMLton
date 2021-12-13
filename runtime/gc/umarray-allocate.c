@@ -239,9 +239,9 @@ pointer GC_arrayAllocate(GC_state s,
 	}
 
 	if (DEBUG_MEM) {
-        fprintf(stderr, "%d] GC_arrayAllocate: numElements: %zd (%zd b/e), "
+        fprintf(stderr, "%d] GC_arrayAllocate: numElements: %ld (%zd b/e), "
 						"numElsPerChunk: %zd, numLeaves: %zd, numChunks: %zd, treeHeight: %zd, tcn: %f\n",
-                PTHREAD_NUM, numElements, bytesPerElement, numElsPerChunk, numLeaves, numChunks, treeHeight, tcn);
+                PTHREAD_NUM, (long int)numElements, bytesPerElement, numElsPerChunk, numLeaves, numChunks, treeHeight, tcn);
     }
 
 	numChunks = (size_t)tcn;
@@ -257,9 +257,9 @@ pointer GC_arrayAllocate(GC_state s,
 	assert (getLengthOfList(allocHead) == numChunks);
 
     if (DEBUG_CHUNK_ARRAY)
-        fprintf(stderr, "%d]   Initial allocHead "FMTPTR" length: %zd, numChunks = %zd\n",
+        fprintf(stderr, "%d]   Initial allocHead "FMTPTR" length: %ld, numChunks = %zd\n",
             PTHREAD_NUM, (uintptr_t)allocHead,
-            getLengthOfList(allocHead),
+            (long int)getLengthOfList(allocHead),
             numChunks);
 
     /* allocate root node */

@@ -85,7 +85,18 @@ static inline void writeNewline (FILE *f) {
   writeString (f, "\n");
 }
 
+static inline void writeNewline2 (FILE *f, const char* label) {
+  writeString (f, label);
+  writeString (f, "\n");
+}
+
 static inline void writeStringWithNewline (FILE *f, const char* s) {
   writeString (f, s);
+  writeNewline (f);
+}
+
+static inline void writeStringWithNewline2 (FILE *f, const char* s, const char* label) {
+  writeString (f, s);
+  writeString (f, label);
   writeNewline (f);
 }

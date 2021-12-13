@@ -9,7 +9,7 @@
  * See the file MLton-LICENSE for details.
  */
 
-#define IFED(X) do { if (X) { perror("perror " #X); exit(-1); } } while(0)
+#define IFED(X) do { if (X) { printf(__FUNCTION__);perror("-perror " #X); exit(-1); } } while(0)
 #define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
 #define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
 
@@ -52,7 +52,7 @@ static void displayChunkedGCStats(GC_state s, FILE *out) {
 	fprintf(out, "-------------\t-------\t-------\t---------------\t---------------\n");
 	fprintf(out, "GC Statistics\n");
 	fprintf(out, "-------------\t-------\t-------\t---------------\t---------------\n");
-	fprintf(out, "Total chunks created = %d \n", s->maxChunksAvailable);
+	fprintf(out, "Total chunks created = %d \n", (int) s->maxChunksAvailable);
 	fprintf(out, "Number of Chunks allocated = %s\n", uintmaxToCommaString(s->cGCStats.numChunksAllocated));
 	fprintf(out, "Number of Chunks Freed = %s\n", uintmaxToCommaString(s->cGCStats.numChunksFreed));
 	fprintf(out, "Number of GC Sweeps = %s\n", uintmaxToCommaString(s->cGCStats.numSweeps));
@@ -68,6 +68,12 @@ static void displayChunkedGCStats(GC_state s, FILE *out) {
 void RTGC_done(GC_state s) {
 	FILE *out;
 	out = stderr;
+
+    while(PTHREAD_NUM != 2 && s->useRTThreads)
+    {
+	//fprintf(stderr, "%d] Main thread spinning\n", PTHREAD_NUM);
+        sched_yield();
+    }
 
 	/*If GC is running wait till its done*/
 	if (s->isGCRunning) {

@@ -1,5 +1,10 @@
 #include "platform.h"
 
+#if defined(__rtems__)
+#include <netdb.h>
+#include <netinet/in.h>
+#endif
+
 static struct servent *NetHostDB_servent;
 
 C_String_t NetServDB_getEntryName(void) {
