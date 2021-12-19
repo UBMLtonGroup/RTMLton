@@ -135,11 +135,17 @@ struct
   end
 
   local
-    val lock__ = _import "User_lock" : int -> unit;
-    val unlock__ = _import "User_unlock" : int -> unit;
+      val inst__ = _import "User_instrument" : int -> unit;
+      val dise__ = _import "Dump_instrument_stderr" : int -> unit;
+      val gtsb__ = _import "get_ticks_since_boot" : unit -> int;
+      val lock__ = _import "User_lock" : int -> unit;
+      val unlock__ = _import "User_unlock" : int -> unit;
   in
-    fun rtlock a = if a <=9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
-    fun rtunlock a = if a<=9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+      fun instrument a = inst__ a
+      fun dump_instrument_stderr a = dise__ a
+      fun get_ticks_since_boot () = gtsb__ ()
+      fun rtlock a = if a <=9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+      fun rtunlock a = if a<=9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
   end 
 
 

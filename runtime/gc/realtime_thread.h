@@ -31,6 +31,9 @@ void ML_lock (void);
 void ML_unlock (void);
 void User_lock (Int32);
 void User_unlock (Int32);
+void User_instrument (Int32 p);
+void Dump_instrument_stderr (Int32 p);
+unsigned int get_ticks_since_boot(void);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */

@@ -106,6 +106,15 @@ void InitializeMutexes(void) {
 
 }
 
+unsigned int get_ticks_since_boot(void) {
+    rtems_status_code sc;
+    rtems_interval    time_buffer;
+
+    sc = rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, (void *)&time_buffer);
+    assert (rc == RTEMS_SUCCESSFUL);
+    return (unsigned int)time_buffer;
+}
+
 #else
 
 /* TID of holding thread or -1 if no one*/
@@ -174,7 +183,49 @@ void InitializeMutexes(void) {
     }
 }
 
+/* returns milliseconds */
+unsigned int get_ticks_since_boot(void) {
+    long            ms; // Milliseconds
+    time_t          s;  // Seconds
+    struct timespec spec;
+
+    clock_gettime(CLOCK_MONOTONIC, &spec);
+
+    s  = spec.tv_sec;
+    ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds
+    if (ms > 999) {
+        s++;
+        ms = 0;
+    }
+
+    return (s*1000) + ms;
+}
 #endif
+
+// must be a multiple of 2*sizeof(int)
+#define MAX_INSTRUMENT 1024
+
+unsigned int instrument_offset[MAXPRI+1];
+unsigned int instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
+
+void User_instrument (Int32 p) {
+    instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]] = get_ticks_since_boot();
+    instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]+1] = (unsigned int)p;
+    instrument_offset[MAXPRI] = (instrument_offset[MAXPRI]+2) % MAX_INSTRUMENT;
+}
+
+void Dump_instrument_stderr (Int32 p) {
+    if (p == -1) p = PTHREAD_NUM;
+
+    for(unsigned int i = 0 ; i < MAX_INSTRUMENT ; i += 2) {
+        if (instrument_buffer[p][i] != 0) {
+            fprintf(stderr, "%d, %u, %u\n", p, 
+                    instrument_buffer[p][i],
+                    instrument_buffer[p][i+1]
+                    );
+        }
+    }
+}
 
 void
 realtimeThreadWaitForInit (void)
@@ -233,6 +284,10 @@ void RT_init (GC_state state)
 {
     if(DEBUG_THREADS)
         fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
+
+
+    memset(instrument_offset, 0, sizeof(instrument_offset[0]) * (MAXPRI+1));
+    memset(instrument_buffer, 0, sizeof(instrument_buffer[0][0]) * (MAXPRI+1) * MAX_INSTRUMENT);
 
     //fprintf(stderr, "%d] "FMTPTR" "FMTPTR" \n",
 	//		PTHREAD_NUM,
