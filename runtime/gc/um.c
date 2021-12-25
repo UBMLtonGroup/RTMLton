@@ -201,7 +201,12 @@ void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase)
     if (DEBUG_WB)
     {
         if(isSrcOnUMHeap || isDstOnUMHeap)
-            fprintf(stderr,"%d]In writebarrier, srcbase= "FMTPTR", dstbase= "FMTPTR" , is dst marked? %s, is src marked? %s \n",PTHREAD_NUM,(uintptr_t)srcbase,(uintptr_t)dstbase, (dstMarked)?"YES":"NO", (srcMarked)?"YES":"NO" );
+            fprintf(stderr,"%d] In writebarrier, srcbase= "FMTPTR", dstbase= "FMTPTR" , is dst marked? %s, is src marked? %s \n",
+                PTHREAD_NUM,
+                (uintptr_t)srcbase,
+                (uintptr_t)dstbase,
+                (dstMarked)?"YES":"NO",
+                (srcMarked)?"YES":"NO");
     }
 }
 
@@ -210,13 +215,13 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     Pointer heap_end = (gc_stat->umheap).start + (gc_stat->umheap).size;
 
     if (DEBUG_ARRAY_OFFSET)
-        fprintf(stderr, "UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
-                (uintptr_t)base, index, elemSize, offset);
+        fprintf(stderr, "%d] UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
+                PTHREAD_NUM, (uintptr_t)base, index, elemSize, offset);
 
     if (base < gc_stat->umheap.start || base >= heap_end) {
         if (DEBUG_ARRAY_OFFSET) {
-            fprintf(stderr, "UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
-                    (uintptr_t)base, offset);
+            fprintf(stderr, "%d] UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
+                    PTHREAD_NUM, (uintptr_t)base, offset);
         }
         return base + index * elemSize + offset;
     }
@@ -261,6 +266,11 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     assert (root->array_height > 0);
     assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
+    if (root->array_chunk_type != UM_CHUNK_ARRAY_INTERNAL) {
+        fprintf(stderr, "%d] root-not-internal UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
+                PTHREAD_NUM, (uintptr_t)base, index, elemSize, offset);
+
+    }
     assert (root->array_chunk_type == UM_CHUNK_ARRAY_INTERNAL);
 
     /* to find the chunk that the index is in:

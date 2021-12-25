@@ -161,24 +161,31 @@ struct
     struct
       datatype 'a t = T of 'a list Array.array
 
-      fun new () = T (Array.tabulate(numberOfPThreads (), fn _ => []))
-      
+      (* note: this model creates a workq for each pthread, but the main thread is
+         thread ID 0 and the GC is thread ID 1 (see realtime_thread.c realtimeThreadInit)
+       *)
+      fun new () = T (print "workq.new\n"; Array.tabulate(numberOfPThreads (), fn _ => []))
+      (*fun mysleep () = (Posix.Process.sleep (Time.fromSeconds 1); ())*)
+
       fun addWork (T wq, w, p) = 
-      let 
+      let
+        val maxpri = numberOfPThreads ()
       in
-        lock ();
-        Array.unsafeUpdate (wq, p, Array.unsafeSub (wq, p) @ [w]);
-        unlock ()
+        if (Array.length wq) <= p then raise Subscript else (
+          lock (); print ("addWork: workqlen="^Int.toString(Array.length wq)^" p="^Int.toString(p)^"\n");
+          Array.update (wq, p, Array.sub (wq, p) @ [w]);
+          print "work added\n"; unlock ()
+        )
       end
-      handle Subscript => ( unlock(); die "Invalid priority")
+      handle Subscript =>  die "Invalid priority"
 
 
       fun getWork (T wq, p) =
       let in
-        lock ();
-        case Array.unsafeSub (wq, p) of 
-             [] => (unlock(); NONE)
-           | w :: l => (Array.unsafeUpdate (wq, p, l); unlock(); SOME w)
+        lock (); (*print ("workq.getwork: p="^Int.toString(p)^"\n");*)
+        case Array.sub (wq, p) of 
+                 [] => (unlock (); NONE)
+           | w :: l => (Array.update (wq, p, l); unlock(); SOME w)
       end
       handle Subscript => (unlock (); die "Invalid priority")
 
@@ -199,13 +206,11 @@ struct
 
     val getMyPriority = _import "GC_myPriority": unit -> int;
 
-    fun test () = print "Parallel_run::thread_main running!\n";
+    fun test () = print (Int.toString(getMyPriority ())^"] Parallel_run::thread_main running!\n");
 
     fun pspawn (f: unit->unit, p: int) = WorkQueue.addWork(workQ, f, p) 
 
-    fun thread_main () = (*MLtonThread.run ()print
-      "\n\nParallel_run::thread_main running!\n\n"*) ( dbg "looping...\n";
-      WorkQueue.addWork(workQ, test, 2); loop (pthreadNum ()) ) 
+    fun thread_main () = loop (pthreadNum ())
 
     val gcstate = Primitive.MLton.GCState.gcState
 

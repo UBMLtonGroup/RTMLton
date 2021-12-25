@@ -335,6 +335,9 @@ void RT_init (GC_state state)
 	UNLOCK_RT_THREADS;
 }
 
+/* be careful when using this in SML code. remember that maxpri
+ * includes the main thread and the GC 
+ */
 Int32 RTThread_maxpri (void)
 {
     return MAXPRI;

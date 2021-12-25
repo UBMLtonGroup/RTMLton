@@ -351,9 +351,9 @@ bool createUMHeap(GC_state s,
 	size_t step = max_chunk_size + sizeof(UM_header); /*account for size of chunktype field*/
 	pointer end = h->start + h->size - step;
 	if (DEBUG) {
-		fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk) = %d\n", PTHREAD_NUM, (int)sizeof(struct GC_UM_Chunk));
-		fprintf(stderr, "    sizeof(struct GC_UM_Array_Chunk) = %d\n", (int)sizeof(struct GC_UM_Array_Chunk));
-		fprintf(stderr, "    final chunk size = %d\n", (int)max_chunk_size);
+		fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk)=%d ", PTHREAD_NUM, (int)sizeof(struct GC_UM_Chunk));
+		fprintf(stderr, "sizeof(struct GC_UM_Array_Chunk)=%d ", (int)sizeof(struct GC_UM_Array_Chunk));
+		fprintf(stderr, "final chunk size=%d\n", (int)max_chunk_size);
 	}
 	struct timeval t0, t1;
 	gettimeofday(&t0, NULL);
@@ -391,7 +391,7 @@ bool createUMHeap(GC_state s,
 				(uintptr_t)(h->start),
 				uintmaxToCommaString(h->size));
 		fprintf(stderr,
-				"[GC: mapped freelist over the heap\n]");
+				"[GC: mapped freelist over the heap]\n");
 	}
 
 
