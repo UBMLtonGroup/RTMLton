@@ -148,6 +148,7 @@ struct
       fun rtunlock a = if a<=9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
   end 
 
+  val getMyPriority = _import "GC_myPriority": unit -> int;
 
 
   structure WorkQueue:
@@ -164,7 +165,10 @@ struct
       (* note: this model creates a workq for each pthread, but the main thread is
          thread ID 0 and the GC is thread ID 1 (see realtime_thread.c realtimeThreadInit)
        *)
-      fun new () = T (print "workq.new\n"; Array.tabulate(numberOfPThreads (), fn _ => []))
+      fun new () = T (
+              print ("make wq, size "^Int.toString(numberOfPThreads ())^"\n"); 
+              Array.tabulate(numberOfPThreads (), fn _ => [])
+              )
       (*fun mysleep () = (Posix.Process.sleep (Time.fromSeconds 1); ())*)
 
       fun addWork (T wq, w, p) = 
@@ -172,22 +176,22 @@ struct
         val maxpri = numberOfPThreads ()
       in
         if (Array.length wq) <= p then raise Subscript else (
-          lock (); print ("addWork: workqlen="^Int.toString(Array.length wq)^" p="^Int.toString(p)^"\n");
+          lock (); (*print ("addWork: workqlen="^Int.toString(Array.length wq)^" p="^Int.toString(p)^"\n"); *)
           Array.update (wq, p, Array.sub (wq, p) @ [w]);
-          print "work added\n"; unlock ()
+          unlock ()
         )
       end
-      handle Subscript =>  die "Invalid priority"
+      handle Subscript =>  die (Int.toString(getMyPriority ())^"] Invalid priority (raise) p:"^Int.toString(p)^" alen:"^Int.toString(Array.length wq))
 
 
       fun getWork (T wq, p) =
       let in
-        lock (); (*print ("workq.getwork: p="^Int.toString(p)^"\n");*)
+        lock (); (* print (Int.toString(getMyPriority ())^"] workq.getwork: len(wq)="^Int.toString(Array.length wq)^"\n"); *)
         case Array.sub (wq, p) of 
                  [] => (unlock (); NONE)
            | w :: l => (Array.update (wq, p, l); unlock(); SOME w)
       end
-      handle Subscript => (unlock (); die "Invalid priority")
+      handle Subscript => (unlock (); die (Int.toString(getMyPriority ())^"] Invalid priority (die): p:"^Int.toString(p)^" alen:"^Int.toString(Array.length wq)))
 
     end
 
@@ -202,9 +206,8 @@ struct
     fun loop p =
       case WorkQueue.getWork (workQ, p) of
            NONE => loop p
-         | SOME w => (dbg "Working .. \n";w () ; loop p)
+         | SOME w => (dbg "Working .. \n"; w () ; loop p)
 
-    val getMyPriority = _import "GC_myPriority": unit -> int;
 
     fun test () = print (Int.toString(getMyPriority ())^"] Parallel_run::thread_main running!\n");
 

@@ -1071,7 +1071,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                                  then yes t
                                               else no ())
                                   | _ => Error.bug "SsaToRssa.ifIsWeakPointer"
-                              fun arrayOrVectorLength () =
+                              fun arrayOrVectorLength () = 
                                  move (Offset
                                        {base = a 0,
                                         offset = Runtime.arrayLengthOffset (),

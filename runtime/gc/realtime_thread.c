@@ -352,6 +352,12 @@ Int32 RTThread_get_pthread_num(void)
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
 
 void Parallel_run(void);
+/*
+void client_thread2 (void);
+void client_thread3 (void);
+void client_thread4 (void);
+void client_thread5 (void);
+*/
 
 __attribute__((noreturn))
 void *
@@ -374,15 +380,30 @@ realtimeRunner (void *paramsPtr)
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
-
-
  
-     fprintf (stderr, "%d] calling parallel_run \n", tNum);
-     state->rtSync[PTHREAD_NUM]= true;
-     Parallel_run ();
-     fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
-                 tNum);
-        exit (-1); 
+    fprintf (stderr, "%d] calling parallel_run \n", tNum);
+    state->rtSync[PTHREAD_NUM] = true;
+
+/*
+    switch (tNum) {
+    case 2:
+        fprintf(stderr, "call client_thread2\n");
+        client_thread2();
+        break;
+    case 3:
+        client_thread3();
+    case 4:
+        client_thread4();
+    case 5:
+        client_thread5();
+    }
+    sleep(300);
+*/
+
+    Parallel_run (); 
+    fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
+                tNum);
+    exit (-1); 
 #if 0
     /*Using same lock to BLOCK again. This time it wont be unblocked. 
      * TODO: Define what RT threads should do*/

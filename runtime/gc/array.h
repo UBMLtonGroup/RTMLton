@@ -32,7 +32,7 @@ typedef GC_ARRLEN_TYPE GC_arrayLength;
 #define PRIxARRLEN PRIxARRLEN_(GC_MODEL_ARRLEN_SIZE)
 #define FMTARRLEN "%"PRIxARRLEN
 typedef GC_arrayLength GC_arrayCounter;
-#define GC_ARRAY_COUNTER_SIZE sizeof(GC_arrayCounter)
+#define GC_ARRAY_COUNTER_SIZE 0 //sizeof(GC_arrayCounter)
 #define PRIxARRCTR PRIxARRLEN
 #define FMTARRCTR "%"PRIxARRCTR
 #define GC_ARRAY_HEADER_SIZE (GC_ARRAY_COUNTER_SIZE + GC_ARRAY_LENGTH_SIZE + GC_HEADER_SIZE)
