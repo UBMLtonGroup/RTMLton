@@ -32,7 +32,7 @@ signature PRIM_THREAD =
 
       type 'a t
 
-      val get_ticks_since_boot : unit -> int
+      val get_ticks_since_boot : unit -> real
       val dump_instrument_stderr : int -> unit
       val instrument : int -> unit
 

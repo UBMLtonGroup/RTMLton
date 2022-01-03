@@ -124,7 +124,7 @@ bool isObjectShaded(GC_state s, objptr *opp) {
 	} else
 		verdict = isContainerChunkMarkedByMode(p, GREY_MODE, tag);
 
-	if (DEBUG)
+	if (DEBUG_RTGC_MARKING)
 		fprintf(stderr, "%d] %s verdict %d\n", PTHREAD_NUM, __func__, verdict);
 
 	return verdict;
@@ -141,7 +141,7 @@ bool isObjectMarked(GC_state s, objptr *opp) {
 
 	bool verdict = isContainerChunkMarkedByMode(p, MARK_MODE, tag);
 
-	if (DEBUG) {
+	if (DEBUG_RTGC_MARKING) {
 		printTag(__func__, tag, p);
 		fprintf(stderr, "%d] %s verdict %d\n", PTHREAD_NUM, __func__, verdict);
 	}
@@ -166,7 +166,7 @@ void umShadeObject(GC_state s, objptr *opp) {
 		splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 		markChunk(p, tag, GREY_MODE, s, numObjptrs);
-		if (DEBUG) {
+		if (DEBUG_RTGC_MARKING) {
 			printTag(__func__, tag, p);
 			fprintf(stderr, "%d] shade "FMTPTR"\n", PTHREAD_NUM, (uintptr_t) p);
 		}

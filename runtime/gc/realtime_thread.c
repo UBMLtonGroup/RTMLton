@@ -106,13 +106,13 @@ void InitializeMutexes(void) {
 
 }
 
-unsigned int get_ticks_since_boot(void) {
+double get_ticks_since_boot(void) {
     rtems_status_code sc;
     rtems_interval    time_buffer;
 
     sc = rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, (void *)&time_buffer);
     assert (rc == RTEMS_SUCCESSFUL);
-    return (unsigned int)time_buffer;
+    return (double)time_buffer;
 }
 
 #else
@@ -183,22 +183,12 @@ void InitializeMutexes(void) {
     }
 }
 
-/* returns milliseconds */
-unsigned int get_ticks_since_boot(void) {
-    long            ms; // Milliseconds
-    time_t          s;  // Seconds
+/* returns seconds */
+double get_ticks_since_boot(void) {
     struct timespec spec;
 
     clock_gettime(CLOCK_MONOTONIC, &spec);
-
-    s  = spec.tv_sec;
-    ms = round(spec.tv_nsec / 1.0e6); // Convert nanoseconds to milliseconds
-    if (ms > 999) {
-        s++;
-        ms = 0;
-    }
-
-    return (s*1000) + ms;
+    return spec.tv_sec + spec.tv_nsec / 1.0e9;
 }
 #endif
 
@@ -206,22 +196,25 @@ unsigned int get_ticks_since_boot(void) {
 #define MAX_INSTRUMENT 1024
 
 unsigned int instrument_offset[MAXPRI+1];
-unsigned int instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
+double instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
 
-void User_instrument (Int32 p) {
+void User_instrument (Int32 icode) {
     instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]] = get_ticks_since_boot();
-    instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]+1] = (unsigned int)p;
+    instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]+1] = (double)icode;
     instrument_offset[MAXPRI] = (instrument_offset[MAXPRI]+2) % MAX_INSTRUMENT;
 }
 
-void Dump_instrument_stderr (Int32 p) {
-    if (p == -1) p = PTHREAD_NUM;
+void Dump_instrument_stderr (Int32 thrnum) {
+    if (thrnum == -1) thrnum = PTHREAD_NUM;
+
+    fprintf(stderr, "thread-id, time-stamp, code-number\n");
 
     for(unsigned int i = 0 ; i < MAX_INSTRUMENT ; i += 2) {
-        if (instrument_buffer[p][i] != 0) {
-            fprintf(stderr, "%d, %u, %u\n", p, 
-                    instrument_buffer[p][i],
-                    instrument_buffer[p][i+1]
+        if (instrument_buffer[thrnum][i] > 0 || instrument_buffer[thrnum][i] < 0) {
+            fprintf(stderr, "%d, %f, %f\n", 
+                    thrnum, 
+                    instrument_buffer[thrnum][i],
+                    instrument_buffer[thrnum][i+1]
                     );
         }
     }
@@ -369,7 +362,7 @@ realtimeRunner (void *paramsPtr)
 
     set_pthread_num (params->tNum);
       
-    state->rtSync[PTHREAD_NUM]= true;
+    state->rtSync[PTHREAD_NUM] = true;
 
     LOCK_RT_THREADS;
     while(!rtinitfromML)
@@ -382,7 +375,7 @@ realtimeRunner (void *paramsPtr)
     }
  
     fprintf (stderr, "%d] calling parallel_run \n", tNum);
-    state->rtSync[PTHREAD_NUM] = true;
+    state->rtSync[PTHREAD_NUM] = false;
 
 /*
     switch (tNum) {
@@ -401,8 +394,7 @@ realtimeRunner (void *paramsPtr)
 */
 
     Parallel_run (); 
-    fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
-                tNum);
+    fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
     exit (-1); 
 #if 0
     /*Using same lock to BLOCK again. This time it wont be unblocked. 

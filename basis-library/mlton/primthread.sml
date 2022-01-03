@@ -137,7 +137,7 @@ struct
   local
       val inst__ = _import "User_instrument" : int -> unit;
       val dise__ = _import "Dump_instrument_stderr" : int -> unit;
-      val gtsb__ = _import "get_ticks_since_boot" : unit -> int;
+      val gtsb__ = _import "get_ticks_since_boot" : unit -> real;
       val lock__ = _import "User_lock" : int -> unit;
       val unlock__ = _import "User_unlock" : int -> unit;
   in
