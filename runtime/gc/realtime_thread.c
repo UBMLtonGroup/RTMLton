@@ -329,7 +329,13 @@ void RT_init (GC_state state)
 }
 
 /* be careful when using this in SML code. remember that maxpri
- * includes the main thread and the GC 
+ * includes the main thread and the GC, and it is one more than the
+ * actual final thread-id. ie. if MAXPRI is 3, then we have 
+ * 
+ * TID  Description
+ * 0    main thr
+ * 1    GC
+ * 2    another thread
  */
 Int32 RTThread_maxpri (void)
 {
@@ -345,12 +351,6 @@ Int32 RTThread_get_pthread_num(void)
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
 
 void Parallel_run(void);
-/*
-void client_thread2 (void);
-void client_thread3 (void);
-void client_thread4 (void);
-void client_thread5 (void);
-*/
 
 __attribute__((noreturn))
 void *
@@ -375,142 +375,13 @@ realtimeRunner (void *paramsPtr)
     }
  
     fprintf (stderr, "%d] calling parallel_run \n", tNum);
-    state->rtSync[PTHREAD_NUM] = false;
 
-/*
-    switch (tNum) {
-    case 2:
-        fprintf(stderr, "call client_thread2\n");
-        client_thread2();
-        break;
-    case 3:
-        client_thread3();
-    case 4:
-        client_thread4();
-    case 5:
-        client_thread5();
-    }
-    sleep(300);
-*/
+    state->rtSync[PTHREAD_NUM] = false; // this may need to be true if "@MLton rtthreads" is false
 
     Parallel_run (); 
     fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
     exit (-1); 
-#if 0
-    /*Using same lock to BLOCK again. This time it wont be unblocked. 
-     * TODO: Define what RT threads should do*/
-
-
-    /* RT thread allocates on UM heap without stack*/
-    if(state->numAllocedByRT <= 0)
-    {
-    if(DEBUG)
-            fprintf(stderr,"%d] Blocking RT-Thread.FOREVA.\n",tNum);
-        
-       LOCK_RT_THREADS;
-
-        while(state->rtSync[PTHREAD_NUM])
-            BLOCK_RT_THREADS;
-
-        UNLOCK_RT_THREADS; 
-    }
-
-    if (DEBUG)
-     fprintf(stderr,"%d] RT thread ALLOCATING\n",tNum);
-
-	while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
-	{
-		pointer res;
-		state->rtSync[PTHREAD_NUM]= true;
-		if(DEBUG_THREADS)
-		    fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
-
-		reserveAllocation(state,state->numAllocedByRT);
-
-		res = UM_Object_alloc(state,state->numAllocedByRT,(GC_header)3,GC_NORMAL_HEADER_SIZE);
-
-		state->allocedByRT+=state->numAllocedByRT;
-
-		if(DEBUG_THREADS)
-		    fprintf(stderr, "Empty chunk: "FMTPTR" \n", (uintptr_t) res);
-
-		sched_yield();
-
-	}
-#endif
-
-#ifdef THREADED
-#pragma message "*********   THREADED enabled    **********"
-	die("wrong");
-    while (!TC.booted) {
-        if (DEBUG_THREADS) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
-        ssleep (1, 0);
-    }
-
-    /* set currentThread of new RT thread to that of main thread until copied thread is setup */
-    state->currentThread[PTHREAD_NUM] = state->currentThread[0];
-    setGCStateCurrentThreadAndStack (state);
-
-    GC_thread curct = (GC_thread) (objptrToPointer (state->currentThread[0],
-                                                    state->heap.start) +
-                                   offsetofThread (state));
-    GC_stack curstk =
-        (GC_stack) objptrToPointer (curct->stack, state->heap.start);
-
-    /* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
-    /* copy the savedThread which is stored earlier on from the copied thread, when C Handler was set */
-
-    if (DEBUG)
-        fprintf (stderr, "%d] copy thread\n", PTHREAD_NUM);
-    pointer copiedTh = GC_copyThread (state,
-                                      objptrToPointer (state->
-                                                       savedThread[0],
-                                                       state->heap.start));
-
-    GC_thread tc = (GC_thread) (copiedTh + offsetofThread (state));
-    tc->exnStack = -1;
-
-    //current thread on for RT thread is taken from tc which is copied from main thread in previous line
-    if (DEBUG)
-        fprintf (stderr, "%d] switch to copied thread\n", PTHREAD_NUM);
-
-    GC_switchToThread (state, tc, 0);
-
-    COPYIN2 (state, savedThread);
-    COPYIN2 (state, signalHandlerThread);
-    COPYIN2 (state, ffiOpArgsResPtr);
-
-    state->isRealTimeThreadRunning = TRUE;
-
-    while (1) {
-        if (DEBUG) {
-            fprintf (stderr, "%d] realtimeRunner running.\n", tNum);
-            fprintf (stderr, "%d] calling Parallel_run..\n", tNum);
-        }
-//        Copy_globalObjptrs (0, params->tNum);
-
-        TC_LOCK;
-        TC.running_threads++;
-        TC_UNLOCK;
-
-        Parallel_run ();
-
-        fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
-                 tNum);
-        exit (-1);
-    }
-#else
-#pragma message "*********   THREADED NOT enabled    **********"
-#endif
-
 	/*NOTREACHED*/
-	/* since the above is wrapped in while(1) this code should never
-	 * be reached and is only here to suppress gcc 'noreturn function
-	 * returns' compiler warnings (since we use -Wall)
-	 */
-	while (1)
-		fprintf (stderr, "%d] Should not get here. Spinning.\n",
-				 tNum);
 }
 
 pointer

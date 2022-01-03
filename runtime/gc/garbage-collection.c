@@ -345,8 +345,8 @@ void *GCrunner(void *_s) {
 
 		/* 2 less than MAXPRI because:
 		 * GC thread is never blocked
-		 * RT thread is always blocked*/
-		fprintf(stderr, "%d] threadsBlockedForGC %d MAXPRI-2=%d attempts=%d\n", PTHREAD_NUM, s->threadsBlockedForGC, MAXPRI-2, s->attempts);
+		 * RT thread is always blocked
+		 */
 
 		if (s->threadsBlockedForGC == (MAXPRI - 2)) {
 			s->attempts++;
@@ -729,14 +729,14 @@ void performUMGC(GC_state s,
 				 bool fullGC) {
 
 	if (DEBUG_MEM) {
-		fprintf(stderr, "PerformUMGC\n");
+		fprintf(stderr, "%d] PerformUMGC\n", PTHREAD_NUM);
 		dumpUMHeap(s);
 	}
 
 
 #ifdef PROFILE_UMGC
 	long t_start = getCurrentTime();
-	fprintf(stderr, "[GC] Free chunk: %d\n",s->fl_chunks);
+	fprintf(stderr, "%d] GC Free chunk: %d\n",PTHREAD_NUM, s->fl_chunks);
 #endif
 
 
@@ -760,7 +760,8 @@ void performUMGC(GC_state s,
 
 #ifdef PROFILE_UMGC
 	long t_end = getCurrentTime();
-	fprintf(stderr, "[GC] Time: %ld, Free chunk: %d\n",
+	fprintf(stderr, "%d] GC Time: %ld, Free chunk: %d\n",
+			PTHREAD_NUM,
 			t_end - t_start,
 			s->fl_chunks);
 #endif
