@@ -38,6 +38,8 @@ void User_unlock (Int32);
 void User_instrument (Int32 p);
 void Dump_instrument_stderr (Int32 p);
 double get_ticks_since_boot(void);
+void set_schedule(uint64_t runtime, uint64_t period, uint64_t deadline);
+int schedule_yield(void);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */

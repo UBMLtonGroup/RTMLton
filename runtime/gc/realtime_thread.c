@@ -107,15 +107,61 @@ void InitializeMutexes(void) {
 }
 
 double get_ticks_since_boot(void) {
-    rtems_status_code sc;
-    rtems_interval    time_buffer;
+    return rtems_clock_get_ticks_since_boot(); // to be consistent with set_schedule below
+//    return rtems_clock_get_uptime_nanoseconds();
+}
 
-    sc = rtems_clock_get(RTEMS_CLOCK_GET_TICKS_SINCE_BOOT, (void *)&time_buffer);
-    assert (rc == RTEMS_SUCCESSFUL);
-    return (double)time_buffer;
+/* for RTEMS, these parameters are clock ticks. the params are rtems_interval type,
+ * which is Watchdog_interval which in turn is uint32_t but to keep the FFI prototype
+ * consist (with the posix one below) we use 64_t and downcast. 
+ */
+void set_schedule(uint64_t runtime, uint64_t period, uint64_t deadline) {
+    return;
+}
+
+int schedule_yield() {
+    // See "11.3.6. Examples" here:
+    // https://docs.rtems.org/releases/rtems-docs-4.11.3/c-user/rate_monotonic_manager.html#rtems-rate-monotonic-create
+    // wait for next period
+    return 0;
 }
 
 #else
+
+/* for RT linux, these parameters are in nanoseconds */
+void set_schedule(uint64_t runtime, uint64_t period, uint64_t deadline) {
+    struct sched_attr attr;
+    unsigned int flags = 0;
+
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu\n", 
+                PTHREAD_NUM, runtime, period, deadline);
+
+    attr.size = sizeof(attr);
+    attr.sched_flags = SCHED_FLAG_DL_OVERRUN; // supposed to make linux SIGXCPU on overrun
+    attr.sched_nice = 0;
+    attr.sched_priority = 0;
+
+    /* times are in nanos for rtlinux */
+    attr.sched_policy = SCHED_DEADLINE;
+    attr.sched_runtime = runtime; //eg 5 * 1000 * 1000; 5ms
+    attr.sched_period  = period;
+    attr.sched_deadline = deadline;
+
+    // '0' means 'current thread' 
+    if (sched_setattr(0, &attr, flags) < 0) {
+        perror("sched_setattr");
+        die("realtime_thread.c set_schedule(): sched_setattr");
+    }
+}
+
+int schedule_yield() {
+    if (sched_yield() < 0) {
+        perror("sched_yield");
+        die("realtime_thread.c set_schedule(): sched_yield");
+    }
+    return 0;
+}
 
 /* TID of holding thread or -1 if no one*/
 volatile int32_t ML_mutex;

@@ -99,3 +99,20 @@ uintmax_t GC_physMem (void) {
         
         return (uintmax_t)si.totalram * (uintmax_t)si.mem_unit;
 }
+
+#ifdef RTLINUX
+int sched_setattr(pid_t pid,
+              const struct sched_attr *attr,
+              unsigned int flags)
+{
+    return syscall(__NR_sched_setattr, pid, attr, flags);
+}
+
+int sched_getattr(pid_t pid,
+              struct sched_attr *attr,
+              unsigned int size,
+              unsigned int flags)
+{
+    return syscall(__NR_sched_getattr, pid, attr, size, flags);
+}
+#endif /* RTLINUX */

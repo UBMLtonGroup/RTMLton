@@ -31,6 +31,108 @@
 #include <termios.h>
 #include <utime.h>
 
+#ifdef RTLINUX
+#ifndef _GNU_SOURCE
+#define _GNU_SOURCE
+#endif
+#include <linux/kernel.h>
+#include <linux/sched.h>
+#include <linux/types.h>
+#include <pthread.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/syscall.h>
+#include <sys/time.h>
+#include <sys/types.h>
+#include <time.h>
+#include <unistd.h>
+
+# define timespec_diff_macro(a, b, result)                  \
+  do {                                                \
+    (result)->tv_sec = (a)->tv_sec - (b)->tv_sec;     \
+    (result)->tv_nsec = (a)->tv_nsec - (b)->tv_nsec;  \
+    if ((result)->tv_nsec < 0) {                      \
+      --(result)->tv_sec;                             \
+      (result)->tv_nsec += 1000000000;                \
+    }                                                 \
+  } while (0)
+
+#ifndef SYS_gettid
+#error "SYS_gettid unavailable on this system"
+#endif
+
+#define gettid() ((pid_t)syscall(SYS_gettid))
+
+#define SCHED_DEADLINE  6
+#define SCHED_FLAG_DL_OVERRUN		0x04
+
+/* __NR_sched_setattr number */
+#ifndef __NR_sched_setattr
+#ifdef __x86_64__
+#define __NR_sched_setattr      314
+#endif
+
+#ifdef __i386__
+#define __NR_sched_setattr      351
+#endif
+
+#ifdef __arm__
+#define __NR_sched_setattr      380
+#endif
+
+#ifdef __aarch64__
+#define __NR_sched_setattr      274
+#endif
+#endif
+
+/* __NR_sched_getattr number */
+#ifndef __NR_sched_getattr
+#ifdef __x86_64__
+#define __NR_sched_getattr      315
+#endif
+
+#ifdef __i386__
+#define __NR_sched_getattr      352
+#endif
+
+#ifdef __arm__
+#define __NR_sched_getattr      381
+#endif
+
+#ifdef __aarch64__
+#define __NR_sched_getattr      275
+#endif
+#endif
+
+struct sched_attr {
+    __u32 size;
+
+    __u32 sched_policy;
+    __u64 sched_flags;
+
+    /* SCHED_NORMAL, SCHED_BATCH */
+    __s32 sched_nice;
+
+    /* SCHED_FIFO, SCHED_RR */
+    __u32 sched_priority;
+
+    /* SCHED_DEADLINE */
+    __u64 sched_runtime;
+    __u64 sched_deadline;
+    __u64 sched_period;
+};
+
+int sched_setattr(pid_t pid,
+              const struct sched_attr *attr,
+              unsigned int flags);
+int sched_getattr(pid_t pid,
+              struct sched_attr *attr,
+              unsigned int size,
+              unsigned int flags);
+#endif /* RTLINUX */
+
 #ifdef __UCLIBC__
 #define HAS_FEROUND FALSE
 #else
