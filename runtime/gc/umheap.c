@@ -42,6 +42,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 	c->next_chunk = c->prev_chunk = NULL;
 	c->sentinel = UM_CHUNK_SENTINEL;
 	c->chunk_header = UM_CHUNK_HEADER_CLEAN;
+	c->used = 0;
 
 	if (nc == NULL) {
 		h->fl_head = NULL;
@@ -155,7 +156,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 		h->fl_head = nc;
 	}
 
-		memset(c, 0xAB, sizeof(struct GC_UM_Array_Chunk)); // jeff - remove
+	// memset(c, 0xAB, sizeof(struct GC_UM_Array_Chunk)); // debugging
 	c->next_chunk = NULL;
 	c->array_chunk_magic = UM_ARRAY_SENTINEL;
 	c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;

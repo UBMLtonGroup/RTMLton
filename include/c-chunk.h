@@ -293,6 +293,8 @@ void um_dumpFrame (void *s, void *f);
 typedef uintptr_t GC_returnAddress;
 typedef uintptr_t pointer;
 
+// must match umheap.h
+
 typedef struct GC_UM_Chunk {
 	unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
 	Word32_t chunk_header;
@@ -300,6 +302,7 @@ typedef struct GC_UM_Chunk {
 	GC_returnAddress ra;
 	GC_returnAddress handler;
 	GC_returnAddress link;
+        size_t used;
 	struct GC_UM_Chunk* next_chunk;
 	struct GC_UM_Chunk* prev_chunk;
 };
