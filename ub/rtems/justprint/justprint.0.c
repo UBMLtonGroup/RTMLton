@@ -762,9 +762,10 @@ static char* sourceNames[] = {
 uint32_t sources_len = 0;
 static struct GC_source sources[] = {
 };
-uint32_t atMLtons_len = 2;
+uint32_t atMLtons_len = 4;
 static char* atMLtons[] = {
 	"@MLton", /* 0 */
+        "rtthreads", "true",
 	"--", /* 1 */
 };
 DeclareChunk (1);

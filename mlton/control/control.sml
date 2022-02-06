@@ -354,6 +354,7 @@ fun pass {display: 'a display,
           style: style,
           thunk: unit -> 'a}: 'a =
    let
+val _ = TextIO.output (TextIO.stdErr, ("pass name "^name^"\n")) (* JEFF *)
       val thunk = wrapDiagnosing {name = name, thunk = thunk}
       val thunk = wrapProfiling {name = name, thunk = thunk}
       val result = trace (Pass, name) thunk ()

@@ -543,8 +543,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
       (* Process all the datatypes. *)
       fun loopDec (d: Cdec.t) =
          let
-(*          Use open Cdec instead of the following due to an SML/NJ bug *)
-(*          datatype z = datatype Cdec.t *)
+            (* Use open Cdec instead of the following due to an SML/NJ bug *)
+            (* datatype z = datatype Cdec.t *)
             open Cdec
          in
             case d of
@@ -722,8 +722,8 @@ fun defunctorize (CoreML.Program.T {decs}) =
                     ty = Xtype.arrow (argType, bodyType),
                     var = var}
                 end)
-(* Use open Cdec instead of the following due to an SML/NJ bug *)
-(*          datatype z = datatype Cdec.t *)
+            (* Use open Cdec instead of the following due to an SML/NJ bug *)
+            (* datatype z = datatype Cdec.t *)
             open Cdec
          in
             case d of

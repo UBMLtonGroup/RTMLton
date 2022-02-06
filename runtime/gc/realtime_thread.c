@@ -52,9 +52,67 @@ GC_safePoint(int32_t thr_num) {
 }
 
 #if defined(__rtems__)
+#define directive_failed(COND,MSG) do{if(COND){puts(MSG);exit(-1);}}while(0)
 
 rtems_id            ML_mutex;
 rtems_id            User_mutexes[NUM_USER_MUTEXES];
+
+
+rtems_task Periodic_task(rtems_task_argument argument);
+void RTEMS_Parallel_run_wrapper(int tNum);
+
+__attribute__((noreturn))
+rtems_task Periodic_task(rtems_task_argument arg) {
+    rtems_name        name;
+    rtems_id          period;
+
+    rtems_status_code status;
+    name = rtems_build_name( 'P', 'E', 'R', 'D' );
+    status = rtems_rate_monotonic_create( name, &period );
+    if ( status != RTEMS_SUCCESSFUL ) {
+        printf( "rtems_monotonic_create failed with status of %d.\n", status );
+        exit( 1 );
+    }
+    while ( 1 ) {
+        int x = rtems_clock_get_ticks_since_boot();
+        printf("Calling rtems_rate_monotonic_period(period=250 ticks). clock=%d\n", x);
+        if ( rtems_rate_monotonic_period( period, 250 ) == RTEMS_TIMEOUT )
+            break;
+        x = rtems_clock_get_ticks_since_boot();
+        printf("  Task awake: periodic action. clock=%d\n", x);
+        /* Perform some periodic actions */
+    }
+    /* missed period so delete period and SELF */
+    status = rtems_rate_monotonic_delete( period );
+    if ( status != RTEMS_SUCCESSFUL ) {
+        printf( "rtems_rate_monotonic_delete failed with status of %d.\n", status );
+        exit( 1 );
+    }
+    status = rtems_task_delete( RTEMS_SELF );    /* should not return */
+    printf( "rtems_task_delete returned with status of %d.\n", status );
+    exit( 1 );
+}
+
+__attribute__((noreturn))
+void RTEMS_Parallel_run_wrapper(int tNum) {
+    rtems_id           task_id;
+    rtems_status_code  status;
+    status = rtems_task_create(
+        rtems_build_name( 'T', 'A', '1', (char)tNum ),
+        1,
+        RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES,
+        &task_id
+    );
+    directive_failed( status, "rtems_task_create of TA1" );
+    status = rtems_task_start( task_id, Periodic_task, 0 );
+    directive_failed( status, "rtems_task_start of TA1" );
+    while ( 1 ) {
+        status = rtems_task_wake_after( 200*rtems_clock_get_ticks_per_second() );
+        directive_failed( status, "rtems_task_wake_after" );
+    }
+}
 
 void ML_lock (void) {
     while (RTEMS_SUCCESSFUL != rtems_barrier_wait(ML_mutex, RTEMS_NO_TIMEOUT)) {
@@ -424,7 +482,11 @@ realtimeRunner (void *paramsPtr)
 
     state->rtSync[PTHREAD_NUM] = false; // this may need to be true if "@MLton rtthreads" is false
 
-    Parallel_run (); 
+#if defined(__rtems__)
+    RTEMS_Parallel_run_wrapper(params->tNum);
+#else
+    Parallel_run ();
+#endif
     fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
     exit (-1); 
 	/*NOTREACHED*/

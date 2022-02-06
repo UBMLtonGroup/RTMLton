@@ -6,13 +6,17 @@
 #include <stdio.h>
 #include "/home/jcmurphy/quick-start/rtems/6/i386-rtems6/include/stdio.h"
 
-int mainX(void);
+int mainX(int, char **);
 
 rtems_task Init(
   rtems_task_argument ignored
 )
 {
+  int argc = 1;
+  char* argv[1];
+  argv[0] = "justprint";
+
   printf("in rtems task init\n");
-  mainX();
+  mainX(argc, argv);
   exit( 0 );
 }

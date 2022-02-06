@@ -102,7 +102,6 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 		and i<argc
 		and(0 == strcmp(argv[i], "@MLton"))) {
 		bool done;
-printf("xxx  %d %s\n", i, argv[i]);
 		i++;
 		done = FALSE;
 		while (!done) {
