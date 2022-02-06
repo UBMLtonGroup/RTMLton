@@ -53,7 +53,14 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
 
 
 Pointer
-UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s) {
+UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
+    /* gc_stat: GC_State 
+       num_chunks: number of chunks requested
+       header: the MLton object header
+       s: the size of the MLton object header
+       sz: the size of the object being placed into this chunk
+           this field only applies to 'normal' (not stacks) objects
+     */
     GC_UM_Chunk chunk;
 
     assert (num_chunks > 0);

@@ -494,10 +494,11 @@ val _ = TextIO.output (TextIO.stdErr,
                 Word (WordX.fromIntInf (Word.toIntInf w, WordSize.csize ()))
          in
             Vector.new2
-            (PrimApp {args = Vector.new4 (GCState,
+            (PrimApp {args = Vector.new5 (GCState,
                                           wordOp numChunks,
                                           gcHeader,
-                                          bytes (Runtime.headerSize ())),
+                                          bytes (Runtime.headerSize ()),
+                                          bytes (size)),
                       dst = SOME temp,
                       prim = Prim.umObjectAlloc},
              (* CHECK; if objptr <> cpointer, need non-trivial coercion here. *)

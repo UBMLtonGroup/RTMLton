@@ -69,11 +69,11 @@ pointer GC_weakNew(GC_state s, GC_header header, pointer p) {
     /*Will block if there aren't enough chunks*/
     reserveAllocation(s, 1);
 
-	res = UM_Object_alloc(s, 1 /* num chunks */, header, GC_NORMAL_HEADER_SIZE);
+	res = UM_Object_alloc(s, 1 /* num chunks */, header, GC_NORMAL_HEADER_SIZE, 0); // JEFF
 
 	weak = (GC_weak)(res + offsetofWeak(s));
 	weak->objptr = pointerToObjptr(p, s->umheap.start);
-	if (DEBUG_WEAK)
+	if (DEBUG_WEAK || 1)
 		fprintf(stderr, FMTPTR
 				" = GC_weakNew ("
 				FMTHDR

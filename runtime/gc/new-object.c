@@ -70,7 +70,7 @@ objptr newStack_um(GC_state s, size_t stackSizeInBytes, size_t *stackSizeInChunk
 	 * Will block if not enough chunks available.
 	 */
 	reserveAllocation(s, need_chunks);
-	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE);
+	um_stack = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE, 0);
 
 	if (DEBUG_STACKS) {
 #ifdef STACK_GC_SANITY
@@ -112,7 +112,7 @@ GC_thread newThread(GC_state s, size_t stackSize) {
 	 */
 	reserveAllocation(s, numchunks);
 
-	res = UM_Object_alloc(s, numchunks, GC_THREAD_HEADER, GC_NORMAL_HEADER_SIZE);
+	res = UM_Object_alloc(s, numchunks, GC_THREAD_HEADER, GC_NORMAL_HEADER_SIZE, sizeofThread(s));
 
 	// offsetofThread should be 0
 	thread = (GC_thread) (res + offsetofThread(s));

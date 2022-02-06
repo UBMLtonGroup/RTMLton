@@ -1259,7 +1259,7 @@ fun 'a checkApp (prim: 'a t,
        | Array_update =>
             oneTarg (fn t => (threeArgs (array t, seqIndex, t), unit))
        | UM_Object_alloc =>
-            noTargs (fn () => (nArgs (Vector.new4(cpointer, csize, word32, csize)),
+            noTargs (fn () => (nArgs (Vector.new5(cpointer, csize, word32, csize, csize)),
                                cpointer))
        | UM_CPointer_offset =>
             noTargs (fn () => (nArgs (Vector.new4(cpointer, cpointer,

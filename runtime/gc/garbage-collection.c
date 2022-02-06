@@ -200,7 +200,7 @@ maybe_growstack(GC_state s, GC_thread thread, bool force_grow) {
 		size_t need_chunks = max(thread->stackSizeInChunks * s->controls.ratios.stackCurrentGrow, 10);
 
 		reserveAllocation(s, need_chunks);
-		pointer new_growth = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE);
+		pointer new_growth = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE, 0);
 		GC_UM_Chunk new_growth_chunks = (GC_UM_Chunk)(new_growth - GC_HEADER_SIZE);
 
 		GC_UM_Chunk c = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
