@@ -65,6 +65,12 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 
     assert (num_chunks > 0);
 
+    if (DEBUG_ALLOC) {
+        GC_objectTypeTag tagRet;
+        splitHeader(gc_stat, header, &tagRet, NULL, NULL, NULL);
+        fprintf(stderr, "%d] UM_Object_alloc hd:%x (%s) sz:%d\n", PTHREAD_NUM, header, objectTypeTagToString(tagRet), sz);
+    }
+
     if (header == GC_STACK_HEADER) {
         chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
     } else {

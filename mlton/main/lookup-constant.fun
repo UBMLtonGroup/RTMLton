@@ -64,7 +64,8 @@ val gcFields =
     "heuristicChunks",
     "rtSync",
     "fl_lock",
-    "reserved"
+    "reserved",
+    "activeChunk"
     ]
 
 val gcFieldsOffsets =
