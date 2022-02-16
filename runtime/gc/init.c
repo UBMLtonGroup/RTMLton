@@ -297,12 +297,22 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 					if (i == argc)
 						die("@MLton gc-onebyone missing argument.");
 					s->oneByOne = stringToBool(argv[i++]);
-				}else if (0 == strcmp(arg, "rtthreads")) {
+				} else if (0 == strcmp(arg, "rtthreads")) {
 					i++;
 					if (i == argc)
 						die("@MLton rtthreads missing argument.");
 					s->useRTThreads = stringToBool(argv[i++]);
-				}else if (0 == strcmp(arg, "use-mmap")) {
+				} else if (0 == strcmp(arg, "packingstage1")) {
+					i++;
+					if (i == argc)
+						die("@MLton packingstage1 missing argument.");
+					s->packingStage1Enabled = stringToBool(argv[i++]);
+				} else if (0 == strcmp(arg, "packingstage2")) {
+					i++;
+					if (i == argc)
+						die("@MLton packingstage2 missing argument.");
+					s->packingStage2Enabled = stringToBool(argv[i++]);
+				} else if (0 == strcmp(arg, "use-mmap")) {
 					i++;
 					if (i == argc)
 						die("@MLton use-mmap missing argument.");
@@ -405,13 +415,15 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->allocedByRT = 0;
 	s->numAllocedByRT = 0;
     s->oneByOne = false;
-    s->useRTThreads  = false;
+    s->useRTThreads = false;
+	s->packingStage1Enabled = false;
+	s->packingStage2Enabled = false;
 
 	s->wl_size = 10000;
 	s->wl_length = 0;
 
 	pthread_mutex_init(&s->wl_lock, NULL);
-	s->worklist = malloc(s->wl_size * sizeof(objptr * ));
+	s->worklist = malloc(s->wl_size * sizeof(objptr *));
 
 	s->casLock = -1;
 
@@ -426,7 +438,7 @@ int GC_init(GC_state s, int argc, char **argv) {
 		s->savedThread[__i] = BOGUS_OBJPTR;
 		s->signalHandlerThread[__i] = BOGUS_OBJPTR;
 		s->gcCallSeq[__i] = -1;
-		s->activeChunk[__i] = BOGUS_OBJPTR;
+		s->activeChunk[__i] = BOGUS_POINTER;
 
 		/*For now permanently set the rt threads to true*/
 		if (__i < 2)

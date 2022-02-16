@@ -210,7 +210,7 @@ pointer GC_getCallFromCHandlerThread(GC_state s) {
 void GC_setCallFromCHandlerThread(GC_state s, pointer p) {
 	objptr op = pointerToObjptr(p, s->umheap.start);
 	s->callFromCHandlerThread[PTHREAD_NUM] = op;
-	if (DEBUG_THREADS)
+	if (1||DEBUG_THREADS)
 		fprintf(stderr, "%d] "PURPLE("call handler set")": "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)op);
 	GC_copyCurrentThread(s, false);
 	//LOCK_RT_TH;

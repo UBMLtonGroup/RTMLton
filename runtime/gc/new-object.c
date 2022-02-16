@@ -123,7 +123,7 @@ GC_thread newThread(GC_state s, size_t stackSize) {
 	thread->stackDepth = 0;
 	thread->markCycles = 0;
 
-	if (DEBUG_THREADS)
+	if (1||DEBUG_THREADS)
 		fprintf(stderr, "%d]      newThread(stackSize=%"PRIuMAX") = "FMTPTR"\n",
 				PTHREAD_NUM, (uintmax_t)stackSize, (uintptr_t) thread);
 

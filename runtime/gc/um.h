@@ -5,7 +5,8 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
                         C_Size_t elemSize, C_Size_t offset);
 Pointer UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header,
                         C_Size_t s, C_Size_t sz);
-
+Pointer UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s);
+Pointer UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz);
 
 void CompareAndSet(GC_state s, int lockOrUnlock);
 bool CompareExchange(volatile int *ptr, int expected, int desired);

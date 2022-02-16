@@ -101,7 +101,9 @@ struct GC_state {
   /* added for rt-threading */
 
   pthread_t *realtimeThreads[MAXPRI];
-  objptr activeChunk[MAXPRI];
+  pointer activeChunk[MAXPRI];
+  bool packingStage1Enabled, packingStage2Enabled;
+
   volatile bool mainBooted;
   /* Begin inter-thread GC communication data */
   volatile bool GCrunnerRunning;

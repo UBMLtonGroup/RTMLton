@@ -51,33 +51,15 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
 
 }
 
-
 Pointer
-UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
-    /* gc_stat: GC_State 
-       num_chunks: number of chunks requested
-       header: the MLton object header
-       s: the size of the MLton object header
-       sz: the size of the object being placed into this chunk
-           this field only applies to 'normal' (not stacks) objects
-     */
+UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s) {
     GC_UM_Chunk chunk;
-
-    assert (num_chunks > 0);
-
-    if (DEBUG_ALLOC) {
-        GC_objectTypeTag tagRet;
-        splitHeader(gc_stat, header, &tagRet, NULL, NULL, NULL);
-        fprintf(stderr, "%d] UM_Object_alloc hd:%x (%s) sz:%d\n", PTHREAD_NUM, header, objectTypeTagToString(tagRet), sz);
-    }
 
     if (header == GC_STACK_HEADER) {
         chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
     } else {
         chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
     }
-
-    assert(header != 0);
 
     // apply object header to all chunks in the chain
     GC_UM_Chunk current = chunk;
@@ -95,6 +77,152 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     }
 
     return (Pointer) (chunk->ml_object + s);
+}
+
+Pointer
+UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
+    GC_UM_Chunk chunk = NULL;
+
+    // packing stage 1 (same thread can pack with its own regions)
+
+    /* array allocs do not occur in this function. stack, thread, weak allocs are never packed. */
+
+    assert (header != GC_THREAD_HEADER);
+    assert (header != GC_STACK_HEADER);
+    assert (header != GC_WEAK_GONE_HEADER);
+
+    /* not a stack alloc. if we have an active chunk, pack into it.
+        * if we do not have room, we will alloc a new chunk
+        */
+    assert (num_chunks == 1);
+
+    if (gc_stat->activeChunk[PTHREAD_NUM] != BOGUS_POINTER) {
+        chunk = (GC_UM_Chunk)gc_stat->activeChunk[PTHREAD_NUM];
+        fprintf(stderr, "%d]   there's an activeChunk. used %d\n", PTHREAD_NUM, chunk->used);
+
+        /* if cur chunk has no room left, then alloc a new one */
+
+        if (chunk->used + sz + s > UM_CHUNK_PAYLOAD_SIZE) {
+            fprintf(stderr, "%d]   no space in active chunk, allocating a new one\n", PTHREAD_NUM);
+            chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
+            gc_stat->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
+        }
+        else {
+            fprintf(stderr, "%d]   there is space in this chunk (%u) to fit our object (%d)\n",
+                    PTHREAD_NUM,
+                    UM_CHUNK_PAYLOAD_SIZE-(chunk->used), sz+s
+            );
+        }
+    }
+    else {
+        fprintf(stderr, "%d]   no activeChunk, allocating one.\n", PTHREAD_NUM);
+        chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
+        gc_stat->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
+    }
+
+    /*
+    the first object is at the start of the chunk, but is offset by
+    's'. we want the header offset field to contain 0. so we do 
+
+    header = *(objptr - s);
+    offset = extract from header;
+    start of chunk = objptr - offset; (note offset includes s)
+
+    if another object is appended, we want the header offset to contain
+    N, where N is the accumulation of previous (s+sz) objects as well
+    as the current s, but not the current sz
+
+    so if we use the chunk->used field to indicate how much of the
+    chunk is in use, it should contain the sum of all of the previous
+    (sz+s) values, but not the current s or sz. we will add the current
+    s to used, and store that into the header offset. we then add our 
+    (s+sz) to chunk->used, and then return chunk->used-sz so we mimic the
+    behavior of returning the memory address just after the object 
+    header field.
+    */
+    int used = chunk->used;
+    header |= ((used+s)<<CHUNKOFFSET_BITS);
+    chunk->used += (sz + s);
+
+    // the following line violates C aliasing rules (undefined behavior):
+    // *((uint32_t*) chunk->ml_object) = header;
+
+    uint32_t *alias = (uint32_t *)(chunk->ml_object + used);
+    *alias = header;
+    return (Pointer) (chunk->ml_object + s + used);
+
+}
+
+
+Pointer
+UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
+    /* gc_stat: GC_State 
+       num_chunks: number of chunks requested
+       header: the MLton object header
+       s: the size of the MLton object header
+       sz: the size of the object being placed into this chunk
+           this field only applies to 'normal' (not stacks) objects
+        
+        This does:
+        
+        no-packing if gcstate.packingStage1Enabled is false. In this mode,
+        each mlton object is mapped to an individual chunk. This is how RTMLton behaved
+        in our papers upto 2021. this is also the default behavior if these runtime
+        options are not specified.
+
+        per-thread packing if gcstate.packingStage1Enabled is true and packingStage1Enabled is false.
+        In this case, once a chunk is allocated, we save a ref to it (gcstate.activechunk[tnum])
+        and keep track of how much of it is used. we continue to write new object headers into it
+        until it is out of space, at which point we allocate a new chunk. since objptrs will be
+        stashed on the stack, and stack walking will populate the worklist, we need to save which
+        chunk we are in so the stack walking worklist can contain only chunks and not individual
+        object pointers. we do this by saving the offset to the chunk header in the object header
+        fields. see object.h for details.
+
+        cross-thread packing if gcstate.packingStage1Enabled is true and packingStage1Enabled is true.
+        In this case, each thread passes in a period counter (id) which is calculated from the
+        current clock div the hyperperiod of the tasks. threads are allowed to place objects into
+        other threads' chunks (activechunk) before allocated a new chunk for themselves.
+     */
+    Pointer p;
+    GC_objectTypeTag tagRet;
+    unsigned int objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT;
+    splitHeader(gc_stat, header, &tagRet, NULL, NULL, NULL);
+
+    assert (num_chunks > 0);
+    assert (header != 0);
+
+    if (DEBUG_ALLOC) {
+        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:%d (%s [%d] index:%u) sz:%d\n", 
+                PTHREAD_NUM, 
+                (header == GC_THREAD_HEADER)?"*** thread ***":"",
+                num_chunks, 
+                header, objectTypeTagToString(tagRet), tagRet, objectTypeIndex, sz);
+    }
+
+    // no-packing. in order for stage2 to occur, stage1 must be enabled
+    if (header < 40 || header > 98) { 
+        if (header != GC_WORD8_VECTOR_HEADER || header == GC_THREAD_HEADER 
+            || header == GC_STACK_HEADER 
+            || header == GC_WEAK_GONE_HEADER 
+            || gc_stat->packingStage1Enabled == false) {
+                fprintf(stderr, "**   me=%d THR %d WEAK %d STACK %d\n", header,
+                    GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
+                );
+                fprintf(stderr, RED("**   no packing for this type\n"));
+                p = UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
+                fprintf(stderr, "   p = %x\n", (unsigned int)p);
+                return p;
+        }
+    }
+    fprintf(stderr, YELLOW("**   going to pack %d\n"), header);
+
+    // stage2 packing (if enabled) occurs as a part of stage1. 
+
+    p = UM_Object_alloc_packing_stage1(gc_stat, num_chunks, header, s, sz);
+    fprintf(stderr, "   p = %x\n", (unsigned int)p);
+    return p;
+
 }
 
 Pointer

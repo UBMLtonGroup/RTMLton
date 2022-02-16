@@ -70,9 +70,18 @@ COMPILE_TIME_ASSERT(sizeof_objptr__eq__sizeof_header,
 #define TYPE_INDEX_BITS    19
 #define TYPE_INDEX_MASK    ((GC_header)0x000FFFFE)
 #define TYPE_INDEX_SHIFT   1
+#if 0
+// these not used anymore
 #define COUNTER_BITS       10
 #define COUNTER_MASK       ((GC_header)0x7FF00000)
 #define COUNTER_SHIFT      20
+#endif
+// and are replaced with these used by packing
+#define CHUNKOFFSET_BITS       10
+#define CHUNKOFFSET_MASK       ((GC_header)0x7FF00000)
+#define CHUNKOFFSET_SHIFT      20
+#define CHUNKOFFSET(x)  (((GC_header)x & CHUNKOFFSET_MASK)>>CHUNKOFFSET_BITS)
+
 #define MARK_BITS          1
 #define MARK_MASK          ((GC_header)0x80000000)
 #define MARK_SHIFT         31

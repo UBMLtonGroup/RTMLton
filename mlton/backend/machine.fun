@@ -454,7 +454,7 @@ structure Statement =
             fun bytes (b: Bytes.t): Operand.t =
                Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize ()))
             val temp = Register (Register.new (Type.cpointer (), NONE))
-            val _ = print "Hmm! fiddling frontier!"
+            val _ = TextIO.output (TextIO.stdErr,  "Hmm! fiddling frontier! (machine.fun)\n")
          in
             Vector.new4
             (Move {dst = Contents {oper = Frontier,
