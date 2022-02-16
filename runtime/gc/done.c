@@ -90,7 +90,7 @@ void RTGC_done(GC_state s) {
 
 	free(s->worklist);
 
-	if (DISPLAY_GC_STATS)
+	if (DISPLAY_GC_STATS || s->controls.summary)
 		displayChunkedGCStats(s, out);
 }
 __attribute__((noreturn))

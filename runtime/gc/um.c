@@ -82,6 +82,8 @@ UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t heade
 Pointer
 UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
     GC_UM_Chunk chunk = NULL;
+ 
+ User_instrument(13); /* JEFF */
 
     // packing stage 1 (same thread can pack with its own regions)
 
@@ -150,7 +152,6 @@ UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t h
     uint32_t *alias = (uint32_t *)(chunk->ml_object + used);
     *alias = header;
     return (Pointer) (chunk->ml_object + s + used);
-
 }
 
 
@@ -201,20 +202,33 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     }
 
     // no-packing. in order for stage2 to occur, stage1 must be enabled
+
+    if (gc_stat->packingStage1Enabled == false) {
+        if (header == GC_STACK_HEADER) User_instrument(10); /* JEFF */
+        else User_instrument(12); /* JEFF */
+        return UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
+    }
+
+    /* packing enabled, but we only pack some objects types */
+
     if (header < 40 || header > 98) { 
         if (header != GC_WORD8_VECTOR_HEADER || header == GC_THREAD_HEADER 
             || header == GC_STACK_HEADER 
-            || header == GC_WEAK_GONE_HEADER 
-            || gc_stat->packingStage1Enabled == false) {
+            || header == GC_WEAK_GONE_HEADER) {
                 fprintf(stderr, "**   me=%d THR %d WEAK %d STACK %d\n", header,
                     GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
                 );
+
+                if (header == GC_STACK_HEADER) User_instrument(10); /* JEFF */
+                else User_instrument(12); /* JEFF */
+
                 fprintf(stderr, RED("**   no packing for this type\n"));
                 p = UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
                 fprintf(stderr, "   p = %x\n", (unsigned int)p);
                 return p;
         }
     }
+
     fprintf(stderr, YELLOW("**   going to pack %d\n"), header);
 
     // stage2 packing (if enabled) occurs as a part of stage1. 

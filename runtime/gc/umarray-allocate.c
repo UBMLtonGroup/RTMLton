@@ -204,6 +204,8 @@ pointer GC_arrayAllocate(GC_state s,
 
     /* calc number of leaves */
 
+    User_instrument(11); /* JEFF */
+
     splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
 

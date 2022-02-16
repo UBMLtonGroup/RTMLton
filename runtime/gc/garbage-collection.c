@@ -331,6 +331,7 @@ void *GCrunner(void *_s) {
 
 		assert(s->dirty);
 
+		User_instrument(30); /* JEFF */
 
 		if (DEBUG_RTGC) {
 			fprintf(stderr, "%d] [RTGC: Starting cycle #%s]\n", PTHREAD_NUM,
@@ -382,6 +383,8 @@ void *GCrunner(void *_s) {
 			fprintf(stderr, "%d] [RTGC: GC cycle #%s completed]\n", PTHREAD_NUM,
 					uintmaxToCommaString(s->cGCStats.numGCCycles));
 		}
+
+		User_instrument(30); /* JEFF */
 
 		//not_dirty:;
 		RTSYNC_UNLOCK;
@@ -595,7 +598,7 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 				} else /*Unmarked Chunk*/
 				{
 					assert(ISUNMARKED(header));
-
+User_instrument(14); /* JEFF */
 					if (DEBUG_MEM or DEBUG_RTGC) {
 						fprintf(stderr, "%d] Collecting: "
 						FMTPTR
@@ -669,6 +672,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 
 				} else {
+					User_instrument(15); /* JEFF */
+
 					if (DEBUG_MEM or DEBUG_RTGC) {
 						fprintf(stderr, "%d] Collecting array: "
 						FMTPTR
