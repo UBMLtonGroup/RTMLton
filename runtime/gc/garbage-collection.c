@@ -677,9 +677,9 @@ User_instrument(14); /* JEFF */
 					if (DEBUG_MEM or DEBUG_RTGC) {
 						fprintf(stderr, "%d] Collecting array: "
 						FMTPTR
-						", %d, %d\n", PTHREAD_NUM,
+						", %d, %x\n", PTHREAD_NUM,
 								(uintptr_t) pc, pc->array_chunk_magic,
-								pc->array_chunk_header);
+								(unsigned int)pc->array_chunk_header);
 					}
 
 					//Set header of cleared object to magic number
