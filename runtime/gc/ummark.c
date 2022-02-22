@@ -260,6 +260,23 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 			else
 				pchunk = (GC_UM_Chunk)(p);
 
+			int coffset = CHUNKOFFSET(*(int*)(pchunk));
+			
+			// normal (1), stack and weaks arent packed, so we adjust here
+			// if packing is not enabled, the chunkoffset field should always be
+			// zero.
+			
+			if (coffset > 0) coffset -= GC_NORMAL_HEADER_SIZE;
+			fprintf(stderr, "%d] %x header %x coffset %d\n", 
+				PTHREAD_NUM, 
+				(int)(pchunk),
+				*(int *)(pchunk), coffset
+			);
+
+			fprintf(stderr, "%x\n", (unsigned int)pchunk);
+			pchunk = (GC_UM_Chunk)((char*)pchunk-coffset);
+			fprintf(stderr, "%x\n", (unsigned int)pchunk);
+
 			if (tag == NORMAL_TAG || tag == WEAK_TAG)
 				assert (pchunk->sentinel == UM_CHUNK_SENTINEL);
 			else if (tag == STACK_TAG)
@@ -433,21 +450,39 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 
 static
 bool isContainerChunkMarkedByMode(pointer p, GC_markMode m, GC_objectTypeTag tag) {
+	// p is a pointer to an obj. we want to find the container it is in.
+	GC_header *headerp = getHeaderp(p);
+	GC_header header = *headerp;
+	int chunkOffset = CHUNKOFFSET(header);
+
+	if (chunkOffset > 0) chunkOffset -= GC_NORMAL_HEADER_SIZE;
+	fprintf(stderr, "%d] isContainerChunkMarkedByMode %x header %x coffset %d\n", 
+		PTHREAD_NUM, (unsigned int)p,
+		header, chunkOffset
+	);
+
+	GC_UM_Chunk pchunk = (GC_UM_Chunk)((char*)p-chunkOffset);
+
+	if (DEBUG_DFS_MARK) {
+		fprintf(stderr, "%d] isContainerChunkMarkedByMode obj: "FMTPTR"\n",
+				PTHREAD_NUM, (uintptr_t) pchunk);
+		fprintf(stderr, "  header %x chunkOffset %d\n", (unsigned int)header, chunkOffset);
+	}
+
 	switch (m) {
 		case MARK_MODE:
-			return isChunkMarked(p, tag);
+			return isChunkMarked((pointer)pchunk, tag);
 		case UNMARK_MODE:
 			return not
-			isChunkMarked(p, tag);
+			isChunkMarked((pointer)pchunk, tag);
 		case GREY_MODE:
-			return isChunkShaded(p, tag);
+			return isChunkShaded((pointer)pchunk, tag);
 		default:
 			die("bad mark mode %u", m);
 	}
 }
 
 
-//TODO: handle marking the mlton objects if packing more than one object in a chunk
 /* Tricolor abstraction at the chunk level. Binary marking for the MLton objects remain same. 
  * Implementation: 
  * 1. If function is in marking mode, mark current chunk grey.
@@ -553,9 +588,6 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 
 void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
 	pointer p = objptrToPointer(*opp, s->umheap.start);
-	if (DEBUG_DFS_MARK)
-		fprintf(stderr, "original obj: "FMTPTR", obj: "FMTPTR"\n",
-				(uintptr_t) * opp, (uintptr_t) p);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
 	uint16_t bytesNonObjptrs = 0;

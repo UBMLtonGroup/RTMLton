@@ -80,7 +80,7 @@ COMPILE_TIME_ASSERT(sizeof_objptr__eq__sizeof_header,
 #define CHUNKOFFSET_BITS       10
 #define CHUNKOFFSET_MASK       ((GC_header)0x7FF00000)
 #define CHUNKOFFSET_SHIFT      20
-#define CHUNKOFFSET(x)  (((GC_header)x & CHUNKOFFSET_MASK)>>CHUNKOFFSET_BITS)
+#define CHUNKOFFSET(x)  (((GC_header)(x) & CHUNKOFFSET_MASK)>>CHUNKOFFSET_SHIFT)
 
 #define MARK_BITS          1
 #define MARK_MASK          ((GC_header)0x80000000)

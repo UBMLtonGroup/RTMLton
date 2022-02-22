@@ -602,8 +602,8 @@ User_instrument(14); /* JEFF */
 					if (DEBUG_MEM or DEBUG_RTGC) {
 						fprintf(stderr, "%d] Collecting: "
 						FMTPTR
-						", %d, %d\n", PTHREAD_NUM,
-								(uintptr_t) pc, (int)pc->sentinel, (int)pc->chunk_header);
+						", %d, %x\n", PTHREAD_NUM,
+								(uintptr_t) pc, (int)pc->sentinel, (unsigned int)pc->chunk_header);
 					}
 
 					//Set header of cleared object to magic number
@@ -721,9 +721,9 @@ User_instrument(14); /* JEFF */
 	s->cGCStats.numSweeps++;
 
 	if (DEBUG_RTGC) {
-		fprintf(stderr, "%d] Finished one sweep cycle and freed %d chunks\n", PTHREAD_NUM, freed);
+		fprintf(stderr, "%d] "GREEN("Finished one sweep cycle and freed %d chunks\n"), PTHREAD_NUM, freed);
 
-		fprintf(stderr, "%d] Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n", PTHREAD_NUM, visited, marked, grey,
+		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n"), PTHREAD_NUM, visited, marked, grey,
 				red);
 	}
 }

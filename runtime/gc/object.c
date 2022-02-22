@@ -65,7 +65,9 @@ void splitHeader(GC_state s, GC_header header,
 
   assert (1 == (header & GC_VALID_HEADER_MASK)); 
 
+
   objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT; 
+
   assert (objectTypeIndex < s->objectTypesLength); 
   objectType = &(s->objectTypes[objectTypeIndex]);
   tag = objectType->tag; 

@@ -80,10 +80,10 @@ UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t heade
 }
 
 Pointer
-UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
+UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header, C_Size_t hdrsz, C_Size_t sz) {
     GC_UM_Chunk chunk = NULL;
  
- User_instrument(13); /* JEFF */
+    User_instrument(13); /* JEFF */
 
     // packing stage 1 (same thread can pack with its own regions)
 
@@ -98,28 +98,38 @@ UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t h
         */
     assert (num_chunks == 1);
 
-    if (gc_stat->activeChunk[PTHREAD_NUM] != BOGUS_POINTER) {
-        chunk = (GC_UM_Chunk)gc_stat->activeChunk[PTHREAD_NUM];
-        fprintf(stderr, "%d]   there's an activeChunk. used %d\n", PTHREAD_NUM, chunk->used);
+    if (s->activeChunk[PTHREAD_NUM] != BOGUS_POINTER) {
+        chunk = (GC_UM_Chunk)s->activeChunk[PTHREAD_NUM];
+
+        if (DEBUG_ALLOC_PACK)
+            fprintf(stderr, "%d]   there's an activeChunk. used %d\n", PTHREAD_NUM, chunk->used);
 
         /* if cur chunk has no room left, then alloc a new one */
 
-        if (chunk->used + sz + s > UM_CHUNK_PAYLOAD_SIZE) {
-            fprintf(stderr, "%d]   no space in active chunk, allocating a new one\n", PTHREAD_NUM);
-            chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
-            gc_stat->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
+        if (chunk->used + sz + hdrsz > UM_CHUNK_PAYLOAD_SIZE) {
+            if (DEBUG_ALLOC_PACK)
+                fprintf(stderr, "%d]   no space in active chunk, allocating a new one\n", PTHREAD_NUM);
+            chunk = allocateChunks(s, &(s->umheap), num_chunks, UM_NORMAL_CHUNK);
+            s->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
         }
         else {
-            fprintf(stderr, "%d]   there is space in this chunk (%u) to fit our object (%d)\n",
-                    PTHREAD_NUM,
-                    UM_CHUNK_PAYLOAD_SIZE-(chunk->used), sz+s
-            );
+            if (DEBUG_ALLOC_PACK)
+                fprintf(stderr, "%d]   there is space in this chunk (%u) to fit our object (%d)\n",
+                        PTHREAD_NUM,
+                        UM_CHUNK_PAYLOAD_SIZE-(chunk->used), sz+hdrsz
+                );
+
+            LOCK_FL;
+          	s->reserved -= 1;
+            UNLOCK_FL;
+
         }
     }
     else {
-        fprintf(stderr, "%d]   no activeChunk, allocating one.\n", PTHREAD_NUM);
-        chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_NORMAL_CHUNK);
-        gc_stat->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
+        if (DEBUG_ALLOC_PACK)
+            fprintf(stderr, "%d]   no activeChunk, allocating one.\n", PTHREAD_NUM);
+        chunk = allocateChunks(s, &(s->umheap), num_chunks, UM_NORMAL_CHUNK);
+        s->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
     }
 
     /*
@@ -143,15 +153,19 @@ UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t h
     header field.
     */
     int used = chunk->used;
-    header |= ((used+s)<<CHUNKOFFSET_BITS);
-    chunk->used += (sz + s);
+    header |= ((used+hdrsz)<<CHUNKOFFSET_SHIFT);
+    chunk->used += (sz + hdrsz);
+
+    if (DEBUG_ALLOC_PACK)
+        fprintf(stderr, "%d]   writing header 0x%x(%d) with offset %d\n", 
+                PTHREAD_NUM, header, header, used+hdrsz);
 
     // the following line violates C aliasing rules (undefined behavior):
     // *((uint32_t*) chunk->ml_object) = header;
 
     uint32_t *alias = (uint32_t *)(chunk->ml_object + used);
     *alias = header;
-    return (Pointer) (chunk->ml_object + s + used);
+    return (Pointer) (chunk->ml_object + hdrsz + used);
 }
 
 
@@ -183,7 +197,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         cross-thread packing if gcstate.packingStage1Enabled is true and packingStage1Enabled is true.
         In this case, each thread passes in a period counter (id) which is calculated from the
         current clock div the hyperperiod of the tasks. threads are allowed to place objects into
-        other threads' chunks (activechunk) before allocated a new chunk for themselves.
+        other threads' chunks (activechunk) before allocating a new chunk for themselves.
      */
     Pointer p;
     GC_objectTypeTag tagRet;
@@ -194,10 +208,10 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     assert (header != 0);
 
     if (DEBUG_ALLOC) {
-        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:%d (%s [%d] index:%u) sz:%d\n", 
+        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:0x%x(%d) (%s [%d] index:%u) sz:%d\n", 
                 PTHREAD_NUM, 
                 (header == GC_THREAD_HEADER)?"*** thread ***":"",
-                num_chunks, 
+                num_chunks, header,
                 header, objectTypeTagToString(tagRet), tagRet, objectTypeIndex, sz);
     }
 
@@ -215,28 +229,32 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
         if (header != GC_WORD8_VECTOR_HEADER || header == GC_THREAD_HEADER 
             || header == GC_STACK_HEADER 
             || header == GC_WEAK_GONE_HEADER) {
-                fprintf(stderr, "**   me=%d THR %d WEAK %d STACK %d\n", header,
-                    GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
-                );
+                if (DEBUG_ALLOC)
+                    fprintf(stderr, "**   me=%d THR %d WEAK %d STACK %d\n", header,
+                        GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
+                    );
 
                 if (header == GC_STACK_HEADER) User_instrument(10); /* JEFF */
                 else User_instrument(12); /* JEFF */
 
-                fprintf(stderr, RED("**   no packing for this type\n"));
+                if (DEBUG_ALLOC)
+                    fprintf(stderr, RED("**   no packing for this type\n"));
                 p = UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
-                fprintf(stderr, "   p = %x\n", (unsigned int)p);
+                if (DEBUG_ALLOC)
+                    fprintf(stderr, "   UM_Object_alloc returns: p = %x\n", (unsigned int)p);
                 return p;
         }
     }
 
-    fprintf(stderr, YELLOW("**   going to pack %d\n"), header);
+    if (DEBUG_ALLOC_PACK)
+        fprintf(stderr, YELLOW("**   going to pack %d\n"), header);
 
     // stage2 packing (if enabled) occurs as a part of stage1. 
 
     p = UM_Object_alloc_packing_stage1(gc_stat, num_chunks, header, s, sz);
-    fprintf(stderr, "   p = %x\n", (unsigned int)p);
+    if (DEBUG_ALLOC_PACK)
+        fprintf(stderr, "   UM_Object_alloc returns: p = %x\n", (unsigned int)p);
     return p;
-
 }
 
 Pointer
