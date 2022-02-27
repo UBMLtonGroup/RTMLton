@@ -720,7 +720,7 @@ User_instrument(14); /* JEFF */
 
 	s->cGCStats.numSweeps++;
 
-	if (DEBUG_RTGC) {
+	if (1||DEBUG_RTGC) {
 		fprintf(stderr, "%d] "GREEN("Finished one sweep cycle and freed %d chunks\n"), PTHREAD_NUM, freed);
 
 		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n"), PTHREAD_NUM, visited, marked, grey,
@@ -965,14 +965,14 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 		if (i == MAXPRI) /*Last thread to sync before GC*/
 		{
-
 			s->dirty = true;
 			RTSYNC_SIGNAL;
 			if (DEBUG_RTGC)
 				fprintf(stderr, "%d] Signal sent to wake GC\n", PTHREAD_NUM);
 
 		} else {
-			fprintf(stderr, "%d] All Threads not synced\n", PTHREAD_NUM);
+			if (DEBUG_RTGC)
+				fprintf(stderr, "%d] All Threads not synced\n", PTHREAD_NUM);
 		}
 
 

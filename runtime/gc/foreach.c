@@ -96,7 +96,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   chunkOffset = CHUNKOFFSET(header);
 
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
-  if (1||DEBUG_DETAILED)
+  if (DEBUG_DETAILED)
     fprintf (stderr,
              "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
@@ -197,12 +197,12 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	   */
 
 	  size_t bytesPerElement;
-      size_t dataBytes, curBytePosition;
-      pointer last;
+    size_t dataBytes, curBytePosition;
+    pointer last;
 	  GC_arrayLength numElements;
-      numElements = getArrayLength (p);
-      bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
-      dataBytes = numElements * bytesPerElement;
+    numElements = getArrayLength (p);
+    bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
+    dataBytes = numElements * bytesPerElement;
 
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)")
 	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%d) bpe(%d)\n",
