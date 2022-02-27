@@ -7,6 +7,8 @@
 # define POW pow
 #endif
 
+#define LOCKIT(X) IFED(pthread_mutex_lock(&(X)))
+#define UNLOCKIT(X) IFED(pthread_mutex_unlock(&(X)))
 
 
 #undef DBG
@@ -80,6 +82,68 @@ UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t heade
 }
 
 Pointer
+UM_Object_alloc_packing_stage2(GC_state s, C_Size_t num_chunks, uint32_t header, C_Size_t hdrsz, C_Size_t sz,
+                                int *piggybackedOnThreadNum)
+{
+    /* stage2 packing: pack across threads
+     * in this implementation, we allow threads in the same period to pack with each other.
+     * an RMS will schedule these threads one after the other, starting at the beginning
+     * of the period. the GC can run at the end of the period (but is not guaranteed to).
+     *
+     * we pack across threads by allowing the current thread that is requesting an alloc 
+     * to look into other threads' activeChunks before allocating a new chunk of its own.
+     *
+     * stage1:
+     * if no activeChunk or no space in activeChunk:
+     *     peak into other threads' activeChunks <--- stage2 
+     *     alloc a new activeChunk
+     *
+     */
+    GC_UM_Chunk chunk = NULL;
+
+    User_instrument(16); /* JEFF */
+
+    /* unsuccessful, return to stage 1 and try to allocate a new chunk */
+
+    /* see if any other thread's chunks have room */
+    for (int i = 0 ; i < MAXPRI ; i++) {
+        if (i == 1 || i == PTHREAD_NUM)
+            continue;
+        if (s->activeChunk[i] == BOGUS_POINTER)
+            continue;
+
+        LOCKIT(s->activeChunkLock[i]);
+
+        if (((GC_UM_Chunk)s->activeChunk[i])->used + sz + hdrsz <= UM_CHUNK_PAYLOAD_SIZE){
+            chunk = (GC_UM_Chunk)s->activeChunk[i];
+            int used = chunk->used;
+            header |= ((used+hdrsz)<<CHUNKOFFSET_SHIFT);
+            chunk->used += (sz + hdrsz);
+
+            UNLOCKIT(s->activeChunkLock[i]);
+
+            LOCK_FL;
+            s->reserved -= 1;
+            UNLOCK_FL;
+
+            if (DEBUG_ALLOC_PACK)
+                fprintf(stderr, "%d]   writing header 0x%x(%d) with offset %d\n", 
+                        PTHREAD_NUM, header, header, used+hdrsz);
+
+            *piggybackedOnThreadNum = i;
+
+            uint32_t *alias = (uint32_t *)(chunk->ml_object + used);
+            *alias = header;
+            return (Pointer) (chunk->ml_object + hdrsz + used);
+        }
+
+        UNLOCKIT(s->activeChunkLock[i]);
+    }
+
+    return BOGUS_POINTER;
+}
+
+Pointer
 UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header, C_Size_t hdrsz, C_Size_t sz) {
     GC_UM_Chunk chunk = NULL;
  
@@ -94,8 +158,8 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
     assert (header != GC_WEAK_GONE_HEADER);
 
     /* not a stack alloc. if we have an active chunk, pack into it.
-        * if we do not have room, we will alloc a new chunk
-        */
+     * if we do not have room, we will alloc a new chunk
+     */
     assert (num_chunks == 1);
 
     if (s->activeChunk[PTHREAD_NUM] != BOGUS_POINTER) {
@@ -104,11 +168,33 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
         if (DEBUG_ALLOC_PACK)
             fprintf(stderr, "%d]   there's an activeChunk. used %d\n", PTHREAD_NUM, chunk->used);
 
-        /* if cur chunk has no room left, then alloc a new one */
+        /* if cur chunk has no room left, then alloc a new one:
+         * if stage2 is enabled, we will first attempt to piggy back on another
+         * thread's chunk.
+         */
 
         if (chunk->used + sz + hdrsz > UM_CHUNK_PAYLOAD_SIZE) {
+
+            if (s->packingStage2Enabled == true) {
+                if (DEBUG_ALLOC_PACK)
+                    fprintf(stderr, "%d]   no space in active chunk, cross-peak first\n", PTHREAD_NUM);
+                int piggybackthread = -1;
+                Pointer xp = UM_Object_alloc_packing_stage2(s, num_chunks, header, hdrsz, sz, &piggybackthread);
+                if (xp != BOGUS_POINTER) {
+                    if (DEBUG_ALLOC_PACK)
+                        fprintf(stderr, "%d]   "PURPLE("successfully found space in another threads (%d) chunk\n"), 
+                                PTHREAD_NUM,
+                                piggybackthread
+                        );
+                    return xp;
+                } else {
+                    if (DEBUG_ALLOC_PACK)
+                        fprintf(stderr, "%d]   unable to find space in another threads chunk, and:\n", PTHREAD_NUM);
+                }
+            }
+
             if (DEBUG_ALLOC_PACK)
-                fprintf(stderr, "%d]   no space in active chunk, allocating a new one\n", PTHREAD_NUM);
+                fprintf(stderr, "%d]   no space in active chunk, so allocating a new one\n", PTHREAD_NUM);
             chunk = allocateChunks(s, &(s->umheap), num_chunks, UM_NORMAL_CHUNK);
             s->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
         }
@@ -122,12 +208,31 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
             LOCK_FL;
           	s->reserved -= 1;
             UNLOCK_FL;
-
         }
     }
     else {
+        /* if stage2 is enabled, we will first attempt to piggy back on
+         * another thread's chunk.
+         */
+        if (s->packingStage2Enabled == true) {
+            if (DEBUG_ALLOC_PACK)
+                fprintf(stderr, "%d]   no activeChunk, cross-peak first\n", PTHREAD_NUM);
+            int piggybackthread = -1;
+            Pointer xp = UM_Object_alloc_packing_stage2(s, num_chunks, header, hdrsz, sz, &piggybackthread);
+            if (xp != BOGUS_POINTER) {
+                if (DEBUG_ALLOC_PACK)
+                    fprintf(stderr, "%d]   "PURPLE("successfully found space in another threads (%d) chunk\n"), PTHREAD_NUM,
+                            piggybackthread
+                    );
+                return xp;
+            } else {
+                if (DEBUG_ALLOC_PACK)
+                    fprintf(stderr, "%d]   unable to find space in another threads chunk, and:\n", PTHREAD_NUM);
+            }
+        }
+
         if (DEBUG_ALLOC_PACK)
-            fprintf(stderr, "%d]   no activeChunk, allocating one.\n", PTHREAD_NUM);
+            fprintf(stderr, "%d]   no activeChunk, so allocating one.\n", PTHREAD_NUM);
         chunk = allocateChunks(s, &(s->umheap), num_chunks, UM_NORMAL_CHUNK);
         s->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
     }
@@ -208,11 +313,13 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     assert (header != 0);
 
     if (DEBUG_ALLOC) {
-        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:0x%x(%d) (%s [%d] index:%u) sz:%d\n", 
+        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:0x%x(%d) (%s [%d] index:%u) sz:%d freelist:%d reserved:%d\n", 
                 PTHREAD_NUM, 
                 (header == GC_THREAD_HEADER)?"*** thread ***":"",
                 num_chunks, header,
-                header, objectTypeTagToString(tagRet), tagRet, objectTypeIndex, sz);
+                header, objectTypeTagToString(tagRet), tagRet, objectTypeIndex, sz, 
+                gc_stat->fl_chunks,
+                gc_stat->reserved);
     }
 
     // no-packing. in order for stage2 to occur, stage1 must be enabled

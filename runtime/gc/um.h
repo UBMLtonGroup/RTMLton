@@ -7,6 +7,8 @@ Pointer UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header,
                         C_Size_t s, C_Size_t sz);
 Pointer UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s);
 Pointer UM_Object_alloc_packing_stage1(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz);
+Pointer UM_Object_alloc_packing_stage2(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz,
+            int *piggybackedOnThreadNum);
 
 void CompareAndSet(GC_state s, int lockOrUnlock);
 bool CompareExchange(volatile int *ptr, int expected, int desired);

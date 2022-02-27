@@ -7,9 +7,11 @@ fun gettime () = get_ticks_since_boot ()
 
 fun thread0 () = 
 let 
-   val onesec = 1000000000
+   val runtime  = 2 (* ms *)
+   val deadline = 250
+   val period   = 1000
    val _ = printit "In let for thread0. Setting period/deadline to 1 sec\n"
-   val _ = set_schedule (onesec, onesec, onesec)
+   val _ = set_schedule (runtime, period, deadline)
    val prev = ref (gettime ())
    val cur = ref (gettime ())
 in

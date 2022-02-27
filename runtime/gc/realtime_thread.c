@@ -161,7 +161,6 @@ void InitializeMutexes(void) {
             die("rtems_barrier_create failed");
         }
     }
-
 }
 
 double get_ticks_since_boot(void) {
@@ -186,14 +185,34 @@ int schedule_yield() {
 
 #else
 
-/* for RT linux, these parameters are in nanoseconds */
-void set_schedule(uint64_t runtime, uint64_t period, uint64_t deadline) {
+/* for RT linux, these parameters are in milli-seconds
+
+
+   from "man sched"
+
+           arrival/wakeup                    absolute deadline
+                |    start time                    |
+                |        |                         |
+                v        v                         v
+           -----x--------xooooooooooooooooo--------x--------x---
+                         |<-- Runtime ------->|
+                |<----------- Deadline ----------->|
+                |<-------------- Period ------------------->|
+
+       The kernel requires that:
+
+           sched_runtime <= sched_deadline <= sched_period
+ */
+
+#define NANOS_PER_MILLI 1000000
+
+void set_schedule(int runtime, int period, int deadline) {
     struct sched_attr attr;
     unsigned int flags = 0;
 
     if(DEBUG_THREADS)
         fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu\n", 
-                PTHREAD_NUM, runtime, period, deadline);
+                PTHREAD_NUM, (uint64_t)runtime, (uint64_t)period, (uint64_t)deadline);
 
     attr.size = sizeof(attr);
     attr.sched_flags = SCHED_FLAG_DL_OVERRUN; // supposed to make linux SIGXCPU on overrun
@@ -202,9 +221,12 @@ void set_schedule(uint64_t runtime, uint64_t period, uint64_t deadline) {
 
     /* times are in nanos for rtlinux */
     attr.sched_policy = SCHED_DEADLINE;
-    attr.sched_runtime = runtime; //eg 5 * 1000 * 1000; 5ms
-    attr.sched_period  = period;
-    attr.sched_deadline = deadline;
+    attr.sched_runtime = (uint64_t)runtime * NANOS_PER_MILLI;
+    attr.sched_period  = (uint64_t)period * NANOS_PER_MILLI;
+    attr.sched_deadline = (uint64_t)deadline * NANOS_PER_MILLI;
+
+    assert (runtime <= deadline);
+    assert (deadline <= period);
 
     // '0' means 'current thread' 
     if (sched_setattr(0, &attr, flags) < 0) {
