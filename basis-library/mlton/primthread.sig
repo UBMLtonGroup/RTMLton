@@ -43,7 +43,7 @@ signature PRIM_THREAD =
       val gcstate: Primitive.MLton.GCState.t
 
       val getMyPriority: unit -> int
-      val set_schedule: int * int * int -> unit
+      val set_schedule: int * int * int * int -> unit
       val schedule_yield: unit -> unit
       val wait_for_next_period: unit -> unit
 

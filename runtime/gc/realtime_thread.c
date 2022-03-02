@@ -15,6 +15,7 @@
 
 static volatile int initialized = 0;
 volatile bool rtinitfromML = FALSE;
+int allowedToPack[MAXPRI];
 
 extern void Copy_globalObjptrs (int f, int t);
 
@@ -172,7 +173,12 @@ double get_ticks_since_boot(void) {
  * which is Watchdog_interval which in turn is uint32_t but to keep the FFI prototype
  * consist (with the posix one below) we use 64_t and downcast. 
  */
-void set_schedule(uint64_t runtime, uint64_t period, uint64_t deadline) {
+/* packing param is 0, 1, or 2. determines if this thread is allowed
+ * to pack during its releases. not all threads should/can pack
+ * safely. only rate mono / deadline scheduled threads should pack
+ * using "2" and only during their shared periods
+ */
+void set_schedule(uint64_t runtime, uint64_t deadline, uint64_t period, int packing) {
     return;
 }
 
@@ -206,13 +212,20 @@ int schedule_yield() {
 
 #define NANOS_PER_MILLI 1000000
 
-void set_schedule(int runtime, int period, int deadline) {
+/* packing param is 0, 1, or 2. determines if this thread is allowed
+ * to pack during its releases. not all threads should/can pack
+ * safely. only rate mono / deadline scheduled threads should pack
+ * using "2" and only during their shared periods
+ */
+void set_schedule(int runtime, int deadline, int period, int packing) {
     struct sched_attr attr;
     unsigned int flags = 0;
 
     if(DEBUG_THREADS)
-        fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu\n", 
-                PTHREAD_NUM, (uint64_t)runtime, (uint64_t)period, (uint64_t)deadline);
+        fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu packing:%d\n", 
+                PTHREAD_NUM, (uint64_t)runtime, (uint64_t)period, (uint64_t)deadline, packing);
+
+    allowedToPack[PTHREAD_NUM] = packing;
 
     attr.size = sizeof(attr);
     attr.sched_flags = SCHED_FLAG_DL_OVERRUN; // supposed to make linux SIGXCPU on overrun

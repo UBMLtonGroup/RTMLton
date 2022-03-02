@@ -11,7 +11,7 @@ let
    val deadline = 250
    val period   = 1000
    val _ = printit "In let for thread0. Setting period/deadline to 1 sec\n"
-   val _ = set_schedule (runtime, period, deadline)
+   val _ = set_schedule (runtime, deadline, period, 0)
    val prev = ref (gettime ())
    val cur = ref (gettime ())
 in

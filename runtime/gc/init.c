@@ -432,7 +432,9 @@ int GC_init(GC_state s, int argc, char **argv) {
 	}
 
 	for (__i = 0; __i < MAXPRI; __i++) {
-	    
+
+		s->packingStageForThread[__i] = 0;
+
         s->callFromCHandlerThread[__i] = BOGUS_OBJPTR;
 		s->currentThread[__i] = BOGUS_OBJPTR;
 		s->savedThread[__i] = BOGUS_OBJPTR;

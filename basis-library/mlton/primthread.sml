@@ -140,7 +140,7 @@ struct
       val gtsb__   = _import "get_ticks_since_boot" : unit -> real;
       val lock__   = _import "User_lock" : int -> unit;
       val unlock__ = _import "User_unlock" : int -> unit;
-      val setsch   = _import "set_schedule" : int * int * int -> unit;
+      val setsch   = _import "set_schedule" : int * int * int * int -> unit;
       val schyld   = _import "schedule_yield" : unit -> unit;
   in
       fun instrument a = inst__ a
@@ -148,7 +148,7 @@ struct
       fun get_ticks_since_boot () = gtsb__ ()
       fun rtlock a = if a <= 9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
       fun rtunlock a = if a <= 9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
-      fun set_schedule (rt, per, dl) = setsch (rt, per, dl)
+      fun set_schedule (rt, dl, per, packing) = setsch (rt, dl, per, packing)
       fun schedule_yield () = schyld ()
       fun wait_for_next_period () = schyld ()
   end 

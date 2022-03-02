@@ -19,7 +19,6 @@
  * define the free list
  */
 
-
 void reserveAllocation(GC_state s, size_t numChunksToRequest) {
     assert (numChunksToRequest > 0);
 
@@ -324,7 +323,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 
     // no-packing. in order for stage2 to occur, stage1 must be enabled
 
-    if (gc_stat->packingStage1Enabled == false) {
+    if (gc_stat->packingStage1Enabled == false || allowedToPack[PTHREAD_NUM] == 0) {
         if (header == GC_STACK_HEADER) User_instrument(10); /* JEFF */
         else User_instrument(12); /* JEFF */
         return UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);

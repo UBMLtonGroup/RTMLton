@@ -38,7 +38,7 @@ void User_unlock (Int32);
 void User_instrument (Int32 p);
 void Dump_instrument_stderr (Int32 p);
 double get_ticks_since_boot(void);
-void set_schedule(int runtime, int period, int deadline);
+void set_schedule(int runtime, int deadline, int period, int packing);
 int schedule_yield(void);
 #endif
 

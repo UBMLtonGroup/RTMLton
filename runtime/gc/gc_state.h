@@ -103,7 +103,7 @@ struct GC_state {
   pthread_t *realtimeThreads[MAXPRI];
   pointer activeChunk[MAXPRI];
   pthread_mutex_t activeChunkLock[MAXPRI];
-
+  int packingStageForThread[MAXPRI];
   bool packingStage1Enabled, packingStage2Enabled;
 
   volatile bool mainBooted;
