@@ -144,10 +144,13 @@ void *run_deadline(void *data)
     attr.sched_nice = 0;
     attr.sched_priority = 0;
 
+#define MILLISEC 1000000
+#define MICROSEC 1000
+
     attr.sched_policy   = SCHED_DEADLINE;
-    attr.sched_runtime  = 25000; //5 * 1000 * 1000;
-    attr.sched_period   = 1000 * 1000 * 1000;
-    attr.sched_deadline = 250 * 1000 * 1000;
+    attr.sched_runtime  = 5 * MILLISEC;
+    attr.sched_period   = 1000 * MILLISEC;
+    attr.sched_deadline = 500 * MILLISEC;
 
     printf("Setting schedule to (ns): runtime=%lld deadline=%lld period=%lld\n\n",
             (long long int)attr.sched_runtime, (long long int)attr.sched_deadline, (long long int)attr.sched_period);

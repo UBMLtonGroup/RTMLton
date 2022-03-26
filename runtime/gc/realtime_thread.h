@@ -39,7 +39,7 @@ void User_instrument (Int32 p);
 void Dump_instrument_stderr (Int32 p);
 double get_ticks_since_boot(void);
 void set_schedule(int runtime, int deadline, int period, int packing);
-int schedule_yield(void);
+int schedule_yield(GC_state s, bool trigger_gc);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */

@@ -333,8 +333,8 @@ void *GCrunner(void *_s) {
 
 		User_instrument(30); /* JEFF */
 
-		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] [RTGC: Starting cycle #%s]\n", PTHREAD_NUM,
+		if (1||DEBUG_RTGC) {
+			fprintf(stderr, "%d] "YELLOW("[RTGC: Starting cycle #%s]\n"), PTHREAD_NUM,
 					uintmaxToCommaString(s->cGCStats.numGCCycles + 1));
 			fprintf(stderr, "%d] [RTGC: Number of Chunks; Free: %d Allocated: %s]\n", PTHREAD_NUM, s->fl_chunks,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated));
@@ -357,7 +357,6 @@ void *GCrunner(void *_s) {
 
 		if (s->attempts > 2) {
 			die("Insuffient Memory\n");
-
 		}
 
 		performGC_helper(s,
@@ -367,8 +366,8 @@ void *GCrunner(void *_s) {
 
 		s->cGCStats.numGCCycles += 1;
 		gettimeofday(&t1, NULL);
-
-		s->cGCStats.totalGCTime += ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec) / 1000;
+		unsigned int gc_runtime_microsecs = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec) / 1000;
+		s->cGCStats.totalGCTime += gc_runtime_microsecs;
 
 		s->dirty = false;
 		/*Change this to reset all rtSync values for all RT threads*/
@@ -379,9 +378,9 @@ void *GCrunner(void *_s) {
 
 		s->isGCRunning = false;
 
-		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] [RTGC: GC cycle #%s completed]\n", PTHREAD_NUM,
-					uintmaxToCommaString(s->cGCStats.numGCCycles));
+		if (1||DEBUG_RTGC) {
+			fprintf(stderr, "%d] "YELLOW("[RTGC: GC cycle #%s completed in %u us]\n"), PTHREAD_NUM,
+					uintmaxToCommaString(s->cGCStats.numGCCycles), gc_runtime_microsecs);
 		}
 
 		User_instrument(30); /* JEFF */
@@ -913,7 +912,6 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 			fprintf(stderr, "%d] Came to block until GC finishes. ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
 		}
-
 	}
 
 	/*If stack is not marked already */

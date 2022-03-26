@@ -141,7 +141,7 @@ struct
       val lock__   = _import "User_lock" : int -> unit;
       val unlock__ = _import "User_unlock" : int -> unit;
       val setsch   = _import "set_schedule" : int * int * int * int -> unit;
-      val schyld   = _import "schedule_yield" : unit -> unit;
+      val schyld   = _import "schedule_yield" : Primitive.MLton.GCState.t * bool -> unit;
   in
       fun instrument a = inst__ a
       fun dump_instrument_stderr a = dise__ a
@@ -149,8 +149,8 @@ struct
       fun rtlock a = if a <= 9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
       fun rtunlock a = if a <= 9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
       fun set_schedule (rt, dl, per, packing) = setsch (rt, dl, per, packing)
-      fun schedule_yield () = schyld ()
-      fun wait_for_next_period () = schyld ()
+      fun schedule_yield trigger_gc = schyld (Primitive.MLton.GCState.gcState, trigger_gc)
+      fun wait_for_next_period trigger_gc = schyld (Primitive.MLton.GCState.gcState, trigger_gc)
   end 
 
   val getMyPriority = _import "GC_myPriority": unit -> int;

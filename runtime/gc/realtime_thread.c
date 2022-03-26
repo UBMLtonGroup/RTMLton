@@ -211,11 +211,16 @@ int schedule_yield() {
  */
 
 #define NANOS_PER_MILLI 1000000
+#define NANOS_PER_MICRO 1000
 
 /* packing param is 0, 1, or 2. determines if this thread is allowed
  * to pack during its releases. not all threads should/can pack
  * safely. only rate mono / deadline scheduled threads should pack
  * using "2" and only during their shared periods
+ * 
+ * the parameters are in ms which is probably too coarse. you 
+ * can change to NANOS_PER_MICRO. one issue is that on 32bit 
+ * systems you can overflow if you go too fine. 
  */
 void set_schedule(int runtime, int deadline, int period, int packing) {
     struct sched_attr attr;
@@ -234,9 +239,9 @@ void set_schedule(int runtime, int deadline, int period, int packing) {
 
     /* times are in nanos for rtlinux */
     attr.sched_policy = SCHED_DEADLINE;
-    attr.sched_runtime = (uint64_t)runtime * NANOS_PER_MILLI;
-    attr.sched_period  = (uint64_t)period * NANOS_PER_MILLI;
-    attr.sched_deadline = (uint64_t)deadline * NANOS_PER_MILLI;
+    attr.sched_runtime = (uint64_t)runtime * NANOS_PER_MICRO;
+    attr.sched_period  = (uint64_t)period * NANOS_PER_MICRO;
+    attr.sched_deadline = (uint64_t)deadline * NANOS_PER_MICRO;
 
     assert (runtime <= deadline);
     assert (deadline <= period);
@@ -248,10 +253,13 @@ void set_schedule(int runtime, int deadline, int period, int packing) {
     }
 }
 
-int schedule_yield() {
+int schedule_yield(GC_state s, bool trigger_gc) {
     if (sched_yield() < 0) {
         perror("sched_yield");
         die("realtime_thread.c set_schedule(): sched_yield");
+    }
+    if (trigger_gc) {
+        GC_collect(s, 0, true, true);  // TODO not safe here
     }
     return 0;
 }
@@ -332,15 +340,19 @@ double get_ticks_since_boot(void) {
 #endif
 
 // must be a multiple of 2*sizeof(int)
-#define MAX_INSTRUMENT 1024
+#define MAX_INSTRUMENT 4096
 
 unsigned int instrument_offset[MAXPRI+1];
 double instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
 
 void User_instrument (Int32 icode) {
-    instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]] = get_ticks_since_boot();
-    instrument_buffer[PTHREAD_NUM][instrument_offset[MAXPRI]+1] = (double)icode;
-    instrument_offset[MAXPRI] = (instrument_offset[MAXPRI]+2) % MAX_INSTRUMENT;
+    if (instrument_offset[PTHREAD_NUM] > (MAX_INSTRUMENT-2)) {
+        fprintf(stderr, "%d] "RED("*** instrument buffer wrapped ***")"\n", 
+                PTHREAD_NUM);
+    }
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]] = get_ticks_since_boot();
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]+1] = (double)icode;
+    instrument_offset[PTHREAD_NUM] = (instrument_offset[PTHREAD_NUM]+2) % MAX_INSTRUMENT;
 }
 
 void Dump_instrument_stderr (Int32 thrnum) {

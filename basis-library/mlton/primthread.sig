@@ -44,7 +44,7 @@ signature PRIM_THREAD =
 
       val getMyPriority: unit -> int
       val set_schedule: int * int * int * int -> unit
-      val schedule_yield: unit -> unit
-      val wait_for_next_period: unit -> unit
+      val schedule_yield: bool -> unit
+      val wait_for_next_period: bool -> unit
 
  end
