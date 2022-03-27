@@ -165,7 +165,7 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
         chunk = (GC_UM_Chunk)s->activeChunk[PTHREAD_NUM];
 
         if (DEBUG_ALLOC_PACK)
-            fprintf(stderr, "%d]   there's an activeChunk. used %d\n", PTHREAD_NUM, chunk->used);
+            fprintf(stderr, "%d]   there's an activeChunk. used %d\n", PTHREAD_NUM, (int) chunk->used);
 
         /* if cur chunk has no room left, then alloc a new one:
          * if stage2 is enabled, we will first attempt to piggy back on another
@@ -201,7 +201,7 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
             if (DEBUG_ALLOC_PACK)
                 fprintf(stderr, "%d]   there is space in this chunk (%u) to fit our object (%d)\n",
                         PTHREAD_NUM,
-                        UM_CHUNK_PAYLOAD_SIZE-(chunk->used), sz+hdrsz
+                        (unsigned int)(UM_CHUNK_PAYLOAD_SIZE-(chunk->used)), sz+hdrsz
                 );
 
             LOCK_FL;

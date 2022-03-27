@@ -40,6 +40,7 @@ signature PRIM_THREAD =
       val rtunlock : int -> unit
       val pspawn: (unit->unit) * int -> unit
       val thread_main: unit -> unit
+      val thread_main_rtems: unit -> unit
       val gcstate: Primitive.MLton.GCState.t
 
       val getMyPriority: unit -> int

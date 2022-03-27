@@ -212,16 +212,22 @@ struct
            NONE => loop p
          | SOME w => (dbg "Working .. \n"; w () ; loop p)
 
+    fun oneshot p =
+      case WorkQueue.getWork (workQ, p) of
+           NONE => ()
+         | SOME w => (dbg "Working .. \n"; w ())
 
     fun test () = print (Int.toString(getMyPriority ())^"] Parallel_run::thread_main running!\n");
 
     fun pspawn (f: unit->unit, p: int) = WorkQueue.addWork(workQ, f, p) 
 
     fun thread_main () = loop (pthreadNum ())
+    fun thread_main_rtems () = oneshot (pthreadNum ())
 
     val gcstate = Primitive.MLton.GCState.gcState
 
     val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
+    val () = (_export "Parallel_run_rtems": (unit -> unit) -> unit;) thread_main_rtems
 
 (*  val rtinit = _import "RT_init": Primitive.MLton.GCState.t -> unit;*)
 

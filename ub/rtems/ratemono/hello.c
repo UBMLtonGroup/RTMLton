@@ -25,7 +25,8 @@ rtems_task Periodic_task(rtems_task_argument arg)
     }
     while ( 1 ) {
         int x = rtems_clock_get_ticks_since_boot();
-        printf("Calling rtems_rate_monotonic_period(period=250 ticks). clock=%d\n", x);
+        printf("Calling rtems_rate_monotonic_period(period=250 ticks). clock=%d ticks/sec=%d\n", x, rtems_clock_get_ticks_per_second());
+
         if ( rtems_rate_monotonic_period( period, 250 ) == RTEMS_TIMEOUT )
             break;
         x = rtems_clock_get_ticks_since_boot();
@@ -68,7 +69,8 @@ rtems_task Init(
   status = rtems_task_start( task_id, Periodic_task, 0 );
   directive_failed( status, "rtems_task_start of TA1" );
   while ( !partial_loop ) {
-    status = rtems_task_wake_after( 2 );
+    /* main sleeps for 200 secs before checking to see if partial_loop is set */
+    status = rtems_task_wake_after( 200*rtems_clock_get_ticks_per_second() );
     directive_failed( status, "rtems_task_wake_after" );
   }
 

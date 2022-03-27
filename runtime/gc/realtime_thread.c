@@ -52,23 +52,62 @@ GC_safePoint(int32_t thr_num) {
     return 0;
 }
 
+void Parallel_run(void);
+void Parallel_run_rtems(void);
+
 #if defined(__rtems__)
 #define directive_failed(COND,MSG) do{if(COND){puts(MSG);exit(-1);}}while(0)
 
 rtems_id            ML_mutex;
 rtems_id            User_mutexes[NUM_USER_MUTEXES];
+int                 current_runtime[MAXPRI], current_deadline[MAXPRI], current_period[MAXPRI];
 
 
 rtems_task Periodic_task(rtems_task_argument argument);
 void RTEMS_Parallel_run_wrapper(int tNum);
 
+/*
+ From the RTEMS doc
+
+ The first time the loop is executed, the rtems_rate_monotonic_period directive will
+ initiate the period for 100 ticks and return immediately. Subsequent invocations of
+ the rtems_rate_monotonic_period directive will result in the task blocking for the
+ remainder of the 100 tick period. If, for any reason, the body of the loop takes more
+ than 100 ticks to execute, the rtems_rate_monotonic_period directive will return the
+ RTEMS_TIMEOUT status. 
+
+ Regarding changing a period:
+
+ https://docs.rtems.org/releases/rtems-docs-4.11.3/c-user/rate_monotonic_manager.html#manipulating-a-period
+
+ This periodic task initially executes Parallel_run() every 10ms. 
+ 10 * ticks_per_sec() / 1000
+
+ To hit 10ms, be sure to configure RTEMS so that the clock is sufficiently high resolution.
+ eg.:
+
+ #define CONFIGURE_MICROSECONDS_PER_TICK   1000 // 1 millisecond 
+ #define CONFIGURE_TICKS_PER_TIMESLICE       50 // 50 milliseconds 
+
+
+ Eventually, the SML code will call set_schedule. We will then cancel the 10ms period
+ and reset it to what was given to set_schedule as the period parameter. If we overrun
+ our period, instead of dying (as shown in the RTEMS example), we simply note it and 
+ continue. 
+ */
+
 __attribute__((noreturn))
 rtems_task Periodic_task(rtems_task_argument arg) {
+    /* rtems_task_argument is a 32bit ptr 
+     * https://docs.rtems.org/doxygen/branches/master/group__ClassicTasks.html#gaf202f985ef5a3156f29eae99a0536842
+     */
     rtems_name        name;
     rtems_id          period;
+    char              tnum = arg & 0xFF;
+    int               prev_period = current_period[tnum];
 
     rtems_status_code status;
-    name = rtems_build_name( 'P', 'E', 'R', 'D' );
+    name = rtems_build_name( 'P', 'E', 'R', tnum );
     status = rtems_rate_monotonic_create( name, &period );
     if ( status != RTEMS_SUCCESSFUL ) {
         printf( "rtems_monotonic_create failed with status of %d.\n", status );
@@ -76,28 +115,46 @@ rtems_task Periodic_task(rtems_task_argument arg) {
     }
     while ( 1 ) {
         int x = rtems_clock_get_ticks_since_boot();
-        printf("Calling rtems_rate_monotonic_period(period=250 ticks). clock=%d\n", x);
-        if ( rtems_rate_monotonic_period( period, 250 ) == RTEMS_TIMEOUT )
-            break;
-        x = rtems_clock_get_ticks_since_boot();
-        printf("  Task awake: periodic action. clock=%d\n", x);
+
+        /* if our period has changed (via set_schedule) then we need to cancel
+         * and reset our period
+         */
+        if (prev_period != current_period[tnum]) {
+            status = rtems_rate_monotonic_cancel(period);
+            if (status != RTEMS_SUCCESSFUL) {
+                fprintf(stderr, "%d] "RED("rtems failed to cancel current period. status=%d\n"), PTHREAD_NUM, status);
+                exit(1);
+            }
+            prev_period = current_period[tnum];
+        }
+
+        /* the following is an implicit yield if we are still in the same period */
+
+        if ( rtems_rate_monotonic_period( period, current_period[tnum] ) == RTEMS_TIMEOUT ) {
+            fprintf(stderr, "%d] "RED("missed deadline/period cur: %d, clock: %d\n"), 
+                    PTHREAD_NUM, current_period[tnum], x);
+            status = rtems_rate_monotonic_cancel(period);
+            if (status != RTEMS_SUCCESSFUL) {
+                fprintf(stderr, "%d] "RED("rtems failed to cancel current period. status=%d\n"), PTHREAD_NUM, status);
+                exit(1);
+            }
+            continue;
+        }
+
         /* Perform some periodic actions */
+        fprintf(stderr, "%d] calling into parallel_run_rtems\n", PTHREAD_NUM);
+        Parallel_run_rtems();
+        fprintf(stderr, "%d] back from parallel_run_rtems\n", PTHREAD_NUM);
     }
-    /* missed period so delete period and SELF */
-    status = rtems_rate_monotonic_delete( period );
-    if ( status != RTEMS_SUCCESSFUL ) {
-        printf( "rtems_rate_monotonic_delete failed with status of %d.\n", status );
-        exit( 1 );
-    }
-    status = rtems_task_delete( RTEMS_SELF );    /* should not return */
-    printf( "rtems_task_delete returned with status of %d.\n", status );
-    exit( 1 );
+    /* NOTREACHED */
 }
 
 __attribute__((noreturn))
 void RTEMS_Parallel_run_wrapper(int tNum) {
     rtems_id           task_id;
     rtems_status_code  status;
+
+    /* create a new task, the identifier contains the thread number */
     status = rtems_task_create(
         rtems_build_name( 'T', 'A', '1', (char)tNum ),
         1,
@@ -107,10 +164,18 @@ void RTEMS_Parallel_run_wrapper(int tNum) {
         &task_id
     );
     directive_failed( status, "rtems_task_create of TA1" );
-    status = rtems_task_start( task_id, Periodic_task, 0 );
+
+    // see note above about configuring the RTEMS clock
+    current_period[tNum] = (int)(10 * rtems_clock_get_ticks_per_second() / 1000.0);
+
+    /* start the task. the task will call Parallel_run() to execute
+     * the SML code the way the linux code path does.
+     */
+    status = rtems_task_start( task_id, Periodic_task, tNum );
     directive_failed( status, "rtems_task_start of TA1" );
     while ( 1 ) {
-        status = rtems_task_wake_after( 200*rtems_clock_get_ticks_per_second() );
+        /* this loops forever, waking every 300 seconds, does not affect the period_task */
+        status = rtems_task_wake_after( 300*rtems_clock_get_ticks_per_second() );
         directive_failed( status, "rtems_task_wake_after" );
     }
 }
@@ -178,14 +243,34 @@ double get_ticks_since_boot(void) {
  * safely. only rate mono / deadline scheduled threads should pack
  * using "2" and only during their shared periods
  */
-void set_schedule(uint64_t runtime, uint64_t deadline, uint64_t period, int packing) {
+void set_schedule(int runtime, int deadline, int period, int packing) {
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu packing:%d\n", 
+                PTHREAD_NUM, (uint64_t)runtime, (uint64_t)period, (uint64_t)deadline, packing);
+
+    assert (runtime <= deadline);
+    assert (deadline <= period);
+    allowedToPack[PTHREAD_NUM] = packing;
+
+    /* these will cause a schedule update at the start of the task's next period */
+
+    current_runtime[PTHREAD_NUM] = runtime;
+    current_deadline[PTHREAD_NUM] = deadline;
+    current_period[PTHREAD_NUM] = period;
+
     return;
 }
 
-int schedule_yield() {
+int schedule_yield(GC_state s, bool trigger_gc) {
     // See "11.3.6. Examples" here:
     // https://docs.rtems.org/releases/rtems-docs-4.11.3/c-user/rate_monotonic_manager.html#rtems-rate-monotonic-create
     // wait for next period
+
+    /* yield/wfnp is implicit in RTEMS: when the computation returns, we go to the top 
+     * of the loop and call rtems_rate_monotonic_period again. if we are still in 
+     * the current period, we are suspended until a new period starts. therefore, this
+     * function is a NOP.
+     */
     return 0;
 }
 
@@ -233,7 +318,7 @@ void set_schedule(int runtime, int deadline, int period, int packing) {
     allowedToPack[PTHREAD_NUM] = packing;
 
     attr.size = sizeof(attr);
-    attr.sched_flags = SCHED_FLAG_DL_OVERRUN; // supposed to make linux SIGXCPU on overrun
+    attr.sched_flags = 0; // SCHED_FLAG_DL_OVERRUN; // supposed to make linux SIGXCPU on overrun
     attr.sched_nice = 0;
     attr.sched_priority = 0;
 
@@ -500,8 +585,6 @@ Int32 RTThread_get_pthread_num(void)
 
 
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
-
-void Parallel_run(void);
 
 __attribute__((noreturn))
 void *
