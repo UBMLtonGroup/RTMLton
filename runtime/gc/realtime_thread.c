@@ -607,17 +607,18 @@ realtimeRunner (void *paramsPtr)
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
- 
-    fprintf (stderr, "%d] calling parallel_run \n", tNum);
+
 
     state->rtSync[PTHREAD_NUM] = false; // this may need to be true if "@MLton rtthreads" is false
 
 #if defined(__rtems__)
+    fprintf (stderr, "%d] "PURPLE("calling RTEMS_Parallel_run_wrapper\n"), tNum);
     RTEMS_Parallel_run_wrapper(params->tNum);
 #else
+    fprintf (stderr, "%d] "PURPLE("calling parallel_run\n"), tNum);
     Parallel_run ();
 #endif
-    fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n", tNum);
+    fprintf (stderr, "%d] "RED("back from Parallel_run (shouldnt happen)\n"), tNum);
     exit (-1); 
 	/*NOTREACHED*/
 }

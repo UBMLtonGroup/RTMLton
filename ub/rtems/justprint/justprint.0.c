@@ -157,6 +157,13 @@ PRIVATE Word32 CReturnW32[PTHREAD_MAX];
 PRIVATE Word64 globalWord64[0];
 PRIVATE Word64 CReturnW64[PTHREAD_MAX];
 PRIVATE Pointer globalObjptrNonRoot [1];
+PUBLIC void Parallel_run_rtems () {
+        Pointer localOpArgsRes[1];
+        Int32 localOp = 1;
+        localOpArgsRes[0] = (Pointer)(&localOp);
+        MLton_callFromC ((Pointer)(localOpArgsRes));
+/*(Pointer)(localOpArgsRes));*/
+}
 PUBLIC void Parallel_run () {
 	Pointer localOpArgsRes[1];
 	Int32 localOp = 0;
