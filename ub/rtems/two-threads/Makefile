@@ -18,11 +18,17 @@ buildsml:
 	cp /home/jcmurphy/RTMLton/build/lib/targets/i386-rtems6/constants /home/jcmurphy/RTMLton/build/lib/targets/self/constants
 	/home/jcmurphy/RTMLton/build/bin/mlton -codegen c  -keep g -debug true two-threads.sml
 
+buildlinux:
+	/home/jcmurphy/RTMLton/build/bin/mlton -codegen c  -keep g -debug true two-threads.sml
+
+undoconstants:
+	cp /home/jcmurphy/RTMLton/build/lib/targets/self/constants.linux /home/jcmurphy/RTMLton/build/lib/targets/self/constants
+
 fixmain: buildsml
 	mv two-threads.0.c two-threads.0.c.orig
 	sed 's/^int main /int mainX /' two-threads.0.c.orig | \
-	sed 's/uint32_t atMLtons_len = 2;/uint32_t atMLtons_len = 4;/' | \
-	sed 's/static char\* atMLtons/static char* atMLtons[] = {"@MLton","rtthreads", "true","--",}; static char* atMLtonsOLD/' \
+	sed 's/uint32_t atMLtons_len = 2;/uint32_t atMLtons_len = 6;/' | \
+	sed 's/static char\* atMLtons/static char* atMLtons[] = {"@MLton","rtthreads", "true","max-heap", "4M", "--",}; static char* atMLtonsOLD/' \
 	> two-threads.0.c
 
 fixprotos: buildsml
