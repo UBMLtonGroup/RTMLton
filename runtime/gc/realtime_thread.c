@@ -4,14 +4,13 @@
 #include "realtime_thread.h"
 
 
-#define LOCK_RT_THREADS IFED(pthread_mutex_lock(&state->rtThreads_lock))
-#define UNLOCK_RT_THREADS IFED(pthread_mutex_unlock(&state->rtThreads_lock))
-#define SIGNAL_RT_THREADS IFED(pthread_cond_signal(&state->rtThreads_cond))
-#define BLOCK_RT_THREADS IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
+#define LOCK_RT_THREADS LOCK_DEBUG("LOCK_RT_THREADS"); IFED(pthread_mutex_lock(&state->rtThreads_lock))
+#define UNLOCK_RT_THREADS LOCK_DEBUG("UNLOCK_RT_THREADS"); IFED(pthread_mutex_unlock(&state->rtThreads_lock))
+#define SIGNAL_RT_THREADS LOCK_DEBUG("SIGNAL_RT_THREADS"); IFED(pthread_cond_signal(&state->rtThreads_cond))
+#define BLOCK_RT_THREADS LOCK_DEBUG("BLOCK_RT_THREADS"); IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
 
-#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&state->rtThreads_cond))
+#define BROADCAST_RT_THREADS LOCK_DEBUG("BROADCAST_RT_THREADS"); IFED(pthread_cond_broadcast(&state->rtThreads_cond))
 #define CONCURRENT
-//#define DEBUG true
 
 static volatile int initialized = 0;
 volatile bool rtinitfromML = FALSE;
@@ -419,38 +418,82 @@ void InitializeMutexes(void) {
 double get_ticks_since_boot(void) {
     struct timespec spec;
 
-    clock_gettime(CLOCK_MONOTONIC, &spec);
+    clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
     return spec.tv_sec + spec.tv_nsec / 1.0e9;
 }
 #endif
 
-// must be a multiple of 2*sizeof(int)
-#define MAX_INSTRUMENT 4096
+/* this is instrumentation code. 
+ * the intent is to avoid locking, and memory allocations. so this
+ * is implemented as an array of ring buffers, one for each thread.
+ * the instrument_buffer tracks tuples of (timesecs, timenanos, codenum)
+ * which lets us track timing (start/stop) information for 'codes' for example
+ * thread #1 might be code #30, and so calling instrument(30) lets us record
+ * a start/stop time stamp for that thread.
+ * 
+ * the instrument_counter is for recording non time based counters. for example
+ * code #40 maybe would be "number of calls to alloc_object" so each called to 
+ * User_instrument_counter(40) would increment that counter, again per thread to
+ * avoid locking.
+ */
+
+
+#define INSTRUMENT_TUPLE_SIZE 3
+#define MAX_INSTRUMENT (4096*INSTRUMENT_TUPLE_SIZE)
+#define MAX_INSTRUMENT_COUNTERS 4096
 
 unsigned int instrument_offset[MAXPRI+1];
-double instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
+unsigned int instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
+unsigned int instrument_counters[MAXPRI+1][MAX_INSTRUMENT_COUNTERS];
+
+void User_instrument_initialize() {
+    memset(instrument_offset  , 0, (MAXPRI+1) * sizeof(unsigned int));
+    memset(instrument_buffer  , 0, (MAXPRI+1) * MAX_INSTRUMENT*sizeof(unsigned int));
+    memset(instrument_counters, 0, (MAXPRI+1) * MAX_INSTRUMENT_COUNTERS);
+}
+
+void User_instrument_counter (Int32 icode, Int32 inc) {
+    instrument_counters[PTHREAD_NUM][icode] += inc;
+}
+
+void Dump_instrument_counter_stderr (Int32 thrnum) {
+    if (thrnum == -1) thrnum = PTHREAD_NUM;
+    fprintf(stderr, "instr-counter:thread-id, code-number, count\n");
+    for(unsigned int i = 0 ; i < MAX_INSTRUMENT_COUNTERS ; i += 1) {
+        if (instrument_counters[thrnum][i])
+            fprintf(stderr, "instr-counter:%d, %d, %u\n", thrnum, i, instrument_counters[thrnum][i]);
+    }
+}
 
 void User_instrument (Int32 icode) {
-    if (instrument_offset[PTHREAD_NUM] > (MAX_INSTRUMENT-2)) {
+    struct timespec spec;
+
+    if (instrument_offset[PTHREAD_NUM] > (MAX_INSTRUMENT-INSTRUMENT_TUPLE_SIZE)) {
         fprintf(stderr, "%d] "RED("*** instrument buffer wrapped ***")"\n", 
                 PTHREAD_NUM);
     }
-    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]] = get_ticks_since_boot();
-    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]+1] = (double)icode;
-    instrument_offset[PTHREAD_NUM] = (instrument_offset[PTHREAD_NUM]+2) % MAX_INSTRUMENT;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]] = spec.tv_sec;
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]+1] = spec.tv_nsec;
+
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]+2] = icode;
+    instrument_offset[PTHREAD_NUM] = (instrument_offset[PTHREAD_NUM]+INSTRUMENT_TUPLE_SIZE) % MAX_INSTRUMENT;
 }
 
 void Dump_instrument_stderr (Int32 thrnum) {
     if (thrnum == -1) thrnum = PTHREAD_NUM;
 
-    fprintf(stderr, "thread-id, time-stamp, code-number\n");
+    fprintf(stderr, "instr-timer:thread-id, secs, ns, code-number\n");
 
-    for(unsigned int i = 0 ; i < MAX_INSTRUMENT ; i += 2) {
-        if (instrument_buffer[thrnum][i] > 0 || instrument_buffer[thrnum][i] < 0) {
-            fprintf(stderr, "%d, %f, %f\n", 
+    for(unsigned int i = 0 ; i < MAX_INSTRUMENT ; i += INSTRUMENT_TUPLE_SIZE) {
+        // only dump non-zero codes
+        if (instrument_buffer[thrnum][i+2] > 0) {
+            fprintf(stderr, "instr-timer:%d, %u, %u, %d\n", 
                     thrnum, 
                     instrument_buffer[thrnum][i],
-                    instrument_buffer[thrnum][i+1]
+                    instrument_buffer[thrnum][i+1],
+                    instrument_buffer[thrnum][i+2]
                     );
         }
     }
@@ -555,10 +598,12 @@ void RT_init (GC_state state)
     }
     
     InitializeMutexes();
-
+    ssleep(5, 0);
+    fprintf(stderr, "%d] rtinitfromML set to true\n", PTHREAD_NUM);
     rtinitfromML = TRUE;
 
-    
+
+    fprintf(stderr, "%d] broadcasting to release all waiting rt threads\n", PTHREAD_NUM);
 	LOCK_RT_THREADS;
 	BROADCAST_RT_THREADS;
 	UNLOCK_RT_THREADS;
@@ -594,6 +639,8 @@ realtimeRunner (void *paramsPtr)
     struct GC_state *state = params->state;
     int tNum = params->tNum;
 
+    fprintf (stderr, "%d] "PURPLE("realtimeRunner\n"), tNum);
+
     set_pthread_num (params->tNum);
       
     state->rtSync[PTHREAD_NUM] = true;
@@ -602,11 +649,13 @@ realtimeRunner (void *paramsPtr)
     while(!rtinitfromML)
     {
         /*This will be unblocked in rtInit */
-        if(DEBUG)
-            fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
+        if(1||DEBUG)
+            fprintf(stderr, "%d] "RED("callFromCHandlerThread is not set, Blocking RT-Thread\n"),tNum);
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
+
+    fprintf (stderr, "%d] "PURPLE("realtimeRunner released %d\n"), tNum, rtinitfromML);
 
 
     state->rtSync[PTHREAD_NUM] = false; // this may need to be true if "@MLton rtthreads" is false

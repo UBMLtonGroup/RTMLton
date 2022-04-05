@@ -197,14 +197,13 @@ struct
             [ Block.T { args = args
                         , kind = kind
                         , label = label
-                        , statements = Vector.new3 (lockstmt,sAdd,ss)
+                        , statements = Vector.new3 (lockstmt, sAdd, ss)
                         , transfer = ts }
                 ,
                 Block.T { args = Vector.new0 ()
                         , kind = Kind.Jump
                         , label = check
-                        , statements = Vector.fromList ([ss2] @ (incReserved
-                                                                    chunksNeeded)
+                        , statements = Vector.fromList ([ss2] @ (incReserved chunksNeeded)
                                                                     @[ unlockstmt])
                         , transfer = ts2 }
             ] @ blockingGC block check

@@ -35,6 +35,8 @@ signature PRIM_THREAD =
       val get_ticks_since_boot : unit -> real
       val dump_instrument_stderr : int -> unit
       val instrument : int -> unit
+      val dump_instrument_counter_stderr : int -> unit
+      val instrument_counter : int * int -> unit
 
       val rtlock : int -> unit
       val rtunlock : int -> unit

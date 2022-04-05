@@ -2,10 +2,10 @@
 
 
 //#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
-#define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL LOCK_DEBUG("LOCK_FL"); IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL LOCK_DEBUG("UNLOCK_FL"); IFED(pthread_mutex_unlock(&s->fl_lock))
 
-#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+#define BLOCK LOCK_DEBUG("BLOCK"); IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
 
 void initUMHeap(GC_state s,

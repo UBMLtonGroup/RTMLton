@@ -281,13 +281,13 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 				} else if (0 == strcmp(arg, "hpercent")) {
 					i++;
 					if (i == argc)
-						die("@MLton hPercent missing argument.");
+						die("@MLton hpercent missing argument.");
 					s->hPercent = stringToFloat(argv[i++]);
 					unless(0.0 <= s->hPercent
 					and
 					s->hPercent <= 1.0)
 					die("@MLton hpercent argument must be between 0.0 and 1.0.");
-				} else if (0 == strcmp(arg, "rtobj")) {
+				} else if (0 == strcmp(arg, "rtobj")) {  // not used anywhere?
 					i++;
 					if (i == argc)
 						die("@MLton rtobj missing argument.");
@@ -332,6 +332,8 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 int GC_init(GC_state s, int argc, char **argv) {
 	char *worldFile;
 	int res, __i, __j;
+
+	User_instrument_initialize();
 
 	assert(s->alignment >= GC_MODEL_MINALIGN);
 	assert(isAligned(sizeof(struct GC_stack), s->alignment));

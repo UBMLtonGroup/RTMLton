@@ -26,6 +26,7 @@ enum {
   DEBUG_GENERATIONAL = FALSE,
   DEBUG_INT_INF = FALSE,
   DEBUG_INT_INF_DETAILED = FALSE,
+  DEBUG_LOCKS = FALSE,
   DEBUG_MARK_COMPACT = FALSE,
   DEBUG_MEM = FALSE,
   DEBUG_OBJPTR = FALSE,
@@ -45,6 +46,7 @@ enum {
   DEBUG_OLD = FALSE,
   DEBUG_RTGC = FALSE,
   DEBUG_RTGC_MARKING = FALSE,
+  DEBUG_RTGC_VERBOSE = FALSE,
   DEBUG_WB = FALSE,
   DISPLAY_GC_STATS = FALSE
 };
@@ -55,3 +57,12 @@ enum {
 #define BLUE(x) "\033[1;34m"x"\033[0m"
 #define PURPLE(x) "\033[1;35m"x"\033[0m"
 
+#ifdef DO_PERF
+# define START_PERF 	struct timeval t0, t1; gettimeofday(&t0, NULL)
+# define STOP_PERF do { gettimeofday(&t1, NULL); unsigned int xxx = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec); fprintf(stderr, "%d] PERF %s %d us\n", PTHREAD_NUM, __FUNCTION__, xxx); } while(0)
+#else
+# define START_PERF do {} while(0)
+# define STOP_PERF do {} while(0)
+#endif
+
+#define LOCK_DEBUG(LN) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s\n", PTHREAD_NUM, __FUNCTION__, LN);}

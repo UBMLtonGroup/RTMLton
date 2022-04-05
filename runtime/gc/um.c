@@ -7,8 +7,8 @@
 # define POW pow
 #endif
 
-#define LOCKIT(X) IFED(pthread_mutex_lock(&(X)))
-#define UNLOCKIT(X) IFED(pthread_mutex_unlock(&(X)))
+#define LOCKIT(X) LOCK_DEBUG("LOCKIT"); IFED(pthread_mutex_lock(&(X)))
+#define UNLOCKIT(X) LOCK_DEBUG("UNLOCKIT"); IFED(pthread_mutex_unlock(&(X)))
 
 
 #undef DBG
@@ -39,13 +39,14 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
     }
 
     LOCK_FL;
-    while (s->fl_chunks < (s->reserved + numChunksToRequest))
+    while ((s->fl_chunks < (s->reserved + numChunksToRequest)))// || (s->fl_chunks < (size_t)(s->hPercent * s->maxChunksAvailable)))
     {
+        fprintf(stderr, "%d] either fl (%d) is < reserved+req (%d) or fl (%d) < heuristic (%d)\n",
+            PTHREAD_NUM, s->fl_chunks, (s->reserved + numChunksToRequest), s->fl_chunks, (size_t)(s->hPercent * s->maxChunksAvailable) );
         UNLOCK_FL;
         GC_collect(s, 0, true, true);
         LOCK_FL;
     }
-
 
     s->reserved += (numChunksToRequest==0?1:numChunksToRequest);
     UNLOCK_FL;
@@ -77,6 +78,8 @@ UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t heade
         current = current->next_chunk;
     }
 
+    if (DEBUG_ALLOC_PACK)
+        fprintf(stderr, "%d] %s returns %x\n", PTHREAD_NUM, __FUNCTION__, (unsigned int) (chunk->ml_object + s));
     return (Pointer) (chunk->ml_object + s);
 }
 
@@ -100,9 +103,7 @@ UM_Object_alloc_packing_stage2(GC_state s, C_Size_t num_chunks, uint32_t header,
      */
     GC_UM_Chunk chunk = NULL;
 
-    User_instrument(16); /* JEFF */
-
-    /* unsuccessful, return to stage 1 and try to allocate a new chunk */
+    User_instrument_counter(320, num_chunks); /* JEFF packed2 total */
 
     /* see if any other thread's chunks have room */
     for (int i = 0 ; i < MAXPRI ; i++) {
@@ -139,15 +140,16 @@ UM_Object_alloc_packing_stage2(GC_state s, C_Size_t num_chunks, uint32_t header,
         UNLOCKIT(s->activeChunkLock[i]);
     }
 
+    User_instrument_counter(340, num_chunks); /* JEFF packed2 cant fit, need new chunk */
+
     return BOGUS_POINTER;
 }
 
 Pointer
-UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header, C_Size_t hdrsz, C_Size_t sz) {
+UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header, C_Size_t hdrsz, C_Size_t sz)
+{
     GC_UM_Chunk chunk = NULL;
  
-    User_instrument(13); /* JEFF */
-
     // packing stage 1 (same thread can pack with its own regions)
 
     /* array allocs do not occur in this function. stack, thread, weak allocs are never packed. */
@@ -160,6 +162,10 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
      * if we do not have room, we will alloc a new chunk
      */
     assert (num_chunks == 1);
+
+    if (s->packingStage2Enabled == false) {
+        User_instrument_counter(310, num_chunks); /* JEFF packed1 total */
+    }
 
     if (s->activeChunk[PTHREAD_NUM] != BOGUS_POINTER) {
         chunk = (GC_UM_Chunk)s->activeChunk[PTHREAD_NUM];
@@ -190,10 +196,13 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
                     if (DEBUG_ALLOC_PACK)
                         fprintf(stderr, "%d]   unable to find space in another threads chunk, and:\n", PTHREAD_NUM);
                 }
+            } else {
+                User_instrument_counter(330, num_chunks); /* JEFF packed1, new chunk required */
             }
 
             if (DEBUG_ALLOC_PACK)
                 fprintf(stderr, "%d]   no space in active chunk, so allocating a new one\n", PTHREAD_NUM);
+
             chunk = allocateChunks(s, &(s->umheap), num_chunks, UM_NORMAL_CHUNK);
             s->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
         }
@@ -228,10 +237,13 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
                 if (DEBUG_ALLOC_PACK)
                     fprintf(stderr, "%d]   unable to find space in another threads chunk, and:\n", PTHREAD_NUM);
             }
+        } else {
+            User_instrument_counter(330, num_chunks); /* JEFF packed1, new chunk required */
         }
 
         if (DEBUG_ALLOC_PACK)
             fprintf(stderr, "%d]   no activeChunk, so allocating one.\n", PTHREAD_NUM);
+
         chunk = allocateChunks(s, &(s->umheap), num_chunks, UM_NORMAL_CHUNK);
         s->activeChunk[PTHREAD_NUM] = (Pointer)chunk;
     }
@@ -274,7 +286,8 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
 
 
 Pointer
-UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) {
+UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t s, C_Size_t sz) 
+{
     /* gc_stat: GC_State 
        num_chunks: number of chunks requested
        header: the MLton object header
@@ -308,10 +321,19 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     unsigned int objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT;
     splitHeader(gc_stat, header, &tagRet, NULL, NULL, NULL);
 
+int lower_bound = 40; // JEFF
+int upper_bound = 98;
+char *lower_ev = getenv("LOWER");
+char *upper_ev = getenv("UPPER");
+if (lower_ev) lower_bound = atoi(lower_ev);
+if (upper_ev) upper_bound = atoi(upper_ev);
+
     assert (num_chunks > 0);
     assert (header != 0);
 
-    if (DEBUG_ALLOC) {
+    User_instrument_counter(50, num_chunks); /* JEFF um_obj_alloc calls, num chunks asked for */
+
+    if (1||DEBUG_ALLOC) {
         fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:0x%x(%d) (%s [%d] index:%u) sz:%d freelist:%d reserved:%d\n", 
                 PTHREAD_NUM, 
                 (header == GC_THREAD_HEADER)?"*** thread ***":"",
@@ -324,14 +346,16 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     // no-packing. in order for stage2 to occur, stage1 must be enabled
 
     if (gc_stat->packingStage1Enabled == false || allowedToPack[PTHREAD_NUM] == 0) {
-        if (header == GC_STACK_HEADER) User_instrument(10); /* JEFF */
-        else User_instrument(12); /* JEFF */
+        if (header == GC_STACK_HEADER)
+            User_instrument_counter(100, num_chunks); /* JEFF Stack Allocs */
+        else
+            User_instrument_counter(300, num_chunks); /* JEFF Normal allocs, unpacked */
         return UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
     }
 
     /* packing enabled, but we only pack some objects types */
 
-    if (header < 40 || header > 98) { 
+    if (header < lower_bound || header > upper_bound) { 
         if (header != GC_WORD8_VECTOR_HEADER || header == GC_THREAD_HEADER 
             || header == GC_STACK_HEADER 
             || header == GC_WEAK_GONE_HEADER) {
@@ -340,8 +364,10 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
                         GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
                     );
 
-                if (header == GC_STACK_HEADER) User_instrument(10); /* JEFF */
-                else User_instrument(12); /* JEFF */
+                if (header == GC_STACK_HEADER)
+                    User_instrument_counter(100, num_chunks); /* JEFF stack alloc */
+                else
+                    User_instrument_counter(300, num_chunks); /* JEFF normal alloc, unpacked */
 
                 if (DEBUG_ALLOC)
                     fprintf(stderr, RED("**   no packing for this type\n"));

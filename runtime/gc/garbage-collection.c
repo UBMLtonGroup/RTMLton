@@ -30,20 +30,20 @@ struct thrctrl {
 
 //#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 
-#define LOCK_FL_FROMGC IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL_FROMGC   LOCK_DEBUG("LOCK_FL_FROMGC"); IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL_FROMGC LOCK_DEBUG("UNLOCK_FL_FROMGC"); IFED(pthread_mutex_unlock(&s->fl_lock))
 
-#define BROADCAST IFED(pthread_cond_broadcast(&s->fl_empty_cond))
+#define BROADCAST       LOCK_DEBUG("BROADCAST"); IFED(pthread_cond_broadcast(&s->fl_empty_cond))
 
-#define BROADCAST_EMPTY IFED(pthread_cond_broadcast(&s->fl_empty_cond))
-#define BLOCK_EMPTY IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+#define BROADCAST_EMPTY LOCK_DEBUG("BROADCAST_EMPTY"); IFED(pthread_cond_broadcast(&s->fl_empty_cond))
+#define BLOCK_EMPTY     LOCK_DEBUG("BLOCK_EMPTY"); IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
 
-#define RTSYNC_LOCK IFED(pthread_mutex_lock(&s->rtSync_lock))
-#define RTSYNC_UNLOCK IFED(pthread_mutex_unlock(&s->rtSync_lock))
-#define RTSYNC_SIGNAL IFED(pthread_cond_signal(&s->rtSync_cond))
-#define RTSYNC_BLOCK IFED(pthread_cond_wait(&s->rtSync_cond,&s->rtSync_lock))
-#define RTSYNC_TRYLOCK pthread_mutex_trylock(&s->rtSync_lock)
+#define RTSYNC_LOCK    LOCK_DEBUG("RTSYNC_LOCK"); IFED(pthread_mutex_lock(&s->rtSync_lock))
+#define RTSYNC_UNLOCK  LOCK_DEBUG("RTSYNC_UNLOCK"); IFED(pthread_mutex_unlock(&s->rtSync_lock))
+#define RTSYNC_SIGNAL  LOCK_DEBUG("RTSYNC_SIGNAL"); IFED(pthread_cond_signal(&s->rtSync_cond))
+#define RTSYNC_BLOCK   LOCK_DEBUG("RTSYNC_BLOCK");  IFED(pthread_cond_wait(&s->rtSync_cond,&s->rtSync_lock))
+#define RTSYNC_TRYLOCK LOCK_DEBUG("RTSYNC_TRYLOCK"); pthread_mutex_trylock(&s->rtSync_lock)
 
 #define TC_LOCK if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] TC_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
 #define TC_UNLOCK if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] TC_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
@@ -321,8 +321,10 @@ void *GCrunner(void *_s) {
 		/* GC sweep is performed under RTSYNC_LOCK because this lock also prevents the mutators from marking their stacks*/
 		RTSYNC_LOCK;
 
-		while (!s->dirty)
+		while (!s->dirty) {
+			fprintf(stderr, "%d] not dirty\n", PTHREAD_NUM);
 			RTSYNC_BLOCK;
+		}
 
 		if (DEBUG_RTGC)
 			fprintf(stderr, "%d] GC sweep starting: FC=%d \n", PTHREAD_NUM, s->fl_chunks);
@@ -366,7 +368,7 @@ void *GCrunner(void *_s) {
 
 		s->cGCStats.numGCCycles += 1;
 		gettimeofday(&t1, NULL);
-		unsigned int gc_runtime_microsecs = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec) / 1000;
+		unsigned int gc_runtime_microsecs = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec);
 		s->cGCStats.totalGCTime += gc_runtime_microsecs;
 
 		s->dirty = false;
@@ -460,6 +462,7 @@ performGC(GC_state s,
 
 
 void markStack(GC_state s, pointer thread_) {
+	START_PERF;
 	GC_thread thread = (GC_thread) thread_;
 	thread->markCycles++;
 
@@ -492,7 +495,7 @@ void markStack(GC_state s, pointer thread_) {
 	} while (stackFrame !=
 	         (GC_UM_Chunk) (s->currentFrame[PTHREAD_NUM] - GC_HEADER_SIZE));
 
-		// mark the rest of the chunks
+	// mark the rest of the chunks
 	while (stackFrame) {
 		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);
 		stackFrame = stackFrame->next_chunk;
@@ -503,6 +506,7 @@ void markStack(GC_state s, pointer thread_) {
 				PTHREAD_NUM);
 
 	maybe_growstack(s, thread, FALSE);
+	STOP_PERF;
 }
 
 
@@ -527,7 +531,9 @@ void startMarking(GC_state s) {
 
 void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 		   size_t ensureArrayChunksAvailable,
-		   bool fullGC) {
+		   bool fullGC) 
+{
+	START_PERF;
 	pointer pchunk;
 	size_t step = sizeof(struct GC_UM_Chunk) + sizeof(UM_header); /*account for size of chunktype header*/
 	//pointer end = s->umheap.start + s->umheap.size - step;
@@ -541,9 +547,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 	assert(PTHREAD_NUM == 1);
 
 
-
 	if (DEBUG_RTGC_MARKING)
-		fprintf(stderr, "%d] GC sweep started. Worklist length: %d\n", PTHREAD_NUM, (int)s->wl_length);
+		fprintf(stderr, "%d] GC sweep started. Worklist length: %d, oneByOne %d\n", 
+				PTHREAD_NUM, (int)s->wl_length, s->oneByOne);
 	//dumpUMHeap(s);
 
 	for (pchunk = s->umheap.start;
@@ -551,7 +557,6 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 		 pchunk += step) {
 
         if (((UM_Mem_Chunk) pchunk)->chunkType == UM_STACK_CHUNK){
-            
             continue;
         }
         else if (((UM_Mem_Chunk) pchunk)->chunkType == UM_NORMAL_CHUNK) {
@@ -597,11 +602,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 				} else /*Unmarked Chunk*/
 				{
 					assert(ISUNMARKED(header));
-User_instrument(14); /* JEFF */
+User_instrument_counter(400, 1); /* JEFF normal collect */
 					if (DEBUG_MEM or DEBUG_RTGC) {
-						fprintf(stderr, "%d] Collecting: "
-						FMTPTR
-						", %d, %x\n", PTHREAD_NUM,
+						fprintf(stderr, "%d] Collecting: "FMTPTR", %d, %x\n", PTHREAD_NUM,
 								(uintptr_t) pc, (int)pc->sentinel, (unsigned int)pc->chunk_header);
 					}
 
@@ -617,10 +620,8 @@ User_instrument(14); /* JEFF */
                     else
                         insertChunktoSubList(s, &(s->umheap), pchunk); 
                  
-					
                     s->cGCStats.numChunksFreed++;
 					freed++;
-
 				}
 
 			}
@@ -671,7 +672,7 @@ User_instrument(14); /* JEFF */
 
 
 				} else {
-					User_instrument(15); /* JEFF */
+					User_instrument_counter(420, 1); /* JEFF array collect */
 
 					if (DEBUG_MEM or DEBUG_RTGC) {
 						fprintf(stderr, "%d] Collecting array: "
@@ -725,6 +726,8 @@ User_instrument(14); /* JEFF */
 		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n"), PTHREAD_NUM, visited, marked, grey,
 				red);
 	}
+
+	STOP_PERF;
 }
 
 void performUMGC(GC_state s,
@@ -865,15 +868,16 @@ void ensureInvariantForMutator(GC_state s, bool force) {
  */
 
 bool ensureChunksAvailable(GC_state s) {
-	if (DEBUG_RTGC)
+	if (DEBUG_RTGC_VERBOSE)
 		fprintf(stderr, "%d] ensureChunksAvailable: FC = %d, Max Chunks = %d\n", PTHREAD_NUM, (int)s->fl_chunks,
 				(int)s->maxChunksAvailable);
 
-	if (s->fl_chunks > (size_t)((30 * s->maxChunksAvailable) / 100))
+	// see also reserveAllocation in um.c
+
+    if (s->fl_chunks > (size_t)(s->hPercent * s->maxChunksAvailable))
 		return true;
 	else
 		return false;
-
 }
 
 
@@ -947,21 +951,27 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 		GC_collect_real(s, bytesRequested, true); /*marks stack*/
 
 		s->rtSync[PTHREAD_NUM] = true;
-		/*Check if all  other RT threads have set their values*/
-		int i;
-		for (i = 0; i < MAXPRI; i++) {
-			if (i == 1 || i == PTHREAD_NUM)
-				continue;
 
-			if (!s->rtSync[i])
-				break;
+		/*Check if all other RT threads have set their values*/
+		
+		int i;
+		int ready_to_sync_count = 0;
+		for (i = 0; i < MAXPRI; i++) {
+fprintf(stderr, "%d] check rtsync[%d] = %d\n", PTHREAD_NUM, i, s->rtSync[i]);
+			if (i == 1 || i == PTHREAD_NUM) // GC thr and our thr are not counted
+				continue;
+			if (s->rtSync[i])
+				ready_to_sync_count ++;
 		}
 
 		/*Increment count when current thread will block. Must be done before signalling GC. */
 		if (force)
 			s->threadsBlockedForGC++;
 
-		if (i == MAXPRI) /*Last thread to sync before GC*/
+fprintf(stderr, "%d] force %d threadsBlockedForGC %d  i=%d MAXPRI=%d dirty=%d ready_to_sync_count=%d\n", PTHREAD_NUM, force,
+s->threadsBlockedForGC, i,MAXPRI, s->dirty, ready_to_sync_count);
+
+		if (ready_to_sync_count == MAXPRI-2) /* all threads are ready to sync and GC */
 		{
 			s->dirty = true;
 			RTSYNC_SIGNAL;
@@ -998,10 +1008,6 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 	uintmax_t tmp = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec) / 1000;
 
 
-	if ((tmp > s->cGCStats.maxMutatorPauseTime) &&
-		(PTHREAD_NUM == 0))
+	if ((tmp > s->cGCStats.maxMutatorPauseTime) && (PTHREAD_NUM == 0))
 		s->cGCStats.maxMutatorPauseTime = tmp;
-
-
 }
-

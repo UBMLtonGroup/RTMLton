@@ -137,12 +137,16 @@ struct
   local
       val inst__   = _import "User_instrument" : int -> unit;
       val dise__   = _import "Dump_instrument_stderr" : int -> unit;
+      val instc__  = _import "User_instrument_counter" : int * int -> unit;
+      val disec__  = _import "Dump_instrument_counter_stderr" : int -> unit;
       val gtsb__   = _import "get_ticks_since_boot" : unit -> real;
       val lock__   = _import "User_lock" : int -> unit;
       val unlock__ = _import "User_unlock" : int -> unit;
       val setsch   = _import "set_schedule" : int * int * int * int -> unit;
       val schyld   = _import "schedule_yield" : Primitive.MLton.GCState.t * bool -> unit;
   in
+      fun instrument_counter a = instc__ a
+      fun dump_instrument_counter_stderr a = disec__ a
       fun instrument a = inst__ a
       fun dump_instrument_stderr a = dise__ a
       fun get_ticks_since_boot () = gtsb__ ()
@@ -170,7 +174,6 @@ struct
          thread ID 0 and the GC is thread ID 1 (see realtime_thread.c realtimeThreadInit)
        *)
       fun new () = T (
-              print ("make wq, size "^Int.toString(numberOfPThreads ())^"\n"); 
               Array.tabulate(numberOfPThreads (), fn _ => [])
               )
       (*fun mysleep () = (Posix.Process.sleep (Time.fromSeconds 1); ())*)
