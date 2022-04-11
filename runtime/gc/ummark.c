@@ -113,7 +113,7 @@ bool isObjectShaded(GC_state s, objptr *opp) {
 	GC_objectTypeTag tag = ERROR_TAG;
 	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
-	printTag(__func__, tag, p);
+	//printTag(__func__, tag, p);
 
 	bool verdict = true;
 

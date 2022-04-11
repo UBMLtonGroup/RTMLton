@@ -58,6 +58,8 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 
     assert (num_chunks > 0);
 
+fprintf(stderr, "%d] %s flsize %d\n", PTHREAD_NUM, __FUNCTION__, gc_stat->fl_chunks);
+
     if (header == GC_STACK_HEADER) {
         chunk = allocateChunks(gc_stat, &(gc_stat->umheap), num_chunks, UM_STACK_CHUNK);
     } else {

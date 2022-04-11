@@ -15,8 +15,6 @@
 #include <sched.h>
 #include <errno.h>
 
-#undef DEBUG
-#define DEBUG 1
 
 struct thrctrl {
 	pthread_mutex_t lock;
