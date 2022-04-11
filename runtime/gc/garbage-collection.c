@@ -390,7 +390,7 @@ void *GCrunner(void *_s) {
 		//not_dirty:;
 		RTSYNC_UNLOCK;
 
-		/*sending out singals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
+		/*sending out signals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
 		/*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/
 		LOCK_FL_FROMGC;
 		BROADCAST;

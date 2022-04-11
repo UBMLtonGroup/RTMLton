@@ -64,6 +64,8 @@ objptr newStack_um(GC_state s, size_t stackSizeInBytes, size_t *stackSizeInChunk
 	if (stackSizeInChunks)
 		*stackSizeInChunks = need_chunks;
 
+	// instrument() calls are in UM_Object_alloc
+
 	assert(s->maxFrameSize <= UM_CHUNK_PAYLOAD_SIZE);
 
 	/* Reserve the allocation before actually allocating.

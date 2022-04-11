@@ -187,23 +187,21 @@ struct
                                     Operand.Runtime FLChunks,
                                     Operand.Var {var = res, ty = resTy},
                                     {ifTrue=block, ifFalse=check})
-
             val (ss2, ts2) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
                                     Operand.Runtime FLChunks,
                                     Operand.Runtime HeuristicChunks,
                                     {ifTrue=collect, ifFalse=dontCollect})
-
         in
             [ Block.T { args = args
                         , kind = kind
                         , label = label
                         , statements = Vector.new3 (lockstmt, sAdd, ss)
                         , transfer = ts }
-                ,
+               ,
                 Block.T { args = Vector.new0 ()
                         , kind = Kind.Jump
                         , label = check
-                        , statements = Vector.fromList ([ss2] @ (incReserved chunksNeeded)
+                        , statements = Vector.fromList ([ss2]  @  (incReserved chunksNeeded)
                                                                     @[ unlockstmt])
                         , transfer = ts2 }
             ] @ blockingGC block check

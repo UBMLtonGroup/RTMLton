@@ -39,7 +39,9 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
     }
 
     LOCK_FL;
-    while ((s->fl_chunks < (s->reserved + numChunksToRequest)))// || (s->fl_chunks < (size_t)(s->hPercent * s->maxChunksAvailable)))
+    while ((s->fl_chunks < (s->reserved + numChunksToRequest))
+            || (s->fl_chunks < (size_t)(s->hPercent * s->maxChunksAvailable))
+          )
     {
         fprintf(stderr, "%d] either fl (%d) is < reserved+req (%d) or fl (%d) < heuristic (%d)\n",
             PTHREAD_NUM, s->fl_chunks, (s->reserved + numChunksToRequest), s->fl_chunks, (size_t)(s->hPercent * s->maxChunksAvailable) );
@@ -163,10 +165,6 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
      */
     assert (num_chunks == 1);
 
-    if (s->packingStage2Enabled == false) {
-        User_instrument_counter(310, num_chunks); /* JEFF packed1 total */
-    }
-
     if (s->activeChunk[PTHREAD_NUM] != BOGUS_POINTER) {
         chunk = (GC_UM_Chunk)s->activeChunk[PTHREAD_NUM];
 
@@ -213,6 +211,8 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
                         (unsigned int)(UM_CHUNK_PAYLOAD_SIZE-(chunk->used)), sz+hdrsz
                 );
 
+            User_instrument_counter(310, num_chunks); /* JEFF packed1 no new chunk needed */
+
             LOCK_FL;
           	s->reserved -= 1;
             UNLOCK_FL;
@@ -236,6 +236,7 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
             } else {
                 if (DEBUG_ALLOC_PACK)
                     fprintf(stderr, "%d]   unable to find space in another threads chunk, and:\n", PTHREAD_NUM);
+                User_instrument_counter(330, num_chunks); /* JEFF packed1, new chunk required */
             }
         } else {
             User_instrument_counter(330, num_chunks); /* JEFF packed1, new chunk required */
@@ -346,8 +347,10 @@ if (upper_ev) upper_bound = atoi(upper_ev);
     // no-packing. in order for stage2 to occur, stage1 must be enabled
 
     if (gc_stat->packingStage1Enabled == false || allowedToPack[PTHREAD_NUM] == 0) {
-        if (header == GC_STACK_HEADER)
-            User_instrument_counter(100, num_chunks); /* JEFF Stack Allocs */
+        if (header == GC_STACK_HEADER) {
+            User_instrument_counter(100, 1); /* JEFF Stack Allocs */
+            User_instrument_counter(110, num_chunks); /* JEFF Stack Allocs */
+        }
         else
             User_instrument_counter(300, num_chunks); /* JEFF Normal allocs, unpacked */
         return UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
@@ -364,8 +367,10 @@ if (upper_ev) upper_bound = atoi(upper_ev);
                         GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
                     );
 
-                if (header == GC_STACK_HEADER)
-                    User_instrument_counter(100, num_chunks); /* JEFF stack alloc */
+                if (header == GC_STACK_HEADER) {
+                    User_instrument_counter(100, 1); /* JEFF Stack Allocs */
+                    User_instrument_counter(110, num_chunks); /* JEFF stack alloc */
+                }
                 else
                     User_instrument_counter(300, num_chunks); /* JEFF normal alloc, unpacked */
 
