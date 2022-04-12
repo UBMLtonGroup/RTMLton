@@ -31,24 +31,22 @@ struct thrctrl {
 //#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 
 #define LOCK_FL_FROMGC   LOCK_DEBUG("LOCK_FL_FROMGC"); IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL_FROMGC LOCK_DEBUG("UNLOCK_FL_FROMGC"); IFED(pthread_mutex_unlock(&s->fl_lock))
+#define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock)); LOCK_DEBUG("UNLOCK_FL_FROMGC")
 
 #define BROADCAST       LOCK_DEBUG("BROADCAST"); IFED(pthread_cond_broadcast(&s->fl_empty_cond))
-
-#define BROADCAST_EMPTY LOCK_DEBUG("BROADCAST_EMPTY"); IFED(pthread_cond_broadcast(&s->fl_empty_cond))
 #define BLOCK_EMPTY     LOCK_DEBUG("BLOCK_EMPTY"); IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
 
 #define RTSYNC_LOCK    LOCK_DEBUG("RTSYNC_LOCK"); IFED(pthread_mutex_lock(&s->rtSync_lock))
-#define RTSYNC_UNLOCK  LOCK_DEBUG("RTSYNC_UNLOCK"); IFED(pthread_mutex_unlock(&s->rtSync_lock))
+#define RTSYNC_UNLOCK  IFED(pthread_mutex_unlock(&s->rtSync_lock)); LOCK_DEBUG("RTSYNC_UNLOCK")
 #define RTSYNC_SIGNAL  LOCK_DEBUG("RTSYNC_SIGNAL"); IFED(pthread_cond_signal(&s->rtSync_cond))
 #define RTSYNC_BLOCK   LOCK_DEBUG("RTSYNC_BLOCK");  IFED(pthread_cond_wait(&s->rtSync_cond,&s->rtSync_lock))
 #define RTSYNC_TRYLOCK LOCK_DEBUG("RTSYNC_TRYLOCK"); pthread_mutex_trylock(&s->rtSync_lock)
 
-#define TC_LOCK if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] TC_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
-#define TC_UNLOCK if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] TC_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
-#define TCSP_LOCK if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] TCSP_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.safepoint_lock))
-#define TCSP_UNLOCK if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] TCSP_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.safepoint_lock))
+#define TC_LOCK  LOCK_DEBUG("TC_LOCK"); IFED(pthread_mutex_lock(&TC.lock))
+#define TC_UNLOCK  IFED(pthread_mutex_unlock(&TC.lock)); LOCK_DEBUG("TC_UNLOCK")
+#define TCSP_LOCK  LOCK_DEBUG("TCSP_LOCK"); IFED(pthread_mutex_lock(&TC.safepoint_lock))
+#define TCSP_UNLOCK  IFED(pthread_mutex_unlock(&TC.safepoint_lock)); LOCK_DEBUG("TCSP_UNLOCK")
 
 /*
  * - threads can ask for GC's by setting gc_needed to 1
@@ -389,7 +387,7 @@ void *GCrunner(void *_s) {
 
 		//not_dirty:;
 		RTSYNC_UNLOCK;
-
+pthread_yield();
 		/*sending out signals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
 		/*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/
 		LOCK_FL_FROMGC;
@@ -721,10 +719,13 @@ User_instrument_counter(400, 1); /* JEFF normal collect */
 	s->cGCStats.numSweeps++;
 
 	if (1||DEBUG_RTGC) {
+		size_t foo = count_freelist(s, &(s->umheap));
+
 		fprintf(stderr, "%d] "GREEN("Finished one sweep cycle and freed %d chunks\n"), PTHREAD_NUM, freed);
 
-		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n"), PTHREAD_NUM, visited, marked, grey,
-				red);
+		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d Sanity: %d\n"), 
+				PTHREAD_NUM, visited, marked, grey,
+				red, foo);
 	}
 
 	STOP_PERF;
@@ -913,7 +914,7 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 	if (s->rtSync[PTHREAD_NUM] && force) {
 		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] Came to block until GC finishes. ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] %s: Came to block until GC finishes. ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM, __FUNCTION__,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
 		}
 	}
@@ -941,11 +942,10 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 
 		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] GC_collect: Is dirty bit set? %s, Are enough Chunks Available? %s\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] %s: Is dirty bit set? %s, Are enough Chunks Available? %s\n", PTHREAD_NUM,  __FUNCTION__,
 					s->dirty ? "Y" : "N", ensureChunksAvailable(s) ? "Y" : "N");
-			fprintf(stderr, "%d] ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] %s: ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM, __FUNCTION__,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
-
 		}
 
 		GC_collect_real(s, bytesRequested, true); /*marks stack*/
@@ -957,7 +957,7 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 		int i;
 		int ready_to_sync_count = 0;
 		for (i = 0; i < MAXPRI; i++) {
-fprintf(stderr, "%d] check rtsync[%d] = %d\n", PTHREAD_NUM, i, s->rtSync[i]);
+fprintf(stderr, "%d] %s: check rtsync[%d] = %d\n", PTHREAD_NUM, __FUNCTION__, i, s->rtSync[i]);
 			if (i == 1 || i == PTHREAD_NUM) // GC thr and our thr are not counted
 				continue;
 			if (s->rtSync[i])
@@ -968,7 +968,7 @@ fprintf(stderr, "%d] check rtsync[%d] = %d\n", PTHREAD_NUM, i, s->rtSync[i]);
 		if (force)
 			s->threadsBlockedForGC++;
 
-fprintf(stderr, "%d] force %d threadsBlockedForGC %d  i=%d MAXPRI=%d dirty=%d ready_to_sync_count=%d\n", PTHREAD_NUM, force,
+fprintf(stderr, "%d] %s: force %d threadsBlockedForGC %d  i=%d MAXPRI=%d dirty=%d ready_to_sync_count=%d\n", PTHREAD_NUM, __FUNCTION__, force,
 s->threadsBlockedForGC, i,MAXPRI, s->dirty, ready_to_sync_count);
 
 		if (ready_to_sync_count == MAXPRI-2) /* all threads are ready to sync and GC */
@@ -976,11 +976,11 @@ s->threadsBlockedForGC, i,MAXPRI, s->dirty, ready_to_sync_count);
 			s->dirty = true;
 			RTSYNC_SIGNAL;
 			if (DEBUG_RTGC)
-				fprintf(stderr, "%d] Signal sent to wake GC\n", PTHREAD_NUM);
+				fprintf(stderr, "%d] %s: Signal sent to wake GC\n", PTHREAD_NUM, __FUNCTION__);
 
 		} else {
 			if (DEBUG_RTGC)
-				fprintf(stderr, "%d] All Threads not synced\n", PTHREAD_NUM);
+				fprintf(stderr, "%d] %s: All Threads not synced\n", PTHREAD_NUM, __FUNCTION__);
 		}
 
 

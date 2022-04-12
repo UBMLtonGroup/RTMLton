@@ -92,5 +92,6 @@ static GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h, UM_header chunkType)
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks);
+size_t count_freelist(GC_state s, GC_UM_heap h);
 
 #endif

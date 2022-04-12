@@ -13,6 +13,7 @@ Pointer UM_Object_alloc_packing_stage2(GC_state gc_stat, C_Size_t num_chunks, ui
 void CompareAndSet(GC_state s, int lockOrUnlock);
 bool CompareExchange(volatile int *ptr, int expected, int desired);
 void reserveAllocation(GC_state s, size_t numChunksTorequest);
+void GC_reserveAllocation(GC_state s, size_t numChunksToRequest);
 
 bool is_on_um_heap(GC_state s, Pointer p);
 void writeBarrier(GC_state s,Pointer dstbase, Pointer srcbase);

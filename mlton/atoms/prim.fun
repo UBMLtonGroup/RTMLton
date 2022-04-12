@@ -66,6 +66,7 @@ datatype 'a t =
  | FFI_Symbol of {name: string, 
                   cty: CType.t option, 
                   symbolScope: CFunction.SymbolScope.t } (* codegen *)
+ | UM_reserveAllocation (* ssa to rssa *)
  | GC_collect (* ssa to rssa *)
  | IntInf_add (* ssa to rssa *)
  | IntInf_andb (* ssa to rssa *)
@@ -255,6 +256,7 @@ fun toString (n: 'a t): string =
        | FFI f => (CFunction.Target.toString o CFunction.target) f
        | FFI_getOpArgsResPtr => "FFI_getOpArgsResPtr"
        | FFI_Symbol {name, ...} => name
+       | UM_reserveAllocation => "UM_reserveAllocation"
        | GC_collect => "GC_collect"
        | IntInf_add => "IntInf_add"
        | IntInf_andb => "IntInf_andb"
@@ -400,6 +402,7 @@ val equals: 'a t * 'a t -> bool =
     | (FFI f, FFI f') => CFunction.equals (f, f')
     | (FFI_getOpArgsResPtr, FFI_getOpArgsResPtr) => true
     | (FFI_Symbol {name = n, ...}, FFI_Symbol {name = n', ...}) => n = n'
+    | (UM_reserveAllocation, UM_reserveAllocation) => true
     | (GC_collect, GC_collect) => true
     | (IntInf_add, IntInf_add) => true
     | (IntInf_andb, IntInf_andb) => true
@@ -570,6 +573,7 @@ val map: 'a t * ('a -> 'b) -> 'b t =
     | FFI_Symbol {name, cty, symbolScope} => 
         FFI_Symbol {name = name, cty = cty, symbolScope = symbolScope}
     | GC_collect => GC_collect
+    | UM_reserveAllocation => UM_reserveAllocation
     | IntInf_add => IntInf_add
     | IntInf_andb => IntInf_andb
     | IntInf_arshift => IntInf_arshift
@@ -830,6 +834,7 @@ val kind: 'a t -> Kind.t =
        | FFI_getOpArgsResPtr => SideEffect
        | FFI_Symbol _ => Functional
        | GC_collect => SideEffect
+       | UM_reserveAllocation => SideEffect
        | IntInf_add => Functional
        | IntInf_andb => Functional
        | IntInf_arshift => Functional
@@ -1035,6 +1040,7 @@ in
        Exn_setExtendExtra,
        FFI_getOpArgsResPtr,
        GC_collect,
+       UM_reserveAllocation,
        IntInf_add,
        IntInf_andb,
        IntInf_arshift,
@@ -1300,6 +1306,7 @@ fun 'a checkApp (prim: 'a t,
             noTargs (fn () => (nArgs (CFunction.args f), CFunction.return f))
        | FFI_getOpArgsResPtr => noTargs (fn () => (noArgs, cpointer))
        | FFI_Symbol _ => noTargs (fn () => (noArgs, cpointer))
+       | UM_reserveAllocation => noTargs (fn () => (noArgs, unit))
        | GC_collect => noTargs (fn () => (noArgs, unit))
        | IntInf_add => intInfBinary ()
        | IntInf_andb => intInfBinary ()

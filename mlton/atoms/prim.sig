@@ -58,6 +58,7 @@ signature PRIM =
              | FFI_Symbol of {name: string, (* codegen *)
                               cty: CType.t option,
                               symbolScope: CFunction.SymbolScope.t}
+             | UM_reserveAllocation (* ssa to rssa *)
              | GC_collect (* ssa to rssa *)
              | IntInf_add (* ssa to rssa *)
              | IntInf_andb (* ssa to rssa *)

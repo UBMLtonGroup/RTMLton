@@ -8,7 +8,7 @@
 #endif
 
 #define LOCKIT(X) LOCK_DEBUG("LOCKIT"); IFED(pthread_mutex_lock(&(X)))
-#define UNLOCKIT(X) LOCK_DEBUG("UNLOCKIT"); IFED(pthread_mutex_unlock(&(X)))
+#define UNLOCKIT(X) IFED(pthread_mutex_unlock(&(X))); LOCK_DEBUG("UNLOCKIT")
 
 
 #undef DBG
@@ -19,11 +19,15 @@
  * define the free list
  */
 
+void GC_reserveAllocation(GC_state s, size_t numChunksToRequest) {
+    reserveAllocation(s, numChunksToRequest);
+}
+  
 void reserveAllocation(GC_state s, size_t numChunksToRequest) {
     assert (numChunksToRequest > 0);
 
     /* This what the gc-check pass inserts for all objects allocated in basic block.
-     * SInce the number of chunks for an array is calculated at runtime, it becomes necessary to do
+     * Since the number of chunks for an array is calculated at runtime, it becomes necessary to do
      * the gc-check at runtime as well. This is different from the other allocations because
      * array allocation is treated as a CCall and therefore all temp registers are pushed to stack before
      * this function is called, thus allowing us to perform this check at runtime while preserving the
@@ -43,9 +47,10 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
             || (s->fl_chunks < (size_t)(s->hPercent * s->maxChunksAvailable))
           )
     {
-        fprintf(stderr, "%d] either fl (%d) is < reserved+req (%d) or fl (%d) < heuristic (%d)\n",
+        fprintf(stderr, "%d] "PURPLE("either fl (%d) is < reserved+req (%d) or fl (%d) < heuristic (%d)\n"),
             PTHREAD_NUM, s->fl_chunks, (s->reserved + numChunksToRequest), s->fl_chunks, (size_t)(s->hPercent * s->maxChunksAvailable) );
         UNLOCK_FL;
+        pthread_yield();
         GC_collect(s, 0, true, true);
         LOCK_FL;
     }

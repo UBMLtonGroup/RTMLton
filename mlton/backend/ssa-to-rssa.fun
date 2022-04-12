@@ -1232,6 +1232,12 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | FFI_getOpArgsResPtr =>
                                     simpleCCallWithGCState
                                     (CFunction.ffiGetOpArgsResPtr ())
+                               | UM_reserveAllocation =>
+                                    ccall
+                                    {args = (Vector.new2
+                                             (GCState,
+                                              Operand.zero (WordSize.csize ()))),
+                                     func = (CFunction.reserveAllocation {maySwitchThreads = false})}
                                | GC_collect =>
                                     ccall
                                     {args = (Vector.new4

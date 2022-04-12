@@ -137,7 +137,7 @@ void um_dumpFrame (void *s, void *f);
 #define LOCK_DEBUG(LN) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s\n", PTHREAD_NUM, __FUNCTION__, LN);}
 #define IFED(X) do { int x = X; if (x) { perror("(in codegen code) perror " #X); printf(" rv=%d\n", x); exit(-1); } } while(0)
 #define Lock_fl(s) LOCK_DEBUG("Lock_fl"); IFED(pthread_mutex_lock(&s))
-#define Unlock_fl(s) LOCK_DEBUG("Unlock_fl"); IFED(pthread_mutex_unlock(&s))
+#define Unlock_fl(s) IFED(pthread_mutex_unlock(&s)); LOCK_DEBUG("Unlock_fl")
 
 #define ChunkExnHandler ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->handler
 #define ChunkExnLink ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->link

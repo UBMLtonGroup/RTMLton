@@ -57,63 +57,32 @@ struct
         val chunksNeeded = Block.objChunksAllocated b
         val dontCollect = Label.newNoname ()
         val collect = Label.newNoname ()
-        val func = CFunction.gc {maySwitchThreads = false}
+        val reserve_allocation = Label.newNoname ()
 
-        fun gcAndJumpToBlock (to) =
+        val gc_collect_func = CFunction.gc {maySwitchThreads = false}
+        val gc_reserve_allocation = CFunction.reserveAllocation {maySwitchThreads = false}
+
+        fun reserveAndJumpToBlock (to) = 
             let
-            val collectReturn = Label.newNoname ()
+                val collectReturn = Label.newNoname ()
             in
                 [ Block.T {args = Vector.new0 (),
                         kind = Kind.Jump,
-                        label = collect,
+                        label = reserve_allocation,
                         statements = Vector.new0 (),
                         transfer = (Transfer.CCall
-                                        {args = Vector.new4 (Operand.GCState,
-                                                                (Operand.word
-                                                                    (WordX.zero (WordSize.csize ()))),
-                                                                Operand.bool false,
-                                                                Operand.bool true),
-                                            func = func,
-                                            return = SOME collectReturn})}
+                                        {args = Vector.new2 (Operand.GCState,  Operand.constWord chunksNeeded (WordSize.word32)), (*   Operand.word (WordX.fromIntInf (Word.toIntInf (chunksNeeded, WordSize.csize)))), *)
+                                            func = gc_reserve_allocation,
+                                            return = SOME collectReturn })}
                 , Block.T { args = Vector.new0 ()
-                        , kind = Kind.CReturn {func = func}
-                        , label = collectReturn
-                        , statements = Vector.new0 ()
-                        , transfer = Transfer.Goto { dst = to
-                                                    , args = Vector.new0 () }} ]
+                          , kind = Kind.CReturn {func = gc_reserve_allocation}
+                          , label = collectReturn
+                          , statements = Vector.new0 ()
+                          , transfer = Transfer.Goto { dst = to
+                                                     , args = Vector.new0 () }} ]
             end
 
         datatype z = datatype Runtime.GCField.t
-
-        fun decFreeChunks n =
-            let
-                val flChunks = Operand.Runtime FLChunks
-                val res = Var.newNoname ()
-                val resTy = Operand.ty flChunks
-            in
-                [Statement.PrimApp {args = (Vector.new2
-                                                (flChunks, Operand.constWord n (WordSize.word32))),
-                                    dst = SOME (res, resTy),
-                                    prim = Prim.wordSub WordSize.word32},
-                    Statement.Move {dst = flChunks,
-                                    src = Operand.Var {ty = resTy, var = res}}]
-            end
-
-
-        fun incReserved n =
-            let
-                val reserved = Operand.Runtime Reserved
-                val res = Var.newNoname ()
-                val resTy = Operand.ty reserved
-            in
-                [Statement.PrimApp {args = (Vector.new2
-                                                (reserved, Operand.constWord n (WordSize.word32))),
-                                        dst = SOME (res, resTy),
-                                        prim = Prim.wordAdd WordSize.word32},
-                    Statement.Move {dst = reserved,
-                                    src = Operand.Var {ty = resTy, var = res}}]
-            end
-
 
         fun primApp (prim, op1, op2, {ifTrue, ifFalse}) =
             let
@@ -131,92 +100,24 @@ struct
                 (s, transfer)
             end
 
-
-        val lockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime FLLock),
-                                        dst = NONE,
-                                        prim = Prim.lockfl}
-
-        val unlockstmt = Statement.PrimApp {args = Vector.new1 (Operand.Runtime FLLock),
-                                            dst = NONE,
-                                            prim = Prim.unlockfl}
-
-        fun blockingGC blLbl  check =
-        let
-            val return = Label.newNoname ()
-            val (ss, ts) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
-                                Operand.Runtime FLChunks,
-                                Operand.constWord chunksNeeded (WordSize.csize ()),
-                                {ifTrue=blLbl, ifFalse=check})
-        in
-            [ Block.T {args = Vector.new0 (),
-                        kind = Kind.Jump,
-                        label = blLbl,
-                        statements = Vector.new1 (unlockstmt),
-                        transfer = (Transfer.CCall
-                                        {args = Vector.new4 (Operand.GCState,
-                                                                (Operand.word
-                                                                    (WordX.zero (WordSize.csize ()))),
-                                                                Operand.bool true,
-                                                                Operand.bool true),
-                                            func = func,
-                                            return = SOME return})}
-                , Block.T { args = Vector.new0 ()
-                        , kind = Kind.CReturn {func = func}
-                        , label = return
-                        , statements = Vector.new2 (lockstmt,ss)
-                        , transfer = ts} ]
-
-
-        end
-
-
-
         val startBlock =
-        let
-            val check = Label.newNoname ()
-            val block = Label.newNoname ()
-            val reserved = Operand.Runtime Reserved
-            val res = Var.newNoname ()
-            val resTy = Operand.ty reserved
-            val sAdd = Statement.PrimApp {args = (Vector.new2
-                                            (reserved, Operand.constWord chunksNeeded (WordSize.word32))),
-                                        dst = SOME (res, resTy),
-                                        prim = Prim.wordAdd WordSize.word32}
-
-            val (ss, ts) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
-                                    Operand.Runtime FLChunks,
-                                    Operand.Var {var = res, ty = resTy},
-                                    {ifTrue=block, ifFalse=check})
-            val (ss2, ts2) = primApp (Prim.wordLt (WordSize.csize (), {signed = false}),
-                                    Operand.Runtime FLChunks,
-                                    Operand.Runtime HeuristicChunks,
-                                    {ifTrue=collect, ifFalse=dontCollect})
-        in
-            [ Block.T { args = args
+             Block.T { args = args
                         , kind = kind
                         , label = label
-                        , statements = Vector.new3 (lockstmt, sAdd, ss)
-                        , transfer = ts }
-               ,
-                Block.T { args = Vector.new0 ()
-                        , kind = Kind.Jump
-                        , label = check
-                        , statements = Vector.fromList ([ss2]  @  (incReserved chunksNeeded)
-                                                                    @[ unlockstmt])
-                        , transfer = ts2 }
-            ] @ blockingGC block check
+                        , statements = Vector.new0 ()
+                        , transfer = Transfer.Goto { dst = reserve_allocation
+                                                    , args = Vector.new0 () }}
 
-        end
     in
-      if chunksNeeded = Word.fromInt 0
-      then [b]
-      else startBlock  @
-           gcAndJumpToBlock dontCollect @
-           [Block.T { args = Vector.new0 ()
-                    , kind = Kind.Jump
-                    , label = dontCollect
-                    , statements = statements
-                    , transfer = transfer }]
+        if chunksNeeded = Word.fromInt 0
+        then [b]
+        else [startBlock] @
+            reserveAndJumpToBlock dontCollect @
+            [Block.T { args = Vector.new0 ()
+                        , kind = Kind.Jump
+                        , label = dontCollect
+                        , statements = statements
+                        , transfer = transfer }]
     end
 
     (*
@@ -235,6 +136,9 @@ struct
                    (blocks,
                     fn block =>
                        List.push (newBlocks, insertCheck block))
+
+        val _ = TextIO.output (TextIO.stdErr, ("gc-check.fun: "))
+        val _ = Layout.outputl (Func.layout(Function.name f), Out.error) (* JEFF *)
     in
           Function.new { args = args
                        , blocks = Vector.fromList (List.concat (!newBlocks))

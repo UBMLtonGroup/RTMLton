@@ -3,7 +3,7 @@
 
 //#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 #define LOCK_FL LOCK_DEBUG("LOCK_FL"); IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL LOCK_DEBUG("UNLOCK_FL"); IFED(pthread_mutex_unlock(&s->fl_lock))
+#define UNLOCK_FL  IFED(pthread_mutex_unlock(&s->fl_lock)); LOCK_DEBUG("UNLOCK_FL")
 
 #define BLOCK LOCK_DEBUG("BLOCK"); IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
@@ -271,12 +271,11 @@ void insertChunktoSubList(GC_state s, GC_UM_heap h, pointer c) {
         s->sl_chunks +=1;
 	}
 
-
 }
 
 
 
-void addSweepListToFL(GC_state s,GC_UM_heap h){
+void addSweepListToFL(GC_state s, GC_UM_heap h){
 
     if(s->sl_chunks == 0)
         return;
@@ -299,18 +298,24 @@ void addSweepListToFL(GC_state s,GC_UM_heap h){
         /*clear the sub list*/
         h->sl_head = NULL;
         h->sl_tail = NULL;
-        s->sl_chunks =0;
-
-
+        s->sl_chunks = 0;
 
         UNLOCK_FL;
     }
 
-
-
 }
 
-
+size_t count_freelist(GC_state s, GC_UM_heap h) {
+	size_t c = 0;
+	LOCK_FL;
+	UM_Mem_Chunk pc = h->fl_head;
+	while (pc) {
+		c++;
+		pc = pc->next_chunk;
+	}
+	UNLOCK_FL;
+	return c;
+}
 
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
 									   GC_UM_heap h,

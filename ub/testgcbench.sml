@@ -166,50 +166,14 @@ struct
   fun doit () = gcbench 18
 end
 
+open MLton.PrimThread
+
+fun pause () = (print "sleep\n"; Posix.Process.sleep (Time.fromSeconds 1)
+                ; pause ())
+
+val _ = pspawn (fn () => pause (),2)
+val _ = pspawn (fn () => pause (),3)
+val _ = pspawn (fn () => pause (),4)
+val _ = pspawn (fn () => pause (),5)
 val _ = gcbench 18
 
-(*fun printTime () = TextIO.output (TextIO.stdOut, "Time: " ^ Time.toString (Time.now())  ^  "\n")
-open MLton 
-open PrimThread
-open MLton.Thread
-
-val a = 9320
-
-
-fun fib n =
-  if n < 3 then 
-    1
-  else
-    fib (n-1) + fib (n-2)
-
-fun printfib n = print ( Int.toString (fib (n)) ^ "\n ************** \n" )
-
-
-(*val _ = MLton.Thread.spawn (fn () => printfib (10))*)
-
-(*val _ = MLton.Thread.spawn(fn () => gcbench 18)*)
-
-
-open OS.Process
-fun inf_sleep t= OS.Process.sleep t
-
-
-
-fun dogcbench () = (printTime(); gcbench(18); printTime())
-
-val rec loop =
-   fn 0 => ()
-    | n => (print (Int.toString n ^ "\n"); dogcbench(); loop (n - 1))
-
-val _ = loop 1
-
-
-val _ = PrimThread.setBooted()
-
-val _ = print "test2 was running and is going to sleep\n"
-fun pause () = (print "sleep\n"; inf_sleep (Time.fromSeconds 1)
-                ; PrimThread.gcSafePoint(); pause ())
-
-val _ = pause ()
-
-*)

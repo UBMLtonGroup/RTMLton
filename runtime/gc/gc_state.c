@@ -11,8 +11,8 @@
 
 
 //#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&s->rtThreads_cond))
-#define LOCK_RT_TH IFED(pthread_mutex_lock(&s->rtThreads_lock))
-#define UNLOCK_RT_TH IFED(pthread_mutex_unlock(&s->rtThreads_lock))
+#define LOCK_RT_TH LOCK_DEBUG("LOCK_RT_TH"); IFED(pthread_mutex_lock(&s->rtThreads_lock))
+#define UNLOCK_RT_TH IFED(pthread_mutex_unlock(&s->rtThreads_lock)); LOCK_DEBUG("UNLOCK_RT_TH")
 
 void displayGCState(GC_state s, FILE *stream) {
 

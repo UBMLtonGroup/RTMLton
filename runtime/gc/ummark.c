@@ -1,8 +1,8 @@
 #include "../gc.h"
 
 
-#define LOCK_WL IFED(pthread_mutex_lock(&s->wl_lock))
-#define UNLOCK_WL IFED(pthread_mutex_unlock(&s->wl_lock))
+#define LOCK_WL LOCK_DEBUG("LOCK_WL"); IFED(pthread_mutex_lock(&s->wl_lock))
+#define UNLOCK_WL IFED(pthread_mutex_unlock(&s->wl_lock)); LOCK_DEBUG("UNLOCK_WL")
 
 
 void umDfsMarkObjectsUnMark(GC_state s, objptr *opp) {
@@ -158,7 +158,7 @@ void umShadeObject(GC_state s, objptr *opp) {
 		splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 		markChunk(p, tag, GREY_MODE, s, numObjptrs);
-		if (DEBUG_RTGC_MARKING) {
+		if (DEBUG_RTGC_MARKING_SHADING) {
 			printTag(__func__, tag, p);
 			fprintf(stderr, "%d] shade "FMTPTR"\n", PTHREAD_NUM, (uintptr_t) p);
 		}

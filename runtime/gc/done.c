@@ -11,7 +11,7 @@
 
 #define IFED(X) do { if (X) { printf(__FUNCTION__);perror("-perror " #X); exit(-1); } } while(0)
 #define LOCK_FL LOCK_DEBUG("LOCK_FL");  IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL LOCK_DEBUG("UNLOCK_FL");  IFED(pthread_mutex_unlock(&s->fl_lock))
+#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock)); LOCK_DEBUG("UNLOCK_FL")
 
 #define BLOCK LOCK_DEBUG("BLOCK");  IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
