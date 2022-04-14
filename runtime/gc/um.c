@@ -22,7 +22,7 @@
 void GC_reserveAllocation(GC_state s, size_t numChunksToRequest) {
     reserveAllocation(s, numChunksToRequest);
 }
-  
+
 void reserveAllocation(GC_state s, size_t numChunksToRequest) {
     assert (numChunksToRequest > 0);
 
@@ -200,6 +200,7 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
                         fprintf(stderr, "%d]   unable to find space in another threads chunk, and:\n", PTHREAD_NUM);
                 }
             } else {
+                User_instrument_counter(321, chunk->used); /* JEFF packed: note the utilization of the previous chunk */
                 User_instrument_counter(330, num_chunks); /* JEFF packed1, new chunk required */
             }
 
@@ -255,8 +256,8 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
     }
 
     /*
-    the first object is at the start of the chunk, but is offset by
-    's'. we want the header offset field to contain 0. so we do 
+    the first object is at the start of the chunk, but is offset by 's'. 
+    we want the header offset field to contain 0. so we do 
 
     header = *(objptr - s);
     offset = extract from header;
@@ -339,7 +340,7 @@ if (upper_ev) upper_bound = atoi(upper_ev);
 
     User_instrument_counter(50, num_chunks); /* JEFF um_obj_alloc calls, num chunks asked for */
 
-    if (1||DEBUG_ALLOC) {
+    if (DEBUG_ALLOC) {
         fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:0x%x(%d) (%s [%d] index:%u) sz:%d freelist:%d reserved:%d\n", 
                 PTHREAD_NUM, 
                 (header == GC_THREAD_HEADER)?"*** thread ***":"",

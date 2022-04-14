@@ -257,6 +257,7 @@ void insertChunktoSubList(GC_state s, GC_UM_heap h, pointer c) {
 
 /*Insert free chunk to back of sub list*/
 	UM_Mem_Chunk pc = (UM_Mem_Chunk) c;
+
 	if (s->sl_chunks == 0) {
 		h->sl_head = pc;
 		h->sl_tail = pc;

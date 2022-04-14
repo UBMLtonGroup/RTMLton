@@ -382,7 +382,7 @@ void ML_unlock (void) {
 
 
 void User_lock (Int32 p){
-
+    LOCK_DEBUG2("User_lock", p);
     do {
         AGAIN:
             if (User_mutexes[p] >= 0)
@@ -393,6 +393,7 @@ void User_lock (Int32 p){
 }
 
 void User_unlock (Int32 p) {
+    LOCK_DEBUG2("User_unlock", p);
 
   //fprintf (stderr, "unlock %d\n", Parallel_holdingMutex);
 

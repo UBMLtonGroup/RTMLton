@@ -320,7 +320,7 @@ void *GCrunner(void *_s) {
 		RTSYNC_LOCK;
 
 		while (!s->dirty) {
-			fprintf(stderr, "%d] not dirty\n", PTHREAD_NUM);
+			//fprintf(stderr, "%d] not dirty\n", PTHREAD_NUM);
 			RTSYNC_BLOCK;
 		}
 
@@ -569,7 +569,10 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					 * If it were reachable, then the Red would have been marked or Shaded*/
 					if (s->collectAll) {
 						header = UM_CHUNK_HEADER_CLEAN;
-                    
+
+                    User_instrument_counter(400, 1); /* JEFF normal collect */
+                    User_instrument_counter(322, pc->used); /* JEFF normal collect */
+
                         if(s->oneByOne)
                             insertChunkToFL(s, &(s->umheap), pchunk);
                         else
@@ -601,6 +604,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 				{
 					assert(ISUNMARKED(header));
 User_instrument_counter(400, 1); /* JEFF normal collect */
+User_instrument_counter(322, pc->used); /* JEFF normal collect */
+
 					if (DEBUG_MEM or DEBUG_RTGC) {
 						fprintf(stderr, "%d] Collecting: "FMTPTR", %d, %x\n", PTHREAD_NUM,
 								(uintptr_t) pc, (int)pc->sentinel, (unsigned int)pc->chunk_header);
@@ -957,7 +962,7 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 		int i;
 		int ready_to_sync_count = 0;
 		for (i = 0; i < MAXPRI; i++) {
-fprintf(stderr, "%d] %s: check rtsync[%d] = %d\n", PTHREAD_NUM, __FUNCTION__, i, s->rtSync[i]);
+//fprintf(stderr, "%d] %s: check rtsync[%d] = %d\n", PTHREAD_NUM, __FUNCTION__, i, s->rtSync[i]);
 			if (i == 1 || i == PTHREAD_NUM) // GC thr and our thr are not counted
 				continue;
 			if (s->rtSync[i])
@@ -968,8 +973,7 @@ fprintf(stderr, "%d] %s: check rtsync[%d] = %d\n", PTHREAD_NUM, __FUNCTION__, i,
 		if (force)
 			s->threadsBlockedForGC++;
 
-fprintf(stderr, "%d] %s: force %d threadsBlockedForGC %d  i=%d MAXPRI=%d dirty=%d ready_to_sync_count=%d\n", PTHREAD_NUM, __FUNCTION__, force,
-s->threadsBlockedForGC, i,MAXPRI, s->dirty, ready_to_sync_count);
+//fprintf(stderr, "%d] %s: force %d threadsBlockedForGC %d  i=%d MAXPRI=%d dirty=%d ready_to_sync_count=%d\n", 		PTHREAD_NUM, __FUNCTION__, force, s->threadsBlockedForGC, i,MAXPRI, s->dirty, ready_to_sync_count);
 
 		if (ready_to_sync_count == MAXPRI-2) /* all threads are ready to sync and GC */
 		{
