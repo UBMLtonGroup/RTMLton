@@ -302,6 +302,16 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 					if (i == argc)
 						die("@MLton rtthreads missing argument.");
 					s->useRTThreads = stringToBool(argv[i++]);
+				} else if (0 == strcmp(arg, "lower-bound")) {
+					i++;
+					if (i == argc)
+						die("@MLton lower-bound missing argument.");
+					s->lower_bound = atoi(argv[i++]);
+				} else if (0 == strcmp(arg, "upper-bound")) {
+					i++;
+					if (i == argc)
+						die("@MLton upper-bound missing argument.");
+					s->upper_bound = atoi(argv[i++]);
 				} else if (0 == strcmp(arg, "packingstage1")) {
 					i++;
 					if (i == argc)
@@ -341,6 +351,9 @@ int GC_init(GC_state s, int argc, char **argv) {
 	// they check the asserts in sizeofThread and sizeofWeak.
 	assert(sizeofThread(s) == sizeofThread(s));
 	assert(sizeofWeak(s) == sizeofWeak(s));
+
+	s->lower_bound = 40;
+	s->upper_bound = 98;
 
 	s->amInGC = TRUE;
 	s->amOriginal = TRUE;

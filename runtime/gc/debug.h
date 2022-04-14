@@ -66,5 +66,10 @@ enum {
 # define STOP_PERF do {} while(0)
 #endif
 
-#define LOCK_DEBUG(LN) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s\n", PTHREAD_NUM, __FUNCTION__, LN);}
-#define LOCK_DEBUG2(LNAME, LNUM) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s(%d)\n", PTHREAD_NUM, __FUNCTION__, LNAME, LNUM);}
+#ifdef DO_LOCK_DEBUG
+# define LOCK_DEBUG(LN) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s\n", PTHREAD_NUM, __FUNCTION__, LN);}
+# define LOCK_DEBUG2(LNAME, LNUM) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s(%d)\n", PTHREAD_NUM, __FUNCTION__, LNAME, LNUM);}
+#else
+# define LOCK_DEBUG(LN)
+# define LOCK_DEBUG2(LNAME, LNUM)
+#endif

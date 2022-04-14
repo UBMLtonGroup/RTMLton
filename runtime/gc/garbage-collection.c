@@ -724,7 +724,7 @@ User_instrument_counter(322, pc->used); /* JEFF normal collect */
 	s->cGCStats.numSweeps++;
 
 	if (1||DEBUG_RTGC) {
-		size_t foo = count_freelist(s, &(s->umheap));
+		size_t foo = 0; //count_freelist(s, &(s->umheap));
 
 		fprintf(stderr, "%d] "GREEN("Finished one sweep cycle and freed %d chunks\n"), PTHREAD_NUM, freed);
 

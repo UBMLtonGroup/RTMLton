@@ -128,7 +128,8 @@ struct GC_state {
   size_t numAllocedByRT;
   bool oneByOne;
   bool useRTThreads;
-
+  int lower_bound; // object packing um.c
+  int upper_bound; // object packing um.c
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];

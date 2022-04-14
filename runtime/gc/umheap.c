@@ -60,6 +60,8 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 	s->reserved -= 1;
 	s->cGCStats.numChunksAllocated++;
 
+	User_instrument_counter(401, 1);
+
 	return c;
 }
 
@@ -172,6 +174,9 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 	s->fl_chunks -= 1;
 	s->reserved -= 1;
 	s->cGCStats.numChunksAllocated++;
+
+	User_instrument_counter(421, 1);
+
 	return c;
 }
 

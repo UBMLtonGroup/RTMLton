@@ -328,16 +328,13 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     unsigned int objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT;
     splitHeader(gc_stat, header, &tagRet, NULL, NULL, NULL);
 
-int lower_bound = 40; // JEFF
-int upper_bound = 98;
-char *lower_ev = getenv("LOWER");
-char *upper_ev = getenv("UPPER");
-if (lower_ev) lower_bound = atoi(lower_ev);
-if (upper_ev) upper_bound = atoi(upper_ev);
+    int lower_bound = gc_stat->lower_bound; // JEFF
+    int upper_bound = gc_stat->upper_bound;
 
     assert (num_chunks > 0);
     assert (header != 0);
 
+    User_instrument(60);
     User_instrument_counter(50, num_chunks); /* JEFF um_obj_alloc calls, num chunks asked for */
 
     if (DEBUG_ALLOC) {
@@ -359,6 +356,7 @@ if (upper_ev) upper_bound = atoi(upper_ev);
         }
         else
             User_instrument_counter(300, num_chunks); /* JEFF Normal allocs, unpacked */
+        User_instrument(60);
         return UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
     }
 
@@ -385,6 +383,7 @@ if (upper_ev) upper_bound = atoi(upper_ev);
                 p = UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
                 if (DEBUG_ALLOC)
                     fprintf(stderr, "   UM_Object_alloc returns: p = %x\n", (unsigned int)p);
+                User_instrument(60);
                 return p;
         }
     }
@@ -397,6 +396,7 @@ if (upper_ev) upper_bound = atoi(upper_ev);
     p = UM_Object_alloc_packing_stage1(gc_stat, num_chunks, header, s, sz);
     if (DEBUG_ALLOC_PACK)
         fprintf(stderr, "   UM_Object_alloc returns: p = %x\n", (unsigned int)p);
+    User_instrument(60);
     return p;
 }
 
