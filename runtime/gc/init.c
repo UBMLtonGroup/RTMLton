@@ -343,6 +343,13 @@ int GC_init(GC_state s, int argc, char **argv) {
 	char *worldFile;
 	int res, __i, __j;
 
+#ifdef RTLINUX
+	// DOI: 10.2514/6.2019-0502
+	if(mlockall(MCL_CURRENT | MCL_FUTURE)) {
+		die ("could not mlockall");
+	}
+#endif
+
 	User_instrument_initialize();
 
 	assert(s->alignment >= GC_MODEL_MINALIGN);

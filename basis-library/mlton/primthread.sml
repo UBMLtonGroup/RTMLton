@@ -143,6 +143,7 @@ struct
       val lock__   = _import "User_lock" : int -> unit;
       val unlock__ = _import "User_unlock" : int -> unit;
       val setsch   = _import "set_schedule" : int * int * int * int -> unit;
+      val ssleep__ = _import "ssleep": int * int -> int;
       val schyld   = _import "schedule_yield" : Primitive.MLton.GCState.t * bool -> unit;
   in
       fun instrument_counter a = instc__ a
@@ -150,6 +151,7 @@ struct
       fun instrument a = inst__ a
       fun dump_instrument_stderr a = dise__ a
       fun get_ticks_since_boot () = gtsb__ ()
+      fun ssleep (s, us) = ssleep__ (s, us)
       fun rtlock a = if a <= 9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
       fun rtunlock a = if a <= 9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
       fun set_schedule (rt, dl, per, packing) = setsch (rt, dl, per, packing)
