@@ -57,9 +57,9 @@ int ssleep(int s, int us)
     	clock_gettime(CLOCK_MONOTONIC_RAW, &b);
 
         double ad = ((double)(a.tv_sec) + ((double)(a.tv_nsec) / NSEC_PER_SEC));
-		double bd = ((double)(b.tv_sec) + ((double)(b.tv_nsec) / NSEC_PER_SEC));
+	double bd = ((double)(b.tv_sec) + ((double)(b.tv_nsec) / NSEC_PER_SEC));
         double dd = bd - ad;
-		if (DEBUG) fprintf(stderr, "ssleep>>> %d %d ... %f\n", s, us, dd);
+	if (DEBUG) fprintf(stderr, "ssleep>>> %d %d ... %f\n", s, us, dd);
 
 #else
         struct timeval tv;
