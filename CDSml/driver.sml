@@ -612,10 +612,26 @@ val rec loop =
     | n => ((*print ("loop" ^ Int.toString(n) ^"\n");*) delay 50000000; loop (n - 1))
 
 
-(*val _ = (PThread.spawn(fn () => Driver.main());PThread.spawn(fn () => loop
-* 10); PThread.run())*)
+open MLton.PrimThread
 
-val _ = Driver.main();
+fun printit2 s = ()
+fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
+fun gettime () = get_ticks_since_boot ()
+
+val _ = pspawn (
+   fn () => let in
+            while true do  ( Driver.main() ; schedule_yield false )
+            end, 2)
+
+
+val _ = pspawn (
+   fn () => let in
+            while true do  ( Driver.main() ; schedule_yield false )
+            end, 3)
+
+val _ = while true do (
+    OS.Process.sleep (Time.fromMicroseconds 10000000);  printit "main: running"; ()
+)
 
 (*Run with rtobj 5 for RTMLton*)
 

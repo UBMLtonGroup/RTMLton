@@ -169,28 +169,22 @@ struct
 
       fun loop_framesim ([],i,frameBuf) = if not (i=maxFrames) then loop_framesim(frameBuf,i,frameBuf) else ()
         | loop_framesim(x::xs,i,frameBuf) = if not(i = maxFrames) then (Array.update(ts,i,Time.toMicroseconds (Time.now()));
-                                                        (*print(IntInf.toString(Array.sub(ts,i))^"\n"); *)
+                                                        print(IntInf.toString(Array.sub(ts,i))^"\n"); 
                                                         TransientDetector.TRANSIENTDETECTOR_run(x) ;
                                                         
 
 
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
-                                                        (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
+                                                        print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");
                                                         maybeSleep (Array.sub(ts,i));
                                                         loop_framesim(xs,(i+1),frameBuf) ) 
                           else
                             ()
     in
-      (*print (Int.toString(List.length(maxFrames)))*)
+      print (Int.toString(maxFrames)^"\n");
       loop_framesim(frameBuffer, 0,frameBuffer);
-
-      (*printArray(ts);*)
-        
-     populateIdealTime(Array.sub(ts,0));
-
-
+      populateIdealTime(Array.sub(ts,0));
       (benchmarkCD ts tc tr)
-
     end;
 
 

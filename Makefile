@@ -439,3 +439,9 @@ rpms:
 		| $(GZIP) >"$(SOURCEDIR).tgz"
 	rm -rf "$(SOURCEDIR)"
 	rpm -ba --quiet --clean "$(TOPDIR)/SPECS/mlton.spec"
+
+docker-build:
+	docker build -t rtmlton32_intel .
+
+docker-run:
+	docker run -it -e DISPLAY=$(shell hostname):0 -v /Users/jcmurphy/git/cse/CSE/rtml-apps:/apps -v "$(shell pwd)":/work -v /tmp/.X11-unix:/tmp/.X11-unix rtmlton32_intel /bin/bash
