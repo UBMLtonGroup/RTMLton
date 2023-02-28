@@ -1,3 +1,4 @@
+open MLton.PrimThread
 
 structure Driver = 
 struct
@@ -580,7 +581,8 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
 
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
                                                         (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
-                                                        maybeSleep (Array.sub(ts,i));
+                                                        (*maybeSleep (Array.sub(ts,i)); *)
+                                                        wait_for_next_period false;
                                                         loop(xs,(i+1),frameBuf) ) 
                           else
                             ()
@@ -612,26 +614,64 @@ val rec loop =
     | n => ((*print ("loop" ^ Int.toString(n) ^"\n");*) delay 50000000; loop (n - 1))
 
 
-open MLton.PrimThread
 
 fun printit2 s = ()
 fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
 fun gettime () = get_ticks_since_boot ()
 
+
+val runtime      = 220000000 (* 22 s *)
+val deadline     = 220000000 (* 22 s *)
+val period       = 220000000 (* 22 s *)
+
+
 val _ = pspawn (
-   fn () => let in
-            while true do  ( Driver.main() ; schedule_yield false )
+   fn () => let
+                val iteration = ref 0
+                val _ = set_schedule (runtime, deadline, period, 2)
+            in
+            while true do  (
+                 Driver.main();
+                 iteration := !iteration + 1;
+                 schedule_yield false
+            )
             end, 2)
 
 
 val _ = pspawn (
-   fn () => let in
-            while true do  ( Driver.main() ; schedule_yield false )
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val iteration = ref 0
+            in
+            while true do  (
+                Driver.main();
+                iteration := !iteration + 1;
+                schedule_yield false
+            )
             end, 3)
 
-val _ = while true do (
-    OS.Process.sleep (Time.fromMicroseconds 10000000);  printit "main: running"; ()
-)
+val _ = let
+            val iteration = ref 0
+        in
+            while true do (
+               OS.Process.sleep (Time.fromMicroseconds 10000000);
+               iteration := !iteration + 1;
+               printit ("main: running #"^Int.toString(!iteration));
+schedule_yield false;
+               if (!iteration > 10) then (
+                  dump_instrument_stderr 0;
+                  dump_instrument_stderr 1;
+                  dump_instrument_stderr 2;
+                  dump_instrument_stderr 3;
+                  dump_instrument_counter_stderr 0;
+                  dump_instrument_counter_stderr 1;
+                  dump_instrument_counter_stderr 2;
+                  dump_instrument_counter_stderr 3;
+                  OS.Process.terminate(OS.Process.success)
+               ) else ();
+               ()
+             )
+        end
 
 (*Run with rtobj 5 for RTMLton*)
 
