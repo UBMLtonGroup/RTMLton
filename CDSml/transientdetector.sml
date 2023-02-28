@@ -1,12 +1,15 @@
 
+open MLton.PrimThread
 
 
-
-
+fun printit2 s = ()
+fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
+fun gettime () = get_ticks_since_boot ()
 
 
 structure StateTable  = 
 struct 
+
 
   type t = string * Pos.t ref;
 
@@ -141,11 +144,15 @@ struct
       | printcheck (x :: xs) = print("Check list i length "^Int.toString(List.length(x))^"\n")
 
     val ls = map determineCollisions check 
+    val starttime = ref (gettime ())
+    val stoptime = ref (gettime ())
   in 
     (*print("check length " ^ Int.toString(List.length(check))^"\n");*)
     (*printcheck check;
     print ("Collision length "^ Int.toString(List.length(ls)) ^"\n");*)
-   c @ ls
+    stoptime := gettime ();
+    printit ("lookforCollisions: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
+    c @ ls
   end
 
 
@@ -182,9 +189,13 @@ struct
   fun TRANSIENTDETECTOR_createMotions(currentFrame) = 
   let
      val mo : Motion.t list ref= ref []
-
+     val starttime = ref (gettime ())
+     val stoptime = ref (gettime ())
    in
+     starttime := gettime ();
      for (0 to (Frames.getPlaneCnt(currentFrame)-1)) (fn i => mo :=  !mo @ [TCM(i,currentFrame)]);
+     stoptime := gettime ();
+     printit ("TRANSIENTDETECTOR_createMotions: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
      !mo
    end;
 
@@ -194,8 +205,9 @@ struct
   fun TRANSIENTDETECTOR_run(currentFrame) = 
    let
      val motions : Motion.t list = TRANSIENTDETECTOR_createMotions(currentFrame);
-
-      val collisions = lookforCollisions(motions)
+     val collisions = lookforCollisions(motions)
+     val starttime = ref (gettime ())
+     val stoptime = ref (gettime ())
 
      fun printResults ([],index) = ()
        | printResults (c :: tl,index) = (print("CD Collision" ^ Int.toString(index) ^ "occured at location " ^ Pos.getString(Collision.getLocation(c)) ^
@@ -205,15 +217,11 @@ struct
    in
      (*(*Motion.printListOfMotions(motions);*)print ("CD detected " ^ Int.toString(List.length(collisions)) ^ " collisions \n");
      printResults(collisions,0)
-     *)()
+     *)
+     stoptime := gettime ();
+     printit ("TRANSIENTDETECTOR_run: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
+     ()
    end;
 
 end
-
-
-
-
-
-
-
 

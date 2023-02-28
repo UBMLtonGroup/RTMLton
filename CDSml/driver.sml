@@ -1,10 +1,21 @@
 open MLton.PrimThread
 
+
+(* sched_runtime <= sched_deadline <= sched_period *)
+val runtime      =  1 * 1000000 (* 22 s *)
+val deadline     =  2 * 1000000 (* 22 s *)
+val period       =  3 * 1000000 (* 22 s *)
+
+
+
+fun printit2 s = ()
+fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
+fun gettime () = get_ticks_since_boot ()
+
+
+
 structure Driver = 
 struct
-
-
-    
 
   (*To do read properly from file*)
     datatype for = to of int * int
@@ -568,21 +579,22 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
      
 
 
-
-
-        
+      val starttime = ref (gettime ())
+      val stoptime = ref (gettime ())
 
       fun loop ([],i,frameBuf) = if not (i=maxFrames) then loop(frameBuf,i,frameBuf) else ()
         | loop(x::xs,i,frameBuf) = if not(i = maxFrames) then (Array.update(ts,i,Time.toMicroseconds (Time.now()));
                                                         (*print(IntInf.toString(Array.sub(ts,i))^"\n"); *)
+starttime := gettime ();
                                                         TransientDetector.TRANSIENTDETECTOR_run(x) ;
-                                                        
-
-
+stoptime := gettime ();
+printit ("Driver: TRANSIENTDETECTOR_run: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
                                                         (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
                                                         (*maybeSleep (Array.sub(ts,i)); *)
+printit("Wait for next period..");
                                                         wait_for_next_period false;
+printit("awake for next period..");
                                                         loop(xs,(i+1),frameBuf) ) 
                           else
                             ()
@@ -615,23 +627,18 @@ val rec loop =
 
 
 
-fun printit2 s = ()
-fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
-fun gettime () = get_ticks_since_boot ()
-
-
-val runtime      = 220000000 (* 22 s *)
-val deadline     = 220000000 (* 22 s *)
-val period       = 220000000 (* 22 s *)
-
-
 val _ = pspawn (
    fn () => let
                 val iteration = ref 0
                 val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
             in
             while true do  (
+                 starttime := gettime ();
                  Driver.main();
+                 stoptime := gettime ();
+                 printit ("Driver[2]: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
                  iteration := !iteration + 1;
                  schedule_yield false
             )
@@ -641,10 +648,15 @@ val _ = pspawn (
 val _ = pspawn (
    fn () => let
                 val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
                 val iteration = ref 0
             in
             while true do  (
+                starttime := gettime ();
                 Driver.main();
+                stoptime := gettime ();
+                printit ("Driver[3]: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
                 iteration := !iteration + 1;
                 schedule_yield false
             )
@@ -659,10 +671,10 @@ val _ = let
                printit ("main: running #"^Int.toString(!iteration));
 schedule_yield false;
                if (!iteration > 10) then (
-                  dump_instrument_stderr 0;
+                 (* dump_instrument_stderr 0;
                   dump_instrument_stderr 1;
                   dump_instrument_stderr 2;
-                  dump_instrument_stderr 3;
+                  dump_instrument_stderr 3; *)
                   dump_instrument_counter_stderr 0;
                   dump_instrument_counter_stderr 1;
                   dump_instrument_counter_stderr 2;
