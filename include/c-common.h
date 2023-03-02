@@ -12,7 +12,7 @@
 /* maxpri is an upper array bound, not a count. see
  * realtime_thread.c realtimeThreadInit loop (~line 251)
  */
-#define MAXPRI 6 /* XXX dup'd in runtime/realtime_thread.h */
+#define MAXPRI 4 /* XXX dup'd in runtime/realtime_thread.h */
 #define PTHREAD_MAX MAXPRI
 #ifndef DEBUG_CCODEGEN
 #define DEBUG_CCODEGEN FALSE

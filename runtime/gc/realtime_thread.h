@@ -5,7 +5,7 @@
  * realtime_thread.c realtimeThreadInit loop (~line 251)
  */
 
-#define MAXPRI 6 /* 0 = main, 1 = GC, also in include/c-common.h */
+#define MAXPRI 4 /* 0 = main, 1 = GC, also in include/c-common.h */
 #define PTHREAD_MAX MAXPRI  /* transitioning to this instead of MAXPRI */
 #define NUM_USER_MUTEXES 10
 

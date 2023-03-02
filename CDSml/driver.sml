@@ -655,6 +655,7 @@ val _ = pspawn (
             )
             end, 3)
 
+(*
 val _ = pspawn (
    fn () => let
                 val _ = set_schedule (runtime, deadline, period, 2)
@@ -682,6 +683,7 @@ val _ = pspawn (
                 printit ("Driver[5]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
             )
             end, 5)
+*)
 
 val _ = let
             val iteration = ref 0
