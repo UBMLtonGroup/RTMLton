@@ -16,18 +16,18 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	 * Hence we need to stash from someplace that the GC can find it.
 	 */
 
-	/*if (s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
+	if (s->savedThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
 		fprintf(stderr, PURPLE("%d] savedThread "FMTPTR" currentThread "FMTPTR" \n"),
 		  PTHREAD_NUM,
 		  s->savedThread[PTHREAD_NUM],
 		  s->currentThread[PTHREAD_NUM]);
-	}*/
+	}
 
 	assert (s->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR);
 
 	s->savedThread[PTHREAD_NUM] = pointerToObjptr((pointer) from - offsetofThread(s), s->umheap.start);
 	if (DEBUG_THREADS)
-		fprintf(stderr, "%d]    %s "RED("setting savedThread")" to "FMTPTR"\n",
+		fprintf(stderr, "%d]    %s "RED("setting savedThread 1")" to "FMTPTR"\n",
 			PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->savedThread[PTHREAD_NUM]);
 
 	if (DEBUG_THREADS)
@@ -43,8 +43,8 @@ GC_thread copyThread(GC_state s, GC_thread from, size_t used) {
 	from = (GC_thread) (objptrToPointer(s->savedThread[PTHREAD_NUM], s->umheap.start) + offsetofThread(s));
 	s->savedThread[PTHREAD_NUM] = BOGUS_OBJPTR;
 	
-    if (DEBUG_THREADS) {
-        fprintf(stderr, "%d]   %s "RED("setting savedThread")" to "FMTPTR"\n",
+        if (DEBUG_THREADS) {
+                fprintf(stderr, "%d]   %s "RED("setting savedThread 2")" to "FMTPTR"\n",
 			PTHREAD_NUM, __FUNCTION__, (uintptr_t)s->savedThread[PTHREAD_NUM]);
 	}
 

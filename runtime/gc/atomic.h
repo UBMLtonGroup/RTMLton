@@ -21,3 +21,11 @@ void incAtomicBy (GC_state s, uint32_t v);
 
 
 
+#if (defined (MLTON_GC_INTERNAL_BASIS))
+
+PRIVATE void GC_beginAtomic (GC_state s);
+PRIVATE void GC_endAtomic (GC_state s);
+
+
+#endif /* (defined (MLTON_GC_INTERNAL_BASIS)) */
+

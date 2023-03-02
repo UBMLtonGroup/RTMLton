@@ -2,8 +2,8 @@
 open MLton.PrimThread
 
 
-fun printit2 s = ()
-fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
+fun printit s = ()
+fun printit2 s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
 fun gettime () = get_ticks_since_boot ()
 
 

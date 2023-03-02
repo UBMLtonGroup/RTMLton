@@ -481,8 +481,9 @@ structure Statement =
       fun chunkedObject {dst, header, size, numChunks} =
          let
 
+(*
 val _ = TextIO.output (TextIO.stdErr, 
-     ("chunkedObject: size:"^Int.toString(Bytes.toInt(size))^" numChunks:"^Int.toString(Word.toInt(numChunks))^"\n")) (* JEFF *)
+     ("chunkedObject: size:"^Int.toString(Bytes.toInt(size))^" numChunks:"^Int.toString(Word.toInt(numChunks))^"\n")) *)(* JEFF *)
 
             datatype z = datatype Operand.t
             fun bytes (b: Bytes.t): Operand.t =

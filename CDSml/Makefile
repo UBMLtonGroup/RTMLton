@@ -1,10 +1,10 @@
 RTML=/home/jcmurphy/RTMLton/build/bin/mlton
 
 build:
-	$(RTML) -debug false -keep g -default-ann 'allowFFI true' runCD.mlb
+	$(RTML) -debug false -keep g -default-ann 'allowFFI true' -const 'Exn.keepHistory false' runCD.mlb
 
 dbgbuild:
-	$(RTML) -debug true -keep g -default-ann 'allowFFI true' runCD.mlb
+	$(RTML) -debug true -keep g -default-ann 'allowFFI true' -const 'Exn.keepHistory false' runCD.mlb
 
 testrun:
 	sudo ./runCD @MLton lower-bound 40 upper-bound 200 hpercent $(HPERC) rtthreads true max-heap $(HEAP) packingstage1 false packingstage2 false -- 

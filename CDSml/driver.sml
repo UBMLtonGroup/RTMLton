@@ -2,9 +2,9 @@ open MLton.PrimThread
 
 
 (* sched_runtime <= sched_deadline <= sched_period *)
-val runtime      =  1 * 1000000 (* 22 s *)
-val deadline     =  2 * 1000000 (* 22 s *)
-val period       =  3 * 1000000 (* 22 s *)
+val runtime      =  12 * 1000000 (* 22 s *)
+val deadline     =  13 * 1000000 (* 22 s *)
+val period       =  14 * 1000000 (* 22 s *)
 
 
 
@@ -629,7 +629,6 @@ val rec loop =
 
 val _ = pspawn (
    fn () => let
-                val iteration = ref 0
                 val _ = set_schedule (runtime, deadline, period, 2)
                 val starttime = ref (gettime ())
                 val stoptime = ref (gettime ())
@@ -638,39 +637,61 @@ val _ = pspawn (
                  starttime := gettime ();
                  Driver.main();
                  stoptime := gettime ();
-                 printit ("Driver[2]: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
-                 iteration := !iteration + 1;
-                 schedule_yield false
+                 printit ("Driver[2]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
             )
             end, 2)
-
 
 val _ = pspawn (
    fn () => let
                 val _ = set_schedule (runtime, deadline, period, 2)
                 val starttime = ref (gettime ())
                 val stoptime = ref (gettime ())
-                val iteration = ref 0
             in
             while true do  (
                 starttime := gettime ();
                 Driver.main();
                 stoptime := gettime ();
-                printit ("Driver[3]: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
-                iteration := !iteration + 1;
-                schedule_yield false
+                printit ("Driver[3]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
             )
             end, 3)
+
+val _ = pspawn (
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
+            in
+            while true do  (
+                starttime := gettime ();
+                Driver.main();
+                stoptime := gettime ();
+                printit ("Driver[4]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
+            )
+            end, 4)
+
+val _ = pspawn (
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
+            in
+            while true do  (
+                starttime := gettime ();
+                Driver.main();
+                stoptime := gettime ();
+                printit ("Driver[5]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
+            )
+            end, 5)
 
 val _ = let
             val iteration = ref 0
         in
             while true do (
+               printit ("main: running #"^Int.toString(!iteration));
                OS.Process.sleep (Time.fromMicroseconds 10000000);
                iteration := !iteration + 1;
-               printit ("main: running #"^Int.toString(!iteration));
-schedule_yield false;
-               if (!iteration > 10) then (
+               schedule_yield false;
+               if (!iteration > 3) then (
                  (* dump_instrument_stderr 0;
                   dump_instrument_stderr 1;
                   dump_instrument_stderr 2;
