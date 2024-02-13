@@ -100,7 +100,7 @@ C_Errno_t(C_Int_t) Posix_Signal_sigismember (C_Signal_t signum) {
 }
 
 C_Errno_t(C_Int_t) Posix_Signal_sigprocmask (C_Int_t how) {
-  return sigprocmask (how, &Posix_Signal_sigset, &Posix_Signal_sigset);
+  return sigprocmask (how, &Posix_Signal_sigset, NULL);
 }
 
 #if ASSERT

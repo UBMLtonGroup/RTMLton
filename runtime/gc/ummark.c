@@ -455,9 +455,9 @@ bool isContainerChunkMarkedByMode(pointer p, GC_markMode m, GC_objectTypeTag tag
 	if (chunkOffset > 0) chunkOffset -= GC_NORMAL_HEADER_SIZE;
 
 	if (DEBUG_DFS_MARK)
-		fprintf(stderr, "%d] isContainerChunkMarkedByMode %x header %x coffset %d\n", 
-			PTHREAD_NUM, (unsigned int)p,
-			header, chunkOffset
+		fprintf(stderr, "%d] isContainerChunkMarkedByMode %p header %p coffset %d\n", 
+			PTHREAD_NUM, (void *)p,
+			(void *)header, chunkOffset
 		);
 
 	GC_UM_Chunk pchunk = (GC_UM_Chunk)((char*)p-chunkOffset);

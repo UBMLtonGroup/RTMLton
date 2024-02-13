@@ -47,7 +47,7 @@ void reserveAllocation(GC_state s, size_t numChunksToRequest) {
             || (s->fl_chunks < (size_t)(s->hPercent * s->maxChunksAvailable))
           )
     {
-        fprintf(stderr, "%d] "PURPLE("either fl (%d) is < reserved+req (%d) or fl (%d) < heuristic (%d)\n"),
+        fprintf(stderr, "%d] "PURPLE("either fl (%d) is < reserved+req (%ld) or fl (%d) < heuristic (%ld)\n"),
             PTHREAD_NUM, s->fl_chunks, (s->reserved + numChunksToRequest), s->fl_chunks, (size_t)(s->hPercent * s->maxChunksAvailable) );
         UNLOCK_FL;
         pthread_yield();
@@ -86,7 +86,7 @@ UM_Object_alloc_no_packing(GC_state gc_stat, C_Size_t num_chunks, uint32_t heade
     }
 
     if (DEBUG_ALLOC_PACK)
-        fprintf(stderr, "%d] %s returns %x\n", PTHREAD_NUM, __FUNCTION__, (unsigned int) (chunk->ml_object + s));
+        fprintf(stderr, "%d] %s returns %p\n", PTHREAD_NUM, __FUNCTION__, (void *) (chunk->ml_object + s));
     return (Pointer) (chunk->ml_object + s);
 }
 
@@ -134,7 +134,7 @@ UM_Object_alloc_packing_stage2(GC_state s, C_Size_t num_chunks, uint32_t header,
             UNLOCK_FL;
 
             if (DEBUG_ALLOC_PACK)
-                fprintf(stderr, "%d]   writing header 0x%x(%d) with offset %d\n", 
+                fprintf(stderr, "%d]   writing header 0x%x(%d) with offset %ld\n", 
                         PTHREAD_NUM, header, header, used+hdrsz);
 
             *piggybackedOnThreadNum = i;
@@ -212,7 +212,7 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
         }
         else {
             if (DEBUG_ALLOC_PACK)
-                fprintf(stderr, "%d]   there is space in this chunk (%u) to fit our object (%d)\n",
+                fprintf(stderr, "%d]   there is space in this chunk (%u) to fit our object (%ld)\n",
                         PTHREAD_NUM,
                         (unsigned int)(UM_CHUNK_PAYLOAD_SIZE-(chunk->used)), sz+hdrsz
                 );
@@ -280,7 +280,7 @@ UM_Object_alloc_packing_stage1(GC_state s, C_Size_t num_chunks, uint32_t header,
     chunk->used += (sz + hdrsz);
 
     if (DEBUG_ALLOC_PACK)
-        fprintf(stderr, "%d]   writing header 0x%x(%d) with offset %d\n", 
+        fprintf(stderr, "%d]   writing header 0x%x(%d) with offset %ld\n", 
                 PTHREAD_NUM, header, header, used+hdrsz);
 
     // the following line violates C aliasing rules (undefined behavior):
@@ -338,7 +338,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
     User_instrument_counter(50, num_chunks); /* JEFF um_obj_alloc calls, num chunks asked for */
 
     if (DEBUG_ALLOC) {
-        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%u hd:0x%x(%d) (%s [%d] index:%u) sz:%d freelist:%d reserved:%d\n", 
+        fprintf(stderr, "%d]   UM_Object_alloc %s numchk:%lu hd:0x%x(%d) (%s [%d] index:%u) sz:%ld freelist:%d reserved:%d\n", 
                 PTHREAD_NUM, 
                 (header == GC_THREAD_HEADER)?"*** thread ***":"",
                 num_chunks, header,
@@ -367,7 +367,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
             || header == GC_STACK_HEADER 
             || header == GC_WEAK_GONE_HEADER) {
                 if (DEBUG_ALLOC)
-                    fprintf(stderr, "**   me=%d THR %d WEAK %d STACK %d\n", header,
+                    fprintf(stderr, "**   me=%d THR %ld WEAK %ld STACK %ld\n", header,
                         GC_THREAD_HEADER, GC_WEAK_GONE_HEADER, GC_STACK_HEADER
                     );
 
@@ -382,7 +382,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
                     fprintf(stderr, RED("**   no packing for this type\n"));
                 p = UM_Object_alloc_no_packing(gc_stat, num_chunks, header, s);
                 if (DEBUG_ALLOC)
-                    fprintf(stderr, "   UM_Object_alloc returns: p = %x\n", (unsigned int)p);
+                    fprintf(stderr, "   UM_Object_alloc returns: p = %p\n", (void *)p);
                 User_instrument(60);
                 return p;
         }
@@ -395,7 +395,7 @@ UM_Object_alloc(GC_state gc_stat, C_Size_t num_chunks, uint32_t header, C_Size_t
 
     p = UM_Object_alloc_packing_stage1(gc_stat, num_chunks, header, s, sz);
     if (DEBUG_ALLOC_PACK)
-        fprintf(stderr, "   UM_Object_alloc returns: p = %x\n", (unsigned int)p);
+        fprintf(stderr, "   UM_Object_alloc returns: p = %p\n", (void *)p);
     User_instrument(60);
     return p;
 }
@@ -531,12 +531,12 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     Pointer heap_end = (gc_stat->umheap).start + (gc_stat->umheap).size;
 
     if (DEBUG_ARRAY_OFFSET)
-        fprintf(stderr, "%d] UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
+        fprintf(stderr, "%d] UM_Array_offset(base="FMTPTR", index=%ld, elemSize=%ld, offset=%ld)\n",
                 PTHREAD_NUM, (uintptr_t)base, index, elemSize, offset);
 
     if (base < gc_stat->umheap.start || base >= heap_end) {
         if (DEBUG_ARRAY_OFFSET) {
-            fprintf(stderr, "%d] UM_Array_offset: not current heap: "FMTPTR" offset: %d\n",
+            fprintf(stderr, "%d] UM_Array_offset: not current heap: "FMTPTR" offset: %ld\n",
                     PTHREAD_NUM, (uintptr_t)base, offset);
         }
         return base + index * elemSize + offset;
@@ -552,15 +552,15 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
     if (root->array_chunk_type == UM_CHUNK_ARRAY_LEAF) {
         if (DEBUG_MEM)
-            fprintf(stderr, "   root type is LEAF so return direct calculation of base+%d\n",
+            fprintf(stderr, "   root type is LEAF so return direct calculation of base+%ld\n",
                     index * elemSize + offset);
 
         Pointer res = ((Pointer)&(root->ml_array_payload.ml_object[0])) +
                 index * elemSize + offset;
         if (DEBUG_MEM)
             fprintf(stderr,
-                    " --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
-                    "offset: %d, addr "FMTPTR" word: %x, %d, "
+                    " --> Chunk_addr: "FMTPTR", index: %ld, chunk base: "FMTPTR", "
+                    "offset: %ld, addr "FMTPTR" word: %x, %d, "
                     " char: %c\n",
                     (uintptr_t)root,
                     index,
@@ -583,7 +583,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
     assert (root->array_height > 0);
     assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
     if (root->array_chunk_type != UM_CHUNK_ARRAY_INTERNAL) {
-        fprintf(stderr, "%d] root-not-internal UM_Array_offset(base="FMTPTR", index=%d, elemSize=%d, offset=%d)\n",
+        fprintf(stderr, "%d] root-not-internal UM_Array_offset(base="FMTPTR", index=%ld, elemSize=%ld, offset=%ld)\n",
                 PTHREAD_NUM, (uintptr_t)base, index, elemSize, offset);
 
     }
@@ -621,7 +621,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 	size_t slice_width_in_elements = width_in_elements;
 
     if (DEBUG_ARRAY_OFFSET) {
-        fprintf(stderr, " IP^CH * EPC = %d^%d (%d) * %d = %d (max width_in_elements)\n",
+        fprintf(stderr, " IP^CH * EPC = %d^%d (%f) * %d = %d (max width_in_elements)\n",
                 (int)UM_CHUNK_ARRAY_INTERNAL_POINTERS, (int)curHeight,
                 POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS, curHeight),
                 (int)root->num_els_per_chunk, (int)width_in_elements);
@@ -666,7 +666,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
 
 
         if (DEBUG_ARRAY_OFFSET)
-            fprintf(stderr, "  next: %f = (%d-%d)/%d * %d, h=%d e/c=%d, e0 %d eX %d\n",
+            fprintf(stderr, "  next: %f = (%ld-%d)/%d * %d, h=%d e/c=%d, e0 %d eX %d\n",
                     next, index, (int)e0, (int)slice_width_in_elements, (int)UM_CHUNK_ARRAY_INTERNAL_POINTERS,
                     (int)curHeight, (int)root->num_els_per_chunk, (int)e0, (int)eX);
 
@@ -681,7 +681,7 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
      * chunk.
      */
 	if (DEBUG_ARRAY_OFFSET)
-		fprintf(stderr, "   (%d-%d)*%d+%d = %d = (index-e0) * elemSize + offset\n",
+		fprintf(stderr, "   (%ld-%d)*%ld+%ld = %ld = (index-e0) * elemSize + offset\n",
 				index, (int)e0,
 				elemSize, offset, (int)(index-e0)*elemSize+offset);
 
@@ -693,8 +693,8 @@ Pointer UM_Array_offset(GC_state gc_stat, Pointer base, C_Size_t index,
             (index-e0) * elemSize + offset;
     if (DEBUG_ARRAY_OFFSET)
         fprintf(stderr,
-                " --> Chunk_addr: "FMTPTR", index: %d, chunk base: "FMTPTR", "
-                "offset: %d, addr "FMTPTR" word: %x, %d, "
+                " --> Chunk_addr: "FMTPTR", index: %ld, chunk base: "FMTPTR", "
+                "offset: %ld, addr "FMTPTR" word: %x, %d, "
                 " char: %c\n",
             (uintptr_t)root,
             index,

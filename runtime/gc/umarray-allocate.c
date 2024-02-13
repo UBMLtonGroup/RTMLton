@@ -1,5 +1,7 @@
 #include "../gc.h"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 static int ipow(int, unsigned int);
 
 static /* see doc/rtmlton/pow-or-ipow.md */

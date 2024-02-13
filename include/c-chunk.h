@@ -288,7 +288,7 @@ void um_dumpFrame (void *s, void *f);
  * you must keep umheap.h and this definition in sync.
  */
 
-#define UM_CHUNK_PAYLOAD_SIZE 302
+#define UM_CHUNK_PAYLOAD_SIZE 304
 #define UM_CHUNK_PAYLOAD_SAFE_REGION 16
 
 typedef uintptr_t GC_returnAddress;

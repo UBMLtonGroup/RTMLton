@@ -17,7 +17,7 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
     }
 
     if (DEBUG_MEM)
-        fprintf(stderr, "  callIfIsObjptr: Not objptr 0x%x\n", *opp);
+        fprintf(stderr, "  callIfIsObjptr: Not objptr 0x%p\n", (void *)*opp);
 }
 
 
@@ -205,7 +205,7 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
     dataBytes = numElements * bytesPerElement;
 
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)")
-	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%d) bpe(%d)\n",
+	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%ld) bpe(%d)\n",
 	                                 PTHREAD_NUM,
 	                                 numObjptrs, bytesNonObjptrs, numElements, (int)bytesPerElement);
 
@@ -296,9 +296,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 			  fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
 				  PTHREAD_NUM,
 				  frameOffsets[i + 1],
-				  frameOffsets[i + 1],
-				  (int)x,
-				  xv);
+				  (unsigned int) frameOffsets[i + 1],
+				  x,
+				  (long unsigned int)xv);
 
 		  callIfIsObjptr(s, f, (objptr *)x);
 	  }

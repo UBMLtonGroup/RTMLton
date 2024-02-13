@@ -728,9 +728,9 @@ User_instrument_counter(322, pc->used); /* JEFF normal collect */
 
 		fprintf(stderr, "%d] "GREEN("Finished one sweep cycle and freed %d chunks\n"), PTHREAD_NUM, freed);
 
-		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d Sanity: %d\n"), 
+		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d Sanity: %ld\n"), 
 				PTHREAD_NUM, visited, marked, grey,
-				red, foo);
+				red, (long unsigned int)foo);
 	}
 
 	STOP_PERF;

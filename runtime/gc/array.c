@@ -24,7 +24,7 @@ GC_arrayLength* getArrayLengthp (pointer a) {
 GC_arrayLength getArrayLength (pointer a) {
     GC_UM_Array_Chunk root0 = (GC_UM_Array_Chunk)(a - GC_HEADER_SIZE - sizeof(Word32_t));
     if (root0->array_chunk_magic != UM_ARRAY_SENTINEL) {
-      fprintf(stderr, "root0 %x\n", (int)root0);
+      fprintf(stderr, "root0 %p\n", root0);
     }
     assert (root0->array_chunk_magic == UM_ARRAY_SENTINEL);
     return root0->num_els;

@@ -312,7 +312,7 @@ void set_schedule(int runtime, int deadline, int period, int packing) {
 
     if(DEBUG_THREADS)
         fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu packing:%d\n", 
-                PTHREAD_NUM, (uint64_t)runtime, (uint64_t)period, (uint64_t)deadline, packing);
+                PTHREAD_NUM, (long long unsigned int)runtime, (long long unsigned int)period, (long long unsigned int)deadline, packing);
 
     allowedToPack[PTHREAD_NUM] = packing;
 
