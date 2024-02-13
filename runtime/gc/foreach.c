@@ -17,7 +17,7 @@ void callIfIsObjptr (GC_state s, GC_foreachObjptrFun f, objptr *opp) {
     }
 
     if (DEBUG_MEM)
-        fprintf(stderr, "  callIfIsObjptr: Not objptr 0x%x\n", *opp);
+        fprintf(stderr, "  callIfIsObjptr: Not objptr 0x%p\n", (void *)*opp);
 }
 
 
@@ -90,20 +90,24 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
   uint16_t bytesNonObjptrs = 0;
   uint16_t numObjptrs = 0;
   GC_objectTypeTag tag = ERROR_TAG;
+  int chunkOffset = 0;
 
   header = getHeader (p);
+  chunkOffset = CHUNKOFFSET(header);
+
   splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
   if (DEBUG_DETAILED)
     fprintf (stderr,
              "%d] foreachObjptrInObject ("FMTPTR")"
              "  header = "FMTHDR
+             "  chunkOffset = %d "
              "  tag = %s"
              "  bytesNonObjptrs = %d"
              "  numObjptrs = %d\n", PTHREAD_NUM,
-             (uintptr_t)p, header, objectTypeTagToString (tag),
+             (uintptr_t)p, header, chunkOffset, objectTypeTagToString (tag),
              bytesNonObjptrs, numObjptrs);
   if (NORMAL_TAG == tag) {
-	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
+	    if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking normal\n"), PTHREAD_NUM);
 
       if(!isObjectOnUMHeap(s,p)) 
       {
@@ -119,16 +123,16 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
           pointer todo = UM_CPointer_offset(s, p, bytesNonObjptrs + i * OBJPTR_SIZE,
                                             OBJPTR_SIZE);
 
-		if (*(objptr*)todo == (objptr)NULL) {
-			fprintf(stderr, "%d] *TODO is null "FMTPTR"\n",
-					PTHREAD_NUM, (uintptr_t)todo);
-		} else {
-			callIfIsObjptr(s, f, (objptr *) todo);
-		}
+          if (*(objptr*)todo == (objptr)NULL) {
+            fprintf(stderr, "%d] *TODO is null "FMTPTR"\n",
+                PTHREAD_NUM, (uintptr_t)todo);
+          } else {
+            callIfIsObjptr(s, f, (objptr *) todo);
+          }
       }
 
   } else if (WEAK_TAG == tag) {
-	if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking weak\n"), PTHREAD_NUM);
+	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking weak\n"), PTHREAD_NUM);
 
   	p += bytesNonObjptrs;
     if (1 == numObjptrs) {
@@ -193,15 +197,15 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 	   */
 
 	  size_t bytesPerElement;
-      size_t dataBytes, curBytePosition;
-      pointer last;
+    size_t dataBytes, curBytePosition;
+    pointer last;
 	  GC_arrayLength numElements;
-      numElements = getArrayLength (p);
-      bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
-      dataBytes = numElements * bytesPerElement;
+    numElements = getArrayLength (p);
+    bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
+    dataBytes = numElements * bytesPerElement;
 
 	  if (DEBUG_MEM) fprintf(stderr, "%d] "GREEN("marking array (new heap)")
-	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%d) bpe(%d)\n",
+	                                 " numObjptrs(%d) bytesNonObjptrs(%d) numElements(%ld) bpe(%d)\n",
 	                                 PTHREAD_NUM,
 	                                 numObjptrs, bytesNonObjptrs, numElements, (int)bytesPerElement);
 
@@ -292,9 +296,9 @@ pointer foreachObjptrInObject (GC_state s, pointer p,
 			  fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
 				  PTHREAD_NUM,
 				  frameOffsets[i + 1],
-				  frameOffsets[i + 1],
-				  (int)x,
-				  xv);
+				  (unsigned int) frameOffsets[i + 1],
+				  x,
+				  (long unsigned int)xv);
 
 		  callIfIsObjptr(s, f, (objptr *)x);
 	  }

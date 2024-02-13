@@ -500,8 +500,7 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
             Runtime.GCField.setOffsets
             {
              atomicState = get "atomicState_Offset",
-             (*cardMapAbsolute = get
-             * "generationalMaps.cardMapAbsolute_Offset",*)
+             (*cardMapAbsolute = get "generationalMaps.cardMapAbsolute_Offset",*)
              currentThread = get "currentThread_Offset",
              curSourceSeqsIndex = get "sourceMaps.curSourceSeqsIndex_Offset",
              exnStack = get "exnStack_Offset",
@@ -531,7 +530,7 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
              maxFrameSize = get "maxFrameSize_Size",
              signalIsPending = get "signalsInfo.signalIsPending_Size",
              flChunks = get "fl_chunks_Size",
-    	     currentFrame = get "currentFrame_Size",
+    	       currentFrame = get "currentFrame_Size",
              rtSync = get "rtSync_Size",
              heuristicChunks = get "heuristicChunks_Size",
              flLock = get "fl_lock_Size",
@@ -550,6 +549,24 @@ fun elaborate {input: MLBString.t}: Xml.Program.t =
          in
             Control.Target.setBigEndian (get "MLton_Platform_Arch_bigendian")
          end
+ 
+      fun lookfortasks (CoreML.Program.T {decs}) = (* JEFF todo *)
+         let
+            fun loopDec (d: CoreML.Dec.t) =
+               let  
+                  open CoreML.Dec
+               in
+                  case d of 
+                     Fun {decs, ...} => ()
+                     | _ => ()
+               end
+            val _ = Vector.foreach (decs, loopDec)
+         in
+            ()
+         end
+
+      val j = lookfortasks coreML
+
       val xml =
          Control.passTypeCheck
          {display = Control.Layouts Xml.Program.layouts,

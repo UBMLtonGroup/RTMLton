@@ -110,7 +110,12 @@ fun insertChunkedAllocation (b as Block.T {args, kind, label, statements, transf
 
 fun handleFunction (f: Function.t): Function.t =
   let
+
       val {args, blocks, name, raises, returns, start} = Function.dest f
+
+      val _ = TextIO.output (TextIO.stdErr, ("chunked-allocation.fun: "))
+      val _ = Layout.outputl (Func.layout(Function.name f), Out.error) (* JEFF *)
+
       val newBlocks = ref []
       val () = Vector.foreach
                (blocks,

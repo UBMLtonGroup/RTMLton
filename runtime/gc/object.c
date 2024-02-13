@@ -65,15 +65,16 @@ void splitHeader(GC_state s, GC_header header,
 
   assert (1 == (header & GC_VALID_HEADER_MASK)); 
 
+
   objectTypeIndex = (header & TYPE_INDEX_MASK) >> TYPE_INDEX_SHIFT; 
+
   assert (objectTypeIndex < s->objectTypesLength); 
   objectType = &(s->objectTypes[objectTypeIndex]);
   tag = objectType->tag; 
   hasIdentity = objectType->hasIdentity; 
   bytesNonObjptrs = objectType->bytesNonObjptrs; 
   numObjptrs = objectType->numObjptrs; 
-/*
-  if (DEBUG_DETAILED) 
+  if (DEBUG_DETAILED)
     fprintf (stderr, 
              "%d] splitHeader ("FMTHDR")" 
              "  objectTypeIndex = %u"
@@ -87,7 +88,7 @@ void splitHeader(GC_state s, GC_header header,
              objectTypeTagToString(tag), 
              boolToString(hasIdentity), 
              bytesNonObjptrs, numObjptrs); 
-*/
+
   if (tagRet != NULL)
     *tagRet = tag;
   if (hasIdentityRet != NULL)

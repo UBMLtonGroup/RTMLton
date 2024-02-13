@@ -101,6 +101,11 @@ struct GC_state {
   /* added for rt-threading */
 
   pthread_t *realtimeThreads[MAXPRI];
+  pointer activeChunk[MAXPRI];
+  pthread_mutex_t activeChunkLock[MAXPRI];
+  int packingStageForThread[MAXPRI]; // not used, remove
+  bool packingStage1Enabled, packingStage2Enabled;
+
   volatile bool mainBooted;
   /* Begin inter-thread GC communication data */
   volatile bool GCrunnerRunning;
@@ -123,7 +128,8 @@ struct GC_state {
   size_t numAllocedByRT;
   bool oneByOne;
   bool useRTThreads;
-
+  int lower_bound; // object packing um.c
+  int upper_bound; // object packing um.c
   /* end of rt-threading additions */
 
   pointer ffiOpArgsResPtr[MAXPRI];

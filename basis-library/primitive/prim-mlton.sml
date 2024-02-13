@@ -321,10 +321,11 @@ structure Thread =
 
       val atomicState = _prim "Thread_atomicState": unit -> Word32.word;
       val atomicBegin = _prim "Thread_atomicBegin": unit -> unit;
-      fun atomicEnd () =
+      val atomicEnd = _prim "Thread_atomicEnd": unit -> unit;
+      fun atomicEnd_x () = 
          if atomicState () = 0w0
-            then raise Primitive.Exn.Fail8 "Thread.atomicEnd"
-            else _prim "Thread_atomicEnd": unit -> unit; ()
+            then raise Primitive.Exn.Fail8 "Thread.atomicEnd" 
+            else  _prim "Thread_atomicEnd": unit -> unit; ()
       val copy = _prim "Thread_copy": preThread -> thread;
       (* copyCurrent's result is accesible via savedPre ().
        * It is not possible to have the type of copyCurrent as

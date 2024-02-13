@@ -11,8 +11,8 @@
 
 
 //#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&s->rtThreads_cond))
-#define LOCK_RT_TH IFED(pthread_mutex_lock(&s->rtThreads_lock))
-#define UNLOCK_RT_TH IFED(pthread_mutex_unlock(&s->rtThreads_lock))
+#define LOCK_RT_TH LOCK_DEBUG("LOCK_RT_TH"); IFED(pthread_mutex_lock(&s->rtThreads_lock))
+#define UNLOCK_RT_TH IFED(pthread_mutex_unlock(&s->rtThreads_lock)); LOCK_DEBUG("UNLOCK_RT_TH")
 
 void displayGCState(GC_state s, FILE *stream) {
 
@@ -210,7 +210,7 @@ pointer GC_getCallFromCHandlerThread(GC_state s) {
 void GC_setCallFromCHandlerThread(GC_state s, pointer p) {
 	objptr op = pointerToObjptr(p, s->umheap.start);
 	s->callFromCHandlerThread[PTHREAD_NUM] = op;
-	if (DEBUG_THREADS)
+	if (1||DEBUG_THREADS)
 		fprintf(stderr, "%d] "PURPLE("call handler set")": "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)op);
 	GC_copyCurrentThread(s, false);
 	//LOCK_RT_TH;

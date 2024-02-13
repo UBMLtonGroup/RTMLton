@@ -22,9 +22,12 @@ GC_arrayLength* getArrayLengthp (pointer a) {
  * Returns the length for the array pointed to by p.
  */
 GC_arrayLength getArrayLength (pointer a) {
-    GC_UM_Array_Chunk root = (GC_UM_Array_Chunk)(a - GC_HEADER_SIZE - sizeof(Word32_t));
-    //assert (root->array_chunk_magic == UM_ARRAY_SENTINEL);
-    return root->num_els;
+    GC_UM_Array_Chunk root0 = (GC_UM_Array_Chunk)(a - GC_HEADER_SIZE - sizeof(Word32_t));
+    if (root0->array_chunk_magic != UM_ARRAY_SENTINEL) {
+      fprintf(stderr, "root0 %p\n", root0);
+    }
+    assert (root0->array_chunk_magic == UM_ARRAY_SENTINEL);
+    return root0->num_els;
 }
 
 uintmax_t GC_getArrayLength (pointer a) {

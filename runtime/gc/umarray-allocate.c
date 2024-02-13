@@ -1,5 +1,7 @@
 #include "../gc.h"
 
+#pragma GCC diagnostic ignored "-Wunused-function"
+
 static int ipow(int, unsigned int);
 
 static /* see doc/rtmlton/pow-or-ipow.md */
@@ -204,6 +206,7 @@ pointer GC_arrayAllocate(GC_state s,
 
     /* calc number of leaves */
 
+
     splitHeader(s, header, NULL, NULL, &bytesNonObjptrs, &numObjptrs);
     bytesPerElement = bytesNonObjptrs + (numObjptrs * OBJPTR_SIZE);
 
@@ -218,6 +221,8 @@ pointer GC_arrayAllocate(GC_state s,
 
     //size_t numChunks = (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight+1)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
 	size_t numChunks = numLeaves + (POW(UM_CHUNK_ARRAY_INTERNAL_POINTERS,treeHeight)-1) / (UM_CHUNK_ARRAY_INTERNAL_POINTERS-1);
+
+    User_instrument_counter(200, 1); /* JEFF array allocs total */
 
 	/* calc total number of internal chunks needed to construct the tree
 	 * to do this we dont simply calculate the number of nodes needed to fully
@@ -249,6 +254,7 @@ pointer GC_arrayAllocate(GC_state s,
 	if (numChunks == 0) numChunks = 1;
 
     assert (numChunks > 0);
+    User_instrument_counter(210, numChunks); /* JEFF array allocs chunks */
 
 	/* reserve chunks: will block if there aren't enough chunks */
 

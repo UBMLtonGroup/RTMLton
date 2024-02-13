@@ -1,8 +1,8 @@
 #include "../gc.h"
 
 
-#define LOCK_WL IFED(pthread_mutex_lock(&s->wl_lock))
-#define UNLOCK_WL IFED(pthread_mutex_unlock(&s->wl_lock))
+#define LOCK_WL LOCK_DEBUG("LOCK_WL"); IFED(pthread_mutex_lock(&s->wl_lock))
+#define UNLOCK_WL IFED(pthread_mutex_unlock(&s->wl_lock)); LOCK_DEBUG("UNLOCK_WL")
 
 
 void umDfsMarkObjectsUnMark(GC_state s, objptr *opp) {
@@ -51,7 +51,6 @@ void printTag(const char *f, GC_objectTypeTag tag, pointer _p) {
 void addToWorklist(GC_state s, objptr *opp) {
 	LOCK_WL;
 
-
 	assert(isObjptr(*opp));
 
 	/*Objptr on Worklist is not shaded when :
@@ -73,16 +72,9 @@ void addToWorklist(GC_state s, objptr *opp) {
 		s->wl_size *= 2;
 
 		if (DEBUG_RTGC_MARKING) {
-			fprintf(stderr, "old: "
-			FMTPTR
-			" \n", (uintptr_t) old);
-			fprintf(stderr, "new: "
-			FMTPTR
-			" \n", (uintptr_t) new);
-			fprintf(stderr, "worklist: "
-			FMTPTR
-			" \n", (uintptr_t) s->worklist);
-
+			fprintf(stderr, "old: "FMTPTR" \n", (uintptr_t) old);
+			fprintf(stderr, "new: "FMTPTR" \n", (uintptr_t) new);
+			fprintf(stderr, "worklist: "FMTPTR" \n", (uintptr_t) s->worklist);
 		}
 
 		free(old);
@@ -100,7 +92,6 @@ bool isEmptyWorklist(GC_state s) {
 		return false;
 	else
 		return true;
-
 }
 
 
@@ -113,7 +104,8 @@ bool isObjectShaded(GC_state s, objptr *opp) {
 	GC_objectTypeTag tag = ERROR_TAG;
 	splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
-	printTag(__func__, tag, p);
+	if (DEBUG_RTGC_MARKING)
+		printTag(__func__, tag, p);
 
 	bool verdict = true;
 
@@ -124,7 +116,7 @@ bool isObjectShaded(GC_state s, objptr *opp) {
 	} else
 		verdict = isContainerChunkMarkedByMode(p, GREY_MODE, tag);
 
-	if (DEBUG)
+	if (DEBUG_RTGC_MARKING)
 		fprintf(stderr, "%d] %s verdict %d\n", PTHREAD_NUM, __func__, verdict);
 
 	return verdict;
@@ -141,7 +133,7 @@ bool isObjectMarked(GC_state s, objptr *opp) {
 
 	bool verdict = isContainerChunkMarkedByMode(p, MARK_MODE, tag);
 
-	if (DEBUG) {
+	if (DEBUG_RTGC_MARKING) {
 		printTag(__func__, tag, p);
 		fprintf(stderr, "%d] %s verdict %d\n", PTHREAD_NUM, __func__, verdict);
 	}
@@ -166,7 +158,7 @@ void umShadeObject(GC_state s, objptr *opp) {
 		splitHeader(s, header, &tag, NULL, &bytesNonObjptrs, &numObjptrs);
 
 		markChunk(p, tag, GREY_MODE, s, numObjptrs);
-		if (DEBUG) {
+		if (DEBUG_RTGC_MARKING_SHADING) {
 			printTag(__func__, tag, p);
 			fprintf(stderr, "%d] shade "FMTPTR"\n", PTHREAD_NUM, (uintptr_t) p);
 		}
@@ -186,6 +178,7 @@ GC_objectTypeTag getObjectType(GC_state s, pointer p) {
 bool isWorklistShaded(GC_state s) {
 	/* Enforce invariant:
 	 * Mutator holds no white references*/
+	START_PERF;
 
 	LOCK_WL;
 	int i;
@@ -200,12 +193,16 @@ bool isWorklistShaded(GC_state s) {
 	}
 	UNLOCK_WL;
 
+	STOP_PERF;
+
 	return true;
 }
 
 
 static void markWorklist(GC_state s) {
 	int i, tmplength;
+	START_PERF;
+
 
 	LOCK_WL;
 
@@ -243,11 +240,15 @@ static void markWorklist(GC_state s) {
 
 	UNLOCK_WL;
 
+	STOP_PERF;
+
 
 }
 
 static
 void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint16_t numObjptrs) {
+	START_PERF;
+
 	if (tag == NORMAL_TAG || tag == STACK_TAG || tag == WEAK_TAG)  {
 
 		if (p >= s->umheap.start &&
@@ -258,6 +259,19 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 				pchunk = (GC_UM_Chunk)(p - GC_NORMAL_HEADER_SIZE); /*Get the chunk holding the mlton object*/
 			else
 				pchunk = (GC_UM_Chunk)(p);
+
+			int coffset = CHUNKOFFSET(*(int*)(pchunk));
+			
+			// normal (1), stack and weaks arent packed, so we adjust here
+			// if packing is not enabled, the chunkoffset field should always be
+			// zero.
+			
+			if (coffset > 0) coffset -= GC_NORMAL_HEADER_SIZE;
+
+			//fprintf(stderr, "%d] %x header %x coffset %d\n", PTHREAD_NUM, (int)(pchunk), *(int *)(pchunk), coffset);
+			//fprintf(stderr, "%x\n", (unsigned int)pchunk);
+			pchunk = (GC_UM_Chunk)((char*)pchunk-coffset);
+			//fprintf(stderr, "%x\n", (unsigned int)pchunk);
 
 			if (tag == NORMAL_TAG || tag == WEAK_TAG)
 				assert (pchunk->sentinel == UM_CHUNK_SENTINEL);
@@ -355,6 +369,7 @@ void markChunk(pointer p, GC_objectTypeTag tag, GC_markMode m, GC_state s, uint1
 		}
 	}
 
+	STOP_PERF;
 
 }
 
@@ -432,21 +447,41 @@ static bool isChunkShaded(pointer p, GC_objectTypeTag tag) {
 
 static
 bool isContainerChunkMarkedByMode(pointer p, GC_markMode m, GC_objectTypeTag tag) {
+	// p is a pointer to an obj. we want to find the container it is in.
+	GC_header *headerp = getHeaderp(p);
+	GC_header header = *headerp;
+	int chunkOffset = CHUNKOFFSET(header);
+
+	if (chunkOffset > 0) chunkOffset -= GC_NORMAL_HEADER_SIZE;
+
+	if (DEBUG_DFS_MARK)
+		fprintf(stderr, "%d] isContainerChunkMarkedByMode %p header %p coffset %d\n", 
+			PTHREAD_NUM, (void *)p,
+			(void *)header, chunkOffset
+		);
+
+	GC_UM_Chunk pchunk = (GC_UM_Chunk)((char*)p-chunkOffset);
+
+	if (DEBUG_DFS_MARK) {
+		fprintf(stderr, "%d] isContainerChunkMarkedByMode obj: "FMTPTR"\n",
+				PTHREAD_NUM, (uintptr_t) pchunk);
+		fprintf(stderr, "  header %x chunkOffset %d\n", (unsigned int)header, chunkOffset);
+	}
+
 	switch (m) {
 		case MARK_MODE:
-			return isChunkMarked(p, tag);
+			return isChunkMarked((pointer)pchunk, tag);
 		case UNMARK_MODE:
 			return not
-			isChunkMarked(p, tag);
+			isChunkMarked((pointer)pchunk, tag);
 		case GREY_MODE:
-			return isChunkShaded(p, tag);
+			return isChunkShaded((pointer)pchunk, tag);
 		default:
 			die("bad mark mode %u", m);
 	}
 }
 
 
-//TODO: handle marking the mlton objects if packing more than one object in a chunk
 /* Tricolor abstraction at the chunk level. Binary marking for the MLton objects remain same. 
  * Implementation: 
  * 1. If function is in marking mode, mark current chunk grey.
@@ -457,6 +492,8 @@ bool isContainerChunkMarkedByMode(pointer p, GC_markMode m, GC_objectTypeTag tag
  * */
 
 void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
+	START_PERF;
+
 	pointer p = objptrToPointer(*opp, s->umheap.start);
 	if (DEBUG_DFS_MARK)
 		fprintf(stderr, "umDFSMarkObjects: original obj: "FMTPTR", obj: "FMTPTR"\n",
@@ -510,6 +547,8 @@ void umDfsMarkObjects(GC_state s, objptr *opp, GC_markMode m) {
 			foreachObjptrInObject(s, p, umDfsMarkObjectsUnMark, false);
 		}
 	}
+
+	STOP_PERF;
 }
 
 
@@ -518,6 +557,8 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 	 * be marked. Objects pointed to via an Lnode will not be marked.
 	 * The marking of those objects is performed in foreachObjptrInObject
 	 */
+	START_PERF;
+
 	assert (p->array_chunk_magic == UM_ARRAY_SENTINEL);
 
 	if (DEBUG_DFS_MARK)
@@ -547,14 +588,15 @@ void markUMArrayChunks(GC_state s, GC_UM_Array_Chunk p, GC_markMode m) {
 			markUMArrayChunks(s, pcur, m);
 		}
 	}
+
+	STOP_PERF;
+
 }
 
 
 void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
+	START_PERF;
 	pointer p = objptrToPointer(*opp, s->umheap.start);
-	if (DEBUG_DFS_MARK)
-		fprintf(stderr, "original obj: "FMTPTR", obj: "FMTPTR"\n",
-				(uintptr_t) * opp, (uintptr_t) p);
 	GC_header *headerp = getHeaderp(p);
 	GC_header header = *headerp;
 	uint16_t bytesNonObjptrs = 0;
@@ -577,8 +619,7 @@ void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
 	/* Using MLton object to track if containing chunk marked */
 	if (isContainerChunkMarkedByMode(p, m, tag)) {
 		if (DEBUG_DFS_MARK)
-			fprintf(stderr, FMTPTR
-		"marked by mark_mode: %d, RETURN\n",
+			fprintf(stderr, FMTPTR"marked by mark_mode: %d, RETURN\n",
 				(uintptr_t) p,
 				(m == MARK_MODE));
 		return;
@@ -610,4 +651,6 @@ void umDfsMarkObjectsToWorklist(GC_state s, objptr *opp, GC_markMode m) {
 			foreachObjptrInObject(s, p, umDfsMarkObjectsUnMark, false);
 		}
 	}
+
+	STOP_PERF;
 }

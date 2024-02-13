@@ -50,7 +50,7 @@ structure MLtonExn =
                          ; Exit.halt Exit.Status.failure
                          ; raise Fail "MLton.Exn.wrapHandler")
          val defaultHandler = fn exn =>
-            (message (concat ["unhandled exception: ", exnMessage exn, "\n"])
+            (message (concat ["[basis-library/mlton/exn.sml] unhandled exception: ", exnMessage exn, "\n"])
              ; (case history exn of
                    [] => ()
                  | l =>

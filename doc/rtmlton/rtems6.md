@@ -121,4 +121,11 @@ more stuff
 
 
 
+## RTEMS API Useful Links
+
+Periodic task code samples
+
+https://cpp.hotexamples.com/examples/-/-/rtems_clock_get_ticks_since_boot/cpp-rtems_clock_get_ticks_since_boot-function-examples.html
+
+
 

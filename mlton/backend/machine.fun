@@ -454,7 +454,7 @@ structure Statement =
             fun bytes (b: Bytes.t): Operand.t =
                Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize ()))
             val temp = Register (Register.new (Type.cpointer (), NONE))
-            val _ = print "Hmm! fiddling frontier!"
+            val _ = TextIO.output (TextIO.stdErr,  "Hmm! fiddling frontier! (machine.fun)\n")
          in
             Vector.new4
             (Move {dst = Contents {oper = Frontier,
@@ -473,9 +473,18 @@ structure Statement =
          end
 
 
-
+      (* ref from
+         backend.fun "fun genStatement"
+         which takes an RSSA.Statement and converts it to a Machine.Statement
+         
+       *)
       fun chunkedObject {dst, header, size, numChunks} =
          let
+
+(*
+val _ = TextIO.output (TextIO.stdErr, 
+     ("chunkedObject: size:"^Int.toString(Bytes.toInt(size))^" numChunks:"^Int.toString(Word.toInt(numChunks))^"\n")) *)(* JEFF *)
+
             datatype z = datatype Operand.t
             fun bytes (b: Bytes.t): Operand.t =
                Word (WordX.fromIntInf (Bytes.toIntInf b, WordSize.csize ()))
@@ -486,10 +495,11 @@ structure Statement =
                 Word (WordX.fromIntInf (Word.toIntInf w, WordSize.csize ()))
          in
             Vector.new2
-            (PrimApp {args = Vector.new4 (GCState,
+            (PrimApp {args = Vector.new5 (GCState,
                                           wordOp numChunks,
                                           gcHeader,
-                                          bytes (Runtime.headerSize ())),
+                                          bytes (Runtime.headerSize ()),
+                                          bytes (size)),
                       dst = SOME temp,
                       prim = Prim.umObjectAlloc},
              (* CHECK; if objptr <> cpointer, need non-trivial coercion here. *)

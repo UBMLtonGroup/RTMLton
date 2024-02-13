@@ -1,9 +1,21 @@
+open MLton.PrimThread
+
+
+(* sched_runtime <= sched_deadline <= sched_period *)
+val runtime      =  12 * 1000000 (* 22 s *)
+val deadline     =  13 * 1000000 (* 22 s *)
+val period       =  14 * 1000000 (* 22 s *)
+
+
+
+fun printit2 s = ()
+fun printit s = print (Int.toString(getMyPriority ())^"] "^s^"\n")
+fun gettime () = get_ticks_since_boot ()
+
+
 
 structure Driver = 
 struct
-
-
-    
 
   (*To do read properly from file*)
     datatype for = to of int * int
@@ -567,20 +579,22 @@ Frames.createFrame( 40, Array.fromList( [ "plane0","plane1","plane2","plane3","p
      
 
 
-
-
-        
+      val starttime = ref (gettime ())
+      val stoptime = ref (gettime ())
 
       fun loop ([],i,frameBuf) = if not (i=maxFrames) then loop(frameBuf,i,frameBuf) else ()
         | loop(x::xs,i,frameBuf) = if not(i = maxFrames) then (Array.update(ts,i,Time.toMicroseconds (Time.now()));
                                                         (*print(IntInf.toString(Array.sub(ts,i))^"\n"); *)
+starttime := gettime ();
                                                         TransientDetector.TRANSIENTDETECTOR_run(x) ;
-                                                        
-
-
+stoptime := gettime ();
+printit ("Driver: TRANSIENTDETECTOR_run: runtime "^Real.toString(Real.-(!stoptime, !starttime)));
                                                         Array.update(tc,i,Time.toMicroseconds(Time.now ()) );
                                                         (*print(IntInf.toString(Time.toMicroseconds(Time.now()))^"\n");*)
-                                                        maybeSleep (Array.sub(ts,i));
+                                                        (*maybeSleep (Array.sub(ts,i)); *)
+printit("Wait for next period..");
+                                                        wait_for_next_period false;
+printit("awake for next period..");
                                                         loop(xs,(i+1),frameBuf) ) 
                           else
                             ()
@@ -612,10 +626,87 @@ val rec loop =
     | n => ((*print ("loop" ^ Int.toString(n) ^"\n");*) delay 50000000; loop (n - 1))
 
 
-(*val _ = (PThread.spawn(fn () => Driver.main());PThread.spawn(fn () => loop
-* 10); PThread.run())*)
 
-val _ = Driver.main();
+val _ = pspawn (
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
+            in
+            while true do  (
+                 starttime := gettime ();
+                 Driver.main();
+                 stoptime := gettime ();
+                 printit ("Driver[2]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
+            )
+            end, 2)
+
+val _ = pspawn (
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
+            in
+            while true do  (
+                starttime := gettime ();
+                Driver.main();
+                stoptime := gettime ();
+                printit ("Driver[3]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
+            )
+            end, 3)
+
+(*
+val _ = pspawn (
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
+            in
+            while true do  (
+                starttime := gettime ();
+                Driver.main();
+                stoptime := gettime ();
+                printit ("Driver[4]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
+            )
+            end, 4)
+
+val _ = pspawn (
+   fn () => let
+                val _ = set_schedule (runtime, deadline, period, 2)
+                val starttime = ref (gettime ())
+                val stoptime = ref (gettime ())
+            in
+            while true do  (
+                starttime := gettime ();
+                Driver.main();
+                stoptime := gettime ();
+                printit ("Driver[5]: runtime "^Real.toString(Real.-(!stoptime, !starttime)))
+            )
+            end, 5)
+*)
+
+val _ = let
+            val iteration = ref 0
+        in
+            while true do (
+               printit ("main: running #"^Int.toString(!iteration));
+               OS.Process.sleep (Time.fromMicroseconds 10000000);
+               iteration := !iteration + 1;
+               schedule_yield false;
+               if (!iteration > 3) then (
+                 (* dump_instrument_stderr 0;
+                  dump_instrument_stderr 1;
+                  dump_instrument_stderr 2;
+                  dump_instrument_stderr 3; *)
+                  dump_instrument_counter_stderr 0;
+                  dump_instrument_counter_stderr 1;
+                  dump_instrument_counter_stderr 2;
+                  dump_instrument_counter_stderr 3;
+                  OS.Process.terminate(OS.Process.success)
+               ) else ();
+               ()
+             )
+        end
 
 (*Run with rtobj 5 for RTMLton*)
 

@@ -1,3 +1,15 @@
+Merging from mlton/master
+
+git clone mlton
+cd RTMLton
+ 1271  git checkout mlton-master
+ 1272  git pull
+ 1273  git remote add mltonmaster ../mlton
+ 1277  git remote update
+ 1278  git merge mltonmaster/master
+ 1282  git push
+ 1284  git checkout jeff/working
+
 GDB/libcheck
 
 export CK_FORK=no

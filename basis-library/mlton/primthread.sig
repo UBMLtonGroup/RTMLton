@@ -9,35 +9,46 @@
 signature PRIM_THREAD =
    sig
 
-     structure PreThread : 
-     sig 
-        type t 
-     end
-     
-     structure Thread :
-     sig
-        type t
-     end
-     
-     structure PThread :
-     sig
-        type preThread = PreThread.t
-        type thread = Thread.t
-        val savedPre: unit -> preThread
-        val copyCurrent: unit -> unit
-        val copy: preThread -> Thread.t   
-        val spawnp: (unit->unit) -> unit
-        val run: unit ->unit      
-     end
+      structure PreThread : 
+      sig 
+         type t 
+      end
+      
+      structure Thread :
+      sig
+         type t
+      end
+      
+      structure PThread :
+      sig
+         type preThread = PreThread.t
+         type thread = Thread.t
+         val savedPre: unit -> preThread
+         val copyCurrent: unit -> unit
+         val copy: preThread -> Thread.t   
+         val spawnp: (unit->unit) -> unit
+         val run: unit ->unit      
+      end
 
-     type 'a t
-    
-     val rtlock : int -> unit
-     val rtunlock : int -> unit
-     val pspawn: (unit->unit) * int -> unit
-     val thread_main: unit -> unit
-     val gcstate: Primitive.MLton.GCState.t
+      type 'a t
 
-     val getMyPriority: unit -> int
+      val get_ticks_since_boot : unit -> real
+      val dump_instrument_stderr : int -> unit
+      val instrument : int -> unit
+      val dump_instrument_counter_stderr : int -> unit
+      val instrument_counter : int * int -> unit
+
+      val rtlock : int -> unit
+      val rtunlock : int -> unit
+      val pspawn: (unit->unit) * int -> unit
+      val thread_main: unit -> unit
+      val thread_main_rtems: unit -> unit
+      val gcstate: Primitive.MLton.GCState.t
+
+      val getMyPriority: unit -> int
+      val set_schedule: int * int * int * int -> unit
+      val ssleep: int * int -> int
+      val schedule_yield: bool -> unit
+      val wait_for_next_period: bool -> unit
 
  end

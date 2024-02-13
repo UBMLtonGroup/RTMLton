@@ -72,6 +72,11 @@ structure LiveInfo =
          addEdge
    end
 
+(* outputs a string to stderr instead of source files *)
+fun jeffit x = TextIO.output (TextIO.stdErr, (x^"\n")) (* JEFF *)
+(* prints a Pretty.t to stderr *)
+fun prettyit x = Layout.outputl (x, Out.error) (* JEFF *)
+
 val traceConsider = 
    Trace.trace ("Live.consider", LiveInfo.layout, Bool.layout)
 
@@ -81,6 +86,7 @@ fun live (function, {shouldConsider: Var.t -> bool}) =
          Trace.trace ("Live.shouldConsider", Var.layout, Bool.layout)
          shouldConsider
       val {args, blocks, ...} = Function.dest function
+      val _ = Layout.outputl (Func.layout(Function.name function), Out.error) (* JEFF *)
       val _ =
          Control.diagnostic
          (fn () =>

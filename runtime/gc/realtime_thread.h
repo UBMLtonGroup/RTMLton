@@ -1,7 +1,11 @@
 #ifndef _REALTIME_THREAD_H_
 #define _REALTIME_THREAD_H_
 
-#define MAXPRI 6 /* 0 = main, 1 = GC, also in include/c-common.h */
+/* maxpri is an upper array bound, not a count. see
+ * realtime_thread.c realtimeThreadInit loop (~line 251)
+ */
+
+#define MAXPRI 4 /* 0 = main, 1 = GC, also in include/c-common.h */
 #define PTHREAD_MAX MAXPRI  /* transitioning to this instead of MAXPRI */
 #define NUM_USER_MUTEXES 10
 
@@ -31,6 +35,14 @@ void ML_lock (void);
 void ML_unlock (void);
 void User_lock (Int32);
 void User_unlock (Int32);
+void User_instrument_initialize (void);
+void User_instrument (Int32 p);
+void Dump_instrument_stderr (Int32 p);
+void User_instrument_counter (Int32 p, Int32 i);
+void Dump_instrument_counter_stderr (Int32 p);
+double get_ticks_since_boot(void);
+void set_schedule(int runtime, int deadline, int period, int packing);
+int schedule_yield(GC_state s, bool trigger_gc);
 #endif
 
 #endif /* _REALTIME_THREAD_H_ */

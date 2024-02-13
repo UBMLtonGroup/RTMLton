@@ -1,0 +1,50 @@
+#
+# Hello world Waf script
+#
+from __future__ import print_function
+
+rtems_version = "6"
+
+try:
+    import rtems_waf.rtems as rtems
+except:
+    print('error: no rtems_waf git submodule')
+    import sys
+    sys.exit(1)
+
+def init(ctx):
+    rtems.init(ctx, version = rtems_version, long_commands = True)
+
+def bsp_configure(conf, arch_bsp):
+    # Add BSP specific configuration checks
+    pass
+
+def options(opt):
+    rtems.options(opt)
+
+def configure(conf):
+    rtems.configure(conf, bsp_configure = bsp_configure)
+
+def build(bld):
+    rtems.build(bld)
+
+    x = """
+ -I/opt/rtems6/include
+ -I/opt/rtems6/i386-rtems6/include 
+          -I/home/jcmurphy/RTMLton/build/lib/include -fno-common 
+          -D_GNU_SOURCE -D__USE_GNU -fno-strict-aliasing -fomit-frame-pointer 
+          -w -m32 -fno-strength-reduce -fschedule-insns -fschedule-insns2 
+          -falign-functions=5 -falign-jumps=2 -falign-loops=2 
+ -w
+"""
+
+    y = """ -L/opt/rtems6/i386-rtems6/pc386/lib/
+            -L/opt/rtems6/lib/
+            -lm  """
+
+    bld(features = 'c cprogram',
+        target = 'hello.exe',
+        cflags = ' -g -O0 ' + x,
+        ldflags = y,
+        source = ['hello.c', 
+                  'init.c'])

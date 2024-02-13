@@ -10,10 +10,10 @@
  */
 
 #define IFED(X) do { if (X) { printf(__FUNCTION__);perror("-perror " #X); exit(-1); } } while(0)
-#define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL LOCK_DEBUG("LOCK_FL");  IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock)); LOCK_DEBUG("UNLOCK_FL")
 
-#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+#define BLOCK LOCK_DEBUG("BLOCK");  IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
 #if 0
 
@@ -90,7 +90,7 @@ void RTGC_done(GC_state s) {
 
 	free(s->worklist);
 
-	if (DISPLAY_GC_STATS)
+	if (DISPLAY_GC_STATS || s->controls.summary)
 		displayChunkedGCStats(s, out);
 }
 __attribute__((noreturn))

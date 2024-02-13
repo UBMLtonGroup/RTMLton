@@ -135,14 +135,31 @@ struct
   end
 
   local
-    val lock__ = _import "User_lock" : int -> unit;
-    val unlock__ = _import "User_unlock" : int -> unit;
+      val inst__   = _import "User_instrument" : int -> unit;
+      val dise__   = _import "Dump_instrument_stderr" : int -> unit;
+      val instc__  = _import "User_instrument_counter" : int * int -> unit;
+      val disec__  = _import "Dump_instrument_counter_stderr" : int -> unit;
+      val gtsb__   = _import "get_ticks_since_boot" : unit -> real;
+      val lock__   = _import "User_lock" : int -> unit;
+      val unlock__ = _import "User_unlock" : int -> unit;
+      val setsch   = _import "set_schedule" : int * int * int * int -> unit;
+      val ssleep__ = _import "ssleep": int * int -> int;
+      val schyld   = _import "schedule_yield" : Primitive.MLton.GCState.t * bool -> unit;
   in
-    fun rtlock a = if a <=9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
-    fun rtunlock a = if a<=9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+      fun instrument_counter a = instc__ a
+      fun dump_instrument_counter_stderr a = disec__ a
+      fun instrument a = inst__ a
+      fun dump_instrument_stderr a = dise__ a
+      fun get_ticks_since_boot () = gtsb__ ()
+      fun ssleep (s, us) = ssleep__ (s, us)
+      fun rtlock a = if a <= 9 then lock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+      fun rtunlock a = if a <= 9 then unlock__ a else print "Invalid lock. Valid locks are [0-9]\n"
+      fun set_schedule (rt, dl, per, packing) = setsch (rt, dl, per, packing)
+      fun schedule_yield trigger_gc = schyld (Primitive.MLton.GCState.gcState, trigger_gc)
+      fun wait_for_next_period trigger_gc = schyld (Primitive.MLton.GCState.gcState, trigger_gc)
   end 
 
-
+  val getMyPriority = _import "GC_myPriority": unit -> int;
 
   structure WorkQueue:
     sig
@@ -155,26 +172,35 @@ struct
     struct
       datatype 'a t = T of 'a list Array.array
 
-      fun new () = T (Array.tabulate(numberOfPThreads (), fn _ => []))
-      
+      (* note: this model creates a workq for each pthread, but the main thread is
+         thread ID 0 and the GC is thread ID 1 (see realtime_thread.c realtimeThreadInit)
+       *)
+      fun new () = T (
+              Array.tabulate(numberOfPThreads (), fn _ => [])
+              )
+      (*fun mysleep () = (Posix.Process.sleep (Time.fromSeconds 1); ())*)
+
       fun addWork (T wq, w, p) = 
-      let 
+      let
+        val maxpri = numberOfPThreads ()
       in
-        lock ();
-        Array.unsafeUpdate (wq, p, Array.unsafeSub (wq, p) @ [w]);
-        unlock ()
+        if (Array.length wq) <= p then raise Subscript else (
+          lock (); (*print ("addWork: workqlen="^Int.toString(Array.length wq)^" p="^Int.toString(p)^"\n"); *)
+          Array.update (wq, p, Array.sub (wq, p) @ [w]);
+          unlock ()
+        )
       end
-      handle Subscript => ( unlock(); die "Invalid priority")
+      handle Subscript =>  die (Int.toString(getMyPriority ())^"] Invalid priority (raise) p:"^Int.toString(p)^" alen:"^Int.toString(Array.length wq))
 
 
       fun getWork (T wq, p) =
       let in
-        lock ();
-        case Array.unsafeSub (wq, p) of 
-             [] => (unlock(); NONE)
-           | w :: l => (Array.unsafeUpdate (wq, p, l); unlock(); SOME w)
+        lock (); (* print (Int.toString(getMyPriority ())^"] workq.getwork: len(wq)="^Int.toString(Array.length wq)^"\n"); *)
+        case Array.sub (wq, p) of 
+                 [] => (unlock (); NONE)
+           | w :: l => (Array.update (wq, p, l); unlock(); SOME w)
       end
-      handle Subscript => (unlock (); die "Invalid priority")
+      handle Subscript => (unlock (); die (Int.toString(getMyPriority ())^"] Invalid priority (die): p:"^Int.toString(p)^" alen:"^Int.toString(Array.length wq)))
 
     end
 
@@ -189,21 +215,24 @@ struct
     fun loop p =
       case WorkQueue.getWork (workQ, p) of
            NONE => loop p
-         | SOME w => (dbg "Working .. \n";w () ; loop p)
+         | SOME w => (dbg "Working .. \n"; w () ; loop p)
 
-    val getMyPriority = _import "GC_myPriority": unit -> int;
+    fun oneshot p =
+      case WorkQueue.getWork (workQ, p) of
+           NONE => ()
+         | SOME w => (dbg "Working .. \n"; w ())
 
-    fun test () = print "Parallel_run::thread_main running!\n";
+    fun test () = print (Int.toString(getMyPriority ())^"] Parallel_run::thread_main running!\n");
 
     fun pspawn (f: unit->unit, p: int) = WorkQueue.addWork(workQ, f, p) 
 
-    fun thread_main () = (*MLtonThread.run ()print
-      "\n\nParallel_run::thread_main running!\n\n"*) ( dbg "looping...\n";
-      WorkQueue.addWork(workQ, test, 2); loop (pthreadNum ()) ) 
+    fun thread_main () = loop (pthreadNum ())
+    fun thread_main_rtems () = oneshot (pthreadNum ())
 
     val gcstate = Primitive.MLton.GCState.gcState
 
     val () = (_export "Parallel_run": (unit -> unit) -> unit;) thread_main
+    val () = (_export "Parallel_run_rtems": (unit -> unit) -> unit;) thread_main_rtems
 
 (*  val rtinit = _import "RT_init": Primitive.MLton.GCState.t -> unit;*)
 

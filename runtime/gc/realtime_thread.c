@@ -4,17 +4,17 @@
 #include "realtime_thread.h"
 
 
-#define LOCK_RT_THREADS IFED(pthread_mutex_lock(&state->rtThreads_lock))
-#define UNLOCK_RT_THREADS IFED(pthread_mutex_unlock(&state->rtThreads_lock))
-#define SIGNAL_RT_THREADS IFED(pthread_cond_signal(&state->rtThreads_cond))
-#define BLOCK_RT_THREADS IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
+#define LOCK_RT_THREADS LOCK_DEBUG("LOCK_RT_THREADS"); IFED(pthread_mutex_lock(&state->rtThreads_lock))
+#define UNLOCK_RT_THREADS LOCK_DEBUG("UNLOCK_RT_THREADS"); IFED(pthread_mutex_unlock(&state->rtThreads_lock))
+#define SIGNAL_RT_THREADS LOCK_DEBUG("SIGNAL_RT_THREADS"); IFED(pthread_cond_signal(&state->rtThreads_cond))
+#define BLOCK_RT_THREADS LOCK_DEBUG("BLOCK_RT_THREADS"); IFED(pthread_cond_wait(&state->rtThreads_cond,&state->rtThreads_lock))
 
-#define BROADCAST_RT_THREADS IFED(pthread_cond_broadcast(&state->rtThreads_cond))
+#define BROADCAST_RT_THREADS LOCK_DEBUG("BROADCAST_RT_THREADS"); IFED(pthread_cond_broadcast(&state->rtThreads_cond))
 #define CONCURRENT
-//#define DEBUG true
 
 static volatile int initialized = 0;
 volatile bool rtinitfromML = FALSE;
+int allowedToPack[MAXPRI];
 
 extern void Copy_globalObjptrs (int f, int t);
 
@@ -51,10 +51,133 @@ GC_safePoint(int32_t thr_num) {
     return 0;
 }
 
+void Parallel_run(void);
+void Parallel_run_rtems(void);
+
 #if defined(__rtems__)
+#define directive_failed(COND,MSG) do{if(COND){puts(MSG);exit(-1);}}while(0)
 
 rtems_id            ML_mutex;
 rtems_id            User_mutexes[NUM_USER_MUTEXES];
+int                 current_runtime[MAXPRI], current_deadline[MAXPRI], current_period[MAXPRI];
+
+
+rtems_task Periodic_task(rtems_task_argument argument);
+void RTEMS_Parallel_run_wrapper(int tNum);
+
+/*
+ From the RTEMS doc
+
+ The first time the loop is executed, the rtems_rate_monotonic_period directive will
+ initiate the period for 100 ticks and return immediately. Subsequent invocations of
+ the rtems_rate_monotonic_period directive will result in the task blocking for the
+ remainder of the 100 tick period. If, for any reason, the body of the loop takes more
+ than 100 ticks to execute, the rtems_rate_monotonic_period directive will return the
+ RTEMS_TIMEOUT status. 
+
+ Regarding changing a period:
+
+ https://docs.rtems.org/releases/rtems-docs-4.11.3/c-user/rate_monotonic_manager.html#manipulating-a-period
+
+ This periodic task initially executes Parallel_run() every 10ms. 
+ 10 * ticks_per_sec() / 1000
+
+ To hit 10ms, be sure to configure RTEMS so that the clock is sufficiently high resolution.
+ eg.:
+
+ #define CONFIGURE_MICROSECONDS_PER_TICK   1000 // 1 millisecond 
+ #define CONFIGURE_TICKS_PER_TIMESLICE       50 // 50 milliseconds 
+
+
+ Eventually, the SML code will call set_schedule. We will then cancel the 10ms period
+ and reset it to what was given to set_schedule as the period parameter. If we overrun
+ our period, instead of dying (as shown in the RTEMS example), we simply note it and 
+ continue. 
+ */
+
+__attribute__((noreturn))
+rtems_task Periodic_task(rtems_task_argument arg) {
+    /* rtems_task_argument is a 32bit ptr 
+     * https://docs.rtems.org/doxygen/branches/master/group__ClassicTasks.html#gaf202f985ef5a3156f29eae99a0536842
+     */
+    rtems_name        name;
+    rtems_id          period;
+    char              tnum = arg & 0xFF;
+    int               prev_period = current_period[tnum];
+
+    rtems_status_code status;
+    name = rtems_build_name( 'P', 'E', 'R', tnum );
+    status = rtems_rate_monotonic_create( name, &period );
+    if ( status != RTEMS_SUCCESSFUL ) {
+        printf( "rtems_monotonic_create failed with status of %d.\n", status );
+        exit( 1 );
+    }
+    while ( 1 ) {
+        int x = rtems_clock_get_ticks_since_boot();
+
+        /* if our period has changed (via set_schedule) then we need to cancel
+         * and reset our period
+         */
+        if (prev_period != current_period[tnum]) {
+            status = rtems_rate_monotonic_cancel(period);
+            if (status != RTEMS_SUCCESSFUL) {
+                fprintf(stderr, "%d] "RED("rtems failed to cancel current period. status=%d\n"), PTHREAD_NUM, status);
+                exit(1);
+            }
+            prev_period = current_period[tnum];
+        }
+
+        /* the following is an implicit yield if we are still in the same period */
+
+        if ( rtems_rate_monotonic_period( period, current_period[tnum] ) == RTEMS_TIMEOUT ) {
+            fprintf(stderr, "%d] "RED("missed deadline/period cur: %d, clock: %d\n"), 
+                    PTHREAD_NUM, current_period[tnum], x);
+            status = rtems_rate_monotonic_cancel(period);
+            if (status != RTEMS_SUCCESSFUL) {
+                fprintf(stderr, "%d] "RED("rtems failed to cancel current period. status=%d\n"), PTHREAD_NUM, status);
+                exit(1);
+            }
+            continue;
+        }
+
+        /* Perform some periodic actions */
+        fprintf(stderr, "%d] calling into parallel_run_rtems\n", PTHREAD_NUM);
+        Parallel_run_rtems();
+        fprintf(stderr, "%d] back from parallel_run_rtems\n", PTHREAD_NUM);
+    }
+    /* NOTREACHED */
+}
+
+__attribute__((noreturn))
+void RTEMS_Parallel_run_wrapper(int tNum) {
+    rtems_id           task_id;
+    rtems_status_code  status;
+
+    /* create a new task, the identifier contains the thread number */
+    status = rtems_task_create(
+        rtems_build_name( 'T', 'A', '1', (char)tNum ),
+        1,
+        RTEMS_MINIMUM_STACK_SIZE,
+        RTEMS_DEFAULT_MODES,
+        RTEMS_DEFAULT_ATTRIBUTES,
+        &task_id
+    );
+    directive_failed( status, "rtems_task_create of TA1" );
+
+    // see note above about configuring the RTEMS clock
+    current_period[tNum] = (int)(10 * rtems_clock_get_ticks_per_second() / 1000.0);
+
+    /* start the task. the task will call Parallel_run() to execute
+     * the SML code the way the linux code path does.
+     */
+    status = rtems_task_start( task_id, Periodic_task, tNum );
+    directive_failed( status, "rtems_task_start of TA1" );
+    while ( 1 ) {
+        /* this loops forever, waking every 300 seconds, does not affect the period_task */
+        status = rtems_task_wake_after( 300*rtems_clock_get_ticks_per_second() );
+        directive_failed( status, "rtems_task_wake_after" );
+    }
+}
 
 void ML_lock (void) {
     while (RTEMS_SUCCESSFUL != rtems_barrier_wait(ML_mutex, RTEMS_NO_TIMEOUT)) {
@@ -103,10 +226,127 @@ void InitializeMutexes(void) {
             die("rtems_barrier_create failed");
         }
     }
+}
 
+double get_ticks_since_boot(void) {
+    return rtems_clock_get_ticks_since_boot(); // to be consistent with set_schedule below
+//    return rtems_clock_get_uptime_nanoseconds();
+}
+
+/* for RTEMS, these parameters are clock ticks. the params are rtems_interval type,
+ * which is Watchdog_interval which in turn is uint32_t but to keep the FFI prototype
+ * consist (with the posix one below) we use 64_t and downcast. 
+ */
+/* packing param is 0, 1, or 2. determines if this thread is allowed
+ * to pack during its releases. not all threads should/can pack
+ * safely. only rate mono / deadline scheduled threads should pack
+ * using "2" and only during their shared periods
+ */
+void set_schedule(int runtime, int deadline, int period, int packing) {
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu packing:%d\n", 
+                PTHREAD_NUM, (uint64_t)runtime, (uint64_t)period, (uint64_t)deadline, packing);
+
+    assert (runtime <= deadline);
+    assert (deadline <= period);
+    allowedToPack[PTHREAD_NUM] = packing;
+
+    /* these will cause a schedule update at the start of the task's next period */
+
+    current_runtime[PTHREAD_NUM] = runtime;
+    current_deadline[PTHREAD_NUM] = deadline;
+    current_period[PTHREAD_NUM] = period;
+
+    return;
+}
+
+int schedule_yield(GC_state s, bool trigger_gc) {
+    // See "11.3.6. Examples" here:
+    // https://docs.rtems.org/releases/rtems-docs-4.11.3/c-user/rate_monotonic_manager.html#rtems-rate-monotonic-create
+    // wait for next period
+
+    /* yield/wfnp is implicit in RTEMS: when the computation returns, we go to the top 
+     * of the loop and call rtems_rate_monotonic_period again. if we are still in 
+     * the current period, we are suspended until a new period starts. therefore, this
+     * function is a NOP.
+     */
+    return 0;
 }
 
 #else
+
+/* for RT linux, these parameters are in milli-seconds
+
+
+   from "man sched"
+
+           arrival/wakeup                    absolute deadline
+                |    start time                    |
+                |        |                         |
+                v        v                         v
+           -----x--------xooooooooooooooooo--------x--------x---
+                         |<-- Runtime ------->|
+                |<----------- Deadline ----------->|
+                |<-------------- Period ------------------->|
+
+       The kernel requires that:
+
+           sched_runtime <= sched_deadline <= sched_period
+ */
+
+#define NANOS_PER_MILLI 1000000
+#define NANOS_PER_MICRO 1000
+
+/* packing param is 0, 1, or 2. determines if this thread is allowed
+ * to pack during its releases. not all threads should/can pack
+ * safely. only rate mono / deadline scheduled threads should pack
+ * using "2" and only during their shared periods
+ * 
+ * the parameters are in ms which is probably too coarse. you 
+ * can change to NANOS_PER_MICRO. one issue is that on 32bit 
+ * systems you can overflow if you go too fine. 
+ */
+void set_schedule(int runtime, int deadline, int period, int packing) {
+    struct sched_attr attr;
+    unsigned int flags = 0;
+
+    if(DEBUG_THREADS)
+        fprintf(stderr, "%d] "YELLOW("set_schedule")" runtime:%llu period:%llu deadline:%llu packing:%d\n", 
+                PTHREAD_NUM, (long long unsigned int)runtime, (long long unsigned int)period, (long long unsigned int)deadline, packing);
+
+    allowedToPack[PTHREAD_NUM] = packing;
+
+    attr.size = sizeof(attr);
+    attr.sched_flags = 0; // SCHED_FLAG_DL_OVERRUN; // supposed to make linux SIGXCPU on overrun
+    attr.sched_nice = 0;
+    attr.sched_priority = 0;
+
+    /* times are in nanos for rtlinux */
+    attr.sched_policy = SCHED_DEADLINE;
+    attr.sched_runtime = (uint64_t)runtime * NANOS_PER_MICRO;
+    attr.sched_period  = (uint64_t)period * NANOS_PER_MICRO;
+    attr.sched_deadline = (uint64_t)deadline * NANOS_PER_MICRO;
+
+    assert (runtime <= deadline);
+    assert (deadline <= period);
+
+    // '0' means 'current thread' 
+    if (sched_setattr(0, &attr, flags) < 0) {
+        perror("sched_setattr");
+        die("realtime_thread.c set_schedule(): sched_setattr");
+    }
+}
+
+int schedule_yield(GC_state s, bool trigger_gc) {
+    if (sched_yield() < 0) {
+        perror("sched_yield");
+        die("realtime_thread.c set_schedule(): sched_yield");
+    }
+    if (trigger_gc) {
+        GC_collect(s, 0, true, true);  // TODO not safe here
+    }
+    return 0;
+}
 
 /* TID of holding thread or -1 if no one*/
 volatile int32_t ML_mutex;
@@ -142,7 +382,7 @@ void ML_unlock (void) {
 
 
 void User_lock (Int32 p){
-
+    LOCK_DEBUG2("User_lock", p);
     do {
         AGAIN:
             if (User_mutexes[p] >= 0)
@@ -153,6 +393,7 @@ void User_lock (Int32 p){
 }
 
 void User_unlock (Int32 p) {
+    LOCK_DEBUG2("User_unlock", p);
 
   //fprintf (stderr, "unlock %d\n", Parallel_holdingMutex);
 
@@ -174,7 +415,90 @@ void InitializeMutexes(void) {
     }
 }
 
+/* returns seconds */
+double get_ticks_since_boot(void) {
+    struct timespec spec;
+
+    clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+    return spec.tv_sec + spec.tv_nsec / 1.0e9;
+}
 #endif
+
+/* this is instrumentation code. 
+ * the intent is to avoid locking, and memory allocations. so this
+ * is implemented as an array of ring buffers, one for each thread.
+ * the instrument_buffer tracks tuples of (timesecs, timenanos, codenum)
+ * which lets us track timing (start/stop) information for 'codes' for example
+ * thread #1 might be code #30, and so calling instrument(30) lets us record
+ * a start/stop time stamp for that thread.
+ * 
+ * the instrument_counter is for recording non time based counters. for example
+ * code #40 maybe would be "number of calls to alloc_object" so each called to 
+ * User_instrument_counter(40) would increment that counter, again per thread to
+ * avoid locking.
+ */
+
+
+#define INSTRUMENT_TUPLE_SIZE 3
+#define MAX_INSTRUMENT (4096*INSTRUMENT_TUPLE_SIZE)
+#define MAX_INSTRUMENT_COUNTERS 4096
+
+unsigned int instrument_offset[MAXPRI+1];
+unsigned int instrument_buffer[MAXPRI+1][MAX_INSTRUMENT];
+unsigned int instrument_counters[MAXPRI+1][MAX_INSTRUMENT_COUNTERS];
+
+void User_instrument_initialize() {
+    memset(instrument_offset  , 0, (MAXPRI+1) * sizeof(unsigned int));
+    memset(instrument_buffer  , 0, (MAXPRI+1) * MAX_INSTRUMENT*sizeof(unsigned int));
+    memset(instrument_counters, 0, (MAXPRI+1) * MAX_INSTRUMENT_COUNTERS);
+}
+
+void User_instrument_counter (Int32 icode, Int32 inc) {
+    instrument_counters[PTHREAD_NUM][icode] += inc;
+}
+
+void Dump_instrument_counter_stderr (Int32 thrnum) {
+    if (thrnum == -1) thrnum = PTHREAD_NUM;
+    fprintf(stderr, "instr-counter:thread-id, code-number, count\n");
+    for(unsigned int i = 0 ; i < MAX_INSTRUMENT_COUNTERS ; i += 1) {
+        if (instrument_counters[thrnum][i])
+            fprintf(stderr, "instr-counter:%d, %d, %u\n", thrnum, i, instrument_counters[thrnum][i]);
+    }
+}
+
+void User_instrument (Int32 icode) {
+    struct timespec spec;
+
+    if (instrument_offset[PTHREAD_NUM] > (MAX_INSTRUMENT-INSTRUMENT_TUPLE_SIZE)) {
+        fprintf(stderr, "%d] "RED("*** instrument buffer wrapped ***")"\n", 
+                PTHREAD_NUM);
+    }
+    clock_gettime(CLOCK_MONOTONIC_RAW, &spec);
+
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]] = spec.tv_sec;
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]+1] = spec.tv_nsec;
+
+    instrument_buffer[PTHREAD_NUM][instrument_offset[PTHREAD_NUM]+2] = icode;
+    instrument_offset[PTHREAD_NUM] = (instrument_offset[PTHREAD_NUM]+INSTRUMENT_TUPLE_SIZE) % MAX_INSTRUMENT;
+}
+
+void Dump_instrument_stderr (Int32 thrnum) {
+    if (thrnum == -1) thrnum = PTHREAD_NUM;
+
+    fprintf(stderr, "instr-timer:thread-id, secs, ns, code-number\n");
+
+    for(unsigned int i = 0 ; i < MAX_INSTRUMENT ; i += INSTRUMENT_TUPLE_SIZE) {
+        // only dump non-zero codes
+        if (instrument_buffer[thrnum][i+2] > 0) {
+            fprintf(stderr, "instr-timer:%d, %u, %u, %d\n", 
+                    thrnum, 
+                    instrument_buffer[thrnum][i],
+                    instrument_buffer[thrnum][i+1],
+                    instrument_buffer[thrnum][i+2]
+                    );
+        }
+    }
+}
 
 void
 realtimeThreadWaitForInit (void)
@@ -234,6 +558,10 @@ void RT_init (GC_state state)
     if(DEBUG_THREADS)
         fprintf(stderr, "%d] "RED("RT_init")"\n", PTHREAD_NUM);
 
+
+    memset(instrument_offset, 0, sizeof(instrument_offset[0]) * (MAXPRI+1));
+    memset(instrument_buffer, 0, sizeof(instrument_buffer[0][0]) * (MAXPRI+1) * MAX_INSTRUMENT);
+
     //fprintf(stderr, "%d] "FMTPTR" "FMTPTR" \n",
 	//		PTHREAD_NUM,
 	//		state->currentThread[PTHREAD_NUM],
@@ -271,15 +599,26 @@ void RT_init (GC_state state)
     }
     
     InitializeMutexes();
-
+    ssleep(5, 0);
+    fprintf(stderr, "%d] rtinitfromML set to true\n", PTHREAD_NUM);
     rtinitfromML = TRUE;
 
-    
+
+    fprintf(stderr, "%d] broadcasting to release all waiting rt threads\n", PTHREAD_NUM);
 	LOCK_RT_THREADS;
 	BROADCAST_RT_THREADS;
 	UNLOCK_RT_THREADS;
 }
 
+/* be careful when using this in SML code. remember that maxpri
+ * includes the main thread and the GC, and it is one more than the
+ * actual final thread-id. ie. if MAXPRI is 3, then we have 
+ * 
+ * TID  Description
+ * 0    main thr
+ * 1    GC
+ * 2    another thread
+ */
 Int32 RTThread_maxpri (void)
 {
     return MAXPRI;
@@ -293,8 +632,6 @@ Int32 RTThread_get_pthread_num(void)
 
 #define COPYIN2(s,EL) s->EL[2] = s->EL[0]
 
-void Parallel_run(void);
-
 __attribute__((noreturn))
 void *
 realtimeRunner (void *paramsPtr)
@@ -303,143 +640,37 @@ realtimeRunner (void *paramsPtr)
     struct GC_state *state = params->state;
     int tNum = params->tNum;
 
+    fprintf (stderr, "%d] "PURPLE("realtimeRunner\n"), tNum);
+
     set_pthread_num (params->tNum);
       
-    state->rtSync[PTHREAD_NUM]= true;
+    state->rtSync[PTHREAD_NUM] = true;
 
     LOCK_RT_THREADS;
     while(!rtinitfromML)
     {
         /*This will be unblocked in rtInit */
-        if(DEBUG)
-            fprintf(stderr,"%d] callFromCHandlerThread is not set, Blocking RT-Thread \n",tNum);
+        if(1||DEBUG)
+            fprintf(stderr, "%d] "RED("callFromCHandlerThread is not set, Blocking RT-Thread\n"),tNum);
         BLOCK_RT_THREADS;
         UNLOCK_RT_THREADS;
     }
 
-
- 
-     fprintf (stderr, "%d] calling parallel_run \n", tNum);
-     state->rtSync[PTHREAD_NUM]= true;
-     Parallel_run ();
-     fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
-                 tNum);
-        exit (-1); 
-#if 0
-    /*Using same lock to BLOCK again. This time it wont be unblocked. 
-     * TODO: Define what RT threads should do*/
+    fprintf (stderr, "%d] "PURPLE("realtimeRunner released %d\n"), tNum, rtinitfromML);
 
 
-    /* RT thread allocates on UM heap without stack*/
-    if(state->numAllocedByRT <= 0)
-    {
-    if(DEBUG)
-            fprintf(stderr,"%d] Blocking RT-Thread.FOREVA.\n",tNum);
-        
-       LOCK_RT_THREADS;
+    state->rtSync[PTHREAD_NUM] = false; // this may need to be true if "@MLton rtthreads" is false
 
-        while(state->rtSync[PTHREAD_NUM])
-            BLOCK_RT_THREADS;
-
-        UNLOCK_RT_THREADS; 
-    }
-
-    if (DEBUG)
-     fprintf(stderr,"%d] RT thread ALLOCATING\n",tNum);
-
-	while(1)//state->savedThread[PTHREAD_NUM] == BOGUS_OBJPTR)
-	{
-		pointer res;
-		state->rtSync[PTHREAD_NUM]= true;
-		if(DEBUG_THREADS)
-		    fprintf(stderr,"%d] Spinning with no green thread. Free chunks = %d, RTSync = %d \n",PTHREAD_NUM,state->fl_chunks,state->rtSync[PTHREAD_NUM]?1:0);
-
-		reserveAllocation(state,state->numAllocedByRT);
-
-		res = UM_Object_alloc(state,state->numAllocedByRT,(GC_header)3,GC_NORMAL_HEADER_SIZE);
-
-		state->allocedByRT+=state->numAllocedByRT;
-
-		if(DEBUG_THREADS)
-		    fprintf(stderr, "Empty chunk: "FMTPTR" \n", (uintptr_t) res);
-
-		sched_yield();
-
-	}
-#endif
-
-#ifdef THREADED
-#pragma message "*********   THREADED enabled    **********"
-	die("wrong");
-    while (!TC.booted) {
-        if (DEBUG_THREADS) fprintf (stderr, "%d] TC.booted is false: spin\n", PTHREAD_NUM);
-        ssleep (1, 0);
-    }
-
-    /* set currentThread of new RT thread to that of main thread until copied thread is setup */
-    state->currentThread[PTHREAD_NUM] = state->currentThread[0];
-    setGCStateCurrentThreadAndStack (state);
-
-    GC_thread curct = (GC_thread) (objptrToPointer (state->currentThread[0],
-                                                    state->heap.start) +
-                                   offsetofThread (state));
-    GC_stack curstk =
-        (GC_stack) objptrToPointer (curct->stack, state->heap.start);
-
-    /* GC_thread copyThread (GC_state s, GC_thread from, size_t used) */
-    /* copy the savedThread which is stored earlier on from the copied thread, when C Handler was set */
-
-    if (DEBUG)
-        fprintf (stderr, "%d] copy thread\n", PTHREAD_NUM);
-    pointer copiedTh = GC_copyThread (state,
-                                      objptrToPointer (state->
-                                                       savedThread[0],
-                                                       state->heap.start));
-
-    GC_thread tc = (GC_thread) (copiedTh + offsetofThread (state));
-    tc->exnStack = -1;
-
-    //current thread on for RT thread is taken from tc which is copied from main thread in previous line
-    if (DEBUG)
-        fprintf (stderr, "%d] switch to copied thread\n", PTHREAD_NUM);
-
-    GC_switchToThread (state, tc, 0);
-
-    COPYIN2 (state, savedThread);
-    COPYIN2 (state, signalHandlerThread);
-    COPYIN2 (state, ffiOpArgsResPtr);
-
-    state->isRealTimeThreadRunning = TRUE;
-
-    while (1) {
-        if (DEBUG) {
-            fprintf (stderr, "%d] realtimeRunner running.\n", tNum);
-            fprintf (stderr, "%d] calling Parallel_run..\n", tNum);
-        }
-//        Copy_globalObjptrs (0, params->tNum);
-
-        TC_LOCK;
-        TC.running_threads++;
-        TC_UNLOCK;
-
-        Parallel_run ();
-
-        fprintf (stderr, "%d] back from Parallel_run (shouldnt happen)\n",
-                 tNum);
-        exit (-1);
-    }
+#if defined(__rtems__)
+    fprintf (stderr, "%d] "PURPLE("calling RTEMS_Parallel_run_wrapper\n"), tNum);
+    RTEMS_Parallel_run_wrapper(params->tNum);
 #else
-#pragma message "*********   THREADED NOT enabled    **********"
+    fprintf (stderr, "%d] "PURPLE("calling parallel_run\n"), tNum);
+    Parallel_run ();
 #endif
-
+    fprintf (stderr, "%d] "RED("back from Parallel_run (shouldnt happen)\n"), tNum);
+    exit (-1); 
 	/*NOTREACHED*/
-	/* since the above is wrapped in while(1) this code should never
-	 * be reached and is only here to suppress gcc 'noreturn function
-	 * returns' compiler warnings (since we use -Wall)
-	 */
-	while (1)
-		fprintf (stderr, "%d] Should not get here. Spinning.\n",
-				 tNum);
 }
 
 pointer

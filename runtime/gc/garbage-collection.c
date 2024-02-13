@@ -15,8 +15,6 @@
 #include <sched.h>
 #include <errno.h>
 
-#undef DEBUG
-#define DEBUG 1
 
 struct thrctrl {
 	pthread_mutex_t lock;
@@ -32,25 +30,23 @@ struct thrctrl {
 
 //#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
 
-#define LOCK_FL_FROMGC IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL_FROMGC   LOCK_DEBUG("LOCK_FL_FROMGC"); IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL_FROMGC IFED(pthread_mutex_unlock(&s->fl_lock)); LOCK_DEBUG("UNLOCK_FL_FROMGC")
 
-#define BROADCAST IFED(pthread_cond_broadcast(&s->fl_empty_cond))
-
-#define BROADCAST_EMPTY IFED(pthread_cond_broadcast(&s->fl_empty_cond))
-#define BLOCK_EMPTY IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+#define BROADCAST       LOCK_DEBUG("BROADCAST"); IFED(pthread_cond_broadcast(&s->fl_empty_cond))
+#define BLOCK_EMPTY     LOCK_DEBUG("BLOCK_EMPTY"); IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
 
-#define RTSYNC_LOCK IFED(pthread_mutex_lock(&s->rtSync_lock))
-#define RTSYNC_UNLOCK IFED(pthread_mutex_unlock(&s->rtSync_lock))
-#define RTSYNC_SIGNAL IFED(pthread_cond_signal(&s->rtSync_cond))
-#define RTSYNC_BLOCK IFED(pthread_cond_wait(&s->rtSync_cond,&s->rtSync_lock))
-#define RTSYNC_TRYLOCK pthread_mutex_trylock(&s->rtSync_lock)
+#define RTSYNC_LOCK    LOCK_DEBUG("RTSYNC_LOCK"); IFED(pthread_mutex_lock(&s->rtSync_lock))
+#define RTSYNC_UNLOCK  IFED(pthread_mutex_unlock(&s->rtSync_lock)); LOCK_DEBUG("RTSYNC_UNLOCK")
+#define RTSYNC_SIGNAL  LOCK_DEBUG("RTSYNC_SIGNAL"); IFED(pthread_cond_signal(&s->rtSync_cond))
+#define RTSYNC_BLOCK   LOCK_DEBUG("RTSYNC_BLOCK");  IFED(pthread_cond_wait(&s->rtSync_cond,&s->rtSync_lock))
+#define RTSYNC_TRYLOCK LOCK_DEBUG("RTSYNC_TRYLOCK"); pthread_mutex_trylock(&s->rtSync_lock)
 
-#define TC_LOCK if (DEBUG) fprintf(stderr, "%d] TC_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.lock))
-#define TC_UNLOCK if (DEBUG) fprintf(stderr, "%d] TC_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.lock))
-#define TCSP_LOCK if (DEBUG) fprintf(stderr, "%d] TCSP_LOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_lock(&TC.safepoint_lock))
-#define TCSP_UNLOCK if (DEBUG) fprintf(stderr, "%d] TCSP_UNLOCK thr:%d boot:%d\n", PTHREAD_NUM, TC.running_threads, TC.booted); IFED(pthread_mutex_unlock(&TC.safepoint_lock))
+#define TC_LOCK  LOCK_DEBUG("TC_LOCK"); IFED(pthread_mutex_lock(&TC.lock))
+#define TC_UNLOCK  IFED(pthread_mutex_unlock(&TC.lock)); LOCK_DEBUG("TC_UNLOCK")
+#define TCSP_LOCK  LOCK_DEBUG("TCSP_LOCK"); IFED(pthread_mutex_lock(&TC.safepoint_lock))
+#define TCSP_UNLOCK  IFED(pthread_mutex_unlock(&TC.safepoint_lock)); LOCK_DEBUG("TCSP_UNLOCK")
 
 /*
  * - threads can ask for GC's by setting gc_needed to 1
@@ -77,25 +73,25 @@ struct thrctrl {
 #define pthread_yield sched_yield
 
 #define REQUESTGC do { \
-        if (DEBUG) fprintf(stderr, "%d] REQUESTGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] REQUESTGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         TC_LOCK; TC.gc_needed = 1; TC.requested_by = PTHREAD_NUM; setup_for_gc(s); TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] REQUESTGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] REQUESTGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 #define COMPLETEGC do { \
-        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] COMPLETEGC start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         finish_for_gc(s); \
-        if (DEBUG) fprintf(stderr, "%d] COMPLETEGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] COMPLETEGC end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 #define ENTER_SAFEPOINT do { \
-        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] ENTER_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         TC_LOCK; TC.running_threads--; pthread_cond_signal(&TC.cond); TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] ENTER_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] ENTER_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 #define LEAVE_SAFEPOINT do { \
-        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] LEAVE_SAFEPOINT start thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         TCSP_LOCK; while (TC.gc_needed) pthread_cond_wait(&TC.safepoint_cond, &TC.safepoint_lock); TCSP_UNLOCK; \
         TC_LOCK; TC.running_threads++; TC_UNLOCK; \
-        if (DEBUG) fprintf(stderr, "%d] LEAVE_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
+        if (DEBUG or DEBUG_RTGC) fprintf(stderr, "%d] LEAVE_SAFEPOINT end thr:%d\n", PTHREAD_NUM, TC.running_threads); \
         } while(0)
 
 
@@ -168,7 +164,7 @@ count_stack_chunks(GC_state s, GC_thread thread)
  */
 void
 maybe_growstack(GC_state s, GC_thread thread, bool force_grow) {
-	if (DEBUG_STACK_GROW)
+	if (DEBUG_STACK_GROW or DEBUG_RTGC)
 		fprintf(stderr, "%d] "YELLOW("%s\n"), PTHREAD_NUM, __FUNCTION__);
 
 	if ((s->controls.ratios.stackCurrentGrowThreshold >= 1.0) && force_grow) {
@@ -202,7 +198,7 @@ maybe_growstack(GC_state s, GC_thread thread, bool force_grow) {
 		size_t need_chunks = max(thread->stackSizeInChunks * s->controls.ratios.stackCurrentGrow, 10);
 
 		reserveAllocation(s, need_chunks);
-		pointer new_growth = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE);
+		pointer new_growth = UM_Object_alloc(s, need_chunks, GC_STACK_HEADER, GC_NORMAL_HEADER_SIZE, 0);
 		GC_UM_Chunk new_growth_chunks = (GC_UM_Chunk)(new_growth - GC_HEADER_SIZE);
 
 		GC_UM_Chunk c = (GC_UM_Chunk)(thread->firstFrame - GC_HEADER_SIZE);
@@ -299,7 +295,7 @@ void *GCrunner(void *_s) {
 	pthread_cond_init(&TC.cond, NULL);
 	pthread_cond_init(&TC.safepoint_cond, NULL);
 
-	if (DEBUG)
+	if (DEBUG or DEBUG_RTGC or DEBUG_RTGC_MARKING)
 		fprintf(stderr, "%d] GC_Runner Thread running.\n", PTHREAD_NUM);
 
 	s->GCrunnerRunning = TRUE;
@@ -323,8 +319,10 @@ void *GCrunner(void *_s) {
 		/* GC sweep is performed under RTSYNC_LOCK because this lock also prevents the mutators from marking their stacks*/
 		RTSYNC_LOCK;
 
-		while (!s->dirty)
+		while (!s->dirty) {
+			//fprintf(stderr, "%d] not dirty\n", PTHREAD_NUM);
 			RTSYNC_BLOCK;
+		}
 
 		if (DEBUG_RTGC)
 			fprintf(stderr, "%d] GC sweep starting: FC=%d \n", PTHREAD_NUM, s->fl_chunks);
@@ -333,9 +331,10 @@ void *GCrunner(void *_s) {
 
 		assert(s->dirty);
 
+		User_instrument(30); /* JEFF */
 
-		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] [RTGC: Starting cycle #%s]\n", PTHREAD_NUM,
+		if (1||DEBUG_RTGC) {
+			fprintf(stderr, "%d] "YELLOW("[RTGC: Starting cycle #%s]\n"), PTHREAD_NUM,
 					uintmaxToCommaString(s->cGCStats.numGCCycles + 1));
 			fprintf(stderr, "%d] [RTGC: Number of Chunks; Free: %d Allocated: %s]\n", PTHREAD_NUM, s->fl_chunks,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated));
@@ -347,15 +346,17 @@ void *GCrunner(void *_s) {
 
 		/* 2 less than MAXPRI because:
 		 * GC thread is never blocked
-		 * RT thread is always blocked*/
-		if (s->threadsBlockedForGC == (MAXPRI - 2))
+		 * RT thread is always blocked
+		 */
+
+		if (s->threadsBlockedForGC == (MAXPRI - 2)) {
 			s->attempts++;
-		else
+		} else {
 			s->attempts = 0;
+		}
 
 		if (s->attempts > 2) {
 			die("Insuffient Memory\n");
-
 		}
 
 		performGC_helper(s,
@@ -365,26 +366,29 @@ void *GCrunner(void *_s) {
 
 		s->cGCStats.numGCCycles += 1;
 		gettimeofday(&t1, NULL);
-
-		s->cGCStats.totalGCTime += ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec) / 1000;
+		unsigned int gc_runtime_microsecs = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec);
+		s->cGCStats.totalGCTime += gc_runtime_microsecs;
 
 		s->dirty = false;
 		/*Change this to reset all rtSync values for all RT threads*/
-		s->rtSync[0] = false;
+		for (int i = 0 ; i < MAXPRI ; i++)
+			s->rtSync[i] = false;
 
 		s->threadsBlockedForGC = 0;
 
 		s->isGCRunning = false;
 
-		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] [RTGC: GC cycle #%s completed]\n", PTHREAD_NUM,
-					uintmaxToCommaString(s->cGCStats.numGCCycles));
+		if (1||DEBUG_RTGC) {
+			fprintf(stderr, "%d] "YELLOW("[RTGC: GC cycle #%s completed in %u us]\n"), PTHREAD_NUM,
+					uintmaxToCommaString(s->cGCStats.numGCCycles), gc_runtime_microsecs);
 		}
+
+		User_instrument(30); /* JEFF */
 
 		//not_dirty:;
 		RTSYNC_UNLOCK;
-
-		/*sending out singals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
+pthread_yield();
+		/*sending out signals after unlocking RTSYNC allows the woken up thread to perform GC_collect if it starts before RTSYNC is unlocked*/
 		/*Need to acquire s->fl_lock before braodcast to have predictable scheduling behavior. man pthread_cond_broadcast*/
 		LOCK_FL_FROMGC;
 		BROADCAST;
@@ -452,10 +456,11 @@ performGC(GC_state s,
 	//                forceMajor, mayResize);
 #endif
 }
-#endif 
+#endif
 
 
 void markStack(GC_state s, pointer thread_) {
+	START_PERF;
 	GC_thread thread = (GC_thread) thread_;
 	thread->markCycles++;
 
@@ -478,7 +483,7 @@ void markStack(GC_state s, pointer thread_) {
 
 	do {
 		if (DEBUG_RTGC)
-			fprintf(stderr, "mark SF "FMTPTR"\n", (uintptr_t)stackFrame);
+			fprintf(stderr, "%d] "YELLOW("mark stackframe")" "FMTPTR"\n", PTHREAD_NUM, (uintptr_t)stackFrame);
 		assert (stackFrame->sentinel == UM_STACK_SENTINEL);
 		assert (stackFrame->ra != 0);
 		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);
@@ -488,7 +493,7 @@ void markStack(GC_state s, pointer thread_) {
 	} while (stackFrame !=
 	         (GC_UM_Chunk) (s->currentFrame[PTHREAD_NUM] - GC_HEADER_SIZE));
 
-		// mark the rest of the chunks
+	// mark the rest of the chunks
 	while (stackFrame) {
 		markChunk((((pointer)stackFrame) + GC_HEADER_SIZE), STACK_TAG, MARK_MODE, s, 0);
 		stackFrame = stackFrame->next_chunk;
@@ -499,6 +504,7 @@ void markStack(GC_state s, pointer thread_) {
 				PTHREAD_NUM);
 
 	maybe_growstack(s, thread, FALSE);
+	STOP_PERF;
 }
 
 
@@ -523,7 +529,9 @@ void startMarking(GC_state s) {
 
 void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 		   size_t ensureArrayChunksAvailable,
-		   bool fullGC) {
+		   bool fullGC) 
+{
+	START_PERF;
 	pointer pchunk;
 	size_t step = sizeof(struct GC_UM_Chunk) + sizeof(UM_header); /*account for size of chunktype header*/
 	//pointer end = s->umheap.start + s->umheap.size - step;
@@ -537,9 +545,9 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 	assert(PTHREAD_NUM == 1);
 
 
-
 	if (DEBUG_RTGC_MARKING)
-		fprintf(stderr, "%d] GC sweep started. Worklist length: %d\n", PTHREAD_NUM, (int)s->wl_length);
+		fprintf(stderr, "%d] GC sweep started. Worklist length: %d, oneByOne %d\n", 
+				PTHREAD_NUM, (int)s->wl_length, s->oneByOne);
 	//dumpUMHeap(s);
 
 	for (pchunk = s->umheap.start;
@@ -547,7 +555,6 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 		 pchunk += step) {
 
         if (((UM_Mem_Chunk) pchunk)->chunkType == UM_STACK_CHUNK){
-            
             continue;
         }
         else if (((UM_Mem_Chunk) pchunk)->chunkType == UM_NORMAL_CHUNK) {
@@ -562,7 +569,10 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 					 * If it were reachable, then the Red would have been marked or Shaded*/
 					if (s->collectAll) {
 						header = UM_CHUNK_HEADER_CLEAN;
-                    
+
+                    User_instrument_counter(400, 1); /* JEFF normal collect */
+                    User_instrument_counter(322, pc->used); /* JEFF normal collect */
+
                         if(s->oneByOne)
                             insertChunkToFL(s, &(s->umheap), pchunk);
                         else
@@ -593,12 +603,12 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 				} else /*Unmarked Chunk*/
 				{
 					assert(ISUNMARKED(header));
+User_instrument_counter(400, 1); /* JEFF normal collect */
+User_instrument_counter(322, pc->used); /* JEFF normal collect */
 
-					if (DEBUG_MEM) {
-						fprintf(stderr, "Collecting: "
-						FMTPTR
-						", %d, %d\n",
-								(uintptr_t) pc, (int)pc->sentinel, (int)pc->chunk_header);
+					if (DEBUG_MEM or DEBUG_RTGC) {
+						fprintf(stderr, "%d] Collecting: "FMTPTR", %d, %x\n", PTHREAD_NUM,
+								(uintptr_t) pc, (int)pc->sentinel, (unsigned int)pc->chunk_header);
 					}
 
 					//Set header of cleared object to magic number
@@ -613,10 +623,8 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
                     else
                         insertChunktoSubList(s, &(s->umheap), pchunk); 
                  
-					
                     s->cGCStats.numChunksFreed++;
 					freed++;
-
 				}
 
 			}
@@ -667,12 +675,14 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 
 				} else {
-					if (DEBUG_MEM) {
-						fprintf(stderr, "Collecting array: "
+					User_instrument_counter(420, 1); /* JEFF array collect */
+
+					if (DEBUG_MEM or DEBUG_RTGC) {
+						fprintf(stderr, "%d] Collecting array: "
 						FMTPTR
-						", %d, %d\n",
+						", %d, %x\n", PTHREAD_NUM,
 								(uintptr_t) pc, pc->array_chunk_magic,
-								pc->array_chunk_header);
+								(unsigned int)pc->array_chunk_header);
 					}
 
 					//Set header of cleared object to magic number
@@ -713,12 +723,17 @@ void sweep(GC_state s, size_t ensureObjectChunksAvailable,
 
 	s->cGCStats.numSweeps++;
 
-	if (DEBUG_RTGC) {
-		fprintf(stderr, "%d] Finished one sweep cycle and freed %d chunks\n", PTHREAD_NUM, freed);
+	if (1||DEBUG_RTGC) {
+		size_t foo = 0; //count_freelist(s, &(s->umheap));
 
-		fprintf(stderr, "%d]Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d\n", PTHREAD_NUM, visited, marked, grey,
-				red);
+		fprintf(stderr, "%d] "GREEN("Finished one sweep cycle and freed %d chunks\n"), PTHREAD_NUM, freed);
+
+		fprintf(stderr, "%d] "GREEN("Chunks; Visited: %d, Marked: %d, Greys: %d Reds: %d Sanity: %ld\n"), 
+				PTHREAD_NUM, visited, marked, grey,
+				red, (long unsigned int)foo);
 	}
+
+	STOP_PERF;
 }
 
 void performUMGC(GC_state s,
@@ -727,14 +742,14 @@ void performUMGC(GC_state s,
 				 bool fullGC) {
 
 	if (DEBUG_MEM) {
-		fprintf(stderr, "PerformUMGC\n");
+		fprintf(stderr, "%d] PerformUMGC\n", PTHREAD_NUM);
 		dumpUMHeap(s);
 	}
 
 
 #ifdef PROFILE_UMGC
 	long t_start = getCurrentTime();
-	fprintf(stderr, "[GC] Free chunk: %d\n",s->fl_chunks);
+	fprintf(stderr, "%d] GC Free chunk: %d\n",PTHREAD_NUM, s->fl_chunks);
 #endif
 
 
@@ -758,7 +773,8 @@ void performUMGC(GC_state s,
 
 #ifdef PROFILE_UMGC
 	long t_end = getCurrentTime();
-	fprintf(stderr, "[GC] Time: %ld, Free chunk: %d\n",
+	fprintf(stderr, "%d] GC Time: %ld, Free chunk: %d\n",
+			PTHREAD_NUM,
 			t_end - t_start,
 			s->fl_chunks);
 #endif
@@ -831,7 +847,7 @@ void performGC_helper(GC_state s,
 		gcTime = 0;  /* Assign gcTime to quell gcc warning. */
 		/* Send a GC signal. */
 	if (s->signalsInfo.gcSignalHandled and s->signalHandlerThread[PTHREAD_NUM] != BOGUS_OBJPTR) {
-		if (DEBUG_SIGNALS)
+		if (DEBUG_SIGNALS or DEBUG_RTGC)
 			fprintf(stderr, "GC Signal pending.\n");
 		s->signalsInfo.gcSignalPending = TRUE;
 		unless(s->signalsInfo.amInSignalHandler)
@@ -858,39 +874,30 @@ void ensureInvariantForMutator(GC_state s, bool force) {
  */
 
 bool ensureChunksAvailable(GC_state s) {
-	if (DEBUG_RTGC)
+	if (DEBUG_RTGC_VERBOSE)
 		fprintf(stderr, "%d] ensureChunksAvailable: FC = %d, Max Chunks = %d\n", PTHREAD_NUM, (int)s->fl_chunks,
 				(int)s->maxChunksAvailable);
 
-	if (s->fl_chunks > (size_t)((30 * s->maxChunksAvailable) / 100))
+	// see also reserveAllocation in um.c
+
+    if (s->fl_chunks > (size_t)(s->hPercent * s->maxChunksAvailable))
 		return true;
 	else
 		return false;
-
 }
 
 
 void GC_collect_real(GC_state s, size_t bytesRequested, bool force) {
+	if (DEBUG_RTGC) {
+		fprintf(stderr, "%d] Marking my stack\n", PTHREAD_NUM);
+	}
+	
 	enter(s);
-	/* When the mutator requests zero bytes, it may actually need as
-	 * much as GC_HEAP_LIMIT_SLOP.
-	 */
-	/*if (0 == bytesRequested)
-	  bytesRequested = GC_HEAP_LIMIT_SLOP;
-	getThreadCurrent(s)->bytesNeeded = bytesRequested;
-	switchToSignalHandlerThreadIfNonAtomicAndSignalPending (s);
-	ensureInvariantForMutator (s, force);
-
-	assert (invariantForMutatorFrontier(s));
-	assert (invariantForMutatorStack(s));
-	 */
-
 	markStack(s, GC_getCurrentThread(s));
-
 	leave(s);
 
-	if (DEBUG_MEM) {
-		fprintf(stderr, "GC_collect done\n");
+	if (DEBUG_RTGC) {
+		fprintf(stderr, "%d] GC_collect done\n", PTHREAD_NUM);
 	}
 }
 
@@ -912,10 +919,9 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 	if (s->rtSync[PTHREAD_NUM] && force) {
 		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] Came to block until GC finishes. ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] %s: Came to block until GC finishes. ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM, __FUNCTION__,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
 		}
-
 	}
 
 	/*If stack is not marked already */
@@ -941,40 +947,44 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 
 
 		if (DEBUG_RTGC) {
-			fprintf(stderr, "%d] GC_collect: Is dirty bit set? %s, Are enough Chunks Avialable? %s\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] %s: Is dirty bit set? %s, Are enough Chunks Available? %s\n", PTHREAD_NUM,  __FUNCTION__,
 					s->dirty ? "Y" : "N", ensureChunksAvailable(s) ? "Y" : "N");
-			fprintf(stderr, "%d] ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM,
+			fprintf(stderr, "%d] %s: ChunksAllocated = %s, FC = %d\n", PTHREAD_NUM, __FUNCTION__,
 					uintmaxToCommaString(s->cGCStats.numChunksAllocated), s->fl_chunks);
-
 		}
 
 		GC_collect_real(s, bytesRequested, true); /*marks stack*/
 
 		s->rtSync[PTHREAD_NUM] = true;
-		/*Check if all  other RT threads have set their values*/
-		int i;
-		for (i = 0; i < MAXPRI; i++) {
-			if (i == 1 || i == PTHREAD_NUM)
-				continue;
 
-			if (!s->rtSync[i])
-				break;
+		/*Check if all other RT threads have set their values*/
+		
+		int i;
+		int ready_to_sync_count = 0;
+		for (i = 0; i < MAXPRI; i++) {
+//fprintf(stderr, "%d] %s: check rtsync[%d] = %d\n", PTHREAD_NUM, __FUNCTION__, i, s->rtSync[i]);
+			if (i == 1 || i == PTHREAD_NUM) // GC thr and our thr are not counted
+				continue;
+			if (s->rtSync[i])
+				ready_to_sync_count ++;
 		}
 
 		/*Increment count when current thread will block. Must be done before signalling GC. */
 		if (force)
 			s->threadsBlockedForGC++;
 
-		if (i == MAXPRI) /*Last thread to sync before GC*/
-		{
+//fprintf(stderr, "%d] %s: force %d threadsBlockedForGC %d  i=%d MAXPRI=%d dirty=%d ready_to_sync_count=%d\n", 		PTHREAD_NUM, __FUNCTION__, force, s->threadsBlockedForGC, i,MAXPRI, s->dirty, ready_to_sync_count);
 
+		if (ready_to_sync_count == MAXPRI-2) /* all threads are ready to sync and GC */
+		{
 			s->dirty = true;
 			RTSYNC_SIGNAL;
 			if (DEBUG_RTGC)
-				fprintf(stderr, "%d] Signal sent to wake GC\n", PTHREAD_NUM);
+				fprintf(stderr, "%d] %s: Signal sent to wake GC\n", PTHREAD_NUM, __FUNCTION__);
 
 		} else {
-			fprintf(stderr, "%d] All Threads not synced\n", PTHREAD_NUM);
+			if (DEBUG_RTGC)
+				fprintf(stderr, "%d] %s: All Threads not synced\n", PTHREAD_NUM, __FUNCTION__);
 		}
 
 
@@ -1002,10 +1012,6 @@ void GC_collect(GC_state s, size_t bytesRequested, bool force, bool collectRed) 
 	uintmax_t tmp = ((t1.tv_sec - t0.tv_sec) * 1000000 + t1.tv_usec - t0.tv_usec) / 1000;
 
 
-	if ((tmp > s->cGCStats.maxMutatorPauseTime) &&
-		(PTHREAD_NUM == 0))
+	if ((tmp > s->cGCStats.maxMutatorPauseTime) && (PTHREAD_NUM == 0))
 		s->cGCStats.maxMutatorPauseTime = tmp;
-
-
 }
-

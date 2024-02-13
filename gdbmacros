@@ -13,7 +13,7 @@ end
 
 def dumparraychunk
     set $caddr = $arg0
-    print /x *((GC_UM_Array_Chunk) $caddr)
+    print /x *((GC_UM_Array_Chunk) ((char*)$caddr - 8))
 end
 
 def dumpchunk

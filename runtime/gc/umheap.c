@@ -2,10 +2,10 @@
 
 
 //#define IFED(X) do { if (X) { fprintf(stderr, "%s:%d ", __FUNCTION__, __LINE__); perror("perror " #X); exit(-1); } } while(0)
-#define LOCK_FL IFED(pthread_mutex_lock(&s->fl_lock))
-#define UNLOCK_FL IFED(pthread_mutex_unlock(&s->fl_lock))
+#define LOCK_FL LOCK_DEBUG("LOCK_FL"); IFED(pthread_mutex_lock(&s->fl_lock))
+#define UNLOCK_FL  IFED(pthread_mutex_unlock(&s->fl_lock)); LOCK_DEBUG("UNLOCK_FL")
 
-#define BLOCK IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
+#define BLOCK LOCK_DEBUG("BLOCK"); IFED(pthread_cond_wait(&s->fl_empty_cond,&s->fl_lock))
 
 
 void initUMHeap(GC_state s,
@@ -42,6 +42,7 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 	c->next_chunk = c->prev_chunk = NULL;
 	c->sentinel = UM_CHUNK_SENTINEL;
 	c->chunk_header = UM_CHUNK_HEADER_CLEAN;
+	c->used = 0;
 
 	if (nc == NULL) {
 		h->fl_head = NULL;
@@ -58,6 +59,8 @@ GC_UM_Chunk allocNextChunk(GC_state s,
 	s->fl_chunks -= 1;
 	s->reserved -= 1;
 	s->cGCStats.numChunksAllocated++;
+
+	User_instrument_counter(401, 1);
 
 	return c;
 }
@@ -155,7 +158,7 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 		h->fl_head = nc;
 	}
 
-		memset(c, 0xAB, sizeof(struct GC_UM_Array_Chunk)); // jeff - remove
+	// memset(c, 0xAB, sizeof(struct GC_UM_Array_Chunk)); // debugging
 	c->next_chunk = NULL;
 	c->array_chunk_magic = UM_ARRAY_SENTINEL;
 	c->array_chunk_header = UM_CHUNK_HEADER_CLEAN;
@@ -171,6 +174,9 @@ GC_UM_Array_Chunk allocNextArrayChunk(GC_state s,
 	s->fl_chunks -= 1;
 	s->reserved -= 1;
 	s->cGCStats.numChunksAllocated++;
+
+	User_instrument_counter(421, 1);
+
 	return c;
 }
 
@@ -256,6 +262,7 @@ void insertChunktoSubList(GC_state s, GC_UM_heap h, pointer c) {
 
 /*Insert free chunk to back of sub list*/
 	UM_Mem_Chunk pc = (UM_Mem_Chunk) c;
+
 	if (s->sl_chunks == 0) {
 		h->sl_head = pc;
 		h->sl_tail = pc;
@@ -270,12 +277,11 @@ void insertChunktoSubList(GC_state s, GC_UM_heap h, pointer c) {
         s->sl_chunks +=1;
 	}
 
-
 }
 
 
 
-void addSweepListToFL(GC_state s,GC_UM_heap h){
+void addSweepListToFL(GC_state s, GC_UM_heap h){
 
     if(s->sl_chunks == 0)
         return;
@@ -298,18 +304,24 @@ void addSweepListToFL(GC_state s,GC_UM_heap h){
         /*clear the sub list*/
         h->sl_head = NULL;
         h->sl_tail = NULL;
-        s->sl_chunks =0;
-
-
+        s->sl_chunks = 0;
 
         UNLOCK_FL;
     }
 
-
-
 }
 
-
+size_t count_freelist(GC_state s, GC_UM_heap h) {
+	size_t c = 0;
+	LOCK_FL;
+	UM_Mem_Chunk pc = h->fl_head;
+	while (pc) {
+		c++;
+		pc = pc->next_chunk;
+	}
+	UNLOCK_FL;
+	return c;
+}
 
 GC_UM_Array_Chunk insertArrayFreeChunk(GC_state s,
 									   GC_UM_heap h,
@@ -351,9 +363,9 @@ bool createUMHeap(GC_state s,
 	size_t step = max_chunk_size + sizeof(UM_header); /*account for size of chunktype field*/
 	pointer end = h->start + h->size - step;
 	if (DEBUG) {
-		fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk) = %d\n", PTHREAD_NUM, (int)sizeof(struct GC_UM_Chunk));
-		fprintf(stderr, "    sizeof(struct GC_UM_Array_Chunk) = %d\n", (int)sizeof(struct GC_UM_Array_Chunk));
-		fprintf(stderr, "    final chunk size = %d\n", (int)max_chunk_size);
+		fprintf(stderr, "%d] sizeof(struct GC_UM_Chunk)=%d ", PTHREAD_NUM, (int)sizeof(struct GC_UM_Chunk));
+		fprintf(stderr, "sizeof(struct GC_UM_Array_Chunk)=%d ", (int)sizeof(struct GC_UM_Array_Chunk));
+		fprintf(stderr, "final chunk size=%d\n", (int)max_chunk_size);
 	}
 	struct timeval t0, t1;
 	gettimeofday(&t0, NULL);
@@ -391,7 +403,7 @@ bool createUMHeap(GC_state s,
 				(uintptr_t)(h->start),
 				uintmaxToCommaString(h->size));
 		fprintf(stderr,
-				"[GC: mapped freelist over the heap\n]");
+				"[GC: mapped freelist over the heap]\n");
 	}
 
 

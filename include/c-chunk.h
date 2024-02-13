@@ -134,9 +134,10 @@ void um_dumpFrame (void *s, void *f);
                                *(ty*)(CurrentFrame + (i)))),      \
                                 (ty*)(CurrentFrame + (i))))
 
+#define LOCK_DEBUG(LN) if(getenv("DEBUG_LOCKS")) {fprintf(stderr, "%d] LOCKDBG %s %s\n", PTHREAD_NUM, __FUNCTION__, LN);}
 #define IFED(X) do { int x = X; if (x) { perror("(in codegen code) perror " #X); printf(" rv=%d\n", x); exit(-1); } } while(0)
-#define Lock_fl(s) IFED(pthread_mutex_lock(&s))
-#define Unlock_fl(s) IFED(pthread_mutex_unlock(&s))
+#define Lock_fl(s) LOCK_DEBUG("Lock_fl"); IFED(pthread_mutex_lock(&s))
+#define Unlock_fl(s) IFED(pthread_mutex_unlock(&s)); LOCK_DEBUG("Unlock_fl")
 
 #define ChunkExnHandler ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->handler
 #define ChunkExnLink ((struct GC_UM_Chunk*)(CurrentFrame - STACKHEADER))->link
@@ -287,11 +288,13 @@ void um_dumpFrame (void *s, void *f);
  * you must keep umheap.h and this definition in sync.
  */
 
-#define UM_CHUNK_PAYLOAD_SIZE 302
+#define UM_CHUNK_PAYLOAD_SIZE 304
 #define UM_CHUNK_PAYLOAD_SAFE_REGION 16
 
 typedef uintptr_t GC_returnAddress;
 typedef uintptr_t pointer;
+
+// must match umheap.h
 
 typedef struct GC_UM_Chunk {
 	unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION];
@@ -300,6 +303,7 @@ typedef struct GC_UM_Chunk {
 	GC_returnAddress ra;
 	GC_returnAddress handler;
 	GC_returnAddress link;
+        size_t used;
 	struct GC_UM_Chunk* next_chunk;
 	struct GC_UM_Chunk* prev_chunk;
 };

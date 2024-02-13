@@ -59,7 +59,7 @@ static void MLton_callFromC (pointer ffiOpArgsResPtr) {                 \
         if (DEBUG_CCODEGEN) fprintf(stderr, "%d] back from C->SML call\n", PTHREAD_NUM);    \
         GC_switchToThread (s, GC_getSavedThread (s), 0);                \
         decAtomic(s); /*s->atomicState -= 1;*/                          \
-        if (0 == s->atomicState                                         \
+        if ((0 == s->atomicState)                                         \
             && s->signalsInfo.signalIsPending)                          \
                 s->limit = 0;                                           \
         if (DEBUG_CCODEGEN)                                             \

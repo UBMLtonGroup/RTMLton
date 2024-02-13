@@ -102,7 +102,6 @@ int processAtMLton(GC_state s, int start, int argc, char **argv,
 		and i<argc
 		and(0 == strcmp(argv[i], "@MLton"))) {
 		bool done;
-printf("xxx  %d %s\n", i, argv[i]);
 		i++;
 		done = FALSE;
 		while (!done) {
@@ -282,13 +281,13 @@ printf("xxx  %d %s\n", i, argv[i]);
 				} else if (0 == strcmp(arg, "hpercent")) {
 					i++;
 					if (i == argc)
-						die("@MLton hPercent missing argument.");
+						die("@MLton hpercent missing argument.");
 					s->hPercent = stringToFloat(argv[i++]);
 					unless(0.0 <= s->hPercent
 					and
 					s->hPercent <= 1.0)
 					die("@MLton hpercent argument must be between 0.0 and 1.0.");
-				} else if (0 == strcmp(arg, "rtobj")) {
+				} else if (0 == strcmp(arg, "rtobj")) {  // not used anywhere?
 					i++;
 					if (i == argc)
 						die("@MLton rtobj missing argument.");
@@ -298,12 +297,32 @@ printf("xxx  %d %s\n", i, argv[i]);
 					if (i == argc)
 						die("@MLton gc-onebyone missing argument.");
 					s->oneByOne = stringToBool(argv[i++]);
-				}else if (0 == strcmp(arg, "rtthreads")) {
+				} else if (0 == strcmp(arg, "rtthreads")) {
 					i++;
 					if (i == argc)
 						die("@MLton rtthreads missing argument.");
 					s->useRTThreads = stringToBool(argv[i++]);
-				}else if (0 == strcmp(arg, "use-mmap")) {
+				} else if (0 == strcmp(arg, "lower-bound")) {
+					i++;
+					if (i == argc)
+						die("@MLton lower-bound missing argument.");
+					s->lower_bound = atoi(argv[i++]);
+				} else if (0 == strcmp(arg, "upper-bound")) {
+					i++;
+					if (i == argc)
+						die("@MLton upper-bound missing argument.");
+					s->upper_bound = atoi(argv[i++]);
+				} else if (0 == strcmp(arg, "packingstage1")) {
+					i++;
+					if (i == argc)
+						die("@MLton packingstage1 missing argument.");
+					s->packingStage1Enabled = stringToBool(argv[i++]);
+				} else if (0 == strcmp(arg, "packingstage2")) {
+					i++;
+					if (i == argc)
+						die("@MLton packingstage2 missing argument.");
+					s->packingStage2Enabled = stringToBool(argv[i++]);
+				} else if (0 == strcmp(arg, "use-mmap")) {
 					i++;
 					if (i == argc)
 						die("@MLton use-mmap missing argument.");
@@ -324,12 +343,24 @@ int GC_init(GC_state s, int argc, char **argv) {
 	char *worldFile;
 	int res, __i, __j;
 
+#ifdef RTLINUX
+	// DOI: 10.2514/6.2019-0502
+	if(mlockall(MCL_CURRENT | MCL_FUTURE)) {
+		die ("could not mlockall");
+	}
+#endif
+
+	User_instrument_initialize();
+
 	assert(s->alignment >= GC_MODEL_MINALIGN);
 	assert(isAligned(sizeof(struct GC_stack), s->alignment));
 	// While the following asserts are manifestly true,
 	// they check the asserts in sizeofThread and sizeofWeak.
 	assert(sizeofThread(s) == sizeofThread(s));
 	assert(sizeofWeak(s) == sizeofWeak(s));
+
+	s->lower_bound = 40;
+	s->upper_bound = 98;
 
 	s->amInGC = TRUE;
 	s->amOriginal = TRUE;
@@ -406,13 +437,15 @@ int GC_init(GC_state s, int argc, char **argv) {
 	s->allocedByRT = 0;
 	s->numAllocedByRT = 0;
     s->oneByOne = false;
-    s->useRTThreads  = false;
+    s->useRTThreads = false;
+	s->packingStage1Enabled = false;
+	s->packingStage2Enabled = false;
 
 	s->wl_size = 10000;
 	s->wl_length = 0;
 
 	pthread_mutex_init(&s->wl_lock, NULL);
-	s->worklist = malloc(s->wl_size * sizeof(objptr * ));
+	s->worklist = malloc(s->wl_size * sizeof(objptr *));
 
 	s->casLock = -1;
 
@@ -421,12 +454,15 @@ int GC_init(GC_state s, int argc, char **argv) {
 	}
 
 	for (__i = 0; __i < MAXPRI; __i++) {
-	    
+
+		s->packingStageForThread[__i] = 0;
+
         s->callFromCHandlerThread[__i] = BOGUS_OBJPTR;
 		s->currentThread[__i] = BOGUS_OBJPTR;
 		s->savedThread[__i] = BOGUS_OBJPTR;
 		s->signalHandlerThread[__i] = BOGUS_OBJPTR;
 		s->gcCallSeq[__i] = -1;
+		s->activeChunk[__i] = BOGUS_POINTER;
 
 		/*For now permanently set the rt threads to true*/
 		if (__i < 2)
@@ -483,8 +519,6 @@ int GC_init(GC_state s, int argc, char **argv) {
 
 	processAtMLton(s, 0, s->atMLtonsLength, s->atMLtons, &worldFile);
 	res = processAtMLton(s, 1, argc, argv, &worldFile);
-	printf("argc %d\n", argc);
-printf("processAtMLton %ld %ld\n", (long int)s->controls.fixedHeap, (long int)s->controls.maxHeap);
 	if (s->controls.fixedHeap > 0 and s->controls.maxHeap > 0)
 	     die("Cannot use both fixed-heap and max-heap.");
 

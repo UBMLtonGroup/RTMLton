@@ -56,6 +56,39 @@ structure CFunction =
       datatype z = datatype SymbolScope.t
       datatype z = datatype Target.t
 
+
+      val beginAtomic = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = false,
+                                 mayGC = true,
+                                 maySwitchThreads = false,
+                                 modifiesFrontier = true,
+                                 readsStackTop = true,
+                                 writesStackTop = true},
+            prototype = (Vector.new1 CType.gcState, NONE),
+            return = Type.unit,
+            symbolScope = Private,
+            target = Direct "GC_beginAtomic"}
+
+      val endAtomic = fn () =>
+         T {args = Vector.new1 (Type.gcState ()),
+            convention = Cdecl,
+            kind = Kind.Runtime {bytesNeeded = NONE,
+                                 ensuresBytesFree = false,
+                                 mayGC = true,
+                                 maySwitchThreads = false,
+                                 modifiesFrontier = true,
+                                 readsStackTop = true,
+                                 writesStackTop = true},
+            prototype = (Vector.new1 CType.gcState, NONE),
+            return = Type.unit,
+            symbolScope = Private,
+            target = Direct "GC_endAtomic"}
+
+
+
       val copyCurrentThread = fn () =>
          T {args = Vector.new1 (Type.gcState ()),
             convention = Cdecl,
@@ -1071,7 +1104,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                                  then yes t
                                               else no ())
                                   | _ => Error.bug "SsaToRssa.ifIsWeakPointer"
-                              fun arrayOrVectorLength () =
+                              fun arrayOrVectorLength () = 
                                  move (Offset
                                        {base = a 0,
                                         offset = Runtime.arrayLengthOffset (),
@@ -1108,7 +1141,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                               (atomicState,
                                                (Operand.word
                                                 (WordX.fromIntInf
-                                                 (IntInf.fromInt n,
+                                                 (IntInf.fromInt 9876,
                                                   WordSize.word32))))),
                                       dst = SOME (res, resTy),
                                       prim = Prim.wordAdd WordSize.word32},
@@ -1232,6 +1265,12 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                | FFI_getOpArgsResPtr =>
                                     simpleCCallWithGCState
                                     (CFunction.ffiGetOpArgsResPtr ())
+                               | UM_reserveAllocation =>
+                                    ccall
+                                    {args = (Vector.new2
+                                             (GCState,
+                                              Operand.zero (WordSize.csize ()))),
+                                     func = (CFunction.reserveAllocation {maySwitchThreads = false})}
                                | GC_collect =>
                                     ccall
                                     {args = (Vector.new4
@@ -1329,6 +1368,9 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                      * if (gcState.signalsInfo.signalIsPending)
                                      *   gcState.limit = gcState.limitPlusSlop - LIMIT_SLOP;
                                      *)
+                                     ccall {args = (Vector.new1 (GCState)),
+                                           func = CFunction.beginAtomic ()}
+(*
                                     split
                                     (Vector.new0 (), Kind.Jump, ss,
                                      fn continue =>
@@ -1371,13 +1413,17 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                          else
                                             Transfer.Goto {args = Vector.new0 (),
                                                            dst = continue})
-                                     end)
+                                     end) *)
                                | Thread_atomicEnd =>
                                     (* gcState.atomicState--;
                                      * if (gcState.signalsInfo.signalIsPending
                                      *     and 0 == gcState.atomicState)
                                      *   gc;
                                      *)
+                                     ccall {args = (Vector.new1 (GCState))
+                                                    ,
+                                           func = CFunction.endAtomic ()}
+(*
                                     split
                                     (Vector.new0 (), Kind.Jump, ss,
                                      fn continue =>
@@ -1431,6 +1477,7 @@ fun convert (program as S.Program.T {functions, globals, main, ...},
                                             Transfer.Goto {args = Vector.new0 (),
                                                            dst = continue})
                                      end)
+*)
                                | Thread_atomicState =>
                                     move (Runtime GCField.AtomicState)
                                | Thread_copy => 

@@ -890,10 +890,28 @@ structure BuiltInCFunction =
                    return = Type.unit,
                    symbolScope = SymbolScope.Private,
                    target = Direct "GC_collect"}
+         fun make2 b = fn () =>
+            T {args = Vector.new2 (Type.gcState (), Type.csize ()),
+                   convention = Cdecl,
+                   kind = Kind.Runtime {bytesNeeded = NONE,
+                                        ensuresBytesFree = true,
+                                        mayGC = true,
+                                        maySwitchThreads = b,
+                                        modifiesFrontier = true,
+                                        readsStackTop = true,
+                                        writesStackTop = true},
+                   prototype = (Vector.new2 (CType.cpointer, CType.csize ()),
+                                NONE),
+                   return = Type.unit,
+                   symbolScope = SymbolScope.Private,
+                   target = Direct "GC_reserveAllocation"}
          val t = make true
          val f = make false
+         val t2 = make2 true
+         val f2 = make2 false
       in
          fun gc {maySwitchThreads = b} = if b then t () else f ()
+         fun reserveAllocation {maySwitchThreads = b} = if b then t2 () else f2 ()
       end
    end
 

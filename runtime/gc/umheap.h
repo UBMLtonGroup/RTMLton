@@ -19,6 +19,7 @@ typedef struct UM_Mem_Chunk {
    struct UM_Mem_Chunk* next_chunk;
 } *UM_Mem_Chunk;
 
+// a copy of this struct is also in c-chunk.h and must match exactly
 
 typedef struct GC_UM_Chunk {
     unsigned char ml_object[UM_CHUNK_PAYLOAD_SIZE + UM_CHUNK_PAYLOAD_SAFE_REGION]; /* 154 + 16 */
@@ -27,7 +28,8 @@ typedef struct GC_UM_Chunk {
     GC_returnAddress ra;             /* +8 */
     GC_returnAddress handler;        /* +12 */
     GC_returnAddress link;           /* +16 */
-    struct GC_UM_Chunk* next_chunk;  /* +20 */
+    size_t used;                     /* +20 */
+    struct GC_UM_Chunk* next_chunk;  /* +24 */
     struct GC_UM_Chunk* prev_chunk;
 } *GC_UM_Chunk;
 
@@ -46,7 +48,7 @@ struct GC_UM_Array_Chunk;
 
 typedef union GC_UM_Array_Payload {
     pointer um_array_pointers[UM_CHUNK_ARRAY_INTERNAL_POINTERS]; //  38 - um_constants.h
-    unsigned char ml_object[UM_CHUNK_ARRAY_PAYLOAD_SIZE];                          // 152 - um_constants.h
+    unsigned char ml_object[UM_CHUNK_ARRAY_PAYLOAD_SIZE];        // 152 - um_constants.h
 } GC_UM_Array_Payload;
 
 /* The array chunk. It still has a portion of ml header... for object type
@@ -90,5 +92,6 @@ static GC_UM_Chunk allocNextChunk(GC_state s, GC_UM_heap h, UM_header chunkType)
 
 GC_UM_Array_Chunk allocNextArrayChunk(GC_state s, GC_UM_heap h);
 GC_UM_Array_Chunk allocateArrayChunks(GC_state s, GC_UM_heap h, size_t numChunks);
+size_t count_freelist(GC_state s, GC_UM_heap h);
 
 #endif

@@ -49,8 +49,8 @@ void um_dumpFrame (GC_state s, objptr frame, GC_returnAddress raoverride) {
 		fprintf(stderr, "%d]    offset 0x%"PRIx16" (%d) stackaddress "FMTOBJPTR" objptr "FMTOBJPTR"\n",
 				PTHREAD_NUM,
 				frameOffsets[i + 1], frameOffsets[i + 1],
-				(int)x,
-				xv);
+				(long unsigned int)x,
+				(long unsigned int)xv);
 	}
 
 }
@@ -129,7 +129,7 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
 	to->exnStack = BOGUS_EXN_STACK;
 
     if (DEBUG_CCODEGEN)
-        fprintf(stderr, "%d] um_copyStack from:%08x -> to:%08x\n", PTHREAD_NUM, (unsigned int) f, (unsigned int)t);
+        fprintf(stderr, "%d] um_copyStack from:%p -> to:%p\n", PTHREAD_NUM, f, t);
 
     for( ; f ; f = (GC_UM_Chunk)f->next_chunk, t = (GC_UM_Chunk)t->next_chunk) {
     	assert (f->sentinel == UM_STACK_SENTINEL);
@@ -141,9 +141,9 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
 
         if (from->exnStack == (objptr)f + GC_HEADER_SIZE) {
 			if (DEBUG_CCODEGEN) {
-				fprintf(stderr, GREEN("found exnStack: from:%08x -> to:%08x (handler %d, ra %d)\n"),
-						(unsigned int) f,
-						(unsigned int) t,
+				fprintf(stderr, GREEN("found exnStack: from:%p -> to:%p (handler %d, ra %d)\n"),
+						f,
+						t,
 						(int)f->handler,
 						(int)*(uintptr_t*)(f->ml_object + f->ra + GC_HEADER_SIZE));
 			}
@@ -151,7 +151,7 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         }
         if (from->currentFrame - GC_HEADER_SIZE == (objptr)f) {
             if (DEBUG_CCODEGEN) {
-				fprintf(stderr, "found cf at from:%08x -> to:%08x\n", (unsigned int) f, (unsigned int)t);
+				fprintf(stderr, "found cf at from:%p -> to:%p\n", f, t);
             }
             to->currentFrame = (objptr)t + GC_HEADER_SIZE;
             f = f->next_chunk;
@@ -161,7 +161,7 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
         }
         if (to->currentFrame == BOGUS_OBJPTR) {
             if (DEBUG_CCODEGEN)
-                fprintf(stderr, "did not find cf yet! from:%08x -> to:%08x\n", (unsigned int) f, (unsigned int)t);
+                fprintf(stderr, "did not find cf yet! from:%p -> to:%p\n", f, t);
         }
         cc++;
     }
@@ -173,15 +173,15 @@ void um_copyStack (GC_state s, GC_thread from, GC_thread to) {
     		fprintf(stderr, YELLOW("No exnStack found in from thread\n"));
     	}
 		fprintf(stderr, YELLOW("copyStacklet") " [Thr %d] copied %d chunks,"
-						" old-first %08x"
-						" old-cur %08x"
-						" new-first %08x"
-						" new-cur %08x\n",
+						" old-first %p"
+						" old-cur %p"
+						" new-first %p"
+						" new-cur %p\n",
 				PTHREAD_NUM, cc,
-				(unsigned int) from->firstFrame,
-				(unsigned int) from->currentFrame,
-				(unsigned int) to->firstFrame,
-				(unsigned int) to->currentFrame);
+				(void *)from->firstFrame,
+				(void *)from->currentFrame,
+				(void *)to->firstFrame,
+				(void *)to->currentFrame);
 	}
 
     if (to->currentFrame == BOGUS_OBJPTR)

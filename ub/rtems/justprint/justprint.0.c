@@ -157,6 +157,13 @@ PRIVATE Word32 CReturnW32[PTHREAD_MAX];
 PRIVATE Word64 globalWord64[0];
 PRIVATE Word64 CReturnW64[PTHREAD_MAX];
 PRIVATE Pointer globalObjptrNonRoot [1];
+PUBLIC void Parallel_run_rtems () {
+        Pointer localOpArgsRes[1];
+        Int32 localOp = 1;
+        localOpArgsRes[0] = (Pointer)(&localOp);
+        MLton_callFromC ((Pointer)(localOpArgsRes));
+/*(Pointer)(localOpArgsRes));*/
+}
 PUBLIC void Parallel_run () {
 	Pointer localOpArgsRes[1];
 	Int32 localOp = 0;
@@ -762,9 +769,10 @@ static char* sourceNames[] = {
 uint32_t sources_len = 0;
 static struct GC_source sources[] = {
 };
-uint32_t atMLtons_len = 2;
+uint32_t atMLtons_len = 4;
 static char* atMLtons[] = {
 	"@MLton", /* 0 */
+        "rtthreads", "true",
 	"--", /* 1 */
 };
 DeclareChunk (1);
